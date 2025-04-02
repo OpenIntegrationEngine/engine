@@ -1062,23 +1062,80 @@
 			</sequential>
 		</for>
 
-		<!-- sign jars for webstart -->
-		<echo message="[Thread Count: ${signjar_thread_count}] Signing jars for Java Web Start" />
-		<property file="${keystore_property_file}" />
-		
-		<for param="jarFile" parallel="true" threadCount="${signjar_thread_count}">
-			<fileset dir="${setup.client.lib}" includes="**/*.jar" />
-			<fileset dir="${setup.extensions}" includes="**/*.jar" />
-			<sequential>
-				<retry retrycount="5" retrydelay="1000">
-					<signjar jar="@{jarFile}" alias="${key.alias}" keystore="${key.keystore}" storepass="${key.storepass}" keypass="${key.keypass}" storetype="${key.storetype}" tsaurl="http://timestamp.digicert.com" digestalg="SHA-256">
-						<!-- http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7127374 -->
-						<sysproperty key="jsse.enableSNIExtension" value="false" />
-						<sysproperty key="https.protocols" value="TLSv1.2,TLSv1.1" />
-					</signjar>
-				</retry>
-			</sequential>
-		</for>
+
+		<if>
+			<equals arg1="${disableSigning}" arg2="true" />
+
+			<then>
+				<echo message="Signing jars for Java Web Start is disabled" />
+			</then>
+
+			<else>
+				<property file="${keystore_property_file}" />
+				<property name="signingTsa" value="http://timestamp.digicert.com" />
+
+				<echo message="[Thread Count: ${signjar_thread_count}] Signing jars for Java Web Start" />
+
+				<if>
+					<equals arg1="${cert}" arg2="ca" />
+
+					<!-- Sign jars with valid CA certificate -->
+					<then>
+						<echo message="Signing with CA certificate" />
+
+						<for param="jarFile" parallel="true" threadCount="${signjar_thread_count}">
+							<fileset dir="${setup.client.lib}" includes="**/*.jar" />
+							<fileset dir="${setup.extensions}" includes="**/*.jar" />
+							<sequential>
+								<retry retrycount="5" retrydelay="1000">
+									<signjar
+											jar="@{jarFile}"
+											alias="${key.alias}"
+											storepass="${key.storepass}"
+											storetype="${key.storetype}"
+											providerclass="${key.providerclass}"
+											providerarg="${key.providerarg}"
+											tsaurl="${signingTsa}"
+									>
+										<!-- http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7127374 -->
+										<sysproperty key="jsse.enableSNIExtension" value="false" />
+										<sysproperty key="https.protocols" value="TLSv1.2,TLSv1.1" />
+									</signjar>
+								</retry>
+							</sequential>
+						</for>
+					</then>
+
+					<!-- Sign jars with self-signed certificate -->
+					<else>
+						<echo message="Signing with self-signed certificate" />
+
+						<for param="jarFile" parallel="true" threadCount="${signjar_thread_count}">
+							<fileset dir="${setup.client.lib}" includes="**/*.jar" />
+							<fileset dir="${setup.extensions}" includes="**/*.jar" />
+							<sequential>
+								<retry retrycount="5" retrydelay="1000">
+									<signjar
+											jar="@{jarFile}"
+											alias="${key.alias}"
+											keystore="${key.keystore}"
+											storepass="${key.storepass}"
+											keypass="${key.keypass}"
+											storetype="${key.storetype}"
+											tsaurl="${signingTsa}"
+											digestalg="SHA-256"
+									>
+										<!-- http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7127374 -->
+										<sysproperty key="jsse.enableSNIExtension" value="false" />
+										<sysproperty key="https.protocols" value="TLSv1.2,TLSv1.1" />
+									</signjar>
+								</retry>
+							</sequential>
+						</for>
+					</else>
+				</if>
+			</else>
+		</if>
 	</target>
 
 	<target name="create-extension-zips" depends="create-setup">

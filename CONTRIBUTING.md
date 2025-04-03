@@ -30,7 +30,8 @@ Implement the necessary changes, ensuring that they align with the project’s c
 Before submitting your changes, please ensure that all tests pass and that your changes work as expected in your local environment.
 
 ### 6. Submit a Pull Request
-Once your changes are ready, push them to your fork and create a pull request (PR) from your branch to the `main` branch of the project. Include a brief description of the changes and reference the related issue.
+Once your changes are ready, push them to your fork and create a **draft pull request (PR)** from your branch to the `main` branch of the project. Draft PRs help indicate that the work is in progress.  
+Mark the PR as **"Ready for review"** only when it is actually complete and ready for feedback. Include a brief description of the changes and reference the related issue.
 
 ## Reporting Bugs
 

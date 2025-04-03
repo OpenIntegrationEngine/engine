@@ -7,27 +7,30 @@ The contribution process is straightforward and can be completed in a few simple
 
 ## How to Contribute
 
-### 1. Fork the Repository
+### 1. Open an Issue
+Before making any changes, please open an issue in the [GitHub Issues Tracker](https://github.com/OpenIntegrationEngine/engine/issues). This step helps us discuss the problem or feature before work begins, ensuring alignment and reducing redundant efforts.
+
+### 2. Fork the Repository
 Start by forking the [Open Integration Engine GitHub repository](https://github.com/OpenIntegrationEngine/engine) to your own GitHub account.
 
-### 2. Clone Your Fork
+### 3. Clone Your Fork
 Clone your fork locally to your development environment:
 ```bash
 git clone git@github.com:OpenIntegrationEngine/engine.git
 ```
 
-### 3. Make Changes
+### 4. Make Changes
 Create a new branch for your feature or bug fix:
 ```bash
 git checkout -b feature/your-feature-name
 ```
 Implement the necessary changes, ensuring that they align with the project’s coding standards and practices.
 
-### 4. Test Your Changes
+### 5. Test Your Changes
 Before submitting your changes, please ensure that all tests pass and that your changes work as expected in your local environment.
 
-### 5. Submit a Pull Request
-Once your changes are ready, push them to your fork and create a pull request (PR) from your branch to the `main` branch of the project. Include a brief description of the changes and reference any relevant issues.
+### 6. Submit a Pull Request
+Once your changes are ready, push them to your fork and create a pull request (PR) from your branch to the `main` branch of the project. Include a brief description of the changes and reference the related issue.
 
 ## Reporting Bugs
 

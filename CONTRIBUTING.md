@@ -24,12 +24,19 @@ Create a new branch for your feature or bug fix:
 ```bash
 git checkout -b feature/your-feature-name
 ```
-Implement the necessary changes, ensuring that they align with the project’s coding standards and practices.
 
-### 5. Test Your Changes
+### 5. Install Tooling
+OIE specifies the working versions of Java and Ant in [.sdkmanrc](./.sdkmanrc). To take advantage of this, install [SDKMAN](https://sdkman.io/) and run `sdk env install`
+in the project's root directory.
+
+### 6. Implement your changes
+
+Implement the necessary changes, ensuring they align with the project’s coding standards and practices.
+
+### 7. Test Your Changes
 Before submitting your changes, please ensure that all tests pass and that your changes work as expected in your local environment.
 
-### 6. Submit a Pull Request
+### 8. Submit a Pull Request
 Once your changes are ready, push them to your fork and create a **draft pull request (PR)** from your branch to the `main` branch of the project. Draft PRs help indicate that the work is in progress.  
 Mark the PR as **"Ready for review"** only when it is actually complete and ready for feedback. Include a brief description of the changes and reference the related issue.
 

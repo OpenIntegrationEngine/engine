@@ -85,6 +85,7 @@ import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
+import com.mirth.connect.client.ui.*;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.StringUtils;
@@ -103,11 +104,6 @@ import org.jdesktop.swingx.treetable.DefaultTreeTableModel;
 import org.jdesktop.swingx.treetable.MutableTreeTableNode;
 import org.jdesktop.swingx.treetable.TreeTableNode;
 
-import com.mirth.connect.client.ui.Frame;
-import com.mirth.connect.client.ui.Mirth;
-import com.mirth.connect.client.ui.PlatformUI;
-import com.mirth.connect.client.ui.SortableTreeTableModel;
-import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthCheckBox;
 import com.mirth.connect.client.ui.components.MirthComboBoxTableCellEditor;
 import com.mirth.connect.client.ui.components.MirthComboBoxTableCellRenderer;
@@ -1222,7 +1218,7 @@ public abstract class BaseEditorPane<T extends FilterTransformer<C>, C extends F
         };
 
         viewTasks = new JXTaskPane();
-        viewTasks.setTitle("Mirth Connect Views");
+        viewTasks.setTitle(String.format("%s Views", BrandingConstants.PRODUCT_NAME));
         viewTasks.setFocusable(false);
         viewTasks.add(initActionCallback("accept", "Return back to channel.", ActionFactory.createBoundAction("accept", "Back to Channel", "B"), new ImageIcon(Frame.class.getResource("images/resultset_previous.png"))));
         PlatformUI.MIRTH_FRAME.setNonFocusable(viewTasks);

@@ -26,6 +26,7 @@ import java.util.regex.PatternSyntaxException;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.util.ByteArrayDataSource;
 
+import com.mirth.connect.client.ui.BrandingConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.fileupload.FileUploadBase;
@@ -583,7 +584,7 @@ public class HttpDispatcher extends DestinationConnector {
             }
         }
         if (!userAgentFound) {
-            httpMethod.addHeader("user-agent", "Mirth Connect");
+            httpMethod.addHeader("user-agent", BrandingConstants.PRODUCT_NAME);
         }
 
         // Only set the Content-Type for entity-enclosing methods, but not if multipart is used

@@ -18,6 +18,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import com.mirth.connect.client.ui.BrandingConstants;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -42,7 +43,7 @@ public class MirthHeadingPanel extends JPanel {
         JLabel headingLabel = new JLabel();
         headingLabel.setFont(new Font("Tahoma", 1, 18)); // NOI18N
         headingLabel.setForeground(new Color(255, 255, 255));
-        headingLabel.setText("Mirth Connect Server Manager");
+        headingLabel.setText(String.format("%s Server Manager", BrandingConstants.PRODUCT_NAME));
 
         add(headingLabel);
     }

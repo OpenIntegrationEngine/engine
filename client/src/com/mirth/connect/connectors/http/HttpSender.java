@@ -42,6 +42,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
+import com.mirth.connect.client.ui.*;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.collections4.MapUtils;
@@ -51,12 +52,6 @@ import org.jdesktop.swingx.decorator.Highlighter;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
 
 import com.mirth.connect.client.core.ClientException;
-import com.mirth.connect.client.ui.ConnectorTypeDecoration;
-import com.mirth.connect.client.ui.Frame;
-import com.mirth.connect.client.ui.Mirth;
-import com.mirth.connect.client.ui.PlatformUI;
-import com.mirth.connect.client.ui.TextFieldCellEditor;
-import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthCheckBox;
 import com.mirth.connect.client.ui.components.MirthComboBox;
 import com.mirth.connect.client.ui.components.MirthIconTextField;
@@ -1226,7 +1221,7 @@ public class HttpSender extends ConnectorSettingsPanel {
         passwordField.setToolTipText("The password used to connect to the HTTP server.");
         authenticationTypeDigestRadio.setToolTipText("Use the digest authentication scheme.");
         authenticationTypeBasicRadio.setToolTipText("Use the basic authentication scheme.");
-        charsetEncodingCombobox.setToolTipText("<html>Select the character set encoding used by the sender of the message,<br> or Default to assume the default character set encoding for the JVM running Mirth Connect.</html>");
+        charsetEncodingCombobox.setToolTipText(String.format("<html>Select the character set encoding used by the sender of the message,<br> or Default to assume the default character set encoding for the JVM running %s.</html>", BrandingConstants.PRODUCT_NAME));
         sendTimeoutField.setToolTipText("<html>Sets the socket timeout (SO_TIMEOUT) in milliseconds to be used when executing the method.<br>A timeout value of zero is interpreted as an infinite timeout.</html>");
         parseMultipartYesRadio.setToolTipText("<html>Select Yes to automatically parse multipart responses into separate XML nodes.<br/>Select No to always keep the response body as a single XML node.</html>");
         parseMultipartNoRadio.setToolTipText("<html>Select Yes to automatically parse multipart responses into separate XML nodes.<br/>Select No to always keep the response body as a single XML node.</html>");

@@ -27,16 +27,11 @@ public class UIConstants {
     public static final String EOL_MAC = "\r";
     // for Frame
     public static final int TASK_PANE_WIDTH = 170;
-    public static final String TITLE_TEXT = "Mirth Connect Administrator";
     public static final int MIRTH_WIDTH = 950;
     public static final int MIRTH_HEIGHT = 650;
     public static final ImageIcon MIRTH_FAVICON = new ImageIcon(com.mirth.connect.client.ui.Frame.class.getResource("images/NG_MC_Icon_32x32.png"));
     public static final ImageIcon MIRTHCORP_LOGO = new ImageIcon(com.mirth.connect.client.ui.Frame.class.getResource("images/MirthConnect_NLogo_RGB.png"));
     public static final ImageIcon MIRTHCONNECT_LOGO_GRAY = new ImageIcon(com.mirth.connect.client.ui.Frame.class.getResource("images/MirthConnect_Logo_WM_White.png"));
-    public static final String MIRTHCORP_TOOLTIP = "NextGen Healthcare";
-    public static final String MIRTHCONNECT_TOOLTIP = "Mirth Connect";
-    public static final String MIRTHCORP_URL = "https://www.nextgen.com/products-and-services/integration-engine";
-    public static final String MIRTHCONNECT_URL = "https://www.nextgen.com/products-and-services/integration-engine";
     public static final String EDIT_FILTER = "Edit Filter";
     public static final String EDIT_TRANSFORMER = "Edit Transformer";
     public static final String EDIT_RESPONSE_TRANSFORMER = "Edit Response";
@@ -74,12 +69,6 @@ public class UIConstants {
     public static final Font DIALOG_FONT = new Font("Dialog", Font.PLAIN, 12);
     public static final Font MONOSPACED_FONT = new Font(MONOSPACED_FONT_NAME, Font.PLAIN, 12);
 
-    // issue link
-    public static final String ISSUE_TRACKER_LOCATION = "https://github.com/nextgenhealthcare/connect/issues";
-    // help link
-    public static String HELP_URL_LOCATION = "https://s3.amazonaws.com/downloads.mirthcorp.com/connect-user-guide/webhelp.json";
-    // help link
-    public static String HELP_DEFAULT_LOCATION = "https://github.com/nextgenhealthcare/connect/wiki";
     // user api
     public static String USER_API_LOCATION = "/javadocs/user-api/";
     // user api
@@ -132,9 +121,6 @@ public class UIConstants {
     public static final ImageIcon ICON_INFORMATION = new ImageIcon(com.mirth.connect.client.ui.Frame.class.getResource("images/information.png"));
     public static final ImageIcon ICON_WARNING = new ImageIcon(com.mirth.connect.client.ui.Frame.class.getResource("images/error.png"));
     public static final ImageIcon ICON_ERROR = new ImageIcon(com.mirth.connect.client.ui.Frame.class.getResource("images/exclamation.png"));
-    // for privacy
-    public static final String PRIVACY_URL = "https://www.nextgen.com/legal-notice";
-    public static final String PRIVACY_TOOLTIP = "Privacy Information";
 
     // FileUtils reading/writing
     public static final String CHARSET = "UTF-8";

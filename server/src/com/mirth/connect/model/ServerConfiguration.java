@@ -24,6 +24,7 @@ import java.util.UUID;
 
 import javax.swing.text.DateFormatter;
 
+import com.mirth.connect.client.ui.BrandingConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -216,7 +217,7 @@ public class ServerConfiguration implements Serializable, Migratable, Auditable 
         DirectoryResourceProperties defaultResource = new DirectoryResourceProperties();
         defaultResource.setId(ResourceProperties.DEFAULT_RESOURCE_ID);
         defaultResource.setName(ResourceProperties.DEFAULT_RESOURCE_NAME);
-        defaultResource.setDescription("Loads libraries from the custom-lib folder in the Mirth Connect home directory.");
+        defaultResource.setDescription(String.format("Loads libraries from the custom-lib folder in the %s home directory.", BrandingConstants.PRODUCT_NAME));
         defaultResource.setIncludeWithGlobalScripts(true);
         defaultResource.setDirectory("custom-lib");
         list.getList().add(defaultResource);

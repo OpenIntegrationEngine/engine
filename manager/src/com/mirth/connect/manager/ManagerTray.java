@@ -9,6 +9,8 @@
 
 package com.mirth.connect.manager;
 
+import com.mirth.connect.client.ui.BrandingConstants;
+
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.SystemTray;
@@ -36,7 +38,7 @@ public class ManagerTray {
     public ManagerTray() {}
 
     public void setupTray() {
-        menu = new PopupMenu("Mirth Connect Server Manager");
+        menu = new PopupMenu(String.format("%s Server Manager", BrandingConstants.PRODUCT_NAME));
 
         viewItem = new MenuItem("Show Manager");
 //        viewItem.setIcon(new ImageIcon(this.getClass().getResource("images/start.png")));
@@ -59,7 +61,7 @@ public class ManagerTray {
         });
         menu.add(administratorItem);
 
-        startItem = new MenuItem("Start Mirth Connect");
+        startItem = new MenuItem(String.format("Start %s", BrandingConstants.PRODUCT_NAME));
 //        startItem.setIcon(new ImageIcon(this.getClass().getResource("images/start.png")));
         startItem.addActionListener(new ActionListener() {
 
@@ -69,7 +71,7 @@ public class ManagerTray {
         });
         menu.add(startItem);
 
-        stopItem = new MenuItem("Stop Mirth Connect");
+        stopItem = new MenuItem(String.format("Stop %s", BrandingConstants.PRODUCT_NAME));
 //        stopItem.setIcon(new ImageIcon(this.getClass().getResource("images/stop.png")));
         stopItem.addActionListener(new ActionListener() {
 
@@ -79,7 +81,7 @@ public class ManagerTray {
         });
         menu.add(stopItem);
 
-        restartItem = new MenuItem("Restart Mirth Connect");
+        restartItem = new MenuItem(String.format("Restart %s", BrandingConstants.PRODUCT_NAME));
 //        restartItem.setIcon(new ImageIcon(this.getClass().getResource("images/restart.png")));
         restartItem.addActionListener(new ActionListener() {
 
@@ -102,7 +104,7 @@ public class ManagerTray {
         menu.add(quitItem);
 
         ImageIcon icon = new ImageIcon(this.getClass().getResource("images/NG_MC_Icon_Grey_32x32.png"));
-        mirthTrayIcon = new TrayIcon(icon.getImage(), "Mirth Connect Server Manager", menu);
+        mirthTrayIcon = new TrayIcon(icon.getImage(), String.format("%s Server Manager", BrandingConstants.PRODUCT_NAME), menu);
         mirthTrayIcon.setImageAutoSize(true);
 
         // Action listener for left click.

@@ -18,6 +18,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import com.mirth.connect.client.ui.BrandingConstants;
 import com.mirth.connect.client.ui.Frame;
 import com.mirth.connect.client.ui.PlatformUI;
 import com.mirth.connect.client.ui.UIConstants;
@@ -146,7 +147,7 @@ public class ListenerSettingsPanel extends JPanel {
         });
         
         portsInUse.setText("Ports in Use");
-        portsInUse.setToolTipText("<html>View all listener ports currently used by Mirth Connect.<br>"
+        portsInUse.setToolTipText(String.format("<html>View all listener ports currently used by %s.<br>", BrandingConstants.PRODUCT_NAME)
         		+ "Any port number can be entered even if it's already in use;<br>"
         		+ "however, only one channel can be deployed per port.</html>");
         portsInUse.addActionListener(new ActionListener() {

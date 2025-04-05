@@ -17,10 +17,7 @@ import javax.swing.ButtonGroup;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import com.mirth.connect.client.ui.ConnectorTypeDecoration;
-import com.mirth.connect.client.ui.Frame;
-import com.mirth.connect.client.ui.PlatformUI;
-import com.mirth.connect.client.ui.UIConstants;
+import com.mirth.connect.client.ui.*;
 import com.mirth.connect.client.ui.components.MirthButton;
 import com.mirth.connect.client.ui.components.MirthIconTextField;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
@@ -420,7 +417,7 @@ public class DICOMSender extends ConnectorSettingsPanel {
         localPortField.setToolTipText("Local port that the client socket will be bound to.");
         
         portsInUse.setText("Ports in Use");
-        portsInUse.setToolTipText("View all ports currently used by Mirth Connect.");
+        portsInUse.setToolTipText(String.format("View all ports currently used by %s.", BrandingConstants.PRODUCT_NAME));
         portsInUse.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 portsInUseActionPerformed(evt);

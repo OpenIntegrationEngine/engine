@@ -145,7 +145,7 @@ public class WebStartServlet extends HttpServlet {
 
         Element jnlpElement = document.getDocumentElement();
 
-        // Change the title to include the version of Mirth Connect
+        // Change the title to include the version of OIE
         PropertiesConfiguration versionProperties = PropertiesConfigurationUtil.create();
         
         InputStream versionPropsIs = null;

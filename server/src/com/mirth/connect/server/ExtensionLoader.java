@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.mirth.connect.client.ui.BrandingConstants;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
@@ -205,11 +206,11 @@ public class ExtensionLoader {
                                 pluginMetaDataMap.put(metaData.getName(), (PluginMetaData) metaData);
                             }
                         } else {
-                            logger.error("Extension \"" + metaData.getName() + "\" is not compatible with this version of Mirth Connect and was not loaded. Please install a compatible version.");
+                            logger.error("Extension \"{}\" is not compatible with this version of %s and was not loaded. Please install a compatible version.", metaData.getName(), BrandingConstants.PRODUCT_NAME);
                             invalidMetaDataMap.put(metaData.getName(), metaData);
                         }
                     } catch (Exception e) {
-                        logger.error("Error reading or parsing extension metadata file: " + extensionFile.getName(), e);
+                        logger.error("Error reading or parsing extension metadata file: {}", extensionFile.getName(), e);
                     }
                 }
             } catch (Exception e) {

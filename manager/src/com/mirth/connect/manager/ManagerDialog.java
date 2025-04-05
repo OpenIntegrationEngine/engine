@@ -35,6 +35,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
 
+import com.mirth.connect.client.ui.BrandingConstants;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -70,7 +71,7 @@ public class ManagerDialog extends JDialog {
             LookAndFeelAddons.setAddon(WindowsLookAndFeelAddons.class);
 
             getContentPane().setBackground(Color.WHITE);
-            setTitle("Mirth Connect Server Manager");
+            setTitle(String.format("%s Server Manager", BrandingConstants.PRODUCT_NAME));
             setIconImage(new ImageIcon(this.getClass().getResource("images/NG_MC-ServerManager_Icon_F_32x32.png")).getImage());
             
             DisplayUtil.setResizable(this, false);
@@ -162,7 +163,7 @@ public class ManagerDialog extends JDialog {
                 startButtonActionPerformed(evt);
             }
         });
-        startLabel = new JLabel("Starts the Mirth Connect service");
+        startLabel = new JLabel(String.format("Starts the %s service", BrandingConstants.PRODUCT_NAME));
 
         restartButton = new JButton("Restart");
         restartButton.addActionListener(new ActionListener() {
@@ -170,7 +171,7 @@ public class ManagerDialog extends JDialog {
                 restartButtonActionPerformed(evt);
             }
         });
-        restartLabel = new JLabel("Restarts the Mirth Connect service");
+        restartLabel = new JLabel(String.format("Restarts the %s service", BrandingConstants.PRODUCT_NAME));
 
         stopButton = new JButton("Stop");
         stopButton.addActionListener(new ActionListener() {
@@ -178,7 +179,7 @@ public class ManagerDialog extends JDialog {
                 stopButtonActionPerformed(evt);
             }
         });
-        stopLabel = new JLabel("Stops the Mirth Connect service");
+        stopLabel = new JLabel(String.format("Stops the %s service", BrandingConstants.PRODUCT_NAME));
 
         refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(new ActionListener() {
@@ -186,9 +187,9 @@ public class ManagerDialog extends JDialog {
                 refreshButtonActionPerformed(evt);
             }
         });
-        refreshLabel = new JLabel("Refreshes the Mirth Connect service status");
+        refreshLabel = new JLabel(String.format("Refreshes the %s service status", BrandingConstants.PRODUCT_NAME));
 
-        startup = new JCheckBox("Start Mirth Connect Server Manager on system startup");
+        startup = new JCheckBox(String.format("Start %s Server Manager on system startup", BrandingConstants.PRODUCT_NAME));
         startup.setFocusable(false);
         startup.setToolTipText("Starts this application when logging into the operating system. Currently only enabled for Windows.");
         startup.setBackground(new Color(255, 255, 255));

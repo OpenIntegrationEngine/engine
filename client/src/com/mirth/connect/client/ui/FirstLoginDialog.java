@@ -144,7 +144,7 @@ public class FirstLoginDialog extends javax.swing.JDialog implements UserDialogI
 
         jTextPane1.setEditable(false);
         jTextPane1.setBackground(new java.awt.Color(250, 250, 210));
-        jTextPane1.setText("You may now customize your Mirth Connect user account information. You also have the option of changing your account password.");
+        jTextPane1.setText(String.format("You may now customize your %s user account information. You also have the option of changing your account password.", BrandingConstants.PRODUCT_NAME));
         jTextPane1.setAutoscrolls(false);
         jTextPane1.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextPane1.setEnabled(false);

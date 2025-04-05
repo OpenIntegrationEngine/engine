@@ -36,6 +36,7 @@ import java.util.zip.ZipFile;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import com.mirth.connect.client.ui.BrandingConstants;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -444,7 +445,7 @@ public class DefaultExtensionController extends ExtensionController {
 
                     if (!extensionLoader.isExtensionCompatible(extensionMetaData)) {
                         if (cause == null) {
-                            cause = new VersionMismatchException("Extension \"" + entry.getName() + "\" is not compatible with this version of Mirth Connect.");
+                            cause = new VersionMismatchException(String.format("Extension \"%s\" is not compatible with this version of %s.", entry.getName(), BrandingConstants.PRODUCT_NAME));
                         }
                     }
                 }

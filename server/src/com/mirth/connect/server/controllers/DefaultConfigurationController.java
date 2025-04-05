@@ -53,6 +53,7 @@ import javax.crypto.SecretKey;
 import javax.net.ssl.SSLSocketFactory;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import com.mirth.connect.client.ui.BrandingConstants;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -1110,7 +1111,7 @@ public class DefaultConfigurationController extends ConfigurationController {
             DirectoryResourceProperties defaultResource = new DirectoryResourceProperties();
             defaultResource.setId(ResourceProperties.DEFAULT_RESOURCE_ID);
             defaultResource.setName(ResourceProperties.DEFAULT_RESOURCE_NAME);
-            defaultResource.setDescription("Loads libraries from the custom-lib folder in the Mirth Connect home directory.");
+            defaultResource.setDescription(String.format("Loads libraries from the custom-lib folder in the %s Connect home directory.", BrandingConstants.PRODUCT_NAME));
             defaultResource.setIncludeWithGlobalScripts(true);
             defaultResource.setDirectory("custom-lib");
 
@@ -1500,10 +1501,12 @@ public class DefaultConfigurationController extends ConfigurationController {
 
         if (StringUtils.equalsAnyIgnoreCase(encryptionConfig.getEncryptionAlgorithm(), "AES", "DES", "DESede")) {
             // @formatter:off
-            logger.error("Encryption algorithm is currently set to: \"" + encryptionConfig.getEncryptionAlgorithm() + "\"\n"
-                + "You should update the \"encryption.algorithm\" in mirth.properties to a more secure option, such as \"" + encryptionConfig.getEncryptionAlgorithm() + "/CBC/PKCS5Padding\".\n"
-                + "Support for the currently set algorithm will be REMOVED in a future version, so if you do not update it, Mirth Connect will fail to start.\n"
-                + "Please see the Security Best Practices -> Encryption Settings section of the User Guide for more information.");
+            logger.error(
+                "Encryption algorithm is currently set to: \"{}\"\nYou should update the \"encryption.algorithm\" in mirth.properties to a more secure option, such as \"{}/CBC/PKCS5Padding\".\nSupport for the currently set algorithm will be REMOVED in a future version, so if you do not update it, {} will fail to start.\nPlease see the Security Best Practices -> Encryption Settings section of the User Guide for more information.",
+                encryptionConfig.getEncryptionAlgorithm(),
+                encryptionConfig.getEncryptionAlgorithm(),
+                BrandingConstants.PRODUCT_NAME
+            );
             // @formatter:on
         }
     }
@@ -1680,7 +1683,7 @@ public class DefaultConfigurationController extends ConfigurationController {
             }
         }
 
-        email.setSubject("Mirth Connect Test Email");
+        email.setSubject(String.format("%s Test Email", BrandingConstants.PRODUCT_NAME));
 
         try {
             for (String toAddress : StringUtils.split(to, ",")) {
@@ -1688,10 +1691,15 @@ public class DefaultConfigurationController extends ConfigurationController {
             }
 
             email.setFrom(from);
-            email.setMsg("Receipt of this email confirms that mail originating from this Mirth Connect Server is capable of reaching its intended destination.\n\nSMTP Configuration:\n- Host: " + host + "\n- Port: " + port);
+            email.setMsg(String.format(
+                "Receipt of this email confirms that mail originating from this %s Server is capable of reaching its intended destination.\n\nSMTP Configuration:\n- Host: %s\n- Port: %d",
+                BrandingConstants.PRODUCT_NAME,
+                host,
+                port
+            ));
 
             email.send();
-            return new ConnectionTestResponse(ConnectionTestResponse.Type.SUCCESS, "Sucessfully sent test email to: " + to);
+            return new ConnectionTestResponse(ConnectionTestResponse.Type.SUCCESS, "Successfully sent test email to: " + to);
         } catch (EmailException e) {
             return new ConnectionTestResponse(ConnectionTestResponse.Type.FAILURE, e.getMessage());
         }

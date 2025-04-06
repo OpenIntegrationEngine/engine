@@ -5,7 +5,6 @@
 [![Docker](https://img.shields.io/badge/docker-openintegrationengine-blue?logo=docker&style=flat)](https://hub.docker.com/u/openintegrationengine)
 
 ---
-
 ## Table of Contents
 
 - [Mission Statement](#mission-statement)
@@ -20,7 +19,6 @@
 - [Acknowledgments](#acknowledgments)
 
 ---
-
 ## Mission Statement
 
 To empower seamless healthcare interoperability through an open, community-driven integration engine that is accessible, extensible, and standards-based.
@@ -85,3 +83,39 @@ Engage with the community and project through:
 
 - 🌐 **Website**: [openintegration.org](https://openintegration.org)  
 - 💬 **Discord**: [Join our server](https://discord.gg/rMg5RS9SZa)  
+- 📂 **GitHub Repo**: [github.com/OpenIntegrationEngine/engine](https://github.com/OpenIntegrationEngine/engine)  
+- 📥 **Releases**: [Latest Releases](https://github.com/OpenIntegrationEngine/engine/releases)  
+- 🗳️ **Governance**: [Governance Docs](https://github.com/OpenIntegrationEngine/governance)  
+- 🐳 **Docker Hub**: [OpenIntegrationEngine on Docker Hub](https://hub.docker.com/u/openintegrationengine)
+
+Governance is structured to be transparent and inclusive, with decisions made collectively to reflect the community’s best interests.
+
+---
+
+## History and Roadmap
+
+Forked from **Mirth Connect** following its shift to a proprietary model, this project continues the legacy of open healthcare integration.
+
+### Roadmap
+
+**Short-Term Goals**
+- Stabilize codebase  
+- Improve documentation  
+- Expand community involvement
+
+**Long-Term Vision**
+- Support new healthcare standards  
+- Enhance UX/UI  
+- Grow plugin ecosystem
+
+---
+
+## Licensing
+
+Licensed under the **Mozilla Public License 2.0** (MPL 2.0). See [LICENSE](./LICENSE) for details.
+
+---
+
+## Acknowledgments
+
+Special thanks to the original **Mirth Connect** team and the broader open-source healthcare integration community.

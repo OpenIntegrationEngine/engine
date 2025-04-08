@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.mirth.connect.client.ui.BrandingConstants;
+import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.lang3.StringUtils;
 
 import com.mirth.connect.donkey.util.DonkeyElement;

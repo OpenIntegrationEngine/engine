@@ -9,8 +9,6 @@
 
 package com.mirth.connect.manager;
 
-import com.mirth.connect.client.ui.BrandingConstants;
-
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.SystemTray;

@@ -35,7 +35,6 @@ import javax.swing.JTabbedPane;
 import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
 
-import com.mirth.connect.client.ui.BrandingConstants;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.configuration2.ex.ConfigurationException;

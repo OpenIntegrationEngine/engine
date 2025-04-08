@@ -26,7 +26,7 @@ import java.util.regex.PatternSyntaxException;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.util.ByteArrayDataSource;
 
-import com.mirth.connect.client.ui.BrandingConstants;
+import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.fileupload.FileUploadBase;

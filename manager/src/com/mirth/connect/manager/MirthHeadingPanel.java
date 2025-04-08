@@ -18,7 +18,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import com.mirth.connect.client.ui.BrandingConstants;
 import net.miginfocom.swing.MigLayout;
 
 /**

@@ -36,7 +36,7 @@ import java.util.zip.ZipFile;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import com.mirth.connect.client.ui.BrandingConstants;
+import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;

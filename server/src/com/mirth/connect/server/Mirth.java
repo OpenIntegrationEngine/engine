@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.mirth.connect.client.ui.BrandingConstants;
+import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;

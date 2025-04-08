@@ -53,7 +53,7 @@ import javax.crypto.SecretKey;
 import javax.net.ssl.SSLSocketFactory;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import com.mirth.connect.client.ui.BrandingConstants;
+import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;

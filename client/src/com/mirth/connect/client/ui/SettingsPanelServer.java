@@ -393,11 +393,9 @@ public class SettingsPanelServer extends AbstractSettingsPanel {
     }
 
     public void setUpdateSettings(UpdateSettings updateSettings) {
-        if (updateSettings.getStatsEnabled() != null && !updateSettings.getStatsEnabled()) {
-            provideUsageStatsNoRadio.setSelected(true);
-        } else {
-            provideUsageStatsYesRadio.setSelected(true);
-        }
+        // TODO Re-implement statistics server. See https://github.com/OpenIntegrationEngine/engine/issues/25
+        provideUsageStatsNoRadio.setSelected(true);
+        provideUsageStatsYesRadio.setSelected(false);
     }
 
     /** Saves the current settings from the settings form */
@@ -712,11 +710,13 @@ public class SettingsPanelServer extends AbstractSettingsPanel {
         provideUsageStatsButtonGroup = new ButtonGroup();
 
         provideUsageStatsYesRadio = new MirthRadioButton("Yes");
+        provideUsageStatsYesRadio.setEnabled(false);
         provideUsageStatsYesRadio.setBackground(getBackground());
         provideUsageStatsYesRadio.setToolTipText("<html>Toggles sending usage statistics to NextGen Healthcare.  These statistics <br>do not contain any PHI or channel/script implementations,<br> and help NextGen Healthcare determine which connectors or areas of<br>Mirth Connect are most widely used.</html>");
         provideUsageStatsButtonGroup.add(provideUsageStatsYesRadio);
 
         provideUsageStatsNoRadio = new MirthRadioButton("No");
+        provideUsageStatsNoRadio.setEnabled(false);
         provideUsageStatsNoRadio.setBackground(getBackground());
         provideUsageStatsNoRadio.setToolTipText("<html>Toggles sending usage statistics to NextGen Healthcare.  These statistics <br>do not contain any PHI or channel/script implementations,<br> and help NextGen Healthcare determine which connectors or areas of<br>Mirth Connect are most widely used.</html>");
         provideUsageStatsButtonGroup.add(provideUsageStatsNoRadio);

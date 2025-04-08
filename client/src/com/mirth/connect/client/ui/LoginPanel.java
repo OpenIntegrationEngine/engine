@@ -580,7 +580,8 @@ public class LoginPanel extends javax.swing.JFrame {
                     userPreferences = client.getUserPreferences(currentUser.getId(), preferenceNames);
 
                     // Display registration dialog if it's the user's first time logging in
-                    String firstlogin = userPreferences.getProperty("firstlogin");
+                    // TODO Re-implement a statistics service. See https://github.com/OpenIntegrationEngine/engine/issues/25
+                    String firstlogin = "false"; // userPreferences.getProperty("firstlogin");
                     if (firstlogin == null || BooleanUtils.toBoolean(firstlogin)) {
                     	if (Integer.valueOf(currentUser.getId()) == 1) {
                         	// if current user is user 1:
@@ -637,7 +638,8 @@ public class LoginPanel extends javax.swing.JFrame {
                     PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e);
                 }
 
-                PlatformUI.MIRTH_FRAME.sendUsageStatistics();
+                // TODO Re-implement statistics server. See https://github.com/OpenIntegrationEngine/engine/issues/25
+//                PlatformUI.MIRTH_FRAME.sendUsageStatistics();
                 
                 return true;
             }

@@ -3,6 +3,7 @@
 [![Website](https://img.shields.io/badge/website-openintegration.org-blue)](https://openintegration.org)
 [![Discord](https://img.shields.io/discord/1358522097667936328?label=Join%20our%20Discord&logo=discord&style=flat)](https://discord.gg/rMg5RS9SZa)
 [![Docker](https://img.shields.io/badge/docker-openintegrationengine-blue?logo=docker&style=flat)](https://hub.docker.com/u/openintegrationengine)
+[![LinkedIn](https://img.shields.io/badge/linkedin-follow-blue?logo=linkedin&style=flat)](https://www.linkedin.com/company/open-integration-engine)
 
 ---
 ## Table of Contents
@@ -87,6 +88,7 @@ Engage with the community and project through:
 - 📥 **Releases**: [Latest Releases](https://github.com/OpenIntegrationEngine/engine/releases)  
 - 🗳️ **Governance**: [Governance Docs](https://github.com/OpenIntegrationEngine/governance)  
 - 🐳 **Docker Hub**: [OpenIntegrationEngine on Docker Hub](https://hub.docker.com/u/openintegrationengine)
+- 🔗 **LinkedIn**: [Follow us on LinkedIn](https://www.linkedin.com/company/open-integration-engine)
 
 Governance is structured to be transparent and inclusive, with decisions made collectively to reflect the community’s best interests.
 

@@ -181,15 +181,18 @@ public class SettingsPanelAdministrator extends AbstractSettingsPanel {
 
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 
-            private String checkForNotifications = null;
+            private String checkForNotifications = "false";
             private Color backgroundColor = null;
 
             public Void doInBackground() {
+                // TODO Re-implement a notifications service. See https://github.com/OpenIntegrationEngine/engine/issues/24
+                /*
                 try {
                     checkForNotifications = getFrame().mirthClient.getUserPreference(currentUser.getId(), "checkForNotifications");
                 } catch (ClientException e) {
                     getFrame().alertThrowable(getFrame(), e);
                 }
+                 */
 
                 try {
                     String backgroundColorStr = getFrame().mirthClient.getUserPreference(currentUser.getId(), UIConstants.USER_PREF_KEY_BACKGROUND_COLOR);
@@ -596,11 +599,13 @@ public class SettingsPanelAdministrator extends AbstractSettingsPanel {
         notificationButtonGroup = new ButtonGroup();
 
         checkForNotificationsYesRadio = new MirthRadioButton("Yes");
+        checkForNotificationsYesRadio.setEnabled(false);
         checkForNotificationsYesRadio.setBackground(userSettingsPanel.getBackground());
         checkForNotificationsYesRadio.setToolTipText("<html>Checks for notifications from NextGen Healthcare (announcements, available updates, etc.)<br/>relevant to this version of Mirth Connect whenever user logs in.</html>");
         notificationButtonGroup.add(checkForNotificationsYesRadio);
 
         checkForNotificationsNoRadio = new MirthRadioButton("No");
+        checkForNotificationsNoRadio.setEnabled(false);
         checkForNotificationsNoRadio.setBackground(userSettingsPanel.getBackground());
         checkForNotificationsNoRadio.setToolTipText("<html>Checks for notifications from NextGen Healthcare (announcements, available updates, etc.)<br/>relevant to this version of Mirth Connect whenever user logs in.</html>");
         notificationButtonGroup.add(checkForNotificationsNoRadio);

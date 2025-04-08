@@ -613,7 +613,8 @@ public class LoginPanel extends javax.swing.JFrame {
                     }
 
                     // Check for new notifications from update server if enabled
-                    String checkForNotifications = userPreferences.getProperty("checkForNotifications");
+                    // TODO Re-implement a notifications service. See https://github.com/OpenIntegrationEngine/engine/issues/24
+                    String checkForNotifications = "false"; // userPreferences.getProperty("checkForNotifications");
                     if (checkForNotifications == null || BooleanUtils.toBoolean(checkForNotifications)) {
                         Set<Integer> archivedNotifications = new HashSet<Integer>();
                         String archivedNotificationString = userPreferences.getProperty("archivedNotifications");

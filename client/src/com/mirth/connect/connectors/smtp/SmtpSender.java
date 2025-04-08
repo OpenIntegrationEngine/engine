@@ -28,7 +28,14 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
-import com.mirth.connect.client.ui.*;
+import com.mirth.connect.client.ui.BrandingConstants;
+import com.mirth.connect.client.ui.CharsetEncodingInformation;
+import com.mirth.connect.client.ui.ConnectorTypeDecoration;
+import com.mirth.connect.client.ui.Frame;
+import com.mirth.connect.client.ui.Mirth;
+import com.mirth.connect.client.ui.PlatformUI;
+import com.mirth.connect.client.ui.TextFieldCellEditor;
+import com.mirth.connect.client.ui.UIConstants;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.StringUtils;

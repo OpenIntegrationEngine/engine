@@ -437,7 +437,7 @@ public class ManagerDialog extends JDialog {
     }
 
     private void mirthSupportLinkMouseClicked(MouseEvent evt) {
-        BareBonesBrowserLaunch.openURL("https://www.nextgen.com/contact-us");
+        BareBonesBrowserLaunch.openURL(BrandingConstants.CONTACT_URL);
     }
 
     private void startupActionPerformed(ActionEvent evt) {

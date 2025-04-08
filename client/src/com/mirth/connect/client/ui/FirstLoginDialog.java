@@ -166,7 +166,7 @@ public class FirstLoginDialog extends javax.swing.JDialog implements UserDialogI
         userConsentCheckBox.setToolTipText("<html></html>"); 
 
         contentTextPane.setContentType("text/html");
-        contentTextPane.setText("<html>&nbsp;&nbsp;&nbsp;&nbsp;For more information on the processing of your personal data, click <a href=\"https://www.nextgen.com/privacy-policy\">here to find our Privacy Policy.</a></html>");   
+        contentTextPane.setText(String.format("<html>&nbsp;&nbsp;&nbsp;&nbsp;For more information on the processing of your personal data, click <a href=\"%s\">here to find our Privacy Policy.</a></html>", BrandingConstants.PRIVACY_URL));
         
         MutableAttributeSet set = new SimpleAttributeSet();
         StyleConstants.setLineSpacing(set, 1);

@@ -2077,7 +2077,7 @@ public class Frame extends JXFrame {
     // --- All bound actions are beneath this point --- //
     // ////////////////////////////////////////////////////////////
     public void goToMirth() {
-        BareBonesBrowserLaunch.openURL("https://www.nextgen.com/products-and-services/integration-engine");
+        BareBonesBrowserLaunch.openURL(BrandingConstants.HOMEPAGE_URL);
     }
 
     public void goToUserAPI() {

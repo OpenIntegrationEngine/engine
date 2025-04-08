@@ -31,4 +31,6 @@ public class BrandingConstants {
     public static final String PRIVACY_URL = "https://github.com/openintegrationengine";
     public static final String PRIVACY_TOOLTIP = "Privacy Information";
 
+    // The URL that is opened when clicking "Visit + PRODUCT_NAME" button in Administrator
+    public static final String HOMEPAGE_URL = "https://openintegrationengine.org/";
 }

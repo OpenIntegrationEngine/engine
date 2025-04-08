@@ -82,7 +82,7 @@ The **Open Integration Engine Project** is an open-source initiative committed t
 Engage with the community and project through:
 
 - 🌐 **Website**: [openintegration.org](https://openintegration.org)  
-- 💬 **Discord**: [Join our server](https://discord.gg/rMg5RS9SZa)  
+- 💬 **Discord**: [Join our server](https://discord.gg/azdehW2Zrx)  
 - 📂 **GitHub Repo**: [github.com/OpenIntegrationEngine/engine](https://github.com/OpenIntegrationEngine/engine)  
 - 📥 **Releases**: [Latest Releases](https://github.com/OpenIntegrationEngine/engine/releases)  
 - 🗳️ **Governance**: [Governance Docs](https://github.com/OpenIntegrationEngine/governance)  

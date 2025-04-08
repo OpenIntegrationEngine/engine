@@ -424,7 +424,7 @@ public class ServerConnection implements Connector {
         HttpRequestBase requestBase = getRequestBase(executeType, request.getMethod());
         requestBase.setURI(request.getUri());
 
-        requestBase.addHeader("X-Requested-With", "nextgen-connect-client");
+        requestBase.addHeader("X-Requested-With", BrandingConstants.CLIENT_CONNECTION_HEADER);
 
         for (Entry<String, List<String>> entry : request.getStringHeaders().entrySet()) {
             for (String value : entry.getValue()) {

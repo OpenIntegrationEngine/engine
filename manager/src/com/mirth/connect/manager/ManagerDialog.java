@@ -305,9 +305,9 @@ public class ManagerDialog extends JDialog {
         javaVersionLabel = new JLabel("Java Version:");
         javaVersionField = new JLabel("javaVersion");
 
-        contactPrefixLabel = new JLabel("Need Help?  Contact");
-        mirthSupportLink = new JLabel("<html><font color=blue><u>NextGen Healthcare</u></font></html>");
-        mirthSupportLink.setToolTipText("Visit NextGen Healthcare's website.");
+        contactPrefixLabel = new JLabel("Need Help? Contact");
+        mirthSupportLink = new JLabel(String.format("<html><font color=blue><u>%s</u></font></html>", BrandingConstants.PRODUCT_NAME));
+        mirthSupportLink.setToolTipText(String.format("Visit %s's website.", BrandingConstants.PRODUCT_NAME));
         mirthSupportLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
         mirthSupportLink.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {

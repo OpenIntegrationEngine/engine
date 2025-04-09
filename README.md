@@ -1,6 +1,6 @@
 # Open Integration Engine
 
-[![Website](https://img.shields.io/badge/website-openintegration.org-blue)](https://openintegration.org)
+[![Website](https://img.shields.io/badge/website-openintegrationengine.org-blue)](https://openintegrationengine.org)
 [![Discord](https://img.shields.io/discord/943670759891554316?label=Join%20our%20Discord&logo=discord&style=flat)](https://discord.gg/azdehW2Zrx)
 [![Docker](https://img.shields.io/badge/docker-openintegrationengine-blue?logo=docker&style=flat)](https://hub.docker.com/u/openintegrationengine)
 [![LinkedIn](https://img.shields.io/badge/linkedin-follow-blue?logo=linkedin&style=flat)](https://www.linkedin.com/company/open-integration-engine)
@@ -82,7 +82,7 @@ The **Open Integration Engine Project** is an open-source initiative committed t
 
 Engage with the community and project through:
 
-- 🌐 **Website**: [openintegration.org](https://openintegration.org)  
+- 🌐 **Website**: [openintegrationengine.org](https://openintegrationengine.org)  
 - 💬 **Discord**: [Join our server](https://discord.gg/azdehW2Zrx)  
 - 📂 **GitHub Repo**: [github.com/OpenIntegrationEngine/engine](https://github.com/OpenIntegrationEngine/engine)  
 - 📥 **Releases**: [Latest Releases](https://github.com/OpenIntegrationEngine/engine/releases)  

@@ -197,4 +197,24 @@
 	<target name="build-custom" depends="init">
 		<ant antfile="custom-extensions.xml" target="build" />
 	</target>
+
+	<property name="izpack-dist" value="${user.home}/IzPack"/>
+	<property name="izpack-installer" value="setup.jar"/>
+
+	<path id="lib.path">
+		<fileset dir="${izpack-dist}/lib" includes="*.jar"/>
+	</path>
+
+	<taskdef name="izpack" classname="com.izforge.izpack.ant.IzPackTask" classpathref="lib.path"/>
+
+	<target name="create-installer" depends="init">
+		<mkdir dir="${dist}" />
+		<izpack input="${server}/installer-conf/installer.xml"
+				output="${dist}/openintegrationengine-installer-${version}.jar"
+				installerType="standard"
+				basedir="${server}"
+				izPackDir="${izpack-dist}"
+				inheritall="true"/>
+	</target>
+
 </project>

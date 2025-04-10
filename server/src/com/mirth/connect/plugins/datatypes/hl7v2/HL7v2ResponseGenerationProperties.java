@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.lang3.StringUtils;
 
 import com.mirth.connect.donkey.util.DonkeyElement;
@@ -60,7 +61,7 @@ public class HL7v2ResponseGenerationProperties extends ResponseGenerationPropert
         properties.put("errorACKMessage", new DataTypePropertyDescriptor(errorACKMessage, "Error ACK Message", "The ACK message to respond with when an error occurs during message processing. This option has no effect unless an \"Auto-generate\" item has been selected in the response settings.", PropertyEditorType.STRING));
         properties.put("rejectedACKCode", new DataTypePropertyDescriptor(rejectedACKCode, "Rejected ACK Code", "The ACK code to respond with when the message is filtered. This option has no effect unless an \"Auto-generate\" item has been selected in the response settings.", PropertyEditorType.STRING));
         properties.put("rejectedACKMessage", new DataTypePropertyDescriptor(rejectedACKMessage, "Rejected ACK Message", "The ACK message to respond with when the message is filtered. This option has no effect unless an \"Auto-generate\" item has been selected in the response settings.", PropertyEditorType.STRING));
-        properties.put("msh15ACKAccept", new DataTypePropertyDescriptor(msh15ACKAccept, "MSH-15 ACK Accept", "This setting determines if Mirth Connect should check the MSH-15 field of an incoming message to control the acknowledgment conditions. The MSH-15 field specifies if a message should be always acknowledged, never acknowledged, or only acknowledged on error. This option has no effect unless an \"Auto-generate\" item has been selected in the response settings.", PropertyEditorType.BOOLEAN));
+        properties.put("msh15ACKAccept", new DataTypePropertyDescriptor(msh15ACKAccept, "MSH-15 ACK Accept", String.format("This setting determines if %s should check the MSH-15 field of an incoming message to control the acknowledgment conditions. The MSH-15 field specifies if a message should be always acknowledged, never acknowledged, or only acknowledged on error. This option has no effect unless an \"Auto-generate\" item has been selected in the response settings.", BrandingConstants.PRODUCT_NAME), PropertyEditorType.BOOLEAN));
         properties.put("dateFormat", new DataTypePropertyDescriptor(dateFormat, "Date Format", "This setting determines the date format used for the timestamp in the generated ACK. The default value is \"yyyyMMddHHmmss.SSS\".", PropertyEditorType.STRING));
 
         return properties;

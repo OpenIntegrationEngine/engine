@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
+import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -85,7 +86,7 @@ public class SystemServlet extends MirthServlet implements SystemServletInterfac
             // Windows systems have multiple roots, like "A:" and "C:".
             if (StringUtils.containsIgnoreCase(System.getProperty("os.name"), "Windows")) {
                 try {
-                    // Attempt to get the correct root from the Mirth Connect base directory
+                    // Attempt to get the correct root from the OIE base directory
                     File baseDir = new File(configurationController.getBaseDir());
                     // Split on the file separator
                     String[] path = StringUtils.split(baseDir.getCanonicalPath(), File.separatorChar);
@@ -111,7 +112,7 @@ public class SystemServlet extends MirthServlet implements SystemServletInterfac
 
                     root = pathRoot;
                 } catch (Exception e) {
-                    logger.warn("Unable to infer filesystem root from Mirth Connect base directory, defaulting to: " + root, e);
+                    logger.warn("Unable to infer filesystem root from {} base directory, defaulting to: {}", BrandingConstants.PRODUCT_NAME, root, e);
                 }
             }
 

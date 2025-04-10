@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -130,7 +131,7 @@ public class Mirth extends Thread {
         initializeLogging();
 
         if (initResources()) {
-            logger.debug("starting Mirth Connect server...");
+            logger.debug("starting {} server...", BrandingConstants.PRODUCT_NAME);
 
             // Initialize TLS system properties as early as possible, because otherwise they will be cached
             if (System.getProperty("jdk.tls.ephemeralDHKeySize") == null) {
@@ -400,8 +401,9 @@ public class Mirth extends Thread {
         printSplashScreen();
 
         // schedule usage statistics to be sent at startup and every 24 hours
-        Timer timer = new Timer();
-        timer.schedule(new UsageSenderTask(), 0, ConnectServiceUtil.MILLIS_PER_DAY);
+        // TODO Re-implement statistics server. See https://github.com/OpenIntegrationEngine/engine/issues/25
+//        Timer timer = new Timer();
+//        timer.schedule(new UsageSenderTask(), 0, ConnectServiceUtil.MILLIS_PER_DAY);
     }
 
     /**
@@ -539,9 +541,23 @@ public class Mirth extends Thread {
      * system console.
      */
     private void printSplashScreen() {
-        logger.info("Mirth Connect " + versionProperties.getString("mirth.version") + " (Built on " + versionProperties.getString("mirth.date") + ") server successfully started.");
+        logger.info(
+            "{} {} (Built on {}) server successfully started.",
+            BrandingConstants.PRODUCT_NAME,
+            versionProperties.getString("mirth.version"),
+            versionProperties.getString("mirth.date")
+        );
         logger.info("This product was developed by NextGen Healthcare (https://www.nextgen.com) and its contributors (c)2005-2024.");
-        logger.info("Running " + System.getProperty("java.vm.name") + " " + System.getProperty("java.version") + " on " + System.getProperty("os.name") + " (" + System.getProperty("os.version") + ", " + System.getProperty("os.arch") + "), " + configurationController.getDatabaseType() + ", with charset " + Charset.defaultCharset() + ".");
+        logger.info(
+            "Running {} {} on {} ({}, {}), {}, with charset {}.",
+            System.getProperty("java.vm.name"),
+            System.getProperty("java.version"),
+            System.getProperty("os.name"),
+            System.getProperty("os.version"),
+            System.getProperty("os.arch"),
+            configurationController.getDatabaseType(),
+            Charset.defaultCharset()
+        );
 
         if (webServer != null) {
             String httpUrl = null;

@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 public class WindowsServiceController implements ServiceController {
 
     private final String WINDOWS_PATH_SERVER_MANAGER_EXE = "mcmanager.exe";
-    private final String WINDOWS_SERVICE_NAME = "Mirth Connect Service";
+    private final String WINDOWS_SERVICE_NAME = String.format("%s Service", BrandingConstants.PRODUCT_NAME);
     private final String WINDOWS_CMD_START = "net start \"";
     private final String WINDOWS_CMD_STOP = "net stop \"";
     private final String WINDOWS_CMD_STATUS = "net continue \"";
@@ -24,9 +24,9 @@ public class WindowsServiceController implements ServiceController {
     private final int WINDOWS_STATUS_STOPPED = 2184;
     private final String WINDOWS_STATUS_CHANGING = "2189";
     private final String WINDOWS_CMD_QUERY_REGEX = "NET HELPMSG ([0-9]{4})";
-    private final String WINDOWS_CMD_REG_QUERY = "REG QUERY HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run /v \"Mirth Connect Server Manager\"";
-    private final String WINDOWS_CMD_REG_DELETE = "REG DELETE HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run /f /v \"Mirth Connect Server Manager\"";
-    private final String WINDOWS_CMD_REG_ADD = "REG ADD HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run /f /v \"Mirth Connect Server Manager\" /d ";
+    private final String WINDOWS_CMD_REG_QUERY = String.format("REG QUERY HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run /v \"%s Server Manager\"", BrandingConstants.PRODUCT_NAME);
+    private final String WINDOWS_CMD_REG_DELETE = String.format("REG DELETE HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run /f /v \"%s Server Manager\"", BrandingConstants.PRODUCT_NAME);
+    private final String WINDOWS_CMD_REG_ADD = String.format("REG ADD HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run /f /v \"%s Server Manager\" /d ", BrandingConstants.PRODUCT_NAME);
 
     @Override
     public int checkService() {

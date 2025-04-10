@@ -9,6 +9,7 @@
 
 package com.mirth.connect.server.servlets;
 
+import com.mirth.connect.client.core.BrandingConstants;
 import io.swagger.v3.jaxrs2.integration.ServletOpenApiContextBuilder;
 import io.swagger.v3.oas.integration.OpenApiConfigurationException;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;
@@ -60,8 +61,8 @@ public class SwaggerServlet extends HttpServlet {
 		servers.add(new Server().url(basePath));
 		oas.servers(servers);
 		
-		Info info = new Info().title("NextGen Connect Client API")
-				.description("Swagger documentation for the NextGen Connect Client API.")
+		Info info = new Info().title(String.format("%s Client API", BrandingConstants.PRODUCT_NAME))
+				.description(String.format("Swagger documentation for the %s Client API.", BrandingConstants.PRODUCT_NAME))
 				.version(apiVersion.toString());
 
 		oas.info(info);

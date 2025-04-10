@@ -23,6 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -44,7 +45,7 @@ import com.mirth.connect.server.util.ServerSMTPConnectionFactory;
 import com.mirth.connect.server.util.TemplateValueReplacer;
 
 public abstract class AlertWorker extends EventListener implements AlertActionAcceptor {
-    private static final String DEFAULT_SUBJECT = "Mirth Connect Alert";
+    private static final String DEFAULT_SUBJECT = String.format("%s Alert", BrandingConstants.PRODUCT_NAME);
 
     protected Logger logger = LogManager.getLogger(this.getClass());
     protected ExecutorService actionExecutor = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());

@@ -22,17 +22,12 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import com.mirth.connect.client.ui.*;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
-import com.mirth.connect.client.ui.AbstractConnectorPropertiesPanel;
-import com.mirth.connect.client.ui.CharsetEncodingInformation;
-import com.mirth.connect.client.ui.Frame;
-import com.mirth.connect.client.ui.LoadedExtensions;
-import com.mirth.connect.client.ui.PlatformUI;
-import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthComboBox;
 import com.mirth.connect.client.ui.components.MirthFieldConstraints;
 import com.mirth.connect.client.ui.components.MirthRadioButton;
@@ -512,7 +507,7 @@ public class TcpListener extends ConnectorSettingsPanel implements ActionListene
         dataTypeBinaryRadio.setToolTipText(toolTipText);
         dataTypeTextRadio.setToolTipText(toolTipText);
 
-        charsetEncodingComboBox.setToolTipText("<html>Select the character set encoding used by the message sender,<br/>or Select Default to use the default character set encoding for the JVM running Mirth Connect.</html>");
+        charsetEncodingComboBox.setToolTipText(String.format("<html>Select the character set encoding used by the message sender,<br/>or Select Default to use the default character set encoding for the JVM running %s.</html>", BrandingConstants.PRODUCT_NAME));
 
         toolTipText = "<html>Select No to send responses only via the same connection the inbound message was received on.<br/>Select Yes to always send responses on a new connection (during normal processing as well as recovery).<br/>Select Message Recovery to only send responses on a new connection during message recovery.<br/>Connections will be bound locally on the same interface chosen in the Listener Settings with an ephemeral port.</html>";
         respondOnNewConnectionYesRadio.setToolTipText(toolTipText);

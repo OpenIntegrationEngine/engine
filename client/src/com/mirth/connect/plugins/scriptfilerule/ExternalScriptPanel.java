@@ -14,6 +14,7 @@ import java.awt.event.ActionListener;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
+import com.mirth.connect.client.ui.BrandingConstants;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.StringUtils;
@@ -73,7 +74,7 @@ public class ExternalScriptPanel extends EditorPanel<Rule> {
     private void initComponents() {
         setBackground(UIConstants.BACKGROUND_COLOR);
 
-        infoLabel = new JLabel("Enter the path of an external JavaScript file accessible from the Mirth Connect server.");
+        infoLabel = new JLabel(String.format("Enter the path of an external JavaScript file accessible from the %s server.", BrandingConstants.PRODUCT_NAME));
 
         pathLabel = new JLabel("Script Path:");
         pathField = new JTextField();

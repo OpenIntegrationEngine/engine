@@ -173,7 +173,7 @@ public class ManagerController {
 
             public void done() {
                 if (errorMessage == null) {
-                    PlatformUI.MANAGER_TRAY.alertInfo("The Mirth Connect Service was started successfully.");
+                    PlatformUI.MANAGER_TRAY.alertInfo(String.format("The %s Service was started successfully.", BrandingConstants.PRODUCT_NAME));
                 } else {
                     PlatformUI.MANAGER_TRAY.alertError(errorMessage);
                 }
@@ -215,7 +215,7 @@ public class ManagerController {
             updating = true;
 
             if (!serviceController.startService()) {
-                errorMessage = "The Mirth Connect Service could not be started.  Please verify that it is installed and not already started.";
+                errorMessage = String.format("The %s Service could not be started. Please verify that it is installed and not already started.", BrandingConstants.PRODUCT_NAME);
             } else {
                 String contextPath = getContextPath();
 
@@ -240,13 +240,13 @@ public class ManagerController {
                 }
 
                 if (!started) {
-                    errorMessage = "The Mirth Connect Service could not be started.";
+                    errorMessage = String.format("The %s Service could not be started.", BrandingConstants.PRODUCT_NAME);
                 }
             }
         } catch (Throwable t) { // Need to catch Throwable in case Client fails
             // internally
             t.printStackTrace();
-            errorMessage = "The Mirth Connect Service could not be started.";
+            errorMessage = String.format("The %s Service could not be started.", BrandingConstants.PRODUCT_NAME);
         } finally {
             if (client != null) {
                 client.close();
@@ -271,7 +271,7 @@ public class ManagerController {
 
             public void done() {
                 if (errorMessage == null) {
-                    PlatformUI.MANAGER_TRAY.alertInfo("The Mirth Connect Service was stopped successfully.");
+                    PlatformUI.MANAGER_TRAY.alertInfo(String.format("The %s Service was stopped successfully.", BrandingConstants.PRODUCT_NAME));
                 } else {
                     PlatformUI.MANAGER_TRAY.alertError(errorMessage);
                 }
@@ -289,11 +289,11 @@ public class ManagerController {
         try {
             updating = true;
             if (!serviceController.stopService()) {
-                errorMessage = "The Mirth Connect Service could not be stopped.  Please verify that it is installed and started.";
+                errorMessage = String.format("The %s Service could not be stopped. Please verify that it is installed and started.", BrandingConstants.PRODUCT_NAME);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            errorMessage = "The Mirth Connect Service could not be stopped.  Please verify that it is installed and started.";
+            errorMessage = String.format("The %s Service could not be stopped. Please verify that it is installed and started.", BrandingConstants.PRODUCT_NAME);
         }
 
         updating = false;
@@ -314,7 +314,7 @@ public class ManagerController {
 
             public void done() {
                 if (errorMessage == null) {
-                    PlatformUI.MANAGER_TRAY.alertInfo("The Mirth Connect Service was restarted successfully.");
+                    PlatformUI.MANAGER_TRAY.alertInfo(String.format("The %s Service was restarted successfully.", BrandingConstants.PRODUCT_NAME));
                 } else {
                     PlatformUI.MANAGER_TRAY.alertError(errorMessage);
                 }
@@ -377,7 +377,7 @@ public class ManagerController {
         }
 
         if (!success) {
-            PlatformUI.MANAGER_TRAY.alertError("The Mirth Connect Administator could not be launched.");
+            PlatformUI.MANAGER_TRAY.alertError(String.format("The %s Administator could not be launched.", BrandingConstants.PRODUCT_NAME));
         }
     }
 

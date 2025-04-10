@@ -49,6 +49,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 
+import com.mirth.connect.client.ui.*;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.ObjectUtils;
@@ -57,14 +58,6 @@ import org.apache.http.entity.ContentType;
 import org.jdesktop.swingx.decorator.Highlighter;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
 
-import com.mirth.connect.client.ui.ConnectorTypeDecoration;
-import com.mirth.connect.client.ui.Frame;
-import com.mirth.connect.client.ui.Mirth;
-import com.mirth.connect.client.ui.MirthDialog;
-import com.mirth.connect.client.ui.PlatformUI;
-import com.mirth.connect.client.ui.RefreshTableModel;
-import com.mirth.connect.client.ui.TextFieldCellEditor;
-import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.client.ui.components.MirthCheckBox;
 import com.mirth.connect.client.ui.components.MirthComboBox;
 import com.mirth.connect.client.ui.components.MirthComboBoxTableCellEditor;
@@ -1038,7 +1031,7 @@ public class HttpListener extends ConnectorSettingsPanel {
     protected void initToolTips() {
         messageContentPlainBodyRadio.setToolTipText("<html>If selected, the request body will be sent to the channel as a raw string.</html>");
         responseContentTypeField.setToolTipText("The MIME type to be used for the response.");
-        charsetEncodingCombobox.setToolTipText("<html>Select the character set encoding to be used for the response to the sending system.<br>Set to Default to assume the default character set encoding for the JVM running Mirth Connect.</html>");
+        charsetEncodingCombobox.setToolTipText(String.format("<html>Select the character set encoding to be used for the response to the sending system.<br>Set to Default to assume the default character set encoding for the JVM running %s.</html>", BrandingConstants.PRODUCT_NAME));
         contextPathField.setToolTipText("The context path for the HTTP Listener URL.");
         receiveTimeoutField.setToolTipText("Enter the maximum idle time in milliseconds for a connection.");
         httpUrlField.setToolTipText("<html>Displays the generated HTTP URL for the HTTP Listener.</html>");

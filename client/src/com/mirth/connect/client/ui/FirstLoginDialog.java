@@ -144,7 +144,7 @@ public class FirstLoginDialog extends javax.swing.JDialog implements UserDialogI
 
         jTextPane1.setEditable(false);
         jTextPane1.setBackground(new java.awt.Color(250, 250, 210));
-        jTextPane1.setText("You may now customize your Mirth Connect user account information. You also have the option of changing your account password.");
+        jTextPane1.setText(String.format("You may now customize your %s user account information. You also have the option of changing your account password.", BrandingConstants.PRODUCT_NAME));
         jTextPane1.setAutoscrolls(false);
         jTextPane1.setDisabledTextColor(new java.awt.Color(0, 0, 0));
         jTextPane1.setEnabled(false);
@@ -166,7 +166,7 @@ public class FirstLoginDialog extends javax.swing.JDialog implements UserDialogI
         userConsentCheckBox.setToolTipText("<html></html>"); 
 
         contentTextPane.setContentType("text/html");
-        contentTextPane.setText("<html>&nbsp;&nbsp;&nbsp;&nbsp;For more information on the processing of your personal data, click <a href=\"https://www.nextgen.com/privacy-policy\">here to find our Privacy Policy.</a></html>");   
+        contentTextPane.setText(String.format("<html>&nbsp;&nbsp;&nbsp;&nbsp;For more information on the processing of your personal data, click <a href=\"%s\">here to find our Privacy Policy.</a></html>", BrandingConstants.PRIVACY_URL));
         
         MutableAttributeSet set = new SimpleAttributeSet();
         StyleConstants.setLineSpacing(set, 1);

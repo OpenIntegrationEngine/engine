@@ -9,6 +9,8 @@
 
 package com.mirth.connect.plugins.pdfviewer;
 
+import com.mirth.connect.client.ui.BrandingConstants;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -18,7 +20,7 @@ import javax.swing.ImageIcon;
 
 public class MirthPDFViewer extends com.sun.pdfview.PDFViewer {
 
-    public final static String TITLE = "Mirth Connect PDF Viewer";
+    public final static String TITLE = String.format("%s PDF Viewer", BrandingConstants.PRODUCT_NAME);
     private File tempFile;
 
     /**

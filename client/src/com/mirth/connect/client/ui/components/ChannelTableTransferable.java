@@ -18,12 +18,13 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import com.mirth.connect.client.ui.BrandingConstants;
 import com.mirth.connect.model.Channel;
 import com.mirth.connect.model.ChannelGroup;
 
 public class ChannelTableTransferable implements Transferable {
 
-    public static final DataFlavor CHANNEL_DATA_FLAVOR = new DataFlavor(List.class, "Mirth Connect Channel");
+    public static final DataFlavor CHANNEL_DATA_FLAVOR = new DataFlavor(List.class, String.format("%s Channel", BrandingConstants.PRODUCT_NAME));
 
     private static final DataFlavor[] flavors = { DataFlavor.stringFlavor,
             DataFlavor.plainTextFlavor, CHANNEL_DATA_FLAVOR };

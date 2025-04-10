@@ -22,6 +22,7 @@ import javax.swing.ButtonGroup;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
+import com.mirth.connect.client.ui.BrandingConstants;
 import net.miginfocom.swing.MigLayout;
 
 import com.mirth.connect.client.ui.ConnectorTypeDecoration;
@@ -204,7 +205,7 @@ public class WebServiceListener extends ConnectorSettingsPanel {
         classNameButtonGroup.add(classNameCustomRadio);
 
         classNameField = new MirthTextField();
-        classNameField.setToolTipText("<html>The fully qualified class name of the web service that should be hosted.<br>If this is a custom class, it should be added in a custom jar so it is loaded with Mirth Connect.</html>");
+        classNameField.setToolTipText(String.format("<html>The fully qualified class name of the web service that should be hosted.<br>If this is a custom class, it should be added in a custom jar so it is loaded with %s.</html>", BrandingConstants.PRODUCT_NAME));
     }
 
     private void initLayout() {

@@ -55,7 +55,7 @@ public class AboutMirth extends MirthDialog {
         StringBuilder content = new StringBuilder();
 
         if (PlatformUI.SERVER_VERSION != null) {
-            content.append("Mirth Connect Server " + PlatformUI.SERVER_VERSION + "\n\n");
+            content.append(String.format("%s Server %s\n\n", BrandingConstants.PRODUCT_NAME, PlatformUI.SERVER_VERSION));
         }
 
         if (PlatformUI.BUILD_DATE != null) {
@@ -116,7 +116,7 @@ public class AboutMirth extends MirthDialog {
 
         jLabel2.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel2.setText("About Mirth Connect");
+        jLabel2.setText(String.format("About %s", BrandingConstants.PRODUCT_NAME));
 
         javax.swing.GroupLayout mirthHeadingPanel1Layout = new javax.swing.GroupLayout(mirthHeadingPanel1);
         mirthHeadingPanel1.setLayout(mirthHeadingPanel1Layout);

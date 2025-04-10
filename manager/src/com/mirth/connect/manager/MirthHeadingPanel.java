@@ -42,7 +42,7 @@ public class MirthHeadingPanel extends JPanel {
         JLabel headingLabel = new JLabel();
         headingLabel.setFont(new Font("Tahoma", 1, 18)); // NOI18N
         headingLabel.setForeground(new Color(255, 255, 255));
-        headingLabel.setText("Mirth Connect Server Manager");
+        headingLabel.setText(String.format("%s Server Manager", BrandingConstants.PRODUCT_NAME));
 
         add(headingLabel);
     }

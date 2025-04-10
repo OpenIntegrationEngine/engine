@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
@@ -145,7 +146,7 @@ public class WebStartServlet extends HttpServlet {
 
         Element jnlpElement = document.getDocumentElement();
 
-        // Change the title to include the version of Mirth Connect
+        // Change the title to include the version
         PropertiesConfiguration versionProperties = PropertiesConfigurationUtil.create();
         
         InputStream versionPropsIs = null;
@@ -349,7 +350,7 @@ public class WebStartServlet extends HttpServlet {
         informationElement.appendChild(titleElement);
 
         Element vendorElement = document.createElement("vendor");
-        vendorElement.setTextContent("NextGen Healthcare");
+        vendorElement.setTextContent(BrandingConstants.PRODUCT_NAME);
         informationElement.appendChild(vendorElement);
 
         jnlpElement.appendChild(informationElement);

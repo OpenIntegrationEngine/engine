@@ -303,7 +303,7 @@ public class DataPrunerPanel extends AbstractSettingsPanel {
 
         /*
          * archiverOptions might be empty if the pruner settings were migrated from a previous
-         * version of Mirth Connect.
+         * version of OIE.
          */
         if (archiverOptions == null) {
             archiverPanel.setMessageWriterOptions(new MessageWriterOptions());
@@ -315,7 +315,7 @@ public class DataPrunerPanel extends AbstractSettingsPanel {
             archiverPanel.setArchiveEnabled(Boolean.parseBoolean(properties.getProperty("archiveEnabled", Boolean.FALSE.toString())));
         }
 
-        if (properties.getProperty("pruningBlockSize") != null && !properties.getProperty("pruningBlockSize").equals("")) {
+        if (properties.getProperty("pruningBlockSize") != null && !properties.getProperty("pruningBlockSize").isEmpty()) {
             blockSizeTextField.setText(properties.getProperty("pruningBlockSize"));
         } else {
             blockSizeTextField.setText("1000");

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<izpack:installation version="5.0" xmlns:izpack="http://izpack.org/schema/installation"
+                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                     xsi:schemaLocation="http://izpack.org/schema/installation http://izpack.org/schema/5.0/izpack-installation-5.0.xsd">
+    <info>
+        <appname>OpenIntegrationEngine</appname>
+        <appversion>4.5.2</appversion>
+        <url>https://openintegrationengine.org/</url>
+        <!--authors>
+            <author name="dev" email="dev@openintegrationengine.org/"/>
+        </authors-->
+        <uninstaller write="yes" name="uninstaller-oie.jar"/>
+        <readinstallationinformation>no</readinstallationinformation>
+        <pack-compression-format>gz</pack-compression-format>
+        <!-- if this needs to run in privileged mode see https://izpack.atlassian.net/wiki/spaces/IZPACK/pages/491662/Header+-+info -->
+        <!--run-privileged/-->
+    </info>
+    <properties>
+    </properties>
+    <locale>
+        <langpack iso3="eng"/>
+    </locale>
+
+    <!-- https://izpack.atlassian.net/wiki/spaces/IZPACK/pages/491730/GUI+Preferences -->
+    <guiprefs height="600" resizable="yes" width="800">
+        <!--splash>images/openintegrationengine.gif</splash>-->
+        <laf name="substance">
+            <os family="windows"/>
+            <os family="unix"/>
+            <param name="variant" value="mist-silver"/>
+        </laf>
+        <laf name="substance">
+            <os family="mac"/>
+            <param name="variant" value="mist-aqua"/>
+        </laf>
+        <modifier key="useHeadingPanel" value="yes"/>
+        <modifier key="headingImageOnLeft" value="yes"/>
+        <modifier key="headingFontSize" value="2.5"/>
+        <modifier key="headingBackgroundColor" value="0x00ffffff"/>
+        <!--modifier key="useSplashScreen" value="1000"/-->
+    </guiprefs>
+
+    <resources>
+        <res id="CustomLangPack.xml_eng" src="installer-conf/customLangPack_eng.xml" />
+        <res id="LicencePanel.licence" src="../LICENSE"/>
+        <res id="Heading.image" src="installer-conf/oie-installer-logo.png"/>
+        <!--res id="Splash.image" src="../oie-logo.png"/-->
+    </resources>
+    <panels>
+        <panel classname="HelloPanel" id="panel.hello"/>
+        <panel classname="LicencePanel" id="panel.license"/>
+        <panel classname="TargetPanel" id="panel.target">
+            <configuration>
+                <ShowCreateDirectoryMessage>false</ShowCreateDirectoryMessage>
+            </configuration>
+        </panel>
+        <panel classname="InstallPanel" id="panel.install"/>
+        <panel classname="FinishPanel" id="panel.finish"/>
+    </panels>
+    <packs>
+        <pack name="setup" required="true" hidden="false" preselected="true" uninstall="true">
+            <description>The setup files</description>
+            <fileset dir="setup" override="true"/>
+        </pack>
+    </packs>
+</izpack:installation>

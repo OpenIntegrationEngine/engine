@@ -1072,7 +1072,6 @@
 
 			<else>
 				<property file="${keystore_property_file}" />
-				<property name="signingTsa" value="http://timestamp.digicert.com" />
 
 				<echo message="[Thread Count: ${signjar_thread_count}] Signing jars for Java Web Start" />
 

@@ -1,11 +1,18 @@
 <project name="mirth-connect" basedir="." default="build">
 	<target name="init">
 		<property file="mirth-build.properties" />
+		<property file="keystore.properties" />
 		<property name="donkey.setup" value="${donkey}/setup" />
 		<property name="server.setup" value="${server}/setup" />
 		<property name="server.build" value="${server}/build" />
+
+		<path id="classpath">
+			<fileset dir="${basedir}/lib" includes="**/*.jar" />
+		</path>
+		<taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="classpath" />
 	</target>
-	
+
+
 	<!-- Donkey -->
 	<target name="build-donkey" depends="init">
 		<ant antfile="${donkey}/build.xml" dir="${donkey}" target="build" />
@@ -208,13 +215,70 @@
 	<taskdef name="izpack" classname="com.izforge.izpack.ant.IzPackTask" classpathref="lib.path"/>
 
 	<target name="create-installer" depends="init">
+		<if>
+			<not>
+				<available file="${server.setup}" type="dir"/>
+			</not>
+			<then>
+				<echo message="setup directory is not found, invoking build task"/>
+				<antcall target="build"/>
+			</then>
+		</if>
+
+		<echo message="creating installer"/>
 		<mkdir dir="${dist}" />
+		<property name="installer-jar" value="${dist}/openintegrationengine-installer-${version}.jar" />
 		<izpack input="${server}/installer-conf/installer.xml"
-				output="${dist}/openintegrationengine-installer-${version}.jar"
+				output="${installer-jar}"
 				installerType="standard"
 				basedir="${server}"
 				izPackDir="${izpack-dist}"
 				inheritall="true"/>
+
+		<if>
+			<equals arg1="${cert}" arg2="ca" />
+			<then>
+			<echo message="Signing installer jar with CA certificate" />
+				<sequential>
+					<retry retrycount="5" retrydelay="1000">
+						<signjar
+								jar="${installer-jar}"
+								alias="${key.alias}"
+								storepass="${key.storepass}"
+								storetype="${key.storetype}"
+								providerclass="${key.providerclass}"
+								providerarg="${key.providerarg}"
+								tsaurl="${signingTsa}"
+						>
+							<!-- http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7127374 -->
+							<sysproperty key="jsse.enableSNIExtension" value="false" />
+							<sysproperty key="https.protocols" value="TLSv1.2,TLSv1.1" />
+						</signjar>
+					</retry>
+				</sequential>
+			</then>
+			<else>
+				<echo message="Signing installer with self-signed certificate" />
+				<sequential>
+					<retry retrycount="5" retrydelay="1000">
+						<signjar
+								jar="${installer-jar}"
+								alias="${key.alias}"
+								keystore="${key.keystore}"
+								storepass="${key.storepass}"
+								keypass="${key.keypass}"
+								storetype="${key.storetype}"
+								tsaurl="${signingTsa}"
+								digestalg="SHA-256"
+						>
+							<!-- http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7127374 -->
+							<sysproperty key="jsse.enableSNIExtension" value="false" />
+							<sysproperty key="https.protocols" value="TLSv1.2,TLSv1.1" />
+						</signjar>
+					</retry>
+				</sequential>
+			</else>
+		</if>
 	</target>
 
 </project>

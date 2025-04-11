@@ -226,8 +226,8 @@
 		</if>
 
 		<echo message="creating installer"/>
-		<mkdir dir="${dist}" />
-		<property name="installer-jar" value="${dist}/openintegrationengine-installer-${version}.jar" />
+		<mkdir dir="${basedir}/dist" />
+		<property name="installer-jar" value="${basedir}/dist/openintegrationengine-installer-${version}.jar" />
 		<izpack input="${server}/installer-conf/installer.xml"
 				output="${installer-jar}"
 				installerType="standard"

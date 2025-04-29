@@ -1002,6 +1002,11 @@
 			<fileset dir="${docs}" />
 		</copy>
 
+		<!-- copy basedir files -->
+		<copy todir="${setup}">
+			<fileset dir="${basedir_includes}" />
+		</copy>
+
 		<!-- create the server jar -->
 		<jar destfile="${setup.server.lib}/${server.jar}" basedir="${classes}">
 			<include name="com/mirth/connect/server/**" />

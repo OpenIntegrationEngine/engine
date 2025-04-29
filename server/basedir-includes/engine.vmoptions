@@ -1,0 +1,10 @@
+# Lines begining with a # are ignored as comments.
+# Do not add customizations to this file.
+
+-include-options conf/base_includes.vmoptions
+
+# Comment out the following line if you are running on Java 8
+-include-options conf/default_modules.vmoptions
+
+# Put any custom options in the following file
+-include-options conf/custom.vmoptions

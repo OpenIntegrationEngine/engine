@@ -1,0 +1,8 @@
+#
+# Do not modify this file! It may get overwritten in an update. Please put all custom
+# options in custom.vmoptions
+#
+-server
+-Xmx256m
+-Djava.awt.headless=true
+-Dapple.awt.UIElement=true

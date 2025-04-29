@@ -1,0 +1,22 @@
+# Add any custom vmoptions to this file. Special directives are:
+#
+# -include-options <path to file>
+#     : include options from another .vmoptions file. Applied recursively.
+#
+# -classpath <path>
+#     : replace the classpath built so far with <path>
+#
+# -classpath/p <path>
+#     : prepend <path> to classpath.
+#
+# -classpath/a <path>
+#     : append <path> to classpath.
+#
+# -java-cmd <path to java command>
+#     : use the java binary specified to launch the engine.
+#
+# Additionally, the form ${ENV_VAR} can be used anywhere in the file to substitute the value
+# from an environment variable.
+#
+# Any lines which do not match the special directives above will be passed through directly as
+# arguments to the java binary.

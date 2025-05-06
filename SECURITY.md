@@ -8,4 +8,4 @@ We support the current minor version in regards to security updates. Versions ar
  
 If this is a critical vulnerability that you would like to contact us confidentially, email us here:
  
-mirthconnect-security@nextgen.com
+security@openintegrationengine.org

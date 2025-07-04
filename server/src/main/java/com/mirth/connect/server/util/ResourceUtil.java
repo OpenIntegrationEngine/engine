@@ -44,6 +44,13 @@ public class ResourceUtil {
         return is;
     }
 
+    /**
+     * Close a Closeable resource quietly. Trap and ignore any exceptions thrown when calling close()
+     *
+     * @deprecated import org.apache.commons.io.IOUtils does this and is already on the classpath. Further deprecated by try-with-resources since Java 7
+     * @param resource the Closeable object to try and close
+     */
+    @Deprecated
     public static void closeResourceQuietly(Closeable resource) {
         if (resource != null) {
             try {

@@ -2,3 +2,4 @@
 # Add key=value pairs of SDKs to use below
 java=8.0.442.fx-zulu
 ant=1.10.14
+leiningen=2.11.2

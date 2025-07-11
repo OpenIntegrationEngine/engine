@@ -1,4 +1,15 @@
 <project name="mirth-connect" basedir="." default="build">
+
+	<macrodef name="lein">
+		<attribute name="task" />
+		<attribute name="basedir" />
+		<sequential>
+			<exec executable="lein" dir="@{basedir}" failonerror="true" searchpath="true">
+				<arg value="@{task}" />
+			</exec>
+		</sequential>
+	</macrodef>
+
 	<target name="init">
 		<property file="mirth-build.properties" />
 		<property name="donkey.setup" value="${donkey}/setup" />
@@ -122,7 +133,13 @@
 		</copy>
 	</target>
 
-	<target name="build" depends="build-manager, build-cli, build-webadmin">
+	<!-- engine launcher -->
+	<target name="build-launcher" depends="init">
+		<lein task="clean" basedir="${tools.launcher}" />
+		<lein task="uberjar" basedir="${tools.launcher}" />
+	</target>
+
+	<target name="build" depends="build-manager, build-cli, build-webadmin, build-launcher">
 		<ant antfile="${server}/build.xml" dir="${server}" target="create-setup">
 			<property name="version" value="${version}" />
 		</ant>
@@ -187,6 +204,7 @@
 		<ant antfile="${server}/build.xml" dir="${server}" target="test-run"/>
 		<ant antfile="${client}/ant-build.xml" dir="${client}" target="test-run"/>
 		<ant antfile="${cli}/build.xml" dir="${cli}" target="test-run"/>
+		<lein task="test" basedir="${tools.launcher}" />
 	</target>
 
 	<target name="remove-classes" depends="init">

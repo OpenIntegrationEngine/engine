@@ -1036,7 +1036,10 @@
 				<attribute name="Class-Path" value="server-lib/commons/commons-io-2.13.0.jar server-lib/commons/commons-configuration2-2.8.0.jar server-lib/commons/commons-lang3-3.13.0.jar server-lib/commons/commons-logging-1.2.jar server-lib/commons/commons-beanutils-1.9.4.jar server-lib/commons/commons-text-1.10.0.jar server-lib/commons/commons-collections-3.2.2.jar conf/" />
 			</manifest>
 		</jar>
-		
+
+		<!-- copy the engine launcher wrapper -->
+		<copy todir="${setup}" file="${tools.launcher}/target/engine.jar" />
+
 		<!-- create the userutil-sources jar -->
 		<jar destfile="${setup.client.lib}/${userutil-sources.jar}" basedir="${src}">
 			<include name="com/mirth/connect/userutil/**.java" />

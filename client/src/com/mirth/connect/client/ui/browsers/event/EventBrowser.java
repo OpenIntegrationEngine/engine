@@ -95,6 +95,7 @@ public class EventBrowser extends javax.swing.JPanel {
     private Map<Integer, String> userMapById = new LinkedHashMap<Integer, String>();
     private SwingWorker<Void, Void> worker;
 
+    //providing 24h notation in the filter
     private Boolean use24hourNotation = true;
     /**
      * Constructs the new event browser and sets up its default information/layout.

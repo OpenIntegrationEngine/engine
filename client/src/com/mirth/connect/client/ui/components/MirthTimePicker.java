@@ -49,6 +49,7 @@ public class MirthTimePicker extends JSpinner {
     public void init(String format, int accuracy) {
         this.parent = PlatformUI.MIRTH_FRAME;
 
+        //removed the simple date format and replaced with a function to format the date, see below
         //SimpleDateFormat dateFormat = new SimpleDateFormat(format);
         GregorianCalendar calendar = new GregorianCalendar();
         Date now = calendar.getTime();
@@ -70,6 +71,7 @@ public class MirthTimePicker extends JSpinner {
             public void keyReleased(KeyEvent e) {}
         });
 
+        //Replace the default formatter by a function that uses the given format
         /*DefaultFormatterFactory factory = (DefaultFormatterFactory) tf.getFormatterFactory();
         formatter = (DateFormatter) factory.getDefaultFormatter();
         formatter.setFormat(dateFormat);
@@ -86,6 +88,12 @@ public class MirthTimePicker extends JSpinner {
         });
     }
 
+    /**
+     * Sets the format string used by the DateFormatter used by this time picker.
+     *
+     * @param formatString
+     *            the format string to use
+     */
     public void setFormatter(String formatString) {
         SimpleDateFormat dateFormat = new SimpleDateFormat(formatString);
         JFormattedTextField tf = ((JSpinner.DefaultEditor) getEditor()).getTextField();

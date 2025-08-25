@@ -172,6 +172,7 @@ public class MessageBrowser extends javax.swing.JPanel {
 
     private List<Integer> selectedMetaDataIds;
 
+    //providing 24h notation in the filter
     private Boolean use24hourNotation = true;
 
     /**

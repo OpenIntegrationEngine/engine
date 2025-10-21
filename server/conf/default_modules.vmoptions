@@ -16,6 +16,8 @@
 --add-opens=java.base/sun.security.pkcs=ALL-UNNAMED
 --add-opens=java.base/sun.security.rsa=ALL-UNNAMED
 --add-opens=java.base/sun.security.x509=ALL-UNNAMED
+--add-opens=java.base/java.io=ALL-UNNAMED
+--add-opens=java.base/java.util.concurrent=ALL-UNNAMED
 --add-opens=java.desktop/java.awt=ALL-UNNAMED
 --add-opens=java.desktop/java.awt.color=ALL-UNNAMED
 --add-opens=java.desktop/java.awt.font=ALL-UNNAMED

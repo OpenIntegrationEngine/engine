@@ -243,7 +243,7 @@ public class Client implements UserServletInterface, ConfigurationServletInterfa
         return getServlet(servletInterface, executeType, null);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"removal", "unchecked"})
     public <T> T getServlet(final Class<T> servletInterface, final ExecuteType executeType, final Map<String, List<String>> customHeaders) {
         return (T) Proxy.newProxyInstance(AccessController.doPrivileged(ReflectionHelper.getClassLoaderPA(servletInterface)), new Class[] {
                 servletInterface }, new InvocationHandler() {

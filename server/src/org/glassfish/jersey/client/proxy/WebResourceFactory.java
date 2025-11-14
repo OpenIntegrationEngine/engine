@@ -140,7 +140,7 @@ public final class WebResourceFactory implements InvocationHandler {
      * @return Instance of a class implementing the resource interface that can
      * be used for making requests to the server.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"removal", "unchecked"})
     public static <C> C newResource(final Class<C> resourceInterface,
                                     final WebTarget target,
                                     final boolean ignoreResourcePath,

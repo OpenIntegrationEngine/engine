@@ -1,7 +1,8 @@
 # Add any custom vmoptions to this file. Special directives are:
 #
 # -include-options <path to file>
-#     : include options from another .vmoptions file. Applied recursively.
+#     : include options from another .vmoptions file. Applied recursively. Relative paths
+#     : are relative to the current vmoptions file.
 #
 # -classpath <path>
 #     : replace the classpath built so far with <path>
@@ -13,7 +14,8 @@
 #     : append <path> to classpath.
 #
 # -java-cmd <path to java command>
-#     : use the java binary specified to launch the engine.
+#     : use the java binary specified to launch the engine. Relative paths are relative to
+#     : the engine home directory.
 #
 # Additionally, the form ${ENV_VAR} can be used anywhere in the file to substitute the value
 # from an environment variable.

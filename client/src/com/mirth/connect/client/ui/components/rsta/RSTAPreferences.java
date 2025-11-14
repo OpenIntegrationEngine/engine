@@ -234,6 +234,7 @@ public class RSTAPreferences {
         putKeyStroke(ActionInfo.FOLD_EXPAND_ALL, KeyEvent.VK_MULTIPLY, defaultModifier);
         putKeyStroke(ActionInfo.GO_TO_MATCHING_BRACKET, KeyEvent.VK_OPEN_BRACKET, defaultModifier);
         putKeyStroke(ActionInfo.TOGGLE_COMMENT, KeyEvent.VK_SLASH, defaultModifier);
+        putKeyStroke(ActionInfo.FORMAT_CODE, KeyEvent.VK_F, ctrl + shift);
         putKeyStroke(ActionInfo.AUTO_COMPLETE, KeyEvent.VK_SPACE, ctrl);
 
         if (isOSX) {

@@ -198,12 +198,12 @@ public class JavaScriptSharedUtil {
         InputStream is = null;
         
         try {
-            is = JavaScriptSharedUtil.class.getResourceAsStream("beautify-1.6.8.js");
+            is = JavaScriptSharedUtil.class.getResourceAsStream("beautify-1.15.3.js");
             String script = IOUtils.toString(is);
             ScriptableObject scope = context.initStandardObjects();
             context.evaluateString(scope, "var global = {};", UUID.randomUUID().toString(), 1, null);
             context.evaluateString(scope, script, UUID.randomUUID().toString(), 1, null);
-            context.evaluateString(scope, "var opts = { 'e4x': true };", UUID.randomUUID().toString(), 1, null);
+            context.evaluateString(scope, "var opts = { 'e4x': true, 'indent_with_tabs': true };", UUID.randomUUID().toString(), 1, null);
             return scope;
         } catch (Exception e) {
             logger.error("Failed to load beautify library.");

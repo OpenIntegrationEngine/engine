@@ -40,6 +40,7 @@ public enum ActionInfo {
     DISPLAY_WRAP_LINES          ("mirth-wrap-lines"),
     GO_TO_MATCHING_BRACKET      (RSyntaxTextAreaEditorKit.rstaGoToMatchingBracketAction),
     TOGGLE_COMMENT              (RSyntaxTextAreaEditorKit.rstaToggleCommentAction),
+    FORMAT_CODE                 ("mirth-format-code"),
     VIEW_USER_API               ("mirth-view-user-api"),
     AUTO_COMPLETE               ("AutoComplete"),
     DOCUMENT_START              (DefaultEditorKit.beginAction),

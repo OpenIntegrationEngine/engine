@@ -25,6 +25,6 @@ public class NCPDPDataTypeCodeTemplatePlugin extends DataTypeCodeTemplatePlugin 
 
     @Override
     protected String getDisplayName() {
-        return "NCPDP";
+        return "NCPDP Telecom";
     }
 }

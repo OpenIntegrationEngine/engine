@@ -28,36 +28,36 @@ public class JavaScriptSharedUtilTest {
         // @formatter:off
         String expected =
             "for (var i = 0; i < getArrayOrXmlLength(msg['OBR']); i++) {\n"+
-            "    for (var j = 0; j < getArrayOrXmlLength(msg['OBR'][i]['OBR.3']); j++) {\n"+
-            "        if (typeof(tmp) == 'xml') {\n"+
-            "            if (typeof(tmp['OBR'][i]) == 'undefined') {\n"+
-            "                createSegment('OBR', tmp, i);\n"+
-            "            }\n"+
-            "            if (typeof(tmp['OBR'][i]['OBR.3'][j]) == 'undefined') {\n"+
-            "                createSegment('OBR.3', tmp['OBR'][i], j);\n"+
-            "            }\n"+
-            "        } else {\n"+
-            "            if (typeof(tmp) == 'undefined') {\n"+
-            "                tmp = {};\n"+
-            "            }\n"+
-            "            if (typeof(tmp['OBR']) == 'undefined') {\n"+
-            "                tmp['OBR'] = [];\n"+
-            "            }\n"+
-            "            if (typeof(tmp['OBR'][i]) == 'undefined') {\n"+
-            "                tmp['OBR'][i] = {};\n"+
-            "            }\n"+
-            "            if (typeof(tmp['OBR'][i]['OBR.3']) == 'undefined') {\n"+
-            "                tmp['OBR'][i]['OBR.3'] = [];\n"+
-            "            }\n"+
-            "            if (typeof(tmp['OBR'][i]['OBR.3'][j]) == 'undefined') {\n"+
-            "                tmp['OBR'][i]['OBR.3'][j] = {};\n"+
-            "            }\n"+
-            "            if (typeof(tmp['OBR'][i]['OBR.3'][j]['OBR.3.1']) == 'undefined') {\n"+
-            "                tmp['OBR'][i]['OBR.3'][j]['OBR.3.1'] = {};\n"+
-            "            }\n"+
-            "        }\n"+
-            "        tmp['OBR'][i]['OBR.3'][j]['OBR.3.1']['OBR.3.1.1'] = validate(msg['OBR'][i]['OBR.3'][j]['OBR.3.1']['OBR.3.1.1'].toString(), '', new Array());\n"+
-            "    }\n"+
+            "\tfor (var j = 0; j < getArrayOrXmlLength(msg['OBR'][i]['OBR.3']); j++) {\n"+
+            "\t\tif (typeof(tmp) == 'xml') {\n"+
+            "\t\t\tif (typeof(tmp['OBR'][i]) == 'undefined') {\n"+
+            "\t\t\t\tcreateSegment('OBR', tmp, i);\n"+
+            "\t\t\t}\n"+
+            "\t\t\tif (typeof(tmp['OBR'][i]['OBR.3'][j]) == 'undefined') {\n"+
+            "\t\t\t\tcreateSegment('OBR.3', tmp['OBR'][i], j);\n"+
+            "\t\t\t}\n"+
+            "\t\t} else {\n"+
+            "\t\t\tif (typeof(tmp) == 'undefined') {\n"+
+            "\t\t\t\ttmp = {};\n"+
+            "\t\t\t}\n"+
+            "\t\t\tif (typeof(tmp['OBR']) == 'undefined') {\n"+
+            "\t\t\t\ttmp['OBR'] = [];\n"+
+            "\t\t\t}\n"+
+            "\t\t\tif (typeof(tmp['OBR'][i]) == 'undefined') {\n"+
+            "\t\t\t\ttmp['OBR'][i] = {};\n"+
+            "\t\t\t}\n"+
+            "\t\t\tif (typeof(tmp['OBR'][i]['OBR.3']) == 'undefined') {\n"+
+            "\t\t\t\ttmp['OBR'][i]['OBR.3'] = [];\n"+
+            "\t\t\t}\n"+
+            "\t\t\tif (typeof(tmp['OBR'][i]['OBR.3'][j]) == 'undefined') {\n"+
+            "\t\t\t\ttmp['OBR'][i]['OBR.3'][j] = {};\n"+
+            "\t\t\t}\n"+
+            "\t\t\tif (typeof(tmp['OBR'][i]['OBR.3'][j]['OBR.3.1']) == 'undefined') {\n"+
+            "\t\t\t\ttmp['OBR'][i]['OBR.3'][j]['OBR.3.1'] = {};\n"+
+            "\t\t\t}\n"+
+            "\t\t}\n"+
+            "\t\ttmp['OBR'][i]['OBR.3'][j]['OBR.3.1']['OBR.3.1.1'] = validate(msg['OBR'][i]['OBR.3'][j]['OBR.3.1']['OBR.3.1.1'].toString(), '', new Array());\n"+
+            "\t}\n"+
             "}\n";
         // @formatter:on
 
@@ -73,13 +73,13 @@ public class JavaScriptSharedUtilTest {
             "var _results = Lists.list();\n"+
             "for (var i = 0; i < getArrayOrXmlLength(msg['OBX']); i++) {\n"+
             "\n"+
-            "    tFactory = Packages.javax.xml.transform.TransformerFactory.newInstance();\n"+
-            "    xsltTemplate = new Packages.java.io.StringReader(<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">    <xsl:template match=\"/\">        <values>            <xsl:for-each select=\"OBX/OBX.5\">                <value><xsl:value-of select=\"OBX.5.1\"/></value>            </xsl:for-each>        </values>    </xsl:template></xsl:stylesheet>);\n"+
-            "    transformer = tFactory.newTransformer(new Packages.javax.xml.transform.stream.StreamSource(xsltTemplate));\n"+
-            "    sourceVar = new Packages.java.io.StringReader(msg['OBX'][i]);\n"+
-            "    resultVar = new Packages.java.io.StringWriter();\n"+
-            "    transformer.transform(new Packages.javax.xml.transform.stream.StreamSource(sourceVar), new Packages.javax.xml.transform.stream.StreamResult(resultVar));\n"+
-            "    _results.add(resultVar.toString());\n"+
+            "\ttFactory = Packages.javax.xml.transform.TransformerFactory.newInstance();\n"+
+            "\txsltTemplate = new Packages.java.io.StringReader(<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">    <xsl:template match=\"/\">        <values>            <xsl:for-each select=\"OBX/OBX.5\">                <value><xsl:value-of select=\"OBX.5.1\"/></value>            </xsl:for-each>        </values>    </xsl:template></xsl:stylesheet>);\n"+
+            "\ttransformer = tFactory.newTransformer(new Packages.javax.xml.transform.stream.StreamSource(xsltTemplate));\n"+
+            "\tsourceVar = new Packages.java.io.StringReader(msg['OBX'][i]);\n"+
+            "\tresultVar = new Packages.java.io.StringWriter();\n"+
+            "\ttransformer.transform(new Packages.javax.xml.transform.stream.StreamSource(sourceVar), new Packages.javax.xml.transform.stream.StreamResult(resultVar));\n"+
+            "\t_results.add(resultVar.toString());\n"+
             "\n"+
             "\n"+
             "}\n"+
@@ -98,13 +98,13 @@ public class JavaScriptSharedUtilTest {
             "var _results = Lists.list();\n"+
             "for (var i = 0; i < getArrayOrXmlLength(msg['OBX']); i++) {\n"+
             "\n"+
-            "    tFactory = Packages.javax.xml.transform.TransformerFactory.newInstance();\n"+
-            "    xsltTemplate = new Packages.java.io.StringReader(<?xml version=\"1.0\" encoding=\"UTF-8\"?> <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">    <xsl:template match=\"/\">        <values>            <xsl:for-each select=\"OBX/OBX.5\">                <value><xsl:value-of select=\"OBX.5.1\"/></value>            </xsl:for-each>        </values>    </xsl:template></xsl:stylesheet>);\n"+
-            "    transformer = tFactory.newTransformer(new Packages.javax.xml.transform.stream.StreamSource(xsltTemplate));\n"+
-            "    sourceVar = new Packages.java.io.StringReader(msg['OBX'][i]);\n"+
-            "    resultVar = new Packages.java.io.StringWriter();\n"+
-            "    transformer.transform(new Packages.javax.xml.transform.stream.StreamSource(sourceVar), new Packages.javax.xml.transform.stream.StreamResult(resultVar));\n"+
-            "    _results.add(resultVar.toString());\n"+
+            "\ttFactory = Packages.javax.xml.transform.TransformerFactory.newInstance();\n"+
+            "\txsltTemplate = new Packages.java.io.StringReader(<?xml version=\"1.0\" encoding=\"UTF-8\"?> <xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">    <xsl:template match=\"/\">        <values>            <xsl:for-each select=\"OBX/OBX.5\">                <value><xsl:value-of select=\"OBX.5.1\"/></value>            </xsl:for-each>        </values>    </xsl:template></xsl:stylesheet>);\n"+
+            "\ttransformer = tFactory.newTransformer(new Packages.javax.xml.transform.stream.StreamSource(xsltTemplate));\n"+
+            "\tsourceVar = new Packages.java.io.StringReader(msg['OBX'][i]);\n"+
+            "\tresultVar = new Packages.java.io.StringWriter();\n"+
+            "\ttransformer.transform(new Packages.javax.xml.transform.stream.StreamSource(sourceVar), new Packages.javax.xml.transform.stream.StreamResult(resultVar));\n"+
+            "\t_results.add(resultVar.toString());\n"+
             "\n"+
             "\n"+
             "}\n"+

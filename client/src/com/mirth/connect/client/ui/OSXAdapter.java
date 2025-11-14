@@ -278,6 +278,7 @@ public class OSXAdapter implements InvocationHandler {
         return macOSXApplication;
     }
 
+    @SuppressWarnings("removal")
     protected static void setHandler(InvocationHandler adapter, String interfaceName, String applicationSetter) throws Exception {
         Class<?> handlerInterface = Class.forName(interfaceName);
         Object handlerImpl = Proxy.newProxyInstance(AccessController.doPrivileged(ReflectionHelper.getClassLoaderPA(handlerInterface)), new Class[] {

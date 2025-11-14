@@ -26,7 +26,7 @@ public class NCPDPDataTypeClientPlugin extends DataTypeClientPlugin {
 
     @Override
     public String getDisplayName() {
-        return "NCPDP";
+        return "NCPDP Telecom";
     }
 
     @Override

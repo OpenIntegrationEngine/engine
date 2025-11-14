@@ -1047,10 +1047,10 @@ public class DefaultConfigurationController extends ConfigurationController {
             parameterMap.put("name", name);
             parameterMap.put("value", value);
 
-            if (getProperty(category, name) == null) {
-                SqlConfig.getInstance().getSqlSessionManager().insert("Configuration.insertProperty", parameterMap);
-            } else {
-                SqlConfig.getInstance().getSqlSessionManager().insert("Configuration.updateProperty", parameterMap);
+            SqlSessionManager sqlSessionManager = SqlConfig.getInstance().getSqlSessionManager();
+            int updatedRows = sqlSessionManager.update("Configuration.updateProperty", parameterMap);
+            if (updatedRows == 0) {
+                sqlSessionManager.insert("Configuration.insertProperty", parameterMap);
             }
 
             if (DatabaseUtil.statementExists("Configuration.vacuumConfigurationTable")) {

@@ -197,7 +197,7 @@ public abstract class ConnectorSettingsPanel extends JPanel {
      *            A custom error message to display if an exception occurs during connector service
      *            invocation
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"removal", "unchecked"})
     public final <T> T getServlet(final Class<T> servletInterface, final String workerDisplayText, final String errorText, final ResponseHandler responseHandler, final String workerId) {
         return (T) Proxy.newProxyInstance(AccessController.doPrivileged(ReflectionHelper.getClassLoaderPA(servletInterface)), new Class[] {
                 servletInterface }, new InvocationHandler() {

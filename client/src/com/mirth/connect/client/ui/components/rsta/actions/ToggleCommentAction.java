@@ -13,7 +13,16 @@ import com.mirth.connect.client.ui.components.rsta.MirthRSyntaxTextArea;
 
 public class ToggleCommentAction extends org.fife.ui.rsyntaxtextarea.RSyntaxTextAreaEditorKit.ToggleCommentAction {
 
-    public ToggleCommentAction() {
+    protected MirthRSyntaxTextArea textArea;
+
+    public ToggleCommentAction(MirthRSyntaxTextArea textArea) {
         setProperties(MirthRSyntaxTextArea.getResourceBundle(), ActionInfo.TOGGLE_COMMENT.toString());
+
+        this.textArea = textArea;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return textArea.isEditable() && textArea.isEnabled();
     }
 }

@@ -55,6 +55,93 @@ public class ServerLogItem implements Serializable {
         this.throwableInformation = throwableInformation;
     }
 
+    private ServerLogItem(Builder builder) {
+        this.serverId = builder.serverId;
+        this.id = builder.id;
+        this.channelId = builder.channelId;
+        this.channelName = builder.channelName;
+        this.level = builder.level;
+        this.date = builder.date;
+        this.threadName = builder.threadName;
+        this.category = builder.category;
+        this.lineNumber = builder.lineNumber;
+        this.message = builder.message;
+        this.throwableInformation = builder.throwableInformation;
+    }
+
+    public static class Builder {
+        private String serverId;
+        private Long id;
+        private String channelId;
+        private String channelName;
+        private String level;
+        private Date date;
+        private String threadName;
+        private String category;
+        private String lineNumber;
+        private String message;
+        private String throwableInformation;
+
+        public Builder serverId(String serverId) {
+            this.serverId = serverId;
+            return this;
+        }
+
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder channelId(String channelId) {
+            this.channelId = channelId;
+            return this;
+        }
+
+        public Builder channelName(String channelName) {
+            this.channelName = channelName;
+            return this;
+        }
+
+        public Builder level(String level) {
+            this.level = level;
+            return this;
+        }
+
+        public Builder date(Date date) {
+            this.date = date;
+            return this;
+        }
+
+        public Builder threadName(String threadName) {
+            this.threadName = threadName;
+            return this;
+        }
+
+        public Builder category(String category) {
+            this.category = category;
+            return this;
+        }
+
+        public Builder lineNumber(String lineNumber) {
+            this.lineNumber = lineNumber;
+            return this;
+        }
+
+        public Builder message(String message) {
+            this.message = message;
+            return this;
+        }
+
+        public Builder throwableInformation(String throwableInformation) {
+            this.throwableInformation = throwableInformation;
+            return this;
+        }
+
+        public ServerLogItem build() {
+            return new ServerLogItem(this);
+        }
+    }
+
     public String getServerId() {
         return serverId;
     }

@@ -14,6 +14,7 @@ import java.util.concurrent.Callable;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
@@ -28,6 +29,8 @@ public abstract class JavaScriptTask<T> implements Callable<T> {
     private Logger logger = LogManager.getLogger(JavaScriptTask.class);
     private MirthContextFactory contextFactory;
     private String threadName;
+    private String channelId;
+    private String channelName;
     private Context context;
     private boolean contextCreated = false;
 
@@ -74,6 +77,9 @@ public abstract class JavaScriptTask<T> implements Callable<T> {
     }
 
     private void init(String name, String channelId, String channelName, Integer metaDataId, String destinationName) {
+        this.channelId = channelId;
+        this.channelName = channelName;
+
         StringBuilder builder = new StringBuilder(name).append(" JavaScript Task");
         if (StringUtils.isNotEmpty(channelName)) {
             builder.append(" on ").append(channelName);
@@ -111,8 +117,22 @@ public abstract class JavaScriptTask<T> implements Callable<T> {
         String originalThreadName = Thread.currentThread().getName();
         try {
             Thread.currentThread().setName(threadName + " < " + originalThreadName);
+            
+            if (channelId != null) {
+                ThreadContext.put("channelId", channelId);
+            }
+            if (channelName != null) {
+                ThreadContext.put("channelName", channelName);
+            }
+            
             return doCall();
         } finally {
+            if (channelName != null) {
+                ThreadContext.remove("channelName");
+            }
+            if (channelId != null) {
+                ThreadContext.remove("channelId");
+            }
             Thread.currentThread().setName(originalThreadName);
         }
     }

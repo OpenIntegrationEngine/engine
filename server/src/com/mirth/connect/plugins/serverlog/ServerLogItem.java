@@ -21,6 +21,7 @@ public class ServerLogItem implements Serializable {
 
     private String serverId;
     private Long id;
+    private String channelId;
     private String level;
     private Date date;
     private String threadName;
@@ -28,16 +29,23 @@ public class ServerLogItem implements Serializable {
     private String lineNumber;
     private String message;
     private String throwableInformation;
+    private String channelName;
 
     public ServerLogItem() {}
 
     public ServerLogItem(String message) {
-        this(null, null, null, null, null, null, null, message, null);
+        this(null, null, null, null, null, null, null, null, null, message, null);
+    }
+    
+    public ServerLogItem(String serverId, Long id, String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation) {
+        this(serverId, id, null, null, level, date, threadName, category, lineNumber, message, throwableInformation);
     }
 
-    public ServerLogItem(String serverId, Long id, String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation) {
+    public ServerLogItem(String serverId, Long id, String channelId, String channelName, String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation) {
         this.serverId = serverId;
         this.id = id;
+        this.channelId = channelId;
+        this.channelName = channelName;
         this.level = level;
         this.date = date;
         this.threadName = threadName;
@@ -61,6 +69,14 @@ public class ServerLogItem implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
+    }
+    
+    public String getChannelId() {
+        return channelId;
+    }
+    
+    public void setChannelId(String channelId) {
+        this.channelId = channelId;
     }
 
     public String getLevel() {
@@ -117,6 +133,14 @@ public class ServerLogItem implements Serializable {
 
     public void setThrowableInformation(String throwableInformation) {
         this.throwableInformation = throwableInformation;
+    }
+    
+    public String getChannelName() {
+        return channelName;
+    }
+    
+    public void setChannelName(String channelName) {
+        this.channelName = channelName;
     }
 
     @Override

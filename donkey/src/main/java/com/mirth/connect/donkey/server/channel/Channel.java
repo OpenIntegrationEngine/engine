@@ -40,6 +40,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
 import com.mirth.connect.donkey.model.DonkeyException;
 import com.mirth.connect.donkey.model.channel.DebugOptions;
@@ -1271,6 +1272,9 @@ public class Channel implements Runnable {
             } else {
                 currentThread.setName("Channel Dispatch Thread on " + name + " (" + channelId + ") < " + originalThreadName);
             }
+            
+            ThreadContext.put("channelId", channelId);
+            ThreadContext.put("channelName", name);
 
             DonkeyDao dao = null;
             boolean commitSuccess = false;
@@ -1386,6 +1390,8 @@ public class Channel implements Runnable {
                 dispatchThreads.remove(currentThread);
             }
             currentThread.setName(originalThreadName);
+            ThreadContext.remove("channelId");
+            ThreadContext.remove("channelName");
         }
     }
 
@@ -1934,11 +1940,16 @@ public class Channel implements Runnable {
     @Override
     public void run() {
         try {
+            ThreadContext.put("channelId", channelId);
+            ThreadContext.put("channelName", name);
             do {
                 processSourceQueue(Constants.SOURCE_QUEUE_POLL_TIMEOUT_MILLIS);
             } while (isActive() && !stopSourceQueue);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        } finally {
+            ThreadContext.remove("channelId");
+            ThreadContext.remove("channelName");
         }
     }
 

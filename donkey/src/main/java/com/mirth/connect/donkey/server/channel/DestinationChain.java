@@ -18,6 +18,7 @@ import java.util.concurrent.Callable;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
 import com.mirth.connect.donkey.model.message.ConnectorMessage;
 import com.mirth.connect.donkey.model.message.ContentType;
@@ -61,8 +62,20 @@ public class DestinationChain implements Callable<List<ConnectorMessage>> {
         String originalThreadName = Thread.currentThread().getName();
         try {
             Thread.currentThread().setName(name + " < " + originalThreadName);
+            String channelId = chainProvider.getChannelId();
+            String channelName = null;
+            if (!chainProvider.getDestinationConnectors().isEmpty()) {
+                channelName = chainProvider.getDestinationConnectors().values().iterator().next().getChannel().getName();
+            }
+
+            ThreadContext.put("channelId", channelId);
+            if (channelName != null) {
+                ThreadContext.put("channelName", channelName);
+            }
             return doCall();
         } finally {
+            ThreadContext.remove("channelId");
+            ThreadContext.remove("channelName");
             Thread.currentThread().setName(originalThreadName);
         }
     }

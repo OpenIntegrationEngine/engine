@@ -36,6 +36,17 @@ public class ArrayAppender extends AbstractAppender {
             return;
         }
 
+        String channelId = null;
+        String channelName = null;
+        if (logEvent.getContextMap() != null) {
+            if (logEvent.getContextMap().containsKey("channelId")) {
+                channelId = logEvent.getContextMap().get("channelId");
+            }
+            if (logEvent.getContextMap().containsKey("channelName")) {
+                channelName = logEvent.getContextMap().get("channelName");
+            }
+        }
+
         String level = String.valueOf(logEvent.getLevel());
         Date date = new Date(logEvent.getTimeMillis());
         String threadName = logEvent.getThreadName();
@@ -61,6 +72,6 @@ public class ArrayAppender extends AbstractAppender {
             throwableInformation = logText.toString();
         }
 
-        serverLogProvider.newServerLogReceived(level, date, threadName, category, lineNumber, message, throwableInformation);
+        serverLogProvider.newServerLogReceived(channelId, channelName, level, date, threadName, category, lineNumber, message, throwableInformation);
     }
 }

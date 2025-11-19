@@ -39,6 +39,7 @@ import com.mirth.connect.plugins.DashboardTablePlugin;
 public class ServerLogPanel extends javax.swing.JPanel {
 
     private static final String ID_COLUMN_HEADER = "Id";
+    private static final String CHANNEL_COLUMN_HEADER = "Channel";
     private static final String LOG_INFO_COLUMN_HEADER = "Log Information";
     private JPopupMenu rightclickPopup;
     private static final int PAUSED = 0;
@@ -112,7 +113,7 @@ public class ServerLogPanel extends javax.swing.JPanel {
                 if (evt.getClickCount() >= 2) {
                     // synchronizing this to prevent ArrayIndexOutOfBoundsException since the server log table is constantly being redrawn.
                     synchronized (this) {
-                        new ViewServerLogContentDialog(parent, String.valueOf(logTable.getModel().getValueAt(logTable.convertRowIndexToModel(logTable.getSelectedRow()), 1)));
+                        new ViewServerLogContentDialog(parent, String.valueOf(logTable.getModel().getValueAt(logTable.convertRowIndexToModel(logTable.getSelectedRow()), 2)));
                     }
                 }
             }
@@ -185,13 +186,13 @@ public class ServerLogPanel extends javax.swing.JPanel {
 
             for (ServerLogItem item : serverLogs) {
                 if (serverId == null || serverId.equals(item.getServerId())) {
-                    dataList.add(new Object[] { item.getId(), item });
+                    dataList.add(new Object[] { item.getId(), item.getChannelName(), item });
                 }
             }
 
             tableData = dataList.toArray(new Object[dataList.size()][]);
         } else {
-            tableData = new Object[0][2];
+            tableData = new Object[0][3];
         }
 
         if (logTable != null) {
@@ -199,10 +200,10 @@ public class ServerLogPanel extends javax.swing.JPanel {
             model.refreshDataVector(tableData);
         } else {
             logTable = new MirthTable();
-            logTable.setModel(new RefreshTableModel(tableData, new String[] { ID_COLUMN_HEADER,
+            logTable.setModel(new RefreshTableModel(tableData, new String[] { ID_COLUMN_HEADER, CHANNEL_COLUMN_HEADER,
                     LOG_INFO_COLUMN_HEADER }) {
 
-                boolean[] canEdit = new boolean[] { false, false };
+                boolean[] canEdit = new boolean[] { false, false, false };
 
                 public boolean isCellEditable(int rowIndex, int columnIndex) {
                     return canEdit[columnIndex];

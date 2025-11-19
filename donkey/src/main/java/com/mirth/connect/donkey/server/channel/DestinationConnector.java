@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
 import com.mirth.connect.donkey.model.DonkeyException;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
@@ -613,6 +614,10 @@ public abstract class DestinationConnector extends Connector implements Runnable
 
     @Override
     public void run() {
+        // Add channel info to ThreadContext
+        ThreadContext.put("channelId", getChannelId());
+        ThreadContext.put("channelName", channel.getName());
+
         DonkeyDao dao = null;
         boolean commitSuccess = false;
         Serializer serializer = channel.getSerializer();
@@ -892,6 +897,9 @@ public abstract class DestinationConnector extends Connector implements Runnable
                 }
             }
         } while ((getCurrentState() == DeployedState.STARTED || getCurrentState() == DeployedState.STARTING) && !stopQueue.get());
+        
+        ThreadContext.remove("channelId");
+        ThreadContext.remove("channelName");
     }
 
     private Response handleSend(ConnectorProperties connectorProperties, ConnectorMessage message) throws InterruptedException {

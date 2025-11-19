@@ -200,9 +200,11 @@ public class ServerLogPanel extends javax.swing.JPanel {
             model.refreshDataVector(tableData);
         } else {
             logTable = new MirthTable();
-            logTable.setModel(new RefreshTableModel(tableData, new String[] { ID_COLUMN_HEADER, CHANNEL_COLUMN_HEADER,
-                    LOG_INFO_COLUMN_HEADER }) {
-
+            logTable.setModel(new RefreshTableModel(tableData, new String[] {
+                    ID_COLUMN_HEADER,
+                    CHANNEL_COLUMN_HEADER,
+                    LOG_INFO_COLUMN_HEADER
+            }) {
                 boolean[] canEdit = new boolean[] { false, false, false };
 
                 public boolean isCellEditable(int rowIndex, int columnIndex) {

@@ -22,6 +22,7 @@ import java.util.concurrent.locks.Lock;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.logging.log4j.CloseableThreadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -615,10 +616,8 @@ public abstract class DestinationConnector extends Connector implements Runnable
     @Override
     public void run() {
         // Add channel info to ThreadContext
-        ThreadContext.put("channelId", getChannelId());
-        ThreadContext.put("channelName", channel.getName());
-
-        DonkeyDao dao = null;
+        try (CloseableThreadContext.Instance ctc = CloseableThreadContext.put("channelId", getChannelId()).put("channelName", channel.getName())) {
+            DonkeyDao dao = null;
         boolean commitSuccess = false;
         Serializer serializer = channel.getSerializer();
         ConnectorMessage connectorMessage = null;
@@ -897,9 +896,7 @@ public abstract class DestinationConnector extends Connector implements Runnable
                 }
             }
         } while ((getCurrentState() == DeployedState.STARTED || getCurrentState() == DeployedState.STARTING) && !stopQueue.get());
-        
-        ThreadContext.remove("channelId");
-        ThreadContext.remove("channelName");
+        }
     }
 
     private Response handleSend(ConnectorProperties connectorProperties, ConnectorMessage message) throws InterruptedException {

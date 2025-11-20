@@ -12,6 +12,7 @@ package com.mirth.connect.server.util.javascript;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.CloseableThreadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -115,24 +116,14 @@ public abstract class JavaScriptTask<T> implements Callable<T> {
     @Override
     public final T call() throws Exception {
         String originalThreadName = Thread.currentThread().getName();
-        try {
+        try (CloseableThreadContext.Instance ctc = CloseableThreadContext
+                .put("channelId", channelId != null ? channelId : "")
+                .put("channelName", channelName != null ? channelName : "")
+        ) {
             Thread.currentThread().setName(threadName + " < " + originalThreadName);
-            
-            if (channelId != null) {
-                ThreadContext.put("channelId", channelId);
-            }
-            if (channelName != null) {
-                ThreadContext.put("channelName", channelName);
-            }
             
             return doCall();
         } finally {
-            if (channelName != null) {
-                ThreadContext.remove("channelName");
-            }
-            if (channelId != null) {
-                ThreadContext.remove("channelId");
-            }
             Thread.currentThread().setName(originalThreadName);
         }
     }

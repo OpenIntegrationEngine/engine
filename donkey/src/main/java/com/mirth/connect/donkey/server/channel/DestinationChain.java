@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.CloseableThreadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -64,18 +65,18 @@ public class DestinationChain implements Callable<List<ConnectorMessage>> {
             Thread.currentThread().setName(name + " < " + originalThreadName);
             String channelId = chainProvider.getChannelId();
             String channelName = null;
+
             if (!chainProvider.getDestinationConnectors().isEmpty()) {
                 channelName = chainProvider.getDestinationConnectors().values().iterator().next().getChannel().getName();
             }
 
-            ThreadContext.put("channelId", channelId);
-            if (channelName != null) {
-                ThreadContext.put("channelName", channelName);
+            try (CloseableThreadContext.Instance ctc = CloseableThreadContext
+                    .put("channelId", channelId)
+                    .put("channelName", channelName != null ? channelName : "")
+            ) {
+                return doCall();
             }
-            return doCall();
         } finally {
-            ThreadContext.remove("channelId");
-            ThreadContext.remove("channelName");
             Thread.currentThread().setName(originalThreadName);
         }
     }

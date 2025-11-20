@@ -14,7 +14,9 @@ import static com.mirth.connect.plugins.serverlog.ServerLogServletInterface.PLUG
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
@@ -57,7 +59,20 @@ public class ServerLogProvider implements ServicePlugin {
 
     public synchronized void newServerLogReceived(String channelId, String channelName, String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation) {
         if (logController != null) {
-            logController.addLogItem(new ServerLogItem(serverId, logId, channelId, channelName, level, date, threadName, category, lineNumber, message, throwableInformation));
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("serverId", serverId);
+            properties.put("id", logId);
+            properties.put("channelId", channelId);
+            properties.put("channelName", channelName);
+            properties.put("level", level);
+            properties.put("date", date);
+            properties.put("threadName", threadName);
+            properties.put("category", category);
+            properties.put("lineNumber", lineNumber);
+            properties.put("message", message);
+            properties.put("throwableInformation", throwableInformation);
+
+            logController.addLogItem(new ServerLogItem(properties));
             logId++;
         }
     }

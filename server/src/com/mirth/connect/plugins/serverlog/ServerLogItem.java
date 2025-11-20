@@ -12,6 +12,8 @@ package com.mirth.connect.plugins.serverlog;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -30,116 +32,28 @@ public class ServerLogItem implements Serializable {
     private String message;
     private String throwableInformation;
     private String channelName;
+    private HashMap<String, Object> context;
 
     public ServerLogItem() {}
 
-    public ServerLogItem(String message) {
-        this(null, null, null, null, null, null, null, null, null, message, null);
-    }
-    
-    public ServerLogItem(String serverId, Long id, String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation) {
-        this(serverId, id, null, null, level, date, threadName, category, lineNumber, message, throwableInformation);
-    }
-
-    public ServerLogItem(String serverId, Long id, String channelId, String channelName, String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation) {
-        this.serverId = serverId;
-        this.id = id;
-        this.channelId = channelId;
-        this.channelName = channelName;
-        this.level = level;
-        this.date = date;
-        this.threadName = threadName;
-        this.category = category;
-        this.lineNumber = lineNumber;
-        this.message = message;
-        this.throwableInformation = throwableInformation;
-    }
-
-    private ServerLogItem(Builder builder) {
-        this.serverId = builder.serverId;
-        this.id = builder.id;
-        this.channelId = builder.channelId;
-        this.channelName = builder.channelName;
-        this.level = builder.level;
-        this.date = builder.date;
-        this.threadName = builder.threadName;
-        this.category = builder.category;
-        this.lineNumber = builder.lineNumber;
-        this.message = builder.message;
-        this.throwableInformation = builder.throwableInformation;
-    }
-
-    public static class Builder {
-        private String serverId;
-        private Long id;
-        private String channelId;
-        private String channelName;
-        private String level;
-        private Date date;
-        private String threadName;
-        private String category;
-        private String lineNumber;
-        private String message;
-        private String throwableInformation;
-
-        public Builder serverId(String serverId) {
-            this.serverId = serverId;
-            return this;
+    public ServerLogItem(Map<String, Object> properties) {
+        if (properties != null) {
+            this.context = new HashMap<>(properties);
+        } else {
+            this.context = new HashMap<>();
         }
 
-        public Builder id(Long id) {
-            this.id = id;
-            return this;
-        }
-
-        public Builder channelId(String channelId) {
-            this.channelId = channelId;
-            return this;
-        }
-
-        public Builder channelName(String channelName) {
-            this.channelName = channelName;
-            return this;
-        }
-
-        public Builder level(String level) {
-            this.level = level;
-            return this;
-        }
-
-        public Builder date(Date date) {
-            this.date = date;
-            return this;
-        }
-
-        public Builder threadName(String threadName) {
-            this.threadName = threadName;
-            return this;
-        }
-
-        public Builder category(String category) {
-            this.category = category;
-            return this;
-        }
-
-        public Builder lineNumber(String lineNumber) {
-            this.lineNumber = lineNumber;
-            return this;
-        }
-
-        public Builder message(String message) {
-            this.message = message;
-            return this;
-        }
-
-        public Builder throwableInformation(String throwableInformation) {
-            this.throwableInformation = throwableInformation;
-            return this;
-        }
-
-        public ServerLogItem build() {
-            return new ServerLogItem(this);
-        }
+        this.serverId = (String) context.getOrDefault("serverId", "");
+        this.id = (Long) context.getOrDefault("id", "");
+        this.channelId = (String) context.getOrDefault("channelId", "");
+        this.channelName = (String) context.getOrDefault("channelName", "");
+        this.level = (String) context.getOrDefault("level", "");
+        this.date = (Date) context.getOrDefault("date", "");
+        this.threadName = (String) context.getOrDefault("threadName", "");
+        this.category = (String) context.getOrDefault("category", "");
+        this.lineNumber = (String) context.getOrDefault("lineNumber", "");
+        this.message = (String) context.getOrDefault("message", "");
+        this.throwableInformation = (String) context.getOrDefault("throwableInformation", "");
     }
 
     public String getServerId() {
@@ -228,6 +142,14 @@ public class ServerLogItem implements Serializable {
     
     public void setChannelName(String channelName) {
         this.channelName = channelName;
+    }
+    
+    public Map<String, Object> getContext() {
+        return context;
+    }
+
+    public void setContext(Map<String, Object> context) {
+        this.context = new HashMap<>(context);
     }
 
     @Override

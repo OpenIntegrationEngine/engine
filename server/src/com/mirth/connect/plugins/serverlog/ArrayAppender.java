@@ -39,11 +39,9 @@ public class ArrayAppender extends AbstractAppender {
         String channelId = null;
         String channelName = null;
 
-        // Check theoretically not necessary, as getContextMap never returns null
-        // Safety first
-        if (logEvent.getContextMap() != null) {
-            channelId = logEvent.getContextMap().getOrDefault("channelId", "");
-            channelName = logEvent.getContextMap().getOrDefault("channelName", "");
+        if (logEvent.getContextData() != null) {
+            channelId = logEvent.getContextData().getValue("channelId");
+            channelName = logEvent.getContextData().getValue("channelName");
         }
 
         String level = String.valueOf(logEvent.getLevel());

@@ -11,6 +11,7 @@ package com.mirth.connect.plugins.serverlog;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,11 +45,11 @@ public class ServerLogItem implements Serializable {
         }
 
         this.serverId = (String) context.getOrDefault("serverId", "");
-        this.id = (Long) context.getOrDefault("id", "");
+        this.id = (Long) context.getOrDefault("id", 0L);
         this.channelId = (String) context.getOrDefault("channelId", "");
         this.channelName = (String) context.getOrDefault("channelName", "");
         this.level = (String) context.getOrDefault("level", "");
-        this.date = (Date) context.getOrDefault("date", "");
+        this.date = (Date) context.getOrDefault("date", Date.from(Instant.now()));
         this.threadName = (String) context.getOrDefault("threadName", "");
         this.category = (String) context.getOrDefault("category", "");
         this.lineNumber = (String) context.getOrDefault("lineNumber", "");

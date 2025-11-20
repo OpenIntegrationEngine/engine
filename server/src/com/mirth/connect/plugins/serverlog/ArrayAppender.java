@@ -11,6 +11,8 @@ package com.mirth.connect.plugins.serverlog;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
@@ -69,6 +71,17 @@ public class ArrayAppender extends AbstractAppender {
             throwableInformation = logText.toString();
         }
 
-        serverLogProvider.newServerLogReceived(channelId, channelName, level, date, threadName, category, lineNumber, message, throwableInformation);
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("channelId", channelId);
+        properties.put("channelName", channelName);
+        properties.put("level", level);
+        properties.put("date", date);
+        properties.put("threadName", threadName);
+        properties.put("category", category);
+        properties.put("lineNumber", lineNumber);
+        properties.put("message", message);
+        properties.put("throwableInformation", throwableInformation);
+
+        serverLogProvider.newServerLogReceived(new ServerLogItem(properties));
     }
 }

@@ -57,22 +57,12 @@ public class ServerLogProvider implements ServicePlugin {
         initialize();
     }
 
-    public synchronized void newServerLogReceived(String channelId, String channelName, String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation) {
+    public synchronized void newServerLogReceived(ServerLogItem svi) {
         if (logController != null) {
-            Map<String, Object> properties = new HashMap<>();
-            properties.put("serverId", serverId);
-            properties.put("id", logId);
-            properties.put("channelId", channelId);
-            properties.put("channelName", channelName);
-            properties.put("level", level);
-            properties.put("date", date);
-            properties.put("threadName", threadName);
-            properties.put("category", category);
-            properties.put("lineNumber", lineNumber);
-            properties.put("message", message);
-            properties.put("throwableInformation", throwableInformation);
+            svi.getContext().put("serverId", serverId);
+            svi.getContext().put("id", logId);
 
-            logController.addLogItem(new ServerLogItem(properties));
+            logController.addLogItem(svi);
             logId++;
         }
     }

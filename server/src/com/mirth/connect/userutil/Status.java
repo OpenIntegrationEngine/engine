@@ -15,7 +15,20 @@ package com.mirth.connect.userutil;
  * RECEIVED, FILTERED, TRANSFORMED, SENT, QUEUED, ERROR, PENDING
  */
 public enum Status {
-    RECEIVED, FILTERED, TRANSFORMED, SENT, QUEUED, ERROR, PENDING;
+    /** The message has been received by the connector. */
+    RECEIVED,
+    /** The message has been filtered by the connector. */
+    FILTERED,
+    /** The message has been transformed by the connector. */
+    TRANSFORMED,
+    /** The message has been sent by the connector and received a successful response. */
+    SENT,
+    /** The message is queued for processing. */
+    QUEUED,
+    /** The message has encountered an error. */
+    ERROR,
+    /** The message is pending processing. */
+    PENDING;
 
     private Status() {}
 

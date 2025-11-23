@@ -16,7 +16,28 @@ import org.apache.commons.lang3.text.WordUtils;
  * STOPPED
  */
 public enum DeployedState {
-    UNDEPLOYED, DEPLOYING, UNDEPLOYING, STARTING, STARTED, PAUSING, PAUSED, STOPPING, STOPPED, SYNCING, UNKNOWN;
+    /** The channel is disabled or not yet deployed. */
+    UNDEPLOYED, 
+    /** The channel is in the process of being deployed. */
+    DEPLOYING, 
+    /** The channel is in the process of being undeployed. */
+    UNDEPLOYING, 
+    /** The channel is in the process of starting. */
+    STARTING, 
+    /** The channel is running. */
+    STARTED, 
+    /** The channel is in the process of pausing. */
+    PAUSING, 
+    /** The channel is paused. */
+    PAUSED, 
+    /** The channel is in the process of stopping. */
+    STOPPING, 
+    /** The channel is stopped. */
+    STOPPED, 
+    /** The channel is in the process of syncing. */
+    SYNCING, 
+    /** The channel state is unknown. */
+    UNKNOWN;
 
     private DeployedState() {}
 

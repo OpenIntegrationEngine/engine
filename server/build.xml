@@ -141,7 +141,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${connectors.dicom}/lib" failonerror="false">
+		<copy todir="${connectors.dicom}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/dimse" />
 		</copy>
 		<jar destfile="${connectors.dicom}/dicom-shared.jar" basedir="${classes}">
@@ -164,7 +164,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${connectors.doc}/lib" failonerror="false">
+		<copy todir="${connectors.doc}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/doc" />
 		</copy>
 		<jar destfile="${connectors.doc}/doc-shared.jar" basedir="${classes}">
@@ -190,7 +190,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${connectors.file}/lib" failonerror="false">
+		<copy todir="${connectors.file}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/file" />
 		</copy>
 		<jar destfile="${connectors.file}/file-shared.jar" basedir="${classes}">
@@ -228,7 +228,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${connectors.http}/lib" failonerror="false">
+		<copy todir="${connectors.http}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/http" />
 		</copy>
 		<jar destfile="${connectors.http}/http-shared.jar" basedir="${classes}">
@@ -256,7 +256,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${connectors.jdbc}/lib" failonerror="false">
+		<copy todir="${connectors.jdbc}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/jdbc" />
 		</copy>
 		<jar destfile="${connectors.jdbc}/jdbc-shared.jar" basedir="${classes}">
@@ -286,7 +286,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${connectors.jms}/lib" failonerror="false">
+		<copy todir="${connectors.jms}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/jms" />
 		</copy>
 		<jar destfile="${connectors.jms}/jms-shared.jar" basedir="${classes}">
@@ -312,7 +312,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${connectors.js}/lib" failonerror="false">
+		<copy todir="${connectors.js}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/js" />
 		</copy>
 		<jar destfile="${connectors.js}/js-shared.jar" basedir="${classes}">
@@ -334,7 +334,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${connectors.smtp}/lib" failonerror="false">
+		<copy todir="${connectors.smtp}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/smtp" />
 		</copy>
 		<jar destfile="${connectors.smtp}/smtp-shared.jar" basedir="${classes}">
@@ -358,7 +358,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${connectors.tcp}/lib" failonerror="false">
+		<copy todir="${connectors.tcp}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/tcp" />
 		</copy>
 		<jar destfile="${connectors.tcp}/tcp-shared.jar" basedir="${classes}">
@@ -382,7 +382,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${connectors.vm}/lib" failonerror="false">
+		<copy todir="${connectors.vm}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/vm" />
 		</copy>
 		<jar destfile="${connectors.vm}/vm-shared.jar" basedir="${classes}">
@@ -404,7 +404,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${connectors.ws}/lib" failonerror="false">
+		<copy todir="${connectors.ws}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/ws" />
 		</copy>
 		<jar destfile="${connectors.ws}/ws-shared.jar" basedir="${classes}">
@@ -443,7 +443,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.datatype-delimited}/lib" failonerror="false">
+		<copy todir="${plugins.datatype-delimited}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/datatypes/delimited" />
 		</copy>
 		<jar destfile="${plugins.datatype-delimited}/datatype-delimited-shared.jar" basedir="${classes}">
@@ -465,7 +465,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.datatype-dicom}/lib" failonerror="false">
+		<copy todir="${plugins.datatype-dicom}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/datatypes/dicom" />
 		</copy>
 		<jar destfile="${plugins.datatype-dicom}/datatype-dicom-shared.jar" basedir="${classes}">
@@ -484,7 +484,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.datatype-edi}/lib" failonerror="false">
+		<copy todir="${plugins.datatype-edi}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/datatypes/edi" />
 		</copy>
 		<!-- copy the xml files so they will be included in jar -->
@@ -506,7 +506,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.datatype-hl7v2}/lib" failonerror="false">
+		<copy todir="${plugins.datatype-hl7v2}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/datatypes/hl7v2" />
 		</copy>
 		<jar destfile="${plugins.datatype-hl7v2}/datatype-hl7v2-shared.jar" basedir="${classes}">
@@ -526,7 +526,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.datatype-hl7v3}/lib" failonerror="false">
+		<copy todir="${plugins.datatype-hl7v3}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/datatypes/hl7v3" />
 		</copy>
 		<jar destfile="${plugins.datatype-hl7v3}/datatype-hl7v3-shared.jar" basedir="${classes}">
@@ -544,7 +544,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.datatype-ncpdp}/lib" failonerror="false">
+		<copy todir="${plugins.datatype-ncpdp}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/datatypes/ncpdp" />
 		</copy>
 		<jar destfile="${plugins.datatype-ncpdp}/datatype-ncpdp-shared.jar" basedir="${classes}">
@@ -562,7 +562,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.datatype-xml}/lib" failonerror="false">
+		<copy todir="${plugins.datatype-xml}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/datatypes/xml" />
 		</copy>
 		<jar destfile="${plugins.datatype-xml}/datatype-xml-shared.jar" basedir="${classes}">
@@ -580,7 +580,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.datatype-raw}/lib" failonerror="false">
+		<copy todir="${plugins.datatype-raw}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/datatypes/raw" />
 		</copy>
 		<jar destfile="${plugins.datatype-raw}/datatype-raw-shared.jar" basedir="${classes}">
@@ -598,7 +598,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.datatype-json}/lib" failonerror="false">
+		<copy todir="${plugins.datatype-json}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/datatypes/json" />
 		</copy>
 		<jar destfile="${plugins.datatype-json}/datatype-json-shared.jar" basedir="${classes}">
@@ -616,7 +616,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.directoryresource}/lib" failonerror="false">
+		<copy todir="${plugins.directoryresource}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/directoryresource" />
 		</copy>
 		<jar destfile="${plugins.directoryresource}/directoryresource-shared.jar" basedir="${classes}">
@@ -636,7 +636,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.dashboardstatus}/lib" failonerror="false">
+		<copy todir="${plugins.dashboardstatus}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/dashboardstatus" />
 		</copy>
 		<jar destfile="${plugins.dashboardstatus}/dashboardstatus-shared.jar" basedir="${classes}">
@@ -656,7 +656,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.destinationsetfilter}/lib" failonerror="false">
+		<copy todir="${plugins.destinationsetfilter}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/destinationsetfilter" />
 		</copy>
 		<jar destfile="${plugins.destinationsetfilter}/destinationsetfilter-shared.jar" basedir="${classes}">
@@ -672,7 +672,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.dicomviewer}/lib" failonerror="false">
+		<copy todir="${plugins.dicomviewer}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/dicomviewer" />
 		</copy>
 		
@@ -683,7 +683,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.globalmapviewer}/lib" failonerror="false">
+		<copy todir="${plugins.globalmapviewer}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/globalmapviewer" />
 		</copy>
 		<jar destfile="${plugins.globalmapviewer}/globalmapviewer-shared.jar" basedir="${classes}">
@@ -701,7 +701,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.httpauth}/lib" failonerror="false">
+		<copy todir="${plugins.httpauth}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/httpauth" />
 		</copy>
 		<jar destfile="${plugins.httpauth}/httpauth-shared.jar" basedir="${classes}">
@@ -742,7 +742,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.imageviewer}/lib" failonerror="false">
+		<copy todir="${plugins.imageviewer}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/imageviewer" />
 		</copy>
 
@@ -753,7 +753,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.javascriptrule}/lib" failonerror="false">
+		<copy todir="${plugins.javascriptrule}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/javascriptrule" />
 		</copy>
 		<jar destfile="${plugins.javascriptrule}/javascriptrule-shared.jar" basedir="${classes}">
@@ -767,7 +767,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.javascriptstep}/lib" failonerror="false">
+		<copy todir="${plugins.javascriptstep}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/javascriptstep" />
 		</copy>
 		<jar destfile="${plugins.javascriptstep}/javascriptstep-shared.jar" basedir="${classes}">
@@ -781,7 +781,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.mapper}/lib" failonerror="false">
+		<copy todir="${plugins.mapper}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/mapper" />
 		</copy>
 		<jar destfile="${plugins.mapper}/mapper-shared.jar" basedir="${classes}">
@@ -796,7 +796,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.messagebuilder}/lib" failonerror="false">
+		<copy todir="${plugins.messagebuilder}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/messagebuilder" />
 		</copy>
 		<jar destfile="${plugins.messagebuilder}/messagebuilder-shared.jar" basedir="${classes}">
@@ -810,7 +810,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.datapruner}/lib" failonerror="false">
+		<copy todir="${plugins.datapruner}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/datapruner" />
 		</copy>
 		<jar destfile="${plugins.datapruner}/datapruner-shared.jar" basedir="${classes}">
@@ -828,7 +828,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.mllpmode}/lib" failonerror="false">
+		<copy todir="${plugins.mllpmode}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/mllpmode" />
 		</copy>
 		<jar destfile="${plugins.mllpmode}/mllpmode-shared.jar" basedir="${classes}">
@@ -846,7 +846,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.pdfviewer}/lib" failonerror="false">
+		<copy todir="${plugins.pdfviewer}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/pdfviewer" />
 		</copy>
 
@@ -857,7 +857,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.textviewer}/lib" failonerror="false">
+		<copy todir="${plugins.textviewer}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/textviewer" />
 		</copy>
 
@@ -868,7 +868,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.rulebuilder}/lib" failonerror="false">
+		<copy todir="${plugins.rulebuilder}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/rulebuilder" />
 		</copy>
 		<jar destfile="${plugins.rulebuilder}/rulebuilder-shared.jar" basedir="${classes}">
@@ -883,7 +883,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.serverlog}/lib" failonerror="false">
+		<copy todir="${plugins.serverlog}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/serverlog" />
 		</copy>
 		<jar destfile="${plugins.serverlog}/serverlog-shared.jar" basedir="${classes}">
@@ -903,7 +903,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.scriptfilerule}/lib" failonerror="false">
+		<copy todir="${plugins.scriptfilerule}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/scriptfilerule" />
 		</copy>
 		<jar destfile="${plugins.scriptfilerule}/scriptfilerule-shared.jar" basedir="${classes}">
@@ -917,7 +917,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.scriptfilestep}/lib" failonerror="false">
+		<copy todir="${plugins.scriptfilestep}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/scriptfilestep" />
 		</copy>
 		<jar destfile="${plugins.scriptfilestep}/scriptfilestep-shared.jar" basedir="${classes}">
@@ -931,7 +931,7 @@
 				<include name="*.xml" />
 			</fileset>
 		</copy>
-		<copy todir="${plugins.xsltstep}/lib" failonerror="false">
+		<copy todir="${plugins.xsltstep}/lib" failonerror="false" quiet="true">
 			<fileset dir="${lib.extensions}/xsltstep" />
 		</copy>
 		<jar destfile="${plugins.xsltstep}/xsltstep-shared.jar" basedir="${classes}">
@@ -1198,13 +1198,11 @@
 	<target name="create-javadocs" depends="init">
 		<mkdir dir="${docs.javadocs}" />
 		
-		<javadoc sourcepath="${src}:${jdk_src_path}" destdir="${docs.javadocs.userapi}" packagenames="com.mirth.connect.server.userutil,com.mirth.connect.userutil,com.mirth.connect.plugins.httpauth.userutil" link="https://docs.oracle.com/javase/8/docs/api/">
+		<javadoc sourcepath="${src}:${jdk_src_path}" destdir="${docs.javadocs.userapi}" packagenames="com.mirth.connect.server.userutil,com.mirth.connect.userutil,com.mirth.connect.plugins.httpauth.userutil" link="https://docs.oracle.com/en/java/javase/17/docs/api/">
 			<classpath refid="classpath" />
-			<!-- Uncomment the following and add additional dashes in front of the arguments to allow Java 9+
-				<arg line="-html5"/>
-				<arg line="-add-modules java.sql.rowset"/>
-				<arg line="-add-exports java.sql.rowset/com.sun.rowset=ALL-UNNAMED"/>
-			-->
+			<arg line="-html5"/>
+			<arg line="--add-modules=java.sql.rowset"/>
+			<arg line="--add-exports=java.sql.rowset/com.sun.rowset=ALL-UNNAMED"/>
 		</javadoc>
 	</target>
 
@@ -1266,12 +1264,10 @@
 		
 		<javac srcdir="${test}" destdir="${test_classes}" debug="on" includeAntRuntime="false">
 			<classpath refid="testclasspath" />
-			<!-- Uncomment the following and add additional dashes in front of the arguments to allow Java 9+
-				<compilerarg value="-add-modules" />
-				<compilerarg value="java.sql.rowset,java.xml.ws" />
-				<compilerarg value="-add-exports" />
-				<compilerarg value="java.sql.rowset/com.sun.rowset=ALL-UNNAMED" />
-			-->
+			<compilerarg value="--add-modules=java.sql.rowset" />
+			<compilerarg value="--add-exports=java.sql.rowset/com.sun.rowset=ALL-UNNAMED" />
+			<compilerarg value="--add-exports=java.base/com.sun.crypto.provider=ALL-UNNAMED" />
+			<compilerarg value="--add-exports=java.base/sun.security.provider=ALL-UNNAMED" />
 		</javac>
 		
 		<copy todir="${test_classes}">
@@ -1285,30 +1281,55 @@
 			<include name="**/*" />
 		</jar>
 	</target>
-	
-	<taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
-		<classpath path="lib/ant/jacocoant.jar"/>
-	</taskdef>
-	
+
+	<path id="jacoco.classpath">
+		<fileset dir="lib/ant">
+			<include name="org.jacoco.ant-0.8.8.jar"/>
+			<include name="org.jacoco.core-0.8.8.jar"/>
+			<include name="org.jacoco.report-0.8.8.jar"/>
+			<include name="org.jacoco.agent-0.8.8.jar"/>
+			<include name="asm-9.2.jar"/>
+			<include name="asm-tree-9.2.jar"/>
+			<include name="asm-commons-9.2.jar"/>
+		</fileset>
+	</path>
+
+	<taskdef uri="antlib:org.jacoco.ant"
+			 resource="org/jacoco/ant/antlib.xml"
+			 classpathref="jacoco.classpath"/>
+
 	<target name="test-run" depends="test-compile">
 		<property name="junit-reports" value="junit-reports" />
+		<property name="junit-html" value="junit-html" />
 		<property name="code-coverage-reports" value="code-coverage-reports" />
+		<delete dir="${junit-reports}" />
+		<delete dir="${code-coverage-reports}" />
+		<delete dir="${junit-html}" />
+
 		<mkdir dir="${junit-reports}" />
 		<mkdir dir="${code-coverage-reports}" />
-		
+		<mkdir dir="${junit-html}" />
+
 		<jacoco:coverage destfile="${code-coverage-reports}/jacoco.exec" xmlns:jacoco="antlib:org.jacoco.ant" exclclassloader="sun.reflect.DelegatingClassLoader:javassist.Loader" >
 			<junit haltonfailure="false" fork="true" forkmode="once">
 				<jvmarg value="-Xms128m" />
 				<jvmarg value="-Xmx2048m" />
-				<!-- Uncomment the following and add additional dashes in front of the arguments to allow Java 9+
-					<jvmarg value="-add-opens=java.base/java.util=ALL-UNNAMED" />
-					<jvmarg value="-add-opens=java.base/java.lang=ALL-UNNAMED" />
-					<jvmarg value="-add-opens=java.base/java.lang.reflect=ALL-UNNAMED" />
-					<jvmarg value="-add-opens=java.base/java.text=ALL-UNNAMED" />
-					<jvmarg value="-add-opens=java.desktop/java.awt=ALL-UNNAMED" />
-					<jvmarg value="-add-opens=java.desktop/java.awt.font=ALL-UNNAMED" />
-					<jvmarg value="-add-opens=java.xml/com.sun.org.apache.xalan.internal.xsltc.trax=ALL-UNNAMED" />
-				-->
+				<!-- https://stackoverflow.com/questions/54205486 -->
+				<jvmarg value="-Xshare:off" />
+				<jvmarg value="--add-exports=java.base/com.sun.crypto.provider=ALL-UNNAMED" />
+				<jvmarg value="--add-opens=java.base/java.util=ALL-UNNAMED" />
+				<jvmarg value="--add-opens=java.base/java.lang=ALL-UNNAMED" />
+				<jvmarg value="--add-opens=java.base/java.lang.reflect=ALL-UNNAMED" />
+				<jvmarg value="--add-opens=java.base/java.text=ALL-UNNAMED" />
+				<jvmarg value="--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED"/>
+				<jvmarg value="--add-opens=java.desktop/java.awt=ALL-UNNAMED" />
+				<jvmarg value="--add-opens=java.desktop/java.awt.font=ALL-UNNAMED" />
+				<jvmarg value="--add-opens=java.sql/java.sql=ALL-UNNAMED"/>
+				<jvmarg value="--add-opens=java.sql.rowset/com.sun.rowset=ALL-UNNAMED"/>
+				<jvmarg value="--add-opens=java.sql.rowset/com.sun.rowset.internal=ALL-UNNAMED"/>
+				<jvmarg value="--add-opens=java.sql.rowset/com.sun.rowset.providers=ALL-UNNAMED"/>
+				<jvmarg value="--add-opens=java.sql.rowset/javax.sql.rowset=ALL-UNNAMED"/>
+				<jvmarg value="--add-opens=java.xml/com.sun.org.apache.xalan.internal.xsltc.trax=ALL-UNNAMED" />
 				<classpath>
 					<path refid="testclasspath" />
 					<dirset dir="${test_classes}"/>
@@ -1321,6 +1342,14 @@
 				</batchtest>
 			</junit>
 		</jacoco:coverage>
+
+		<!-- Generate HTML report from JUnit XML output -->
+		<junitreport todir="${junit-reports}">
+			<fileset dir="${junit-reports}">
+				<include name="TEST-*.xml"/>
+			</fileset>
+			<report format="frames" todir="${junit-html}" />
+		</junitreport>
 	</target>
 	
 	<target name="remove-classes" depends="init">

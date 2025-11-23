@@ -16,6 +16,9 @@ import java.util.Set;
 
 import com.mirth.connect.donkey.server.Constants;
 
+/**
+ * Collection implementing the Source Map.
+ */
 public class SourceMap implements Map<String, Object> {
 
     private Map<String, Object> delegate;

@@ -31,6 +31,12 @@ public class DatabaseConnectionFactory {
     private Map<String, CustomDriverInfo> customDriverInfoMap;
     private Logger logger = LogManager.getLogger(getClass());
 
+    /**
+     * Instantiates a new DatabaseConnectionFactory with the specified MirthContextFactory.
+     * 
+     * @param contextFactory
+     *            The MirthContextFactory to use when creating database connections.
+     */
     public DatabaseConnectionFactory(MirthContextFactory contextFactory) {
         this.contextFactory = contextFactory;
     }

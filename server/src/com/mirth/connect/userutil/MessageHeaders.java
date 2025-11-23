@@ -18,10 +18,20 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A wrapper around a Map of HTTP headers that provides convenience methods for accessing header
+ * values.
+ */
 public class MessageHeaders {
     private static Logger logger = LogManager.getLogger(MessageHeaders.class);
     private Map<String, List<String>> delegate;
 
+    /**
+     * Instantiates a new MessageHeaders object that wraps the given Map of HTTP headers.
+     * 
+     * @param delegate
+     *            The Map of HTTP headers to wrap.
+     */
     public MessageHeaders(Map<String, List<String>> delegate) {
         this.delegate = delegate;
     }

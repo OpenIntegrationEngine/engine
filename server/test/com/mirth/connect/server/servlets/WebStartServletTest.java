@@ -54,7 +54,7 @@ public class WebStartServletTest {
 
 		webStartServlet.doGet(request, response);
 
-		assertEquals(CORE_JNLP.trim(), response.getResponseString().trim());
+		assertEquals(normalizeWhitespace(CORE_JNLP), normalizeWhitespace(response.getResponseString()));
 		assertEquals("application/x-java-jnlp-file", response.getContentType());
 		assertEquals("no-cache", response.getHeader("Pragma"));
 		assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
@@ -70,7 +70,7 @@ public class WebStartServletTest {
 
 		webStartServlet.doGet(request, response);
 
-		assertEquals(CORE_JNLP.trim(), response.getResponseString().trim());
+		assertEquals(normalizeWhitespace(CORE_JNLP), normalizeWhitespace(response.getResponseString()));
 		assertEquals("application/x-java-jnlp-file", response.getContentType());
 		assertEquals("no-cache", response.getHeader("Pragma"));
 		assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
@@ -100,7 +100,7 @@ public class WebStartServletTest {
 
 		webStartServlet.doGet(request, response);
 
-		assertEquals(CORE_JNLP.trim(), response.getResponseString().trim());
+		assertEquals(normalizeWhitespace(CORE_JNLP), normalizeWhitespace(response.getResponseString()));
 		assertEquals("application/x-java-jnlp-file", response.getContentType());
 		assertEquals("attachment; filename = \"webstart.jnlp\"", response.getHeader("Content-Disposition"));
 	}
@@ -216,7 +216,7 @@ public class WebStartServletTest {
 
 		webStartServlet.doGet(request, response);
 
-		assertEquals(EXTENSION_JNLP.trim(), response.getResponseString().trim());
+		assertEquals(normalizeWhitespace(EXTENSION_JNLP), normalizeWhitespace(response.getResponseString()));
 		assertEquals("application/x-java-jnlp-file", response.getContentType());
 		assertEquals("no-cache", response.getHeader("Pragma"));
 		assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
@@ -233,7 +233,7 @@ public class WebStartServletTest {
 
 		webStartServlet.doGet(request, response);
 
-		assertEquals(EXTENSION_JNLP.trim(), response.getResponseString().trim());
+		assertEquals(normalizeWhitespace(EXTENSION_JNLP), normalizeWhitespace(response.getResponseString()));
 		assertEquals("application/x-java-jnlp-file", response.getContentType());
 		assertEquals("no-cache", response.getHeader("Pragma"));
 		assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
@@ -534,6 +534,12 @@ public class WebStartServletTest {
 		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 		dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
 		return dbf;
+	}
+
+	private static String normalizeWhitespace(String input) {
+		// normalize whitespace (including new lines) to a single space
+		// (the round-trip munges newlines depending on OS and on the phase of the moon)
+		return input.trim().replaceAll("[\\s\\r\\n ]+", " ");
 	}
 
 	private static String CORE_JNLP = "<jnlp codebase=\"https://localhost:8443\" version=\"4.5.2\">\n"

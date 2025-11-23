@@ -19,8 +19,11 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
  * Web Service Sender, the variable must reference a list of AttachmentEntry objects.
  */
 public class AttachmentEntry implements Serializable {
+    /** The name of the attachment entry. */
     private String name;
+    /** The content of the attachment entry. */
     private String content;
+    /** The MIME type of the attachment entry. */
     private String mimeType;
 
     /**

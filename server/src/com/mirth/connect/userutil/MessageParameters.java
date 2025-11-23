@@ -18,10 +18,20 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * A wrapper around a Map of HTTP parameters that provides convenience methods for accessing
+ * parameter values.
+ */
 public class MessageParameters {
     private static Logger logger = LogManager.getLogger(MessageParameters.class);
     private Map<String, List<String>> delegate;
 
+    /**
+     * Instantiates a new MessageParameters object that wraps the given Map of HTTP parameters.
+     * 
+     * @param delegate
+     *            The Map of HTTP parameters to wrap.
+     */
     public MessageParameters(Map<String, List<String>> delegate) {
         this.delegate = delegate;
     }

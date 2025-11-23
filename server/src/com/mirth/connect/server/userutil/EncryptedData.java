@@ -17,6 +17,15 @@ public class EncryptedData {
     private String header;
     private byte[] encryptedData;
 
+    /**
+     * Instantiates a new EncryptedData object with the specified header and encrypted data.
+     * 
+     * @param header
+     *            The meta-information about the encrypted data, including the algorithm and
+     *            initialization vector used.
+     * @param encryptedData
+     *            The encrypted data as a byte array.
+     */
     public EncryptedData(String header, byte[] encryptedData) {
         this.header = header;
         this.encryptedData = encryptedData;
@@ -25,6 +34,8 @@ public class EncryptedData {
     /**
      * Returns the meta-information about the encrypted data. Includes the algorithm and
      * initialization vector used.
+     * 
+     * @return The header information as a string.
      */
     public String getHeader() {
         return header;
@@ -32,6 +43,8 @@ public class EncryptedData {
 
     /**
      * Returns the encrypted data as a byte array.
+     * 
+     * @return The encrypted data.
      */
     public byte[] getEncryptedData() {
         return encryptedData;

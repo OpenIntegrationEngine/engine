@@ -107,8 +107,13 @@ Desktop.ini
 donkey/donkey-src
 donkey/donkey-test
 .sonar
+# Unit Tests:
 **/junit-reports
+**/junit-html
 **/code-coverage-reports
+/exports/
+/MapUtilTestDB/
+/testconf/
 
 # /client/
 /client/logs

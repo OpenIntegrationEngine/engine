@@ -56,6 +56,12 @@ public class MirthCachedRowSet implements CachedRowSet {
     private RowSetMetaDataImpl RowSetMD;
     private CachedRowSet delegate = RowSetProvider.newFactory().createCachedRowSet();
 
+    /**
+     * Instantiates a new MirthCachedRowSet object.
+     * 
+     * @throws SQLException
+     *             If a database access error occurs.
+     */
     public MirthCachedRowSet() throws SQLException {
         super();
     }

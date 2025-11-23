@@ -19,7 +19,36 @@ import org.apache.commons.lang3.text.WordUtils;
  * POSTPROCESSOR_ERROR, RESPONSE_ERROR, SOURCE_MAP
  */
 public enum ContentType {
-    RAW, PROCESSED_RAW, TRANSFORMED, ENCODED, SENT, RESPONSE, RESPONSE_TRANSFORMED, PROCESSED_RESPONSE, CONNECTOR_MAP, CHANNEL_MAP, RESPONSE_MAP, PROCESSING_ERROR, POSTPROCESSOR_ERROR, RESPONSE_ERROR, SOURCE_MAP;
+    /** The inbound message as received by the channel after attachment extraction but before preprocessor modification. */
+    RAW,
+    /** The inbound message after preprocessor script execution. */
+    PROCESSED_RAW,
+    /** The internal representation of the message after transformer execution. */
+    TRANSFORMED,
+    /** The message data deserialized from transformed data into the outbound data type. */
+    ENCODED,
+    /** Snapshot of destination connector properties before message dispatch attempt. */
+    SENT,
+    /** The response object returned by the destination connector after dispatch attempt. */
+    RESPONSE,
+    /** The internal representation of response content serialized into the response inbound data type. */
+    RESPONSE_TRANSFORMED,
+    /** The response content deserialized from internal representation into the response outbound data type. */
+    PROCESSED_RESPONSE,
+    /** Map containing connector-specific variables and data. */
+    CONNECTOR_MAP,
+    /** Map containing channel-specific variables and data. */
+    CHANNEL_MAP,
+    /** Map containing response-specific variables and data. */
+    RESPONSE_MAP,
+    /** Content containing error information from message processing. */
+    PROCESSING_ERROR,
+    /** Content containing error information from postprocessor execution. */
+    POSTPROCESSOR_ERROR,
+    /** Content containing error information from response processing. */
+    RESPONSE_ERROR,
+    /** Map containing source connector variables and data. */
+    SOURCE_MAP;
 
     private ContentType() {}
 

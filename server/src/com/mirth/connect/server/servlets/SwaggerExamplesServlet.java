@@ -1286,19 +1286,7 @@ public class SwaggerExamplesServlet extends HttpServlet {
 	}
 	
 	private ServerLogItem getServerLogItemExample() {
-	    // return new ServerLogItem(UUID.randomUUID().toString(), 1L, "INFO", dateNow.getTime(), "Main Server Thread", "com.mirth.connect.server.Mirth", "1", "Example message", "Example throwable information");
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("serverId", UUID.randomUUID().toString());
-        properties.put("id", 1L);
-        properties.put("channelId", "INFO");
-        properties.put("date", dateNow.getTime());
-        properties.put("threadName", "Main Server Thread");
-        properties.put("category", "com.mirth.connect.server.Mirth");
-        properties.put("lineNumber", "1");
-        properties.put("message", "Example Message");
-        properties.put("throwableInformation", "Example throwable Information");
-
-	    return new ServerLogItem(properties);
+	    return new ServerLogItem(UUID.randomUUID().toString(), 1L, "INFO", dateNow.getTime(), "Main Server Thread", "com.mirth.connect.server.Mirth", "1", "Example message", "Example throwable information");
     }
 	
 	private List<ServerLogItem> getServerLogItemListExample() {

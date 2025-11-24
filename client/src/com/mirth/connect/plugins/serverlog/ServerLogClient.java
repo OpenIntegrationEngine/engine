@@ -24,9 +24,7 @@ import com.mirth.connect.plugins.DashboardTablePlugin;
 public class ServerLogClient extends DashboardTabPlugin {
     private ServerLogPanel serverLogPanel;
     private LinkedList<ServerLogItem> serverLogs;
-    private static final ServerLogItem unauthorizedLog = new ServerLogItem(new HashMap<String, Object>(){{
-            put("message", "You are not authorized to view the server log.");
-    }});
+    private static final ServerLogItem unauthorizedLog = new ServerLogItem("You are not authorized to view the server log.");
     private int currentServerLogSize;
     private boolean receivedNewLogs;
     private Long lastLogId;

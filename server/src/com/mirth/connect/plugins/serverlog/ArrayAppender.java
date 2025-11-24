@@ -38,14 +38,6 @@ public class ArrayAppender extends AbstractAppender {
             return;
         }
 
-        String channelId = null;
-        String channelName = null;
-
-        if (logEvent.getContextData() != null) {
-            channelId = logEvent.getContextData().getValue("channelId");
-            channelName = logEvent.getContextData().getValue("channelName");
-        }
-
         String level = String.valueOf(logEvent.getLevel());
         Date date = new Date(logEvent.getTimeMillis());
         String threadName = logEvent.getThreadName();
@@ -71,17 +63,6 @@ public class ArrayAppender extends AbstractAppender {
             throwableInformation = logText.toString();
         }
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("channelId", channelId);
-        properties.put("channelName", channelName);
-        properties.put("level", level);
-        properties.put("date", date);
-        properties.put("threadName", threadName);
-        properties.put("category", category);
-        properties.put("lineNumber", lineNumber);
-        properties.put("message", message);
-        properties.put("throwableInformation", throwableInformation);
-
-        serverLogProvider.newServerLogReceived(new ServerLogItem(properties));
+        serverLogProvider.newServerLogReceived(level, date, threadName, category, lineNumber, message, throwableInformation, logEvent.getContextData().toMap());
     }
 }

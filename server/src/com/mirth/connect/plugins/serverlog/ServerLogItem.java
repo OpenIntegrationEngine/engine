@@ -24,7 +24,6 @@ public class ServerLogItem implements Serializable {
 
     private String serverId;
     private Long id;
-    private String channelId;
     private String level;
     private Date date;
     private String threadName;
@@ -32,29 +31,31 @@ public class ServerLogItem implements Serializable {
     private String lineNumber;
     private String message;
     private String throwableInformation;
-    private String channelName;
-    private HashMap<String, Object> context;
+    private Map<String, String> attributes;
 
-    public ServerLogItem() {}
+    public ServerLogItem() {
+        this(null, null, null, null, null, null, null, null, null, new HashMap<>());
+    }
 
-    public ServerLogItem(Map<String, Object> properties) {
-        if (properties != null) {
-            this.context = new HashMap<>(properties);
-        } else {
-            this.context = new HashMap<>();
-        }
+    public ServerLogItem(String message) {
+        this(null, null, null, null, null, null, null, message, null, new HashMap<>());
+    }
 
-        this.serverId = (String) context.getOrDefault("serverId", "");
-        this.id = (Long) context.getOrDefault("id", 0L);
-        this.channelId = (String) context.getOrDefault("channelId", "");
-        this.channelName = (String) context.getOrDefault("channelName", "");
-        this.level = (String) context.getOrDefault("level", "");
-        this.date = (Date) context.getOrDefault("date", Date.from(Instant.now()));
-        this.threadName = (String) context.getOrDefault("threadName", "");
-        this.category = (String) context.getOrDefault("category", "");
-        this.lineNumber = (String) context.getOrDefault("lineNumber", "");
-        this.message = (String) context.getOrDefault("message", "");
-        this.throwableInformation = (String) context.getOrDefault("throwableInformation", "");
+    public ServerLogItem(String serverId, Long id, String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation) {
+        this(serverId, id, level, date, threadName, category, lineNumber, message, throwableInformation, new HashMap<>());
+    }
+
+    public ServerLogItem(String serverId, Long id, String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation, Map<String, String> attributes) {
+        this.serverId = serverId;
+        this.id = id;
+        this.level = level;
+        this.date = date;
+        this.threadName = threadName;
+        this.category = category;
+        this.lineNumber = lineNumber;
+        this.message = message;
+        this.throwableInformation = throwableInformation;
+        this.attributes = attributes;
     }
 
     public String getServerId() {
@@ -71,14 +72,6 @@ public class ServerLogItem implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
-    }
-    
-    public String getChannelId() {
-        return channelId;
-    }
-    
-    public void setChannelId(String channelId) {
-        this.channelId = channelId;
     }
 
     public String getLevel() {
@@ -136,21 +129,33 @@ public class ServerLogItem implements Serializable {
     public void setThrowableInformation(String throwableInformation) {
         this.throwableInformation = throwableInformation;
     }
-    
-    public String getChannelName() {
-        return channelName;
-    }
-    
-    public void setChannelName(String channelName) {
-        this.channelName = channelName;
-    }
-    
-    public Map<String, Object> getContext() {
-        return context;
+
+    public Map<String, String> getAttributes() {
+        return attributes;
     }
 
-    public void setContext(Map<String, Object> context) {
-        this.context = new HashMap<>(context);
+    public void setAttributes(Map<String, String> attributes) {
+        if (attributes == null) {
+            this.attributes = new HashMap<String, String>();
+        } else {
+            this.attributes = attributes;
+        }
+    }
+
+    public String getChannelId() {
+        return this.attributes.get("channelId");
+    }
+
+    public void setChannelId(String channelId) {
+        this.attributes.put("channelId", channelId);
+    }
+
+    public String getChannelName() {
+        return this.attributes.get("channelName");
+    }
+
+    public void setChannelName(String channelName) {
+        this.attributes.put("channelName", channelName);
     }
 
     @Override

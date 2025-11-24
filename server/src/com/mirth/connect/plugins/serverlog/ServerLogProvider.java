@@ -57,12 +57,9 @@ public class ServerLogProvider implements ServicePlugin {
         initialize();
     }
 
-    public synchronized void newServerLogReceived(ServerLogItem svi) {
+    public synchronized void newServerLogReceived(String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation, Map<String, String> attributes) {
         if (logController != null) {
-            svi.getContext().put("serverId", serverId);
-            svi.getContext().put("id", logId);
-
-            logController.addLogItem(svi);
+            logController.addLogItem(new ServerLogItem(serverId, logId, level, date, threadName, category, lineNumber, message, throwableInformation, attributes));
             logId++;
         }
     }

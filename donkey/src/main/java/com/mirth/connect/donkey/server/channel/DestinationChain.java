@@ -68,7 +68,7 @@ public class DestinationChain implements Callable<List<ConnectorMessage>> {
 
         try (CloseableThreadContext.Instance ctc = CloseableThreadContext
                 .put("channelId", channelId)
-                .put("channelName", channelName != null ? channelName : "")
+                .put("channelName", channelName)
         ) {
             try {
                 Thread.currentThread().setName(name + " < " + originalThreadName);

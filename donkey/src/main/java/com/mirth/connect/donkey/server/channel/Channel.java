@@ -536,6 +536,7 @@ public class Channel implements Runnable {
             for (DestinationChainProvider chainProvider : destinationChainProviders) {
                 chainProvider.setDaoFactory(daoFactory);
                 chainProvider.setStorageSettings(storageSettings);
+                chainProvider.setChannelName(name);
 
                 for (Integer metaDataId : chainProvider.getMetaDataIds()) {
                     DestinationConnector destinationConnector = chainProvider.getDestinationConnectors().get(metaDataId);

@@ -35,11 +35,15 @@ public class DestinationChain implements Callable<List<ConnectorMessage>> {
     private List<Integer> enabledMetaDataIds = new ArrayList<Integer>();
     private Logger logger = LogManager.getLogger(getClass());
     private String name;
+    private String channelId;
+    private String channelName;
 
     public DestinationChain(DestinationChainProvider chainProvider) {
         this.chainProvider = chainProvider;
         enabledMetaDataIds = new ArrayList<Integer>(chainProvider.getMetaDataIds());
-        name = "Destination Chain Thread on " + chainProvider.getChannelId();
+        channelId = chainProvider.getChannelId();
+        channelName = chainProvider.getChannelName();
+        name = "Destination Chain Thread on " + channelId;
     }
 
     public void setMessage(ConnectorMessage message) {
@@ -61,23 +65,17 @@ public class DestinationChain implements Callable<List<ConnectorMessage>> {
     @Override
     public List<ConnectorMessage> call() throws InterruptedException {
         String originalThreadName = Thread.currentThread().getName();
-        try {
-            Thread.currentThread().setName(name + " < " + originalThreadName);
-            String channelId = chainProvider.getChannelId();
-            String channelName = null;
 
-            if (!chainProvider.getDestinationConnectors().isEmpty()) {
-                channelName = chainProvider.getDestinationConnectors().values().iterator().next().getChannel().getName();
-            }
-
-            try (CloseableThreadContext.Instance ctc = CloseableThreadContext
-                    .put("channelId", channelId)
-                    .put("channelName", channelName != null ? channelName : "")
-            ) {
+        try (CloseableThreadContext.Instance ctc = CloseableThreadContext
+                .put("channelId", channelId)
+                .put("channelName", channelName != null ? channelName : "")
+        ) {
+            try {
+                Thread.currentThread().setName(name + " < " + originalThreadName);
                 return doCall();
+            } finally {
+                Thread.currentThread().setName(originalThreadName);
             }
-        } finally {
-            Thread.currentThread().setName(originalThreadName);
         }
     }
 

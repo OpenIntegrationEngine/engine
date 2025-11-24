@@ -169,4 +169,3 @@ public class ServerLogClient extends DashboardTabPlugin {
         return ServerLogServletInterface.PLUGIN_POINT;
     }
 }
-

@@ -1287,7 +1287,7 @@ public class SwaggerExamplesServlet extends HttpServlet {
 	
 	private ServerLogItem getServerLogItemExample() {
 	    return new ServerLogItem(UUID.randomUUID().toString(), 1L, "INFO", dateNow.getTime(), "Main Server Thread", "com.mirth.connect.server.Mirth", "1", "Example message", "Example throwable information");
-    }
+	}
 	
 	private List<ServerLogItem> getServerLogItemListExample() {
 	    List<ServerLogItem> serverLogList = new ArrayList<>();

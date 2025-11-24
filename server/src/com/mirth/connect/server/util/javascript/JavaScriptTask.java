@@ -117,8 +117,8 @@ public abstract class JavaScriptTask<T> implements Callable<T> {
     public final T call() throws Exception {
         String originalThreadName = Thread.currentThread().getName();
         try (CloseableThreadContext.Instance ctc = CloseableThreadContext
-                .put("channelId", channelId != null ? channelId : "")
-                .put("channelName", channelName != null ? channelName : "")
+                .put("channelId", channelId)
+                .put("channelName", channelName)
         ) {
             Thread.currentThread().setName(threadName + " < " + originalThreadName);
             

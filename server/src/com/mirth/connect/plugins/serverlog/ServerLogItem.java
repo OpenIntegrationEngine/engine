@@ -11,7 +11,6 @@ package com.mirth.connect.plugins.serverlog;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;

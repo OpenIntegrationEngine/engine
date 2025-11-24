@@ -616,7 +616,10 @@ public abstract class DestinationConnector extends Connector implements Runnable
     @Override
     public void run() {
         // Add channel info to ThreadContext
-        try (CloseableThreadContext.Instance ctc = CloseableThreadContext.put("channelId", getChannelId()).put("channelName", channel.getName())) {
+        try (CloseableThreadContext.Instance ctc = CloseableThreadContext
+                .put("channelId", getChannelId())
+                .put("channelName", channel.getName())
+        ) {
             DonkeyDao dao = null;
             boolean commitSuccess = false;
             Serializer serializer = channel.getSerializer();

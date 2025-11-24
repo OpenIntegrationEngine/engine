@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.StringUtils;
 
 public class ServerLogItem implements Serializable {
@@ -141,18 +142,22 @@ public class ServerLogItem implements Serializable {
         }
     }
 
+    @JsonIgnore
     public String getChannelId() {
         return this.attributes.get("channelId");
     }
 
+    @JsonIgnore
     public void setChannelId(String channelId) {
         this.attributes.put("channelId", channelId);
     }
 
+    @JsonIgnore
     public String getChannelName() {
         return this.attributes.get("channelName");
     }
 
+    @JsonIgnore
     public void setChannelName(String channelName) {
         this.attributes.put("channelName", channelName);
     }

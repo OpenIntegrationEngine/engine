@@ -9,7 +9,9 @@
 
 package com.mirth.connect.plugins.serverlog;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import javax.swing.JComponent;
 
@@ -167,3 +169,4 @@ public class ServerLogClient extends DashboardTabPlugin {
         return ServerLogServletInterface.PLUGIN_POINT;
     }
 }
+

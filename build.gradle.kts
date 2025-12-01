@@ -2,7 +2,7 @@
  * Root build file
  * 
  * For more detailed information on multi-project builds, please refer to 
- * https://docs.gradle.org/8.14.3/userguide/multi_project_builds.html
+ * https://docs.gradle.org/9.2.1/userguide/multi_project_builds.html
  */
 
 // Configure Ant to have access to JUnit task

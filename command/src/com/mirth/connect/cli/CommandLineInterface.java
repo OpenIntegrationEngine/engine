@@ -180,16 +180,20 @@ public class CommandLineInterface {
             client = new Client(server);
             this.debug = debug;
 
-            LoginStatus loginStatus = null;
+            LoginStatus loginStatus;
             try {
                 loginStatus = client.login(user, password);
             } catch (UnauthorizedException ex) {
                 if (ex.getResponse() != null && ex.getResponse() instanceof LoginStatus) { 
                     loginStatus = (LoginStatus) ex.getResponse(); 
                 } 
+                else { 
+                    error("Could not login to server.", ex);
+                    return;
+                }
             }
             
-            if (loginStatus == null || loginStatus.getStatus() != LoginStatus.Status.SUCCESS) {
+            if (loginStatus.getStatus() != LoginStatus.Status.SUCCESS) {
                 error("Could not login to server. Status: " + loginStatus.getStatus(), null);
                 return;
             }

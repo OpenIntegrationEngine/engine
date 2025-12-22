@@ -193,7 +193,7 @@ public class CommandLineInterface {
                 }
             }
             
-            if (loginStatus.getStatus() != LoginStatus.Status.SUCCESS) {
+            if (!loginStatus.isSuccess()) {
                 error("Could not login to server. Status: " + loginStatus.getStatus(), null);
                 return;
             }

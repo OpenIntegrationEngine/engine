@@ -58,6 +58,7 @@ import com.mirth.connect.client.core.ListHandlerException;
 import com.mirth.connect.client.core.PaginatedEventList;
 import com.mirth.connect.client.core.PaginatedMessageList;
 import com.mirth.connect.client.core.PropertiesConfigurationUtil;
+import com.mirth.connect.client.core.UnauthorizedException;
 import com.mirth.connect.donkey.model.channel.DeployedState;
 import com.mirth.connect.donkey.model.message.ContentType;
 import com.mirth.connect.donkey.model.message.Message;
@@ -179,10 +180,17 @@ public class CommandLineInterface {
             client = new Client(server);
             this.debug = debug;
 
-            LoginStatus loginStatus = client.login(user, password);
-
-            if (loginStatus.getStatus() != LoginStatus.Status.SUCCESS) {
-                error("Could not login to server.", null);
+            LoginStatus loginStatus = null;
+            try {
+                loginStatus = client.login(user, password);
+            } catch (UnauthorizedException ex) {
+                if (ex.getResponse() != null && ex.getResponse() instanceof LoginStatus) { 
+                    loginStatus = (LoginStatus) ex.getResponse(); 
+                } 
+            }
+            
+            if (loginStatus == null || loginStatus.getStatus() != LoginStatus.Status.SUCCESS) {
+                error("Could not login to server. Status: " + loginStatus.getStatus(), null);
                 return;
             }
 

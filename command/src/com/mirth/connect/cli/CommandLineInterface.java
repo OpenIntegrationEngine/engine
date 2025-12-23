@@ -184,8 +184,8 @@ public class CommandLineInterface {
             try {
                 loginStatus = client.login(user, password);
             } catch (UnauthorizedException ex) {
-                if (ex.getResponse() instanceof LoginStatus) { 
-                    loginStatus = (LoginStatus) ex.getResponse(); 
+                if (ex.getResponse() instanceof LoginStatus status) { 
+                    loginStatus = status; 
                 } 
                 else { 
                     error("Could not login to server.", ex);

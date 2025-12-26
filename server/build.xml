@@ -1021,6 +1021,9 @@
 		<!-- make oieserver script executable on unix platforms -->
 		<chmod file="${setup}/oieserver" perm="755"/>
 
+		<!-- make scripts executable on unix platforms -->
+		<chmod file="${setup}/configure-from-env" perm="755"/>
+
 		<!-- create the server jar -->
 		<jar destfile="${setup.server.lib}/${server.jar}" basedir="${classes}" modificationTime="${archive.entry.date}">
 			<include name="com/mirth/connect/server/**" />

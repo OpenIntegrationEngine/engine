@@ -11,7 +11,7 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.10.0"
 }
 
-rootProject.name = "OIE"
+rootProject.name = "oie"
 include("client")
 include("command")
 include("donkey")

@@ -2,4 +2,3 @@
 # Add key=value pairs of SDKs to use below
 java=17.0.17.fx-zulu
 ant=1.10.14
-gradle=9.2.1

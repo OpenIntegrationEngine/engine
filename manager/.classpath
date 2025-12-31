@@ -30,7 +30,7 @@
 	<classpathentry kind="lib" path="lib/looks-2.3.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-io-2.13.0.jar"/>
 	<classpathentry kind="lib" path="lib/commons-configuration2-2.8.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons-lang3-3.13.0.jar"/>
+	<classpathentry kind="lib" path="lib/commons-lang3-3.20.0.jar"/>
 	<classpathentry kind="lib" path="lib/commons-collections4-4.4.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Donkey">
 		<accessrules>
@@ -45,7 +45,7 @@
 	<classpathentry kind="lib" path="lib/swingx-core-1.6.2.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.16.0.jar"/>
 	<classpathentry kind="lib" path="lib/httpcore-4.4.13.jar"/>
-	<classpathentry kind="lib" path="lib/commons-text-1.10.0.jar"/>
+	<classpathentry kind="lib" path="lib/commons-text-1.15.0.jar"/>
 	<classpathentry kind="lib" path="lib/commons-beanutils-1.9.4.jar"/>
 	<classpathentry kind="lib" path="lib/httpclient-4.5.13.jar"/>
 	<classpathentry kind="lib" path="lib/httpmime-4.5.13.jar"/>

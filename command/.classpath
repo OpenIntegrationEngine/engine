@@ -48,7 +48,7 @@
 			<attribute name="javadoc_location" value="http://commons.apache.org/cli/api-release/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/commons-lang3-3.13.0.jar"/>
+	<classpathentry kind="lib" path="lib/commons-lang3-3.20.0.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.2.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="http://commons.apache.org/logging/apidocs/"/>

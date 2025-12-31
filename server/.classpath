@@ -46,10 +46,10 @@
 	<classpathentry kind="lib" path="lib/extensions/dimse/dcm4che-tool-dcmrcv-2.0.29.jar"/>
 	<classpathentry kind="lib" path="lib/extensions/dimse/dcm4che-tool-dcmsnd-2.0.29.jar"/>
 	<classpathentry kind="lib" path="lib/mybatis-3.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons/commons-lang3-3.13.0.jar"/>
+	<classpathentry kind="lib" path="lib/commons/commons-lang3-3.20.0.jar"/>
 	<classpathentry kind="lib" path="lib/commons/commons-io-2.13.0.jar"/>
 	<classpathentry kind="lib" path="lib/commons/commons-math3-3.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons/commons-text-1.10.0.jar"/>
+	<classpathentry kind="lib" path="lib/commons/commons-text-1.15.0.jar"/>
 	<classpathentry kind="lib" path="lib/log4j/log4j-1.2-api-2.17.2.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="https://logging.apache.org/log4j/2.x/log4j-1.2-api/apidocs/"/>
@@ -269,7 +269,5 @@
 	<classpathentry kind="lib" path="lib/rhino-1.7.13.jar"/>
 	<classpathentry kind="lib" path="lib/commons/commons-fileupload-1.5.jar"/>
 	<classpathentry kind="lib" path="lib/xstream-1.4.20.jar"/>
-	<classpathentry kind="lib" path="lib/xercesImpl-2.12.2.jar"/>
-	<classpathentry kind="lib" path="lib/xml-apis-1.4.01.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

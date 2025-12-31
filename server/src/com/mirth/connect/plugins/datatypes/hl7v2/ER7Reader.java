@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: 2025 Tony Germano
 
 package com.mirth.connect.plugins.datatypes.hl7v2;
 
@@ -16,13 +11,14 @@ import java.util.StringTokenizer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.xerces.parsers.SAXParser;
+import org.openintegrationengine.engine.plugins.datatypes.AbstractXMLReader;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-public class ER7Reader extends SAXParser {
+public class ER7Reader extends AbstractXMLReader {
     private Logger logger = LogManager.getLogger(this.getClass());
+
     private boolean handleRepetitions = false;
     private boolean handleSubcomponents = false;
     private String segmentDelimiter;
@@ -54,7 +50,10 @@ public class ER7Reader extends SAXParser {
         return builder.toString().trim();
     }
 
+    @Override
     public void parse(InputSource source) throws SAXException, IOException {
+        ensureHandlerSet();
+
         String message = getMessageFromSource(source);
         ContentHandler contentHandler = getContentHandler();
         contentHandler.startDocument();
@@ -131,10 +130,10 @@ public class ER7Reader extends SAXParser {
 
                 if (segmentIndex == 0) {
                     documentHead = MESSAGE_ROOT_ID;
-                    contentHandler.startElement("", documentHead, "", null);
+                    contentHandler.startElement("", documentHead, "", getEmptyAttributes());
                 }
 
-                contentHandler.startElement("", segmentId, "", null);
+                contentHandler.startElement("", segmentId, "", getEmptyAttributes());
                 handleFieldOrRepetitions(contentHandler, fieldSeparator, componentSeparator, subcomponentSeparator, repetitionSeparator, escapeCharacter, segmentId, fieldTokenizer);
                 contentHandler.endElement("", segmentId, "");
             } else {
@@ -160,7 +159,7 @@ public class ER7Reader extends SAXParser {
             // the naming is SEG.<field#>
             if (field.equals(fieldSeparator)) {
                 if (atLastField) {
-                    contentHandler.startElement("", segmentId + "." + fieldId, "", null);
+                    contentHandler.startElement("", segmentId + "." + fieldId, "", getEmptyAttributes());
                     contentHandler.endElement("", segmentId + "." + fieldId, "");
                 }
 
@@ -176,11 +175,11 @@ public class ER7Reader extends SAXParser {
                 }
 
                 if (enteredHeader && (fieldId == 1)) {
-                    contentHandler.startElement("", segmentId + "." + fieldId, "", null);
+                    contentHandler.startElement("", segmentId + "." + fieldId, "", getEmptyAttributes());
                     contentHandler.characters(fieldSeparator.toCharArray(), 0, 1);
-                    contentHandler.endElement("", segmentId + "." + (fieldId), null);
+                    contentHandler.endElement("", segmentId + "." + (fieldId), "");
                     fieldId++;
-                    contentHandler.startElement("", segmentId + "." + fieldId, "", null);
+                    contentHandler.startElement("", segmentId + "." + fieldId, "", getEmptyAttributes());
 
                     char[] specialCharacters;
                     if (!subcomponentSeparator.isEmpty()) {
@@ -196,7 +195,7 @@ public class ER7Reader extends SAXParser {
                     }
 
                     contentHandler.characters(specialCharacters, 0, specialCharacters.length);
-                    contentHandler.endElement("", segmentId + "." + (fieldId), null);
+                    contentHandler.endElement("", segmentId + "." + (fieldId), "");
                 } else if (enteredHeader && (fieldId == 2)) {
                     // do nothing
                 } else {
@@ -210,7 +209,7 @@ public class ER7Reader extends SAXParser {
         }
 
         if (atLastField) {
-            contentHandler.startElement("", segmentId + "." + fieldId, "", null);
+            contentHandler.startElement("", segmentId + "." + fieldId, "", getEmptyAttributes());
             contentHandler.endElement("", segmentId + "." + fieldId, "");
         }
     }
@@ -225,7 +224,7 @@ public class ER7Reader extends SAXParser {
             if (field.equals(repetitionSeparator)) {
                 // check for ~~
                 if (atLastRepetition) {
-                    contentHandler.startElement("", segmentId + "." + fieldId, "", null);
+                    contentHandler.startElement("", segmentId + "." + fieldId, "", getEmptyAttributes());
                     contentHandler.characters(EMPTY_CHAR_ARRAY, 0, 0);
                     contentHandler.endElement("", segmentId + "." + fieldId, "");
                 }
@@ -239,7 +238,7 @@ public class ER7Reader extends SAXParser {
         }
 
         if (atLastRepetition) {
-            contentHandler.startElement("", segmentId + "." + fieldId, "", null);
+            contentHandler.startElement("", segmentId + "." + fieldId, "", getEmptyAttributes());
             contentHandler.characters(EMPTY_CHAR_ARRAY, 0, 0);
             contentHandler.endElement("", segmentId + "." + fieldId, "");
         }
@@ -247,17 +246,17 @@ public class ER7Reader extends SAXParser {
 
     private void handleField(ContentHandler contentHandler, String componentSeparator, String subcomponentSeparator, String segmentId, int fieldId, String field) throws SAXException {
         if ((field.indexOf(componentSeparator) > -1) || (handleSubcomponents && (field.indexOf(subcomponentSeparator) > -1))) {
-            contentHandler.startElement("", segmentId + "." + fieldId, "", null);
+            contentHandler.startElement("", segmentId + "." + fieldId, "", getEmptyAttributes());
             StringTokenizer componentTokenizer = new StringTokenizer(field, componentSeparator, true);
             handleComponents(contentHandler, componentSeparator, subcomponentSeparator, segmentId, fieldId, 1, componentTokenizer);
-            contentHandler.endElement("", segmentId + "." + fieldId, null);
+            contentHandler.endElement("", segmentId + "." + fieldId, "");
         } else {
             logger.trace("handling field: " + field);
-            contentHandler.startElement("", segmentId + "." + fieldId, "", null);
-            contentHandler.startElement("", segmentId + "." + fieldId + ".1", "", null);
+            contentHandler.startElement("", segmentId + "." + fieldId, "", getEmptyAttributes());
+            contentHandler.startElement("", segmentId + "." + fieldId + ".1", "", getEmptyAttributes());
             contentHandler.characters(field.toCharArray(), 0, field.length());
-            contentHandler.endElement("", segmentId + "." + fieldId + ".1", null);
-            contentHandler.endElement("", segmentId + "." + fieldId, null);
+            contentHandler.endElement("", segmentId + "." + fieldId + ".1", "");
+            contentHandler.endElement("", segmentId + "." + fieldId, "");
         }
     }
 
@@ -269,7 +268,7 @@ public class ER7Reader extends SAXParser {
 
             if (component.equals(componentSeparator)) {
                 if (atLastComponent) {
-                    contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId, "", null);
+                    contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId, "", getEmptyAttributes());
                     contentHandler.characters(EMPTY_CHAR_ARRAY, 0, 0);
                     contentHandler.endElement("", segmentId + "." + fieldId + "." + componentId, "");
                 }
@@ -283,7 +282,7 @@ public class ER7Reader extends SAXParser {
         }
 
         if (atLastComponent) {
-            contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId, "", null);
+            contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId, "", getEmptyAttributes());
             contentHandler.characters(EMPTY_CHAR_ARRAY, 0, 0);
             contentHandler.endElement("", segmentId + "." + fieldId + "." + componentId, "");
         }
@@ -291,15 +290,15 @@ public class ER7Reader extends SAXParser {
 
     private void handleComponent(ContentHandler contentHandler, String subcomponentSeparator, String segmentId, int fieldId, int componentId, String component) throws SAXException {
         if (handleSubcomponents && !subcomponentSeparator.isEmpty() && (component.indexOf(subcomponentSeparator) > -1)) {
-            contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId, "", null);
+            contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId, "", getEmptyAttributes());
             // check if we have subcomponents, if so add them
             StringTokenizer subcomponentTokenizer = new StringTokenizer(component, subcomponentSeparator, true);
             handleSubcomponents(contentHandler, subcomponentSeparator, segmentId, fieldId, componentId, 1, subcomponentTokenizer);
-            contentHandler.endElement("", segmentId + "." + fieldId + "." + componentId, null);
+            contentHandler.endElement("", segmentId + "." + fieldId + "." + componentId, "");
         } else {
             logger.trace("handling component: " + component);
             // the naming is SEG.<field#>.<component#>
-            contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId, "", null);
+            contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId, "", getEmptyAttributes());
             contentHandler.characters(component.toCharArray(), 0, component.length());
             contentHandler.endElement("", segmentId + "." + fieldId + "." + componentId, "");
         }
@@ -313,7 +312,7 @@ public class ER7Reader extends SAXParser {
 
             if (subcomponent.equals(subcomponentSeparator)) {
                 if (atLastSubcomponent) {
-                    contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId + "." + subcomponentId, "", null);
+                    contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId + "." + subcomponentId, "", getEmptyAttributes());
                     contentHandler.characters(EMPTY_CHAR_ARRAY, 0, 0);
                     contentHandler.endElement("", segmentId + "." + fieldId + "." + componentId + "." + subcomponentId, "");
                 }
@@ -324,14 +323,14 @@ public class ER7Reader extends SAXParser {
                 logger.trace("handling subcomponent: " + subcomponentId);
                 atLastSubcomponent = false;
                 // the naming is SEG.<field#>.<component#>.<subcomponent#>
-                contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId + "." + subcomponentId, "", null);
+                contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId + "." + subcomponentId, "", getEmptyAttributes());
                 contentHandler.characters(subcomponent.toCharArray(), 0, subcomponent.length());
                 contentHandler.endElement("", segmentId + "." + fieldId + "." + componentId + "." + subcomponentId, "");
             }
         }
 
         if (atLastSubcomponent) {
-            contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId + "." + subcomponentId, "", null);
+            contentHandler.startElement("", segmentId + "." + fieldId + "." + componentId + "." + subcomponentId, "", getEmptyAttributes());
             contentHandler.characters(EMPTY_CHAR_ARRAY, 0, 0);
             contentHandler.endElement("", segmentId + "." + fieldId + "." + componentId + "." + subcomponentId, "");
         }

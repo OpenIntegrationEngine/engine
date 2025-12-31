@@ -185,7 +185,7 @@ public class CommandLineInterface {
                 loginStatus = client.login(user, password);
             } catch (UnauthorizedException ex) {
                 if (ex.getResponse() instanceof LoginStatus status && status.isSuccess()) {
-                    loginStatus = status; 
+                    loginStatus = status;
                 }
             }
             finally {

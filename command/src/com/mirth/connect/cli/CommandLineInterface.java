@@ -180,22 +180,22 @@ public class CommandLineInterface {
             client = new Client(server);
             this.debug = debug;
 
-            LoginStatus loginStatus;
+            LoginStatus loginStatus = null;
             try {
                 loginStatus = client.login(user, password);
             } catch (UnauthorizedException ex) {
-                if (ex.getResponse() instanceof LoginStatus status) { 
+                if (ex.getResponse() instanceof LoginStatus status && status.isSuccess()) {
                     loginStatus = status; 
-                } 
-                else { 
-                    error("Could not login to server.", ex);
-                    return;
                 }
             }
-            
-            if (!loginStatus.isSuccess()) {
-                error("Could not login to server. Status: " + loginStatus.getStatus(), null);
-                return;
+            finally {
+                if (loginStatus == null) {
+                    error("Could not login to server");
+                    System.exit(70);
+                }
+                else if (!loginStatus.isSuccess()) {
+                    error("Could not login to server. Please check your username and password and try again.", null);                    System.exit(77);
+                }
             }
 
             String serverVersion = client.getVersion();

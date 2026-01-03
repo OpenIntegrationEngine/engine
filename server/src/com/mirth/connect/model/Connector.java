@@ -24,6 +24,8 @@ import com.mirth.connect.donkey.util.purge.Purgable;
 import com.mirth.connect.donkey.util.purge.PurgeUtil;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * A Connector represents a connection to either a source or destination. Each Connector has an
  * associated Filter and Transformer. A connector is also of a specific Transport type (TCP, HTTP,
@@ -40,7 +42,31 @@ public class Connector implements Serializable, Migratable, Purgable {
 
     private Integer metaDataId;
     private String name;
+
+    @Schema(oneOf = {
+            com.mirth.connect.connectors.dimse.DICOMDispatcherProperties.class,
+            com.mirth.connect.connectors.dimse.DICOMReceiverProperties.class,
+            com.mirth.connect.connectors.doc.DocumentDispatcherProperties.class,
+            com.mirth.connect.connectors.file.FileDispatcherProperties.class,
+            com.mirth.connect.connectors.file.FileReceiverProperties.class,
+            com.mirth.connect.connectors.http.HttpDispatcherProperties.class,
+            com.mirth.connect.connectors.http.HttpReceiverProperties.class,
+            com.mirth.connect.connectors.jdbc.DatabaseDispatcherProperties.class,
+            com.mirth.connect.connectors.jdbc.DatabaseReceiverProperties.class,
+            com.mirth.connect.connectors.jms.JmsDispatcherProperties.class,
+            com.mirth.connect.connectors.jms.JmsReceiverProperties.class,
+            com.mirth.connect.connectors.js.JavaScriptDispatcherProperties.class,
+            com.mirth.connect.connectors.js.JavaScriptReceiverProperties.class,
+            com.mirth.connect.connectors.smtp.SmtpDispatcherProperties.class,
+            com.mirth.connect.connectors.tcp.TcpDispatcherProperties.class,
+            com.mirth.connect.connectors.tcp.TcpReceiverProperties.class,
+            com.mirth.connect.connectors.vm.VmDispatcherProperties.class,
+            com.mirth.connect.connectors.vm.VmReceiverProperties.class,
+            com.mirth.connect.connectors.ws.WebServiceDispatcherProperties.class,
+            com.mirth.connect.connectors.ws.WebServiceReceiverProperties.class
+    })
     private ConnectorProperties properties;
+    
     private Transformer transformer;
     private Transformer responseTransformer;
     private Filter filter;

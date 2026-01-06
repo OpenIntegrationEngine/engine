@@ -1266,7 +1266,7 @@ public class DefaultConfigurationController extends ConfigurationController {
             dirtiedKeystore |= generateDefaultCertificate(provider, keyStore, keyPassword);
 
             // only re-write the keystore if it was changed
-            if(dirtiedKeystore) {
+            if (dirtiedKeystore) {
                 fos = new FileOutputStream(keyStoreFile);
                 keyStore.store(fos, keyStorePassword);
             }

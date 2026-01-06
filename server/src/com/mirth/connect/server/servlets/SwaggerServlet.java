@@ -39,6 +39,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 
 import com.mirth.connect.client.core.Version;
@@ -130,7 +131,7 @@ public class SwaggerServlet extends HttpServlet {
 
 	private SortedSet<Class<? extends ConnectorProperties>> findConnectorPropertiesSubtypes() {
 		Reflections reflections = new Reflections(new ConfigurationBuilder()
-				.forPackages("com.mirth.connect")
+				.addUrls(ClasspathHelper.forClassLoader())
 				.addScanners(new SubTypesScanner(false)));
 
 		SortedSet<Class<? extends ConnectorProperties>> subtypes = new TreeSet<>(

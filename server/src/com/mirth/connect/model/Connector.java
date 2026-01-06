@@ -24,8 +24,6 @@ import com.mirth.connect.donkey.util.purge.Purgable;
 import com.mirth.connect.donkey.util.purge.PurgeUtil;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-
 /**
  * A Connector represents a connection to either a source or destination. Each Connector has an
  * associated Filter and Transformer. A connector is also of a specific Transport type (TCP, HTTP,
@@ -43,7 +41,6 @@ public class Connector implements Serializable, Migratable, Purgable {
     private Integer metaDataId;
     private String name;
     private ConnectorProperties properties;
-    
     private Transformer transformer;
     private Transformer responseTransformer;
     private Filter filter;

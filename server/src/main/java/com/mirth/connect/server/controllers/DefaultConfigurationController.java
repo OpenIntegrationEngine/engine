@@ -1519,7 +1519,7 @@ public class DefaultConfigurationController extends ConfigurationController {
 
     /**
      * Checks for an existing certificate to use for secure communication between the server and
-     * client. If no certficate exists, this will generate a new one.
+     * client. If no certificate exists, this will generate a new one.
      * 
      */
     private boolean generateDefaultCertificate(Provider provider, KeyStore keyStore, char[] keyPassword) throws Exception {

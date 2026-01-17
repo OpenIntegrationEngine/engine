@@ -98,7 +98,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: oie-tar-${{ github.sha }}
-          path: server/build/distributions/*.tar
+          path: server/build/distributions/*.tar.gz
           if-no-files-found: error
 
       - name: Create legacy artifact (for backward compatibility)
@@ -222,6 +222,6 @@ jobs:
           files: |
             packages/*.rpm
             packages/*.deb
-            packages/*.tar
+            packages/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

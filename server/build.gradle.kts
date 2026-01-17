@@ -388,6 +388,11 @@ val serverJar by tasks.registering(Jar::class) {
     }
 }
 
+// Configuration for launcher classpath dependencies
+val launcherClasspath by configurations.creating {
+    extendsFrom(configurations.runtimeClasspath.get())
+}
+
 // Create mirth-server-launcher.jar with manifest
 val serverLauncherJar by tasks.registering(Jar::class) {
     archiveBaseName.set("mirth-server-launcher")
@@ -395,11 +400,28 @@ val serverLauncherJar by tasks.registering(Jar::class) {
         include("com/mirth/connect/server/launcher/**")
         include("com/mirth/connect/server/extprops/**")
     }
-    manifest {
-        attributes(
-            "Main-Class" to "com.mirth.connect.server.launcher.MirthLauncher",
-            "Class-Path" to "server-lib/commons/commons-io-2.13.0.jar server-lib/commons/commons-configuration2-2.8.0.jar server-lib/commons/commons-lang3-3.20.0.jar server-lib/commons/commons-logging-1.2.jar server-lib/commons/commons-beanutils-1.9.4.jar server-lib/commons/commons-text-1.15.0.jar server-lib/commons/commons-collections-3.2.2.jar conf/"
-        )
+    // Dynamically build classpath from resolved dependencies
+    // These are the minimal dependencies needed by the launcher to start
+    val launcherDeps = listOf(
+        "commons-io", "commons-configuration2", "commons-lang3",
+        "commons-logging", "commons-beanutils", "commons-text", "commons-collections"
+    )
+    doFirst {
+        val classpathEntries = configurations.runtimeClasspath.get().files
+            .filter { file -> launcherDeps.any { dep -> file.name.startsWith(dep) } }
+            .map { "server-lib/${it.name}" }
+            .sorted()
+            .toMutableList()
+        // Add log4j jars with subdirectory path
+        configurations.runtimeClasspath.get().files
+            .filter { it.name.startsWith("log4j-") }
+            .forEach { classpathEntries.add("server-lib/log4j/${it.name}") }
+        manifest {
+            attributes(
+                "Main-Class" to "com.mirth.connect.server.launcher.MirthLauncher",
+                "Class-Path" to "${classpathEntries.sorted().joinToString(" ")} conf/"
+            )
+        }
     }
 }
 
@@ -568,26 +590,49 @@ val assembleSetup by tasks.registering {
         file("$setupDir/public_api_html").mkdirs()
         file("$setupDir/lib/donkey").mkdirs()
 
-        // Copy server-lib dependencies
+        // Copy server-lib dependencies (excluding log4j which goes in subdirectory)
         copy {
             from(configurations.runtimeClasspath)
             into("$setupDir/server-lib")
             exclude("**/ant/**")
+            exclude("**/log4j-*.jar")
         }
 
-        // Copy core JARs to server-lib
+        // Copy log4j JARs to server-lib/log4j subdirectory
+        file("$setupDir/server-lib/log4j").mkdirs()
+        copy {
+            from(configurations.runtimeClasspath)
+            into("$setupDir/server-lib/log4j")
+            include("**/log4j-*.jar")
+        }
+
+        // Copy core JARs to server-lib (without version numbers for launcher compatibility)
         copy {
             from(cryptoJar)
+            into("$setupDir/server-lib")
+            rename { "mirth-crypto.jar" }
+        }
+        copy {
             from(clientCoreJar)
+            into("$setupDir/server-lib")
+            rename { "mirth-client-core.jar" }
+        }
+        copy {
             from(serverJar)
+            into("$setupDir/server-lib")
+            rename { "mirth-server.jar" }
+        }
+        copy {
             from(dbconfJar)
             into("$setupDir/server-lib")
+            rename { "mirth-dbconf.jar" }
         }
 
-        // Copy launcher JAR to setup root
+        // Copy launcher JAR to setup root (without version number for script compatibility)
         copy {
             from(serverLauncherJar)
             into(setupDir)
+            rename { "mirth-server-launcher.jar" }
         }
 
         // Copy userutil-sources to client-lib
@@ -890,16 +935,16 @@ distributions {
     main {
         distributionBaseName.set("oie")
         contents {
-            from("$projectDir/setup") {
-                into("oie-${mirthVersion}")
-            }
+            from("$projectDir/setup")
         }
     }
 }
 
-// Configure distTar to depend on assembleSetup
-tasks.named("distTar") {
+// Configure distTar to use gzip compression and depend on assembleSetup
+tasks.named<Tar>("distTar") {
     dependsOn(assembleSetup)
+    compression = Compression.GZIP
+    archiveExtension.set("tar.gz")
 }
 
 tasks.named("distZip") {

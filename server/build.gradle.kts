@@ -287,9 +287,18 @@ dependencies {
 
     // Document processing
     api(libs.flying.saucer.core)
-    api(libs.flying.saucer.pdf)
-    api(libs.itext)
-    api(libs.itext.rtf)
+    api(libs.flying.saucer.pdf) {
+        exclude(group = "bouncycastle")
+        exclude(group = "org.bouncycastle", module = "bctsp-jdk14")
+    }
+    api(libs.itext) {
+        exclude(group = "bouncycastle")
+        exclude(group = "org.bouncycastle", module = "bctsp-jdk14")
+    }
+    api(libs.itext.rtf) {
+        exclude(group = "bouncycastle")
+        exclude(group = "org.bouncycastle", module = "bctsp-jdk14")
+    }
     api(libs.openhtmltopdf.core)
     api(libs.openhtmltopdf.pdfbox)
     api(libs.pdfbox)
@@ -378,8 +387,8 @@ val serverJar by tasks.registering(Jar::class) {
         include("com/mirth/connect/server/**")
         include("com/mirth/connect/model/**")
         include("com/mirth/connect/util/**")
-        include("com/mirth/connect/plugins/*.class")
-        include("com/mirth/connect/connectors/*.class")
+        include("com/mirth/connect/plugins/**")
+        include("com/mirth/connect/connectors/**")
         include("org/**")
         include("net/sourceforge/jtds/ssl/**")
         include("mirth-client.jnlp")
@@ -589,6 +598,24 @@ val assembleSetup by tasks.registering {
         file("$setupDir/public_html").mkdirs()
         file("$setupDir/public_api_html").mkdirs()
         file("$setupDir/lib/donkey").mkdirs()
+
+        // Copy donkey JARs to lib/donkey (without version numbers)
+        val donkeyProject = project(":donkey")
+        copy {
+            from(donkeyProject.tasks.named("donkeyModelJar"))
+            into("$setupDir/lib/donkey")
+            rename { "donkey-model.jar" }
+        }
+        copy {
+            from(donkeyProject.tasks.named("donkeyServerJar"))
+            into("$setupDir/lib/donkey")
+            rename { "donkey-server.jar" }
+        }
+        copy {
+            from(donkeyProject.tasks.named("donkeyDbconfJar"))
+            into("$setupDir/lib/donkey")
+            rename { "donkey-dbconf.jar" }
+        }
 
         // Copy server-lib dependencies (excluding log4j which goes in subdirectory)
         copy {

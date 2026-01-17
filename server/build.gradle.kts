@@ -391,9 +391,12 @@ val serverJar by tasks.registering(Jar::class) {
         include("com/mirth/connect/connectors/**")
         include("org/**")
         include("net/sourceforge/jtds/ssl/**")
-        include("mirth-client.jnlp")
         exclude("com/mirth/connect/server/launcher/**")
         exclude("org/dcm4che2/**")
+    }
+    // Include JNLP file from project directory
+    from(projectDir) {
+        include("mirth-client.jnlp")
     }
 }
 

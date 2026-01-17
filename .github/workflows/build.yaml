@@ -9,6 +9,13 @@ on:
       - main
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip integration tests'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build-gradle:
@@ -53,6 +60,7 @@ jobs:
         run: ./gradlew build assembleSetup -x :donkey:test --no-daemon
 
       - name: Run Donkey integration tests
+        if: ${{ !inputs.skip_tests }}
         run: ./gradlew :donkey:test --no-daemon
         continue-on-error: true
 

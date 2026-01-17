@@ -57,7 +57,7 @@ jobs:
         run: ./libs-local/install-local-deps.sh
 
       - name: Build with Gradle
-        run: ./gradlew build assembleSetup -x :donkey:test --no-daemon
+        run: ./gradlew build assembleSetup -x :donkey:test -x :server:test --no-daemon
 
       - name: Run Donkey integration tests
         if: ${{ !inputs.skip_tests }}

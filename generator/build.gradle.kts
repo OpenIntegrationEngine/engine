@@ -38,6 +38,7 @@ dependencies {
 
     // Test
     testImplementation(libs.junit)
+    testRuntimeOnly(libs.mirth.vocab)
 }
 
 // Create model-generator.jar

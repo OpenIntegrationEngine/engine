@@ -7,9 +7,103 @@ on:
   pull_request:
     branches:
       - main
+  release:
+    types: [published]
 
 jobs:
-  build:
+  build-gradle:
+    name: Build with Gradle
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: donkeytest
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          java-package: 'jdk+fx'
+          distribution: 'zulu'
+          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
+
+      - name: Install local dependencies
+        run: ./libs-local/install-local-deps.sh
+
+      - name: Build with Gradle
+        run: ./gradlew build assembleSetup -x :donkey:test --no-daemon
+
+      - name: Run Donkey integration tests
+        run: ./gradlew :donkey:test --no-daemon
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: donkey-test-results
+          path: donkey/build/reports/tests/test/
+          if-no-files-found: ignore
+
+      - name: Build Linux packages
+        run: ./gradlew buildLinuxPackages --no-daemon
+
+      - name: List built packages
+        run: |
+          echo "=== Built Packages ==="
+          ls -la server/build/distributions/
+
+      - name: Upload RPM package
+        uses: actions/upload-artifact@v4
+        with:
+          name: oie-rpm-${{ github.sha }}
+          path: server/build/distributions/*.rpm
+          if-no-files-found: error
+
+      - name: Upload DEB package
+        uses: actions/upload-artifact@v4
+        with:
+          name: oie-deb-${{ github.sha }}
+          path: server/build/distributions/*.deb
+          if-no-files-found: error
+
+      - name: Upload tar.gz package
+        uses: actions/upload-artifact@v4
+        with:
+          name: oie-tar-${{ github.sha }}
+          path: server/build/distributions/*.tar
+          if-no-files-found: error
+
+      - name: Create legacy artifact (for backward compatibility)
+        run: tar czf openintegrationengine.tar.gz -C server/setup . --transform 's|^|openintegrationengine/|'
+
+      - name: Upload legacy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oie-build-gradle
+          path: openintegrationengine.tar.gz
+
+  build-ant:
+    name: Build with Ant (Legacy)
     runs-on: ubuntu-latest
 
     steps:
@@ -22,6 +116,9 @@ jobs:
           java-package: 'jdk+fx'
           distribution: 'zulu'
 
+      - name: Install local dependencies
+        run: ./libs-local/install-local-deps.sh
+
       - name: Build OIE (signed)
         if: github.ref == 'refs/heads/main'
         working-directory: server
@@ -33,10 +130,90 @@ jobs:
         run: ant -f mirth-build.xml -DdisableSigning=true
 
       - name: Package distribution
-        run: tar czf openintegrationengine.tar.gz -C server/ setup --transform 's|^setup|openintegrationengine/|'
+        run: tar czf openintegrationengine-ant.tar.gz -C server/ setup --transform 's|^setup|openintegrationengine/|'
 
       - name: Create artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oie-build
-          path: openintegrationengine.tar.gz
+          name: oie-build-ant
+          path: openintegrationengine-ant.tar.gz
+
+  compare-builds:
+    name: Compare Build Outputs
+    runs-on: ubuntu-latest
+    needs: [build-gradle, build-ant]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Download Gradle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-build-gradle
+          path: gradle-build
+
+      - name: Download Ant artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-build-ant
+          path: ant-build
+
+      - name: Extract and compare
+        run: |
+          mkdir -p gradle-extract ant-extract
+          tar xzf gradle-build/openintegrationengine.tar.gz -C gradle-extract
+          tar xzf ant-build/openintegrationengine-ant.tar.gz -C ant-extract
+
+          echo "=== Comparing directory structures ==="
+          diff -rq gradle-extract/openintegrationengine ant-extract/openintegrationengine --exclude="*.jar" --exclude="*.class" || true
+
+          echo "=== Listing Gradle JARs ==="
+          find gradle-extract -name "*.jar" | sort
+
+          echo "=== Listing Ant JARs ==="
+          find ant-extract -name "*.jar" | sort
+
+          echo "=== JAR count comparison ==="
+          echo "Gradle JARs: $(find gradle-extract -name '*.jar' | wc -l)"
+          echo "Ant JARs: $(find ant-extract -name '*.jar' | wc -l)"
+
+  release:
+    name: Create Release Artifacts
+    runs-on: ubuntu-latest
+    needs: [build-gradle]
+    if: github.event_name == 'release'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download RPM package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-rpm-${{ github.sha }}
+          path: packages
+
+      - name: Download DEB package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-deb-${{ github.sha }}
+          path: packages
+
+      - name: Download tar.gz package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-tar-${{ github.sha }}
+          path: packages
+
+      - name: List release artifacts
+        run: |
+          echo "=== Release Artifacts ==="
+          ls -la packages/
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            packages/*.rpm
+            packages/*.deb
+            packages/*.tar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

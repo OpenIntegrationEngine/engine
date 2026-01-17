@@ -1,0 +1,68 @@
+#!/bin/bash
+# Debian post-remove script for Open Integration Engine
+# Cleans up after removal
+
+set -e
+
+case "$1" in
+    remove)
+        # Reload systemd to remove the service
+        systemctl daemon-reload
+
+        echo ""
+        echo "========================================"
+        echo "Open Integration Engine has been removed."
+        echo ""
+        echo "The following directories have been preserved:"
+        echo "  /var/log/oie  - Log files"
+        echo "  /var/lib/oie  - Application data"
+        echo "  /etc/oie      - Configuration files"
+        echo ""
+        echo "To completely remove all data, run:"
+        echo "  sudo rm -rf /var/log/oie /var/lib/oie /etc/oie"
+        echo ""
+        echo "The 'oie' user and group have been preserved."
+        echo "To remove them, run:"
+        echo "  sudo deluser oie"
+        echo "  sudo delgroup oie"
+        echo "========================================"
+        ;;
+
+    purge)
+        # Remove configuration and data on purge
+        systemctl daemon-reload
+
+        echo "Purging Open Integration Engine data..."
+
+        # Remove symlinks first to avoid following them during removal
+        rm -f /etc/oie/conf 2>/dev/null || true
+        rm -f /var/log/oie/app 2>/dev/null || true
+        rm -f /opt/oie/appdata 2>/dev/null || true
+
+        # Remove directories
+        rm -rf /var/log/oie
+        rm -rf /var/lib/oie
+        rm -rf /etc/oie
+
+        echo "Data purged."
+
+        # Note: We don't remove the user/group automatically on purge
+        # as it may cause issues with file ownership elsewhere
+        echo ""
+        echo "The 'oie' user and group have been preserved."
+        echo "To remove them, run:"
+        echo "  sudo deluser oie"
+        echo "  sudo delgroup oie"
+        ;;
+
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        # Nothing to do
+        ;;
+
+    *)
+        echo "postrm called with unknown argument: $1" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

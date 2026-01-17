@@ -1,0 +1,536 @@
+[versions]
+# Core versions
+mirth = "4.5.2"
+java = "17"
+
+# Apache Commons
+commons-beanutils = "1.9.4"
+commons-cli = "1.2"
+commons-codec = "1.16.0"
+commons-collections = "3.2.2"
+commons-collections4 = "4.4"
+commons-compress = "1.24.0"
+commons-configuration2 = "2.8.0"
+commons-dbcp2 = "2.0.1"
+commons-dbutils = "1.7"
+commons-digester3 = "3.2"
+commons-el = "1.0"
+commons-email = "1.6.0"
+commons-fileupload = "1.5"
+commons-httpclient-legacy = "3.0.1"
+commons-io = "2.13.0"
+commons-jxpath = "1.3"
+commons-lang3 = "3.20.0"
+commons-logging = "1.2"
+commons-math3 = "3.0"
+commons-net = "3.9.0"
+commons-pool2 = "2.3"
+commons-text = "1.15.0"
+commons-vfs2 = "2.10.0"
+
+# Apache HTTP Client
+httpclient = "4.5.13"
+httpcore = "4.4.13"
+
+# Logging
+log4j = "2.17.2"
+slf4j = "1.7.30"
+
+# Security/Crypto
+bouncycastle = "1.78.1"
+
+# JSON/XML Processing
+jackson = "2.14.3"
+xstream = "1.4.20"
+xpp3 = "1.1.4c"
+staxon = "1.3"
+jdom2 = "2.0.6.1"
+
+# Database
+hikaricp = "2.5.1"
+mybatis = "3.1.1"
+derby = "10.10.2.0"
+jtds = "1.3.1"
+sqlite-jdbc = "3.43.2.1"
+mysql-connector = "8.4.0"
+mssql-jdbc = "8.4.1.jre8"
+postgresql = "42.6.0"
+ojdbc8 = "12.2.0.1"
+
+# Jetty
+jetty = "9.4.57.v20241219"
+jetty-schemas = "3.1.2"
+jasper = "8.5.70"
+taglibs = "1.2.5"
+ecj = "3.19.0"
+
+# Jersey/JAX-RS
+jersey = "2.22.1"
+hk2 = "2.4.0-b31"
+
+# javax/jakarta
+javax-servlet = "3.1.0"
+javax-inject = "2.4.0-b31"
+javax-json = "1.0.4"
+javax-json-api = "1.0"
+javax-mail = "1.5.0"
+javax-ws-rs = "2.0.1"
+javax-activation = "1.2.0"
+javax-annotation = "1.3.2"
+validation-api = "1.1.0.Final"
+persistence-api = "1.0"
+
+# JAXB
+jaxb-api = "2.4.0-b180725.0427"
+jaxb-runtime = "2.4.0-b180725.0644"
+istack-commons = "3.0.6"
+txw2 = "2.4.0-b180725.0644"
+
+# JAX-WS
+jaxws-api = "2.3.0"
+jaxws-rt = "2.3.0.2"
+jaxws-tools = "2.3.0.2"
+javax-xml-soap = "1.4.0"
+fastinfoset = "1.2.13"
+# Note: FastInfoset 1.2.14 is requested by jaxb-runtime but we have 1.2.13
+gmbal = "3.1.0.b001"
+ha-api = "3.1.9"
+jsr181-api = "1.0"
+management-api = "3.2.1.b001"
+mimepull = "1.9.7"
+policy = "2.7.2"
+saaj-impl = "1.0"
+stax-ex = "1.8"
+streambuffer = "1.5.4"
+
+# Swagger
+swagger = "2.0.10"
+reflections = "0.9.10"
+classgraph = "4.8.179"
+
+# Google Guava
+guava = "32.0.1-jre"
+failureaccess = "1.0.1"
+checker-qual = "2.10.0"
+error-prone = "2.3.4"
+j2objc-annotations = "1.3"
+jsr305 = "3.0.2"
+listenablefuture = "9999.0-empty-to-avoid-conflict-with-guava"
+
+# Guice
+guice = "4.1.0"
+aopalliance = "2.4.0-b31"
+
+# ASM
+asm = "9.6"
+
+# Other utilities
+javassist = "3.26.0-GA"
+joda-time = "2.9.9"
+java-semver = "0.10.2"
+quartz = "2.3.2"
+velocity-engine = "2.3"
+velocity-tools = "3.1"
+rhino = "1.7.13"
+jsch = "2.27.7"
+jna = "4.5.2"
+oshi-core = "3.9.1"
+backport-util = "3.1"
+
+# JMS
+geronimo-jms = "1.1.1"
+geronimo-j2ee = "1.0.1"
+
+# OSGi
+osgi-core = "4.2.0"
+osgi-resource-locator = "1.0.1"
+
+# HL7/HAPI
+hapi = "2.3"
+
+# DICOM/DCM4CHE
+dcm4che = "2.0.29"
+
+# PDF/Document processing
+flying-saucer = "9.0.1"
+itext = "2.1.7"
+openhtmltopdf = "1.0.9"
+pdfbox = "2.0.24"
+
+# AWS SDK
+aws-sdk = "2.15.28"
+netty = "4.1.119.Final"
+netty-nio-client = "2.20.140"
+netty-reactive = "2.0.8"
+reactive-streams = "1.0.3"
+eventstream = "1.0.1"
+
+# GUI/UI
+miglayout = "4.2"
+swingx-core = "1.6.2"
+rsyntaxtextarea = "2.5.6"
+autocomplete = "2.5.4"
+looks = "2.3.1"
+javaparser = "1.0.8"
+libphonenumber = "8.12.50"
+
+# Web/Stripes
+displaytag = "1.2"
+json-simple = "1.1.1"
+
+# Testing
+junit = "4.13.1"
+mockito = "5.1.1"
+hamcrest = "2.2"
+byte-buddy = "1.14.13"
+objenesis = "2.5.1"
+
+# File handling
+zip4j = "1.3.3"
+jcifs-ng = "2.1.10"
+
+# Local/Non-Maven-Central dependencies
+mirth-vocab = "1.0"
+not-yet-commons-ssl = "0.3.18"
+jai-imageio = "1.1"
+wsdl4j-fixed = "1.6.2"
+imagej = "1.53"
+pdfrenderer = "0.9.1"
+webdavclient4j = "0.92"
+wizard = "1.0"
+language-support = "1.0"
+openjfx-extensions = "1.0"
+stripes = "1.6.0"
+
+[libraries]
+# Apache Commons
+commons-beanutils = { module = "commons-beanutils:commons-beanutils", version.ref = "commons-beanutils" }
+commons-cli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
+commons-codec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
+commons-collections = { module = "commons-collections:commons-collections", version.ref = "commons-collections" }
+commons-collections4 = { module = "org.apache.commons:commons-collections4", version.ref = "commons-collections4" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
+commons-configuration2 = { module = "org.apache.commons:commons-configuration2", version.ref = "commons-configuration2" }
+commons-dbcp2 = { module = "org.apache.commons:commons-dbcp2", version.ref = "commons-dbcp2" }
+commons-dbutils = { module = "commons-dbutils:commons-dbutils", version.ref = "commons-dbutils" }
+commons-digester3 = { module = "org.apache.commons:commons-digester3", version.ref = "commons-digester3" }
+commons-el = { module = "commons-el:commons-el", version.ref = "commons-el" }
+commons-email = { module = "org.apache.commons:commons-email", version.ref = "commons-email" }
+commons-fileupload = { module = "commons-fileupload:commons-fileupload", version.ref = "commons-fileupload" }
+commons-httpclient-legacy = { module = "commons-httpclient:commons-httpclient", version.ref = "commons-httpclient-legacy" }
+commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
+commons-jxpath = { module = "commons-jxpath:commons-jxpath", version.ref = "commons-jxpath" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+commons-logging = { module = "commons-logging:commons-logging", version.ref = "commons-logging" }
+commons-math3 = { module = "org.apache.commons:commons-math3", version.ref = "commons-math3" }
+commons-net = { module = "commons-net:commons-net", version.ref = "commons-net" }
+commons-pool2 = { module = "org.apache.commons:commons-pool2", version.ref = "commons-pool2" }
+commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons-text" }
+commons-vfs2 = { module = "org.apache.commons:commons-vfs2", version.ref = "commons-vfs2" }
+
+# Apache HTTP Client
+httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "httpclient" }
+httpcore = { module = "org.apache.httpcomponents:httpcore", version.ref = "httpcore" }
+httpmime = { module = "org.apache.httpcomponents:httpmime", version.ref = "httpclient" }
+
+# Logging
+log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
+log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
+log4j-bridge = { module = "org.apache.logging.log4j:log4j-1.2-api", version.ref = "log4j" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-log4j12 = { module = "org.slf4j:slf4j-log4j12", version.ref = "slf4j" }
+
+# Security/Crypto
+bcprov-jdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+bcpkix-jdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
+bcutil-jdk18on = { module = "org.bouncycastle:bcutil-jdk18on", version.ref = "bouncycastle" }
+
+# JSON/XML Processing
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-dataformat-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref = "jackson" }
+jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson" }
+jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
+xstream = { module = "com.thoughtworks.xstream:xstream", version.ref = "xstream" }
+xpp3 = { module = "xpp3:xpp3", version.ref = "xpp3" }
+staxon = { module = "de.odysseus.staxon:staxon", version.ref = "staxon" }
+jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom2" }
+
+# Database
+hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
+mybatis = { module = "org.mybatis:mybatis", version.ref = "mybatis" }
+derby = { module = "org.apache.derby:derby", version.ref = "derby" }
+derbytools = { module = "org.apache.derby:derbytools", version.ref = "derby" }
+jtds = { module = "net.sourceforge.jtds:jtds", version.ref = "jtds" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
+mysql-connector = { module = "com.mysql:mysql-connector-j", version.ref = "mysql-connector" }
+mssql-jdbc = { module = "com.microsoft.sqlserver:mssql-jdbc", version.ref = "mssql-jdbc" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+ojdbc8 = { module = "com.oracle.database.jdbc:ojdbc8", version.ref = "ojdbc8" }
+
+# Jetty
+jetty-annotations = { module = "org.eclipse.jetty:jetty-annotations", version.ref = "jetty" }
+jetty-continuation = { module = "org.eclipse.jetty:jetty-continuation", version.ref = "jetty" }
+jetty-http = { module = "org.eclipse.jetty:jetty-http", version.ref = "jetty" }
+jetty-io = { module = "org.eclipse.jetty:jetty-io", version.ref = "jetty" }
+jetty-jndi = { module = "org.eclipse.jetty:jetty-jndi", version.ref = "jetty" }
+jetty-plus = { module = "org.eclipse.jetty:jetty-plus", version.ref = "jetty" }
+jetty-rewrite = { module = "org.eclipse.jetty:jetty-rewrite", version.ref = "jetty" }
+jetty-security = { module = "org.eclipse.jetty:jetty-security", version.ref = "jetty" }
+jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "jetty" }
+jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version.ref = "jetty" }
+jetty-util = { module = "org.eclipse.jetty:jetty-util", version.ref = "jetty" }
+jetty-util-ajax = { module = "org.eclipse.jetty:jetty-util-ajax", version.ref = "jetty" }
+jetty-webapp = { module = "org.eclipse.jetty:jetty-webapp", version.ref = "jetty" }
+jetty-xml = { module = "org.eclipse.jetty:jetty-xml", version.ref = "jetty" }
+jetty-schemas = { module = "org.eclipse.jetty.toolchain:jetty-schemas", version.ref = "jetty-schemas" }
+apache-jsp = { module = "org.eclipse.jetty:apache-jsp", version.ref = "jetty" }
+taglibs-standard-impl = { module = "org.apache.taglibs:taglibs-standard-impl", version.ref = "taglibs" }
+taglibs-standard-spec = { module = "org.apache.taglibs:taglibs-standard-spec", version.ref = "taglibs" }
+mortbay-apache-el = { module = "org.mortbay.jasper:apache-el", version.ref = "jasper" }
+mortbay-apache-jsp = { module = "org.mortbay.jasper:apache-jsp", version.ref = "jasper" }
+ecj = { module = "org.eclipse.jdt:ecj", version.ref = "ecj" }
+
+# Jersey/JAX-RS
+jersey-client = { module = "org.glassfish.jersey.core:jersey-client", version.ref = "jersey" }
+jersey-common = { module = "org.glassfish.jersey.core:jersey-common", version.ref = "jersey" }
+jersey-server = { module = "org.glassfish.jersey.core:jersey-server", version.ref = "jersey" }
+jersey-container-servlet = { module = "org.glassfish.jersey.containers:jersey-container-servlet", version.ref = "jersey" }
+jersey-container-servlet-core = { module = "org.glassfish.jersey.containers:jersey-container-servlet-core", version.ref = "jersey" }
+jersey-container-jetty-http = { module = "org.glassfish.jersey.containers:jersey-container-jetty-http", version.ref = "jersey" }
+jersey-container-jetty-servlet = { module = "org.glassfish.jersey.containers:jersey-container-jetty-servlet", version.ref = "jersey" }
+jersey-media-jaxb = { module = "org.glassfish.jersey.media:jersey-media-jaxb", version.ref = "jersey" }
+jersey-media-multipart = { module = "org.glassfish.jersey.media:jersey-media-multipart", version.ref = "jersey" }
+jersey-proxy-client = { module = "org.glassfish.jersey.ext:jersey-proxy-client", version.ref = "jersey" }
+jersey-guava = { module = "org.glassfish.jersey.bundles.repackaged:jersey-guava", version.ref = "jersey" }
+hk2-api = { module = "org.glassfish.hk2:hk2-api", version.ref = "hk2" }
+hk2-locator = { module = "org.glassfish.hk2:hk2-locator", version.ref = "hk2" }
+hk2-utils = { module = "org.glassfish.hk2:hk2-utils", version.ref = "hk2" }
+aopalliance-repackaged = { module = "org.glassfish.hk2.external:aopalliance-repackaged", version.ref = "aopalliance" }
+
+# javax/jakarta
+javax-servlet-api = { module = "javax.servlet:javax.servlet-api", version.ref = "javax-servlet" }
+javax-inject = { module = "org.glassfish.hk2.external:javax.inject", version.ref = "javax-inject" }
+javax-json = { module = "org.glassfish:javax.json", version.ref = "javax-json" }
+javax-json-api = { module = "javax.json:javax.json-api", version.ref = "javax-json-api" }
+javax-mail = { module = "javax.mail:javax.mail-api", version.ref = "javax-mail" }
+javax-ws-rs-api = { module = "javax.ws.rs:javax.ws.rs-api", version.ref = "javax-ws-rs" }
+javax-activation = { module = "com.sun.activation:javax.activation", version.ref = "javax-activation" }
+javax-activation-api = { module = "javax.activation:javax.activation-api", version.ref = "javax-activation" }
+javax-annotation-api = { module = "javax.annotation:javax.annotation-api", version.ref = "javax-annotation" }
+validation-api = { module = "javax.validation:validation-api", version.ref = "validation-api" }
+persistence-api = { module = "javax.persistence:persistence-api", version.ref = "persistence-api" }
+
+# JAXB
+jaxb-api = { module = "javax.xml.bind:jaxb-api", version.ref = "jaxb-api" }
+jaxb-runtime = { module = "org.glassfish.jaxb:jaxb-runtime", version.ref = "jaxb-runtime" }
+istack-commons-runtime = { module = "com.sun.istack:istack-commons-runtime", version.ref = "istack-commons" }
+txw2 = { module = "org.glassfish.jaxb:txw2", version.ref = "txw2" }
+
+# JAX-WS
+jaxws-api = { module = "javax.xml.ws:jaxws-api", version.ref = "jaxws-api" }
+jaxws-rt = { module = "com.sun.xml.ws:jaxws-rt", version.ref = "jaxws-rt" }
+jaxws-tools = { module = "com.sun.xml.ws:jaxws-tools", version.ref = "jaxws-tools" }
+javax-xml-soap-api = { module = "javax.xml.soap:javax.xml.soap-api", version.ref = "javax-xml-soap" }
+fastinfoset = { module = "com.sun.xml.fastinfoset:FastInfoset", version.ref = "fastinfoset" }
+gmbal-api-only = { module = "org.glassfish.gmbal:gmbal-api-only", version.ref = "gmbal" }
+ha-api = { module = "org.glassfish.ha:ha-api", version.ref = "ha-api" }
+jsr181-api = { module = "javax.jws:jsr181-api", version.ref = "jsr181-api" }
+management-api = { module = "org.glassfish.external:management-api", version.ref = "management-api" }
+mimepull = { module = "org.jvnet.mimepull:mimepull", version.ref = "mimepull" }
+policy = { module = "com.sun.xml.ws:policy", version.ref = "policy" }
+saaj-impl = { module = "com.sun.xml.messaging.saaj:saaj-impl", version.ref = "saaj-impl" }
+stax-ex = { module = "org.jvnet.staxex:stax-ex", version.ref = "stax-ex" }
+streambuffer = { module = "com.sun.xml.stream.buffer:streambuffer", version.ref = "streambuffer" }
+
+# Swagger
+swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations", version.ref = "swagger" }
+swagger-core = { module = "io.swagger.core.v3:swagger-core", version.ref = "swagger" }
+swagger-jaxrs2 = { module = "io.swagger.core.v3:swagger-jaxrs2", version.ref = "swagger" }
+swagger-models = { module = "io.swagger.core.v3:swagger-models", version.ref = "swagger" }
+swagger-integration = { module = "io.swagger.core.v3:swagger-integration", version.ref = "swagger" }
+swagger-jaxrs2-servlet-initializer = { module = "io.swagger.core.v3:swagger-jaxrs2-servlet-initializer", version.ref = "swagger" }
+reflections = { module = "org.reflections:reflections", version.ref = "reflections" }
+classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
+
+# Google Guava
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+failureaccess = { module = "com.google.guava:failureaccess", version.ref = "failureaccess" }
+checker-qual = { module = "org.checkerframework:checker-qual", version.ref = "checker-qual" }
+error-prone-annotations = { module = "com.google.errorprone:error_prone_annotations", version.ref = "error-prone" }
+j2objc-annotations = { module = "com.google.j2objc:j2objc-annotations", version.ref = "j2objc-annotations" }
+jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "jsr305" }
+listenablefuture = { module = "com.google.guava:listenablefuture", version.ref = "listenablefuture" }
+
+# Guice
+guice = { module = "com.google.inject:guice", version.ref = "guice" }
+
+# ASM
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+asm-analysis = { module = "org.ow2.asm:asm-analysis", version.ref = "asm" }
+asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
+asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
+asm-util = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
+
+# Other utilities
+javassist = { module = "org.javassist:javassist", version.ref = "javassist" }
+joda-time = { module = "joda-time:joda-time", version.ref = "joda-time" }
+java-semver = { module = "com.github.zafarkhaja:java-semver", version.ref = "java-semver" }
+quartz = { module = "org.quartz-scheduler:quartz", version.ref = "quartz" }
+velocity-engine-core = { module = "org.apache.velocity:velocity-engine-core", version.ref = "velocity-engine" }
+velocity-tools-generic = { module = "org.apache.velocity.tools:velocity-tools-generic", version.ref = "velocity-tools" }
+rhino = { module = "org.mozilla:rhino", version.ref = "rhino" }
+jsch = { module = "com.github.mwiede:jsch", version.ref = "jsch" }
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+jna-platform = { module = "net.java.dev.jna:jna-platform", version.ref = "jna" }
+oshi-core = { module = "com.github.oshi:oshi-core", version.ref = "oshi-core" }
+backport-util-concurrent = { module = "backport-util-concurrent:backport-util-concurrent-java60", version = "3.1" }
+
+# JMS
+geronimo-jms = { module = "org.apache.geronimo.specs:geronimo-jms_1.1_spec", version.ref = "geronimo-jms" }
+geronimo-j2ee-management = { module = "org.apache.geronimo.specs:geronimo-j2ee-management_1.1_spec", version.ref = "geronimo-j2ee" }
+
+# OSGi
+osgi-core = { module = "org.osgi:org.osgi.core", version.ref = "osgi-core" }
+osgi-resource-locator = { module = "org.glassfish.hk2:osgi-resource-locator", version.ref = "osgi-resource-locator" }
+
+# HL7/HAPI
+hapi-base = { module = "ca.uhn.hapi:hapi-base", version.ref = "hapi" }
+hapi-structures-v21 = { module = "ca.uhn.hapi:hapi-structures-v21", version.ref = "hapi" }
+hapi-structures-v22 = { module = "ca.uhn.hapi:hapi-structures-v22", version.ref = "hapi" }
+hapi-structures-v23 = { module = "ca.uhn.hapi:hapi-structures-v23", version.ref = "hapi" }
+hapi-structures-v231 = { module = "ca.uhn.hapi:hapi-structures-v231", version.ref = "hapi" }
+hapi-structures-v24 = { module = "ca.uhn.hapi:hapi-structures-v24", version.ref = "hapi" }
+hapi-structures-v25 = { module = "ca.uhn.hapi:hapi-structures-v25", version.ref = "hapi" }
+hapi-structures-v251 = { module = "ca.uhn.hapi:hapi-structures-v251", version.ref = "hapi" }
+hapi-structures-v26 = { module = "ca.uhn.hapi:hapi-structures-v26", version.ref = "hapi" }
+hapi-structures-v27 = { module = "ca.uhn.hapi:hapi-structures-v27", version.ref = "hapi" }
+hapi-structures-v28 = { module = "ca.uhn.hapi:hapi-structures-v28", version.ref = "hapi" }
+hapi-structures-v281 = { module = "ca.uhn.hapi:hapi-structures-v281", version.ref = "hapi" }
+
+# DICOM/DCM4CHE
+dcm4che-core = { module = "dcm4che:dcm4che-core", version.ref = "dcm4che" }
+dcm4che-filecache = { module = "dcm4che:dcm4che-filecache", version.ref = "dcm4che" }
+dcm4che-net = { module = "dcm4che:dcm4che-net", version.ref = "dcm4che" }
+dcm4che-tool-dcmrcv = { module = "dcm4che:dcm4che-tool-dcmrcv", version.ref = "dcm4che" }
+dcm4che-tool-dcmsnd = { module = "dcm4che:dcm4che-tool-dcmsnd", version.ref = "dcm4che" }
+
+# PDF/Document processing
+flying-saucer-core = { module = "org.xhtmlrenderer:flying-saucer-core", version.ref = "flying-saucer" }
+flying-saucer-pdf = { module = "org.xhtmlrenderer:flying-saucer-pdf", version.ref = "flying-saucer" }
+itext = { module = "com.lowagie:itext", version.ref = "itext" }
+itext-rtf = { module = "com.lowagie:itext-rtf", version.ref = "itext" }
+openhtmltopdf-core = { module = "com.openhtmltopdf:openhtmltopdf-core", version.ref = "openhtmltopdf" }
+openhtmltopdf-pdfbox = { module = "com.openhtmltopdf:openhtmltopdf-pdfbox", version.ref = "openhtmltopdf" }
+pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
+fontbox = { module = "org.apache.pdfbox:fontbox", version.ref = "pdfbox" }
+xmpbox = { module = "org.apache.pdfbox:xmpbox", version.ref = "pdfbox" }
+graphics2d = { module = "de.rototor.pdfbox:graphics2d", version = "0.32" }
+
+# AWS SDK
+aws-annotations = { module = "software.amazon.awssdk:annotations", version.ref = "aws-sdk" }
+aws-apache-client = { module = "software.amazon.awssdk:apache-client", version.ref = "aws-sdk" }
+aws-auth = { module = "software.amazon.awssdk:auth", version.ref = "aws-sdk" }
+aws-core = { module = "software.amazon.awssdk:aws-core", version.ref = "aws-sdk" }
+aws-json-protocol = { module = "software.amazon.awssdk:aws-json-protocol", version.ref = "aws-sdk" }
+aws-query-protocol = { module = "software.amazon.awssdk:aws-query-protocol", version.ref = "aws-sdk" }
+aws-xml-protocol = { module = "software.amazon.awssdk:aws-xml-protocol", version.ref = "aws-sdk" }
+aws-http-client-spi = { module = "software.amazon.awssdk:http-client-spi", version.ref = "aws-sdk" }
+aws-kms = { module = "software.amazon.awssdk:kms", version.ref = "aws-sdk" }
+aws-profiles = { module = "software.amazon.awssdk:profiles", version.ref = "aws-sdk" }
+aws-protocol-core = { module = "software.amazon.awssdk:protocol-core", version.ref = "aws-sdk" }
+aws-regions = { module = "software.amazon.awssdk:regions", version.ref = "aws-sdk" }
+aws-s3 = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk" }
+aws-sdk-core = { module = "software.amazon.awssdk:sdk-core", version.ref = "aws-sdk" }
+aws-sts = { module = "software.amazon.awssdk:sts", version.ref = "aws-sdk" }
+aws-utils = { module = "software.amazon.awssdk:utils", version.ref = "aws-sdk" }
+aws-metrics-spi = { module = "software.amazon.awssdk:metrics-spi", version.ref = "aws-sdk" }
+aws-eventstream = { module = "software.amazon.eventstream:eventstream", version.ref = "eventstream" }
+
+# Netty (for AWS)
+netty-buffer = { module = "io.netty:netty-buffer", version.ref = "netty" }
+netty-codec = { module = "io.netty:netty-codec", version.ref = "netty" }
+netty-codec-http = { module = "io.netty:netty-codec-http", version.ref = "netty" }
+netty-codec-http2 = { module = "io.netty:netty-codec-http2", version.ref = "netty" }
+netty-common = { module = "io.netty:netty-common", version.ref = "netty" }
+netty-handler = { module = "io.netty:netty-handler", version.ref = "netty" }
+netty-resolver = { module = "io.netty:netty-resolver", version.ref = "netty" }
+netty-transport = { module = "io.netty:netty-transport", version.ref = "netty" }
+netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
+netty-transport-native-unix-common = { module = "io.netty:netty-transport-native-unix-common", version.ref = "netty" }
+netty-nio-client = { module = "software.amazon.awssdk:netty-nio-client", version.ref = "netty-nio-client" }
+netty-reactive-streams = { module = "com.typesafe.netty:netty-reactive-streams", version.ref = "netty-reactive" }
+netty-reactive-streams-http = { module = "com.typesafe.netty:netty-reactive-streams-http", version.ref = "netty-reactive" }
+reactive-streams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactive-streams" }
+
+# GUI/UI
+miglayout-core = { module = "com.miglayout:miglayout-core", version.ref = "miglayout" }
+miglayout-swing = { module = "com.miglayout:miglayout-swing", version.ref = "miglayout" }
+swingx-core = { module = "org.swinglabs:swingx-core", version.ref = "swingx-core" }
+rsyntaxtextarea = { module = "com.fifesoft:rsyntaxtextarea", version.ref = "rsyntaxtextarea" }
+autocomplete = { module = "com.fifesoft:autocomplete", version.ref = "autocomplete" }
+looks = { module = "com.jgoodies:looks", version.ref = "looks" }
+javaparser = { module = "com.google.code.javaparser:javaparser", version.ref = "javaparser" }
+libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version.ref = "libphonenumber" }
+
+# Web/Stripes
+displaytag = { module = "displaytag:displaytag", version.ref = "displaytag" }
+json-simple = { module = "com.googlecode.json-simple:json-simple", version.ref = "json-simple" }
+
+# Testing
+junit = { module = "junit:junit", version.ref = "junit" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-inline = { module = "org.mockito:mockito-inline", version.ref = "mockito" }
+hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
+byte-buddy = { module = "net.bytebuddy:byte-buddy", version.ref = "byte-buddy" }
+byte-buddy-agent = { module = "net.bytebuddy:byte-buddy-agent", version.ref = "byte-buddy" }
+objenesis = { module = "org.objenesis:objenesis", version.ref = "objenesis" }
+
+# File handling
+jcifs-ng = { module = "eu.agno3.jcifs:jcifs-ng", version.ref = "jcifs-ng" }
+zip4j = { module = "net.lingala.zip4j:zip4j", version.ref = "zip4j" }
+
+# Local/Non-Maven-Central dependencies (from libs-local repository)
+mirth-vocab = { module = "com.mirth:mirth-vocab", version.ref = "mirth-vocab" }
+not-yet-commons-ssl = { module = "ca.juliusdavies:not-yet-commons-ssl", version.ref = "not-yet-commons-ssl" }
+jai-imageio = { module = "com.sun.media:jai-imageio", version.ref = "jai-imageio" }
+jai-imageio-client = { module = "com.sun.media:jai-imageio-client", version.ref = "jai-imageio" }
+wsdl4j-fixed = { module = "wsdl4j:wsdl4j-fixed", version.ref = "wsdl4j-fixed" }
+imagej-ij = { module = "imagej:ij", version.ref = "imagej" }
+pdfrenderer = { module = "com.sun.pdfview:pdfrenderer", version.ref = "pdfrenderer" }
+webdavclient4j-core = { module = "com.googlecode.webdavclient4j:webdavclient4j-core", version.ref = "webdavclient4j" }
+wizard = { module = "com.mirth:wizard", version.ref = "wizard" }
+language-support = { module = "com.mirth:language-support", version.ref = "language-support" }
+openjfx-extensions = { module = "com.mirth:openjfx-extensions", version.ref = "openjfx-extensions" }
+stripes = { module = "net.sourceforge.stripes:stripes", version.ref = "stripes" }
+
+[bundles]
+# Common logging bundle
+logging = ["log4j-api", "log4j-core", "log4j-bridge", "slf4j-api", "slf4j-log4j12"]
+
+# Commons bundle
+commons = ["commons-lang3", "commons-io", "commons-collections4", "commons-text", "commons-logging", "commons-codec"]
+
+# Security bundle
+security = ["bcprov-jdk18on", "bcpkix-jdk18on", "bcutil-jdk18on"]
+
+# Jackson bundle
+jackson = ["jackson-annotations", "jackson-core", "jackson-databind"]
+
+# Database drivers
+database-drivers = ["derby", "jtds", "sqlite-jdbc", "mysql-connector", "mssql-jdbc", "postgresql"]
+
+# Jersey core
+jersey-core = ["jersey-client", "jersey-common", "jersey-server"]
+
+# Jetty bundle
+jetty = ["jetty-server", "jetty-servlet", "jetty-webapp", "jetty-http", "jetty-io", "jetty-util"]
+
+# HAPI bundle
+hapi = ["hapi-base", "hapi-structures-v21", "hapi-structures-v22", "hapi-structures-v23", "hapi-structures-v231",
+        "hapi-structures-v24", "hapi-structures-v25", "hapi-structures-v251", "hapi-structures-v26",
+        "hapi-structures-v27", "hapi-structures-v28", "hapi-structures-v281"]
+
+# Testing bundle
+testing = ["junit", "mockito-core", "mockito-inline", "hamcrest", "byte-buddy", "byte-buddy-agent", "objenesis"]

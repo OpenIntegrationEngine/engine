@@ -1,0 +1,5 @@
+# Force gradlew (shell script) to always use LF
+gradlew text eol=lf
+
+# Force gradlew.bat (Windows batch) to always use CRLF
+gradlew.bat text eol=crlf

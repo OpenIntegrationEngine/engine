@@ -1,0 +1,62 @@
+#!/bin/bash
+# RPM post-install script for Open Integration Engine
+# Sets up permissions, symlinks, and enables the service
+
+set -e
+
+OIE_USER="oie"
+OIE_GROUP="oie"
+
+# Set ownership of application directories
+chown -R "$OIE_USER:$OIE_GROUP" /opt/oie
+chown -R "$OIE_USER:$OIE_GROUP" /var/log/oie
+chown -R "$OIE_USER:$OIE_GROUP" /var/lib/oie
+chown -R "$OIE_USER:$OIE_GROUP" /etc/oie
+
+# Set proper permissions
+chmod 755 /opt/oie
+chmod 755 /var/log/oie
+chmod 755 /var/lib/oie
+chmod 755 /etc/oie
+
+# Make scripts executable
+chmod +x /opt/oie/oieserver 2>/dev/null || true
+
+# Create symlinks for configuration (if conf directory exists and symlink doesn't)
+if [ -d /opt/oie/conf ] && [ ! -L /etc/oie/conf ]; then
+    ln -sf /opt/oie/conf /etc/oie/conf
+fi
+
+# Create symlink for logs (if not already linked)
+if [ -d /opt/oie/logs ] && [ ! -L /var/log/oie/app ]; then
+    ln -sf /opt/oie/logs /var/log/oie/app
+fi
+
+# Create appdata symlink to /var/lib/oie
+if [ ! -d /opt/oie/appdata ]; then
+    mkdir -p /var/lib/oie/appdata
+    ln -sf /var/lib/oie/appdata /opt/oie/appdata
+fi
+
+# Reload systemd to pick up the new service file
+systemctl daemon-reload
+
+# Enable service (but don't start automatically)
+echo ""
+echo "========================================"
+echo "Open Integration Engine has been installed."
+echo ""
+echo "To start the service:"
+echo "  sudo systemctl start oie"
+echo ""
+echo "To enable automatic startup on boot:"
+echo "  sudo systemctl enable oie"
+echo ""
+echo "Configuration files are located at:"
+echo "  /opt/oie/conf (also linked from /etc/oie/conf)"
+echo ""
+echo "Logs are written to:"
+echo "  /opt/oie/logs (also linked from /var/log/oie/app)"
+echo "========================================"
+
+exit 0

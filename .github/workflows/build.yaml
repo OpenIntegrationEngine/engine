@@ -83,11 +83,13 @@ jobs:
           EOF
           else
             echo "No signing secrets configured - generating self-signed certificate..."
+            rm -f server/keystore.jks
             keytool -genkeypair \
               -alias oie \
               -keyalg RSA \
               -keysize 2048 \
               -validity 365 \
+              -storetype PKCS12 \
               -keystore server/keystore.jks \
               -storepass changeit \
               -keypass changeit \

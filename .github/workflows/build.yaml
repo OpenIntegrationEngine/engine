@@ -233,10 +233,16 @@ jobs:
             echo "$1" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+(-SNAPSHOT)?\.jar$/.jar/' | sed -E 's/-[0-9]+\.[0-9]+\.jar$/.jar/'
           }
 
-          # Extract JAR names (relative paths, normalized)
+          # Directories to exclude from comparison (not yet in Gradle build)
+          EXCLUDE_DIRS="cli-lib|manager-lib"
+          EXCLUDE_FILES="mirth-cli-launcher.jar|mirth-manager-launcher.jar"
+
+          # Extract JAR names (relative paths, normalized), excluding CLI/Manager components
           echo "=== Extracting JAR lists ==="
-          find "$GRADLE_DIR" -name "*.jar" -printf "%P\n" | while read f; do normalize_jar_name "$f"; done | sort > /tmp/gradle-jars.txt
-          find "$ANT_DIR" -name "*.jar" -printf "%P\n" | while read f; do normalize_jar_name "$f"; done | sort > /tmp/ant-jars.txt
+          find "$GRADLE_DIR" -name "*.jar" -printf "%P\n" | grep -vE "^($EXCLUDE_DIRS)/" | grep -vE "^($EXCLUDE_FILES)$" | while read f; do normalize_jar_name "$f"; done | sort > /tmp/gradle-jars.txt
+          find "$ANT_DIR" -name "*.jar" -printf "%P\n" | grep -vE "^($EXCLUDE_DIRS)/" | grep -vE "^($EXCLUDE_FILES)$" | while read f; do normalize_jar_name "$f"; done | sort > /tmp/ant-jars.txt
+
+          echo "Note: Excluding CLI and Manager components from comparison (not yet in Gradle build)"
 
           echo "Gradle JARs: $(wc -l < /tmp/gradle-jars.txt)"
           echo "Ant JARs: $(wc -l < /tmp/ant-jars.txt)"
@@ -321,8 +327,14 @@ jobs:
             VERSION="${TAG_NAME#v}"
             PRERELEASE_TAG="${VERSION}"
           else
-            # Extract version from build.gradle.kts and append commit SHA
-            VERSION=$(grep -oP 'val mirthVersion.*?=.*?"\K[^"]+' build.gradle.kts | head -1)
+            # Extract version from build.gradle.kts - handles both formats:
+            # val mirthVersion by extra("4.5.2")
+            # val mirthVersion = "4.5.2"
+            VERSION=$(grep -E 'val mirthVersion' build.gradle.kts | grep -oE '"[0-9]+\.[0-9]+\.[0-9]+[^"]*"' | tr -d '"' | head -1)
+            if [ -z "$VERSION" ]; then
+              echo "::error::Could not extract version from build.gradle.kts"
+              exit 1
+            fi
             PRERELEASE_TAG="${VERSION}-${SHORT_SHA}"
           fi
 

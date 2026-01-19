@@ -1,5 +1,9 @@
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Properties
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 plugins {
     `java-library`
@@ -453,6 +457,16 @@ val userutilSourcesJar by tasks.registering(Jar::class) {
     }
 }
 
+// Create httpauth-userutil-sources.jar
+val httpauthUserutilSourcesJar by tasks.registering(Jar::class) {
+    archiveBaseName.set("httpauth-userutil-sources")
+    destinationDirectory.set(file("$buildDir/userutil-sources"))
+    from("src") {
+        include("com/mirth/connect/plugins/httpauth/userutil/**.java")
+        exclude("**/package-info.java")
+    }
+}
+
 // =============================================================================
 // Extension Definition
 // =============================================================================
@@ -571,6 +585,11 @@ val extensionConfigs = listOf(
 val setupDir = file("$projectDir/setup")
 val extBuildDir = file("$buildDir/extensionConfigs")
 
+// Collect extension shared JAR task names
+val extensionSharedJarTasks = extensionConfigs
+    .filter { it.sharedClasses.isNotEmpty() || it.type == "datatype" }
+    .map { "${it.name}SharedJar" }
+
 // Main setup assembly task
 val assembleSetup by tasks.registering {
     group = "build"
@@ -585,6 +604,8 @@ val assembleSetup by tasks.registering {
         dbconfJar,
         userutilSourcesJar
     )
+    // Depend on extension shared JARs for client-lib
+    dependsOn(extensionSharedJarTasks)
 
     doLast {
         // Create setup directory structure
@@ -671,6 +692,64 @@ val assembleSetup by tasks.registering {
             into("$setupDir/client-lib")
         }
 
+        // Copy mirth-client.jar from client project (without version number)
+        val clientProject = project(":client")
+        copy {
+            from(clientProject.tasks.named("clientJar"))
+            into("$setupDir/client-lib")
+            rename { "mirth-client.jar" }
+        }
+
+        // Copy client lib dependencies
+        copy {
+            from("${clientProject.projectDir}/lib") {
+                exclude("*-shared.jar")
+                exclude("extensions/**")
+            }
+            into("$setupDir/client-lib")
+        }
+
+        // Copy mirth-client-core.jar to client-lib (required by WebStartServlet)
+        copy {
+            from(clientCoreJar)
+            into("$setupDir/client-lib")
+            rename { "mirth-client-core.jar" }
+        }
+
+        // Copy mirth-crypto.jar to client-lib (required by WebStartServlet)
+        copy {
+            from(cryptoJar)
+            into("$setupDir/client-lib")
+            rename { "mirth-crypto.jar" }
+        }
+
+        // Copy mirth-vocab.jar to client-lib (required by WebStartServlet)
+        copy {
+            from("$projectDir/lib/mirth-vocab.jar")
+            into("$setupDir/client-lib")
+        }
+
+        // Copy donkey-model.jar to client-lib (required by WebStartServlet)
+        copy {
+            from(donkeyProject.tasks.named("donkeyModelJar"))
+            into("$setupDir/client-lib")
+            rename { "donkey-model.jar" }
+        }
+
+        // Copy extension shared JARs to client-lib (required for client deserialization)
+        extensionConfigs.filter { it.sharedClasses.isNotEmpty() || it.type == "datatype" }.forEach { ext ->
+            copy {
+                from("$extBuildDir/${ext.name}") {
+                    include("*-shared-*.jar")
+                }
+                into("$setupDir/client-lib")
+                // Rename to remove version number: foo-shared-4.5.2.jar -> foo-shared.jar
+                rename { fileName ->
+                    fileName.replace(Regex("-shared-[0-9.]+\\.jar$"), "-shared.jar")
+                }
+            }
+        }
+
         // Copy conf files
         copy {
             from("conf")
@@ -708,6 +787,161 @@ val assembleSetup by tasks.registering {
     }
 }
 
+// =============================================================================
+// JAR Signing Configuration
+// =============================================================================
+
+val signingEnabled = project.findProperty("disableSigning")?.toString()?.toBoolean() != true
+
+fun loadKeystoreProperties(): Map<String, String> {
+    val props = Properties()
+    val propsFile = file("keystore.properties")
+    if (propsFile.exists()) {
+        propsFile.inputStream().use { stream -> props.load(stream) }
+    }
+    val result = mutableMapOf<String, String>()
+    props.forEach { key, value ->
+        result[key.toString()] = value.toString().replace("\${basedir}", projectDir.absolutePath)
+    }
+    return result
+}
+
+val modifyJarManifests by tasks.registering {
+    group = "signing"
+    description = "Adds Web Start security attributes to JAR manifests"
+
+    dependsOn(assembleSetup)
+    onlyIf { signingEnabled }
+
+    doLast {
+        val clientLibDir = file("$setupDir/client-lib")
+        val extensionsDir = file("$setupDir/extensions")
+        val manifestFile = file("custom_manifest.mf")
+
+        if (!manifestFile.exists()) {
+            logger.warn("custom_manifest.mf not found, skipping manifest modification")
+            return@doLast
+        }
+
+        // Collect JARs from client-lib (skip BouncyCastle)
+        val clientLibJars = clientLibDir.listFiles()?.filter {
+            it.extension == "jar" &&
+            !it.name.startsWith("bcp") &&
+            !it.name.startsWith("bcutil")
+        } ?: emptyList()
+
+        // Collect JARs from extensions (client, shared, and lib JARs - not server JARs)
+        val extensionJars = extensionsDir.walkTopDown()
+            .filter { it.extension == "jar" && !it.name.contains("-server") }
+            .toList()
+
+        val jarsToModify = clientLibJars + extensionJars
+
+        logger.lifecycle("Modifying manifests for ${jarsToModify.size} JARs (${clientLibJars.size} in client-lib, ${extensionJars.size} in extensions)")
+
+        jarsToModify.parallelStream().forEach { jarFile ->
+            exec {
+                commandLine("jar", "umf", manifestFile.absolutePath, jarFile.absolutePath)
+                isIgnoreExitValue = true
+            }
+        }
+    }
+}
+
+val signClientJars by tasks.registering {
+    group = "signing"
+    description = "Signs all client and extension JARs for Java Web Start"
+
+    dependsOn(modifyJarManifests)
+    onlyIf { signingEnabled }
+
+    doLast {
+        val keystoreProps = loadKeystoreProperties()
+        val keystore = keystoreProps["key.keystore"] ?: error("key.keystore not configured in keystore.properties")
+        val storepass = keystoreProps["key.storepass"] ?: error("key.storepass not configured in keystore.properties")
+        val alias = keystoreProps["key.alias"] ?: error("key.alias not configured in keystore.properties")
+        val keypass = keystoreProps["key.keypass"] ?: storepass
+
+        val clientLibDir = file("$setupDir/client-lib")
+        val extensionsDir = file("$setupDir/extensions")
+
+        // Collect JARs from client-lib
+        val clientLibJars = clientLibDir.listFiles()?.filter { it.extension == "jar" } ?: emptyList()
+
+        // Collect JARs from extensions (client, shared, and lib JARs - not server JARs)
+        val extensionJars = extensionsDir.walkTopDown()
+            .filter { it.extension == "jar" && !it.name.contains("-server") }
+            .toList()
+
+        val jarsToSign = clientLibJars + extensionJars
+
+        logger.lifecycle("Signing ${jarsToSign.size} JARs with keystore: $keystore (${clientLibJars.size} in client-lib, ${extensionJars.size} in extensions)")
+
+        val failedJars = ConcurrentHashMap<String, String>()
+
+        // Use a fixed thread pool with limited concurrency to avoid resource exhaustion
+        val executor = Executors.newFixedThreadPool(4)
+        val futures = mutableListOf<Future<*>>()
+
+        for (jarFile in jarsToSign) {
+            futures.add(executor.submit {
+                var success = false
+                var lastError = ""
+
+                repeat(5) { _ ->
+                    if (!success) {
+                        try {
+                            val result = exec {
+                                commandLine(
+                                    "jarsigner",
+                                    "-keystore", keystore,
+                                    "-storepass", storepass,
+                                    "-keypass", keypass,
+                                    "-digestalg", "SHA-256",
+                                    "-sigalg", "SHA256withRSA",
+                                    jarFile.absolutePath,
+                                    alias
+                                )
+                                isIgnoreExitValue = true
+                            }
+                            if (result.exitValue == 0) {
+                                success = true
+                            } else {
+                                lastError = "Exit code: ${result.exitValue}"
+                                Thread.sleep(1000)
+                            }
+                        } catch (e: Exception) {
+                            lastError = e.message ?: "Unknown error"
+                            Thread.sleep(1000)
+                        }
+                    }
+                }
+
+                if (!success) {
+                    failedJars[jarFile.name] = lastError
+                }
+            })
+        }
+
+        // Wait for all signing tasks to complete
+        for (future in futures) {
+            future.get()
+        }
+        executor.shutdown()
+
+        if (failedJars.isNotEmpty()) {
+            for ((name, error) in failedJars) {
+                logger.error("Failed to sign $name: $error")
+            }
+            throw GradleException("JAR signing failed for ${failedJars.size} files")
+        }
+
+        logger.lifecycle("Successfully signed ${jarsToSign.size} JARs")
+    }
+}
+
+// Note: Signing is wired via installExtensionClients -> signClientJars chain below
+
 // Create extension build tasks dynamically
 extensionConfigs.forEach { ext ->
     val baseName = ext.name
@@ -739,17 +973,16 @@ extensionConfigs.forEach { ext ->
         }
     }
 
-    // Server JAR task (if has server classes)
-    if (ext.serverClasses.isNotEmpty() || ext.type == "connector") {
-        tasks.register<Jar>("${baseName}ServerJar") {
-            archiveBaseName.set("$baseName-server")
-            destinationDirectory.set(file("$extBuildDir/$baseName"))
+    // Server JAR task - build for all extensions (connectors, datatypes, and plugins)
+    // Include all classes except the explicitly listed shared classes
+    tasks.register<Jar>("${baseName}ServerJar") {
+        archiveBaseName.set("$baseName-server")
+        destinationDirectory.set(file("$extBuildDir/$baseName"))
 
-            from(sourceSets.main.get().output) {
-                include("$srcBase/**")
-                ext.sharedClasses.forEach { className ->
-                    exclude("$srcBase/$className.class")
-                }
+        from(sourceSets.main.get().output) {
+            include("$srcBase/**")
+            ext.sharedClasses.forEach { className ->
+                exclude("$srcBase/$className.class")
             }
         }
     }
@@ -764,16 +997,16 @@ extensionConfigs.forEach { ext ->
         if (ext.sharedClasses.isNotEmpty() || ext.type == "datatype") {
             dependsOn("${baseName}SharedJar")
         }
-        if (ext.serverClasses.isNotEmpty() || ext.type == "connector") {
-            dependsOn("${baseName}ServerJar")
-        }
+        dependsOn("${baseName}ServerJar")  // Always include server JAR
 
         from("$extBuildDir/$baseName")
         from("src/$srcBase") {
             include("*.xml")
         }
-        if (ext.hasLib) {
-            from("lib/extensionConfigs/${ext.srcPackage}") {
+        // Include lib dependencies if they exist (lib directories use srcPackage names)
+        val extLibDir = file("lib/extensions/${ext.srcPackage}")
+        if (extLibDir.exists()) {
+            from(extLibDir) {
                 into("lib")
             }
         }
@@ -789,11 +1022,105 @@ val buildExtensions by tasks.registering {
         if (ext.sharedClasses.isNotEmpty() || ext.type == "datatype") {
             dependsOn("${ext.name}SharedJar")
         }
-        if (ext.serverClasses.isNotEmpty() || ext.type == "connector") {
-            dependsOn("${ext.name}ServerJar")
-        }
+        dependsOn("${ext.name}ServerJar")  // Always build server JAR
         dependsOn("${ext.name}ExtensionZip")
     }
+}
+
+// Task to install extensions to setup/extensions/
+val installExtensions by tasks.registering {
+    group = "build"
+    description = "Installs extensions to setup/extensions directory"
+
+    dependsOn(buildExtensions)
+    dependsOn(httpauthUserutilSourcesJar)
+
+    doLast {
+        val extensionsDir = file("$setupDir/extensions")
+        extensionsDir.mkdirs()
+
+        extensionConfigs.forEach { ext ->
+            val extDir = file("$extensionsDir/${ext.name}")
+            extDir.mkdirs()
+
+            val srcBase = when (ext.type) {
+                "connector" -> "com/mirth/connect/connectors/${ext.srcPackage}"
+                "datatype" -> "com/mirth/connect/plugins/${ext.srcPackage}"
+                else -> "com/mirth/connect/plugins/${ext.srcPackage}"
+            }
+
+            // Copy plugin.xml
+            copy {
+                from("src/$srcBase") {
+                    include("*.xml")
+                }
+                into(extDir)
+            }
+
+            // Copy shared JAR (renamed to remove version)
+            if (ext.sharedClasses.isNotEmpty() || ext.type == "datatype") {
+                copy {
+                    from("$extBuildDir/${ext.name}") {
+                        include("*-shared-*.jar")
+                    }
+                    into(extDir)
+                    rename { "${ext.name}-shared.jar" }
+                }
+            }
+
+            // Copy server JAR (renamed to remove version) - always present
+            copy {
+                from("$extBuildDir/${ext.name}") {
+                    include("*-server-*.jar")
+                }
+                into(extDir)
+                rename { "${ext.name}-server.jar" }
+            }
+
+            // Copy lib dependencies if they exist (lib directories use srcPackage names)
+            val libSrcDir = file("lib/extensions/${ext.srcPackage}")
+            if (libSrcDir.exists() && libSrcDir.isDirectory()) {
+                copy {
+                    from(libSrcDir)
+                    into("$extDir/lib")
+                }
+            }
+        }
+
+        // Copy httpauth userutil sources JAR
+        val httpauthExtDir = file("$extensionsDir/httpauth")
+        file("$httpauthExtDir/src").mkdirs()
+        copy {
+            from("$buildDir/userutil-sources") {
+                include("httpauth-userutil-sources*.jar")
+            }
+            into("$httpauthExtDir/src")
+            rename { "httpauth-userutil-sources.jar" }
+        }
+
+        logger.lifecycle("Installed ${extensionConfigs.size} extensions to $extensionsDir")
+    }
+}
+
+// Wire extension installation and signing to assembleSetup
+// Order: assembleSetup -> installExtensions -> installExtensionClients -> signClientJars
+assembleSetup.configure {
+    finalizedBy(installExtensions)
+}
+
+// Install client extension JARs after server extensions are installed
+installExtensions.configure {
+    finalizedBy(project(":client").tasks.named("installExtensionClients"))
+}
+
+// Signing happens after all JARs are installed (including extension client JARs)
+project(":client").tasks.named("installExtensionClients").configure {
+    finalizedBy(signClientJars)
+}
+
+// modifyJarManifests needs extensions to be fully installed
+modifyJarManifests.configure {
+    mustRunAfter(project(":client").tasks.named("installExtensionClients"))
 }
 
 tasks.named("assemble") {

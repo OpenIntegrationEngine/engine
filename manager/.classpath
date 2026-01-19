@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" output="bin/main" path="src">
+		<attributes>
+			<attribute name="gradle_scope" value="main"/>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17/"/>
+	<classpathentry kind="con" path="org.eclipse.buildship.core.gradleclasspathcontainer"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Server">
 		<accessrules>
 			<accessrule kind="accessible" pattern="com/mirth/connect/client/core/**"/>
@@ -11,27 +17,6 @@
 			<accessrule kind="nonaccessible" pattern="*/**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/commons-logging-1.2.jar"/>
-	<classpathentry kind="lib" path="lib/log4j-1.2-api-2.17.2.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="https://logging.apache.org/log4j/2.x/log4j-1.2-api/apidocs/"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="lib/log4j-api-2.17.2.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="https://logging.apache.org/log4j/2.x/log4j-api/apidocs/"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="lib/log4j-core-2.17.2.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="https://logging.apache.org/log4j/2.x/log4j-core/apidocs/"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="lib/looks-2.3.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-io-2.13.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons-configuration2-2.8.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons-lang3-3.20.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons-collections4-4.4.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Donkey">
 		<accessrules>
 			<accessrule kind="accessible" pattern="com/mirth/connect/donkey/model/**"/>
@@ -39,17 +24,5 @@
 			<accessrule kind="nonaccessible" pattern="*/**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/xpp3-1.1.4c.jar"/>
-	<classpathentry kind="lib" path="lib/miglayout-core-4.2.jar"/>
-	<classpathentry kind="lib" path="lib/miglayout-swing-4.2.jar"/>
-	<classpathentry kind="lib" path="lib/swingx-core-1.6.2.jar"/>
-	<classpathentry kind="lib" path="lib/commons-codec-1.16.0.jar"/>
-	<classpathentry kind="lib" path="lib/httpcore-4.4.13.jar"/>
-	<classpathentry kind="lib" path="lib/commons-text-1.15.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons-beanutils-1.9.4.jar"/>
-	<classpathentry kind="lib" path="lib/httpclient-4.5.13.jar"/>
-	<classpathentry kind="lib" path="lib/httpmime-4.5.13.jar"/>
-	<classpathentry kind="lib" path="lib/rhino-1.7.13.jar"/>
-	<classpathentry kind="lib" path="lib/xstream-1.4.20.jar"/>
-	<classpathentry kind="output" path="bin"/>
+	<classpathentry kind="output" path="bin/default"/>
 </classpath>

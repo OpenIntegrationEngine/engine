@@ -13,7 +13,8 @@ sourceSets {
         }
         resources {
             srcDir("src")
-            include("**/*.png", "**/*.gif", "**/*.jpg", "**/*.properties")
+            include("**/*.png", "**/*.gif", "**/*.jpg", "**/*.properties",
+                    "**/*.html", "**/*.css", "**/*.js")
         }
     }
     test {
@@ -156,8 +157,110 @@ application {
     mainClass.set("com.mirth.connect.client.ui.Mirth")
 }
 
+// =============================================================================
+// Extension Client JARs
+// =============================================================================
+
+val extClientBuildDir = file("$buildDir/extensionClients")
+
+// Define extension client configurations: name to source package path
+val extensionClientConfigs = mapOf(
+    // Connectors
+    "dicom" to "com/mirth/connect/connectors/dimse",
+    "doc" to "com/mirth/connect/connectors/doc",
+    "file" to "com/mirth/connect/connectors/file",
+    "http" to "com/mirth/connect/connectors/http",
+    "jdbc" to "com/mirth/connect/connectors/jdbc",
+    "jms" to "com/mirth/connect/connectors/jms",
+    "js" to "com/mirth/connect/connectors/js",
+    "smtp" to "com/mirth/connect/connectors/smtp",
+    "tcp" to "com/mirth/connect/connectors/tcp",
+    "vm" to "com/mirth/connect/connectors/vm",
+    "ws" to "com/mirth/connect/connectors/ws",
+    // Datatypes
+    "datatype-delimited" to "com/mirth/connect/plugins/datatypes/delimited",
+    "datatype-dicom" to "com/mirth/connect/plugins/datatypes/dicom",
+    "datatype-edi" to "com/mirth/connect/plugins/datatypes/edi",
+    "datatype-hl7v2" to "com/mirth/connect/plugins/datatypes/hl7v2",
+    "datatype-hl7v3" to "com/mirth/connect/plugins/datatypes/hl7v3",
+    "datatype-json" to "com/mirth/connect/plugins/datatypes/json",
+    "datatype-ncpdp" to "com/mirth/connect/plugins/datatypes/ncpdp",
+    "datatype-raw" to "com/mirth/connect/plugins/datatypes/raw",
+    "datatype-xml" to "com/mirth/connect/plugins/datatypes/xml",
+    // Plugins
+    "directoryresource" to "com/mirth/connect/plugins/directoryresource",
+    "dashboardstatus" to "com/mirth/connect/plugins/dashboardstatus",
+    "destinationsetfilter" to "com/mirth/connect/plugins/destinationsetfilter",
+    "dicomviewer" to "com/mirth/connect/plugins/dicomviewer",
+    "globalmapviewer" to "com/mirth/connect/plugins/globalmapviewer",
+    "httpauth" to "com/mirth/connect/plugins/httpauth",
+    "imageviewer" to "com/mirth/connect/plugins/imageviewer",
+    "javascriptrule" to "com/mirth/connect/plugins/javascriptrule",
+    "javascriptstep" to "com/mirth/connect/plugins/javascriptstep",
+    "mapper" to "com/mirth/connect/plugins/mapper",
+    "messagebuilder" to "com/mirth/connect/plugins/messagebuilder",
+    "datapruner" to "com/mirth/connect/plugins/datapruner",
+    "mllpmode" to "com/mirth/connect/plugins/mllpmode",
+    "pdfviewer" to "com/mirth/connect/plugins/pdfviewer",
+    "textviewer" to "com/mirth/connect/plugins/textviewer",
+    "rulebuilder" to "com/mirth/connect/plugins/rulebuilder",
+    "serverlog" to "com/mirth/connect/plugins/serverlog",
+    "scriptfilerule" to "com/mirth/connect/plugins/scriptfilerule",
+    "scriptfilestep" to "com/mirth/connect/plugins/scriptfilestep",
+    "xsltstep" to "com/mirth/connect/plugins/xsltstep"
+)
+
+// Create client JAR tasks for each extension
+extensionClientConfigs.forEach { (extName, srcPath) ->
+    tasks.register<Jar>("${extName}ClientJar") {
+        archiveBaseName.set("$extName-client")
+        destinationDirectory.set(file("$extClientBuildDir/$extName"))
+
+        from(sourceSets.main.get().output) {
+            include("$srcPath/**")
+        }
+    }
+}
+
+// Task to build all extension client JARs
+val buildExtensionClients by tasks.registering {
+    group = "build"
+    description = "Builds all extension client JARs"
+
+    extensionClientConfigs.keys.forEach { extName ->
+        dependsOn("${extName}ClientJar")
+    }
+}
+
+// Task to copy client JARs to server's extension directories
+val installExtensionClients by tasks.registering {
+    group = "build"
+    description = "Installs extension client JARs to server extensions directory"
+
+    dependsOn(buildExtensionClients)
+
+    doLast {
+        val serverExtensionsDir = project(":server").file("setup/extensions")
+
+        extensionClientConfigs.keys.forEach { extName ->
+            val extDir = file("$serverExtensionsDir/$extName")
+            if (extDir.exists()) {
+                copy {
+                    from("$extClientBuildDir/$extName") {
+                        include("*-client-*.jar")
+                    }
+                    into(extDir)
+                    rename { "$extName-client.jar" }
+                }
+            }
+        }
+
+        logger.lifecycle("Installed ${extensionClientConfigs.size} extension client JARs")
+    }
+}
+
 tasks.named("assemble") {
-    dependsOn(clientJar)
+    dependsOn(clientJar, buildExtensionClients)
 }
 
 artifacts {

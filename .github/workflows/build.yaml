@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+      - release
+    tags:
+      - 'v*'
+      - '[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
     branches:
       - main
@@ -13,6 +17,11 @@ on:
     inputs:
       skip_tests:
         description: 'Skip integration tests'
+        required: false
+        default: false
+        type: boolean
+      create_prerelease:
+        description: 'Create a prerelease from this build'
         required: false
         default: false
         type: boolean
@@ -55,6 +64,43 @@ jobs:
 
       - name: Install local dependencies
         run: ./libs-local/install-local-deps.sh
+
+      - name: Configure signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Using provided signing certificate from secrets..."
+            echo "$KEYSTORE_BASE64" | base64 -d > server/keystore.jks
+            cat > server/keystore.properties << EOF
+          key.keystore=\${basedir}/keystore.jks
+          key.storepass=${KEYSTORE_PASSWORD}
+          key.alias=${KEY_ALIAS}
+          key.keypass=${KEY_PASSWORD}
+          EOF
+          else
+            echo "No signing secrets configured - generating self-signed certificate..."
+            keytool -genkeypair \
+              -alias oie \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 365 \
+              -keystore server/keystore.jks \
+              -storepass changeit \
+              -keypass changeit \
+              -dname "CN=Open Integration Engine, OU=Development, O=OIE, L=Unknown, ST=Unknown, C=US" \
+              -noprompt
+            cat > server/keystore.properties << EOF
+          key.keystore=\${basedir}/keystore.jks
+          key.storepass=changeit
+          key.alias=oie
+          key.keypass=changeit
+          EOF
+            echo "::notice::Using self-signed certificate for JAR signing"
+          fi
 
       - name: Build with Gradle
         run: ./gradlew build assembleSetup -x :donkey:test -x :server:test --no-daemon
@@ -109,6 +155,11 @@ jobs:
         with:
           name: oie-build-gradle
           path: openintegrationengine.tar.gz
+
+      - name: Clean up signing artifacts
+        if: always()
+        run: |
+          rm -f server/keystore.jks server/keystore.properties
 
   build-ant:
     name: Build with Ant (Legacy)
@@ -167,22 +218,173 @@ jobs:
 
       - name: Extract and compare
         run: |
+          set -e
           mkdir -p gradle-extract ant-extract
           tar xzf gradle-build/openintegrationengine.tar.gz -C gradle-extract
           tar xzf ant-build/openintegrationengine-ant.tar.gz -C ant-extract
 
-          echo "=== Comparing directory structures ==="
-          diff -rq gradle-extract/openintegrationengine ant-extract/openintegrationengine --exclude="*.jar" --exclude="*.class" || true
+          GRADLE_DIR="gradle-extract/openintegrationengine"
+          ANT_DIR="ant-extract/openintegrationengine"
 
-          echo "=== Listing Gradle JARs ==="
-          find gradle-extract -name "*.jar" | sort
+          # Normalize JAR names by removing version numbers for comparison
+          normalize_jar_name() {
+            echo "$1" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+(-SNAPSHOT)?\.jar$/.jar/' | sed -E 's/-[0-9]+\.[0-9]+\.jar$/.jar/'
+          }
 
-          echo "=== Listing Ant JARs ==="
-          find ant-extract -name "*.jar" | sort
+          # Extract JAR names (relative paths, normalized)
+          echo "=== Extracting JAR lists ==="
+          find "$GRADLE_DIR" -name "*.jar" -printf "%P\n" | while read f; do normalize_jar_name "$f"; done | sort > /tmp/gradle-jars.txt
+          find "$ANT_DIR" -name "*.jar" -printf "%P\n" | while read f; do normalize_jar_name "$f"; done | sort > /tmp/ant-jars.txt
 
-          echo "=== JAR count comparison ==="
-          echo "Gradle JARs: $(find gradle-extract -name '*.jar' | wc -l)"
-          echo "Ant JARs: $(find ant-extract -name '*.jar' | wc -l)"
+          echo "Gradle JARs: $(wc -l < /tmp/gradle-jars.txt)"
+          echo "Ant JARs: $(wc -l < /tmp/ant-jars.txt)"
+
+          # Find JARs only in Gradle build
+          echo ""
+          echo "=== JARs only in Gradle build ==="
+          comm -23 /tmp/gradle-jars.txt /tmp/ant-jars.txt | tee /tmp/gradle-only.txt
+          GRADLE_ONLY=$(wc -l < /tmp/gradle-only.txt)
+
+          # Find JARs only in Ant build
+          echo ""
+          echo "=== JARs only in Ant build ==="
+          comm -13 /tmp/gradle-jars.txt /tmp/ant-jars.txt | tee /tmp/ant-only.txt
+          ANT_ONLY=$(wc -l < /tmp/ant-only.txt)
+
+          # Compare non-JAR files
+          echo ""
+          echo "=== Non-JAR file differences ==="
+          diff -rq "$GRADLE_DIR" "$ANT_DIR" --exclude="*.jar" --exclude="*.class" --exclude="*.jks" > /tmp/file-diff.txt 2>&1 || true
+          cat /tmp/file-diff.txt
+          FILE_DIFFS=$(wc -l < /tmp/file-diff.txt)
+
+          # Compare directory structure
+          echo ""
+          echo "=== Directory structure comparison ==="
+          find "$GRADLE_DIR" -type d -printf "%P\n" | sort > /tmp/gradle-dirs.txt
+          find "$ANT_DIR" -type d -printf "%P\n" | sort > /tmp/ant-dirs.txt
+
+          echo "Directories only in Gradle:"
+          comm -23 /tmp/gradle-dirs.txt /tmp/ant-dirs.txt
+
+          echo "Directories only in Ant:"
+          comm -13 /tmp/gradle-dirs.txt /tmp/ant-dirs.txt
+
+          # Summary and validation
+          echo ""
+          echo "========================================="
+          echo "           COMPARISON SUMMARY"
+          echo "========================================="
+          echo "JARs only in Gradle build: $GRADLE_ONLY"
+          echo "JARs only in Ant build:    $ANT_ONLY"
+          echo "Non-JAR file differences:  $FILE_DIFFS"
+          echo "========================================="
+
+          # Fail if Ant build has JARs that Gradle is missing (critical)
+          if [ "$ANT_ONLY" -gt 0 ]; then
+            echo ""
+            echo "::error::Gradle build is missing $ANT_ONLY JARs that exist in Ant build!"
+            echo "Missing JARs:"
+            cat /tmp/ant-only.txt
+            exit 1
+          fi
+
+          echo ""
+          echo "✓ Gradle build contains all JARs from Ant build"
+
+  prerelease:
+    name: Create Prerelease
+    runs-on: ubuntu-latest
+    needs: [build-gradle]
+    # Trigger on: tag push, release branch push, or manual with create_prerelease checked
+    if: |
+      startsWith(github.ref, 'refs/tags/') ||
+      github.ref == 'refs/heads/release' ||
+      (github.event_name == 'workflow_dispatch' && inputs.create_prerelease)
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version info
+        id: version
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+
+          # If triggered by a tag, use the tag name
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME="${{ github.ref_name }}"
+            # Strip leading 'v' if present
+            VERSION="${TAG_NAME#v}"
+            PRERELEASE_TAG="${VERSION}"
+          else
+            # Extract version from build.gradle.kts and append commit SHA
+            VERSION=$(grep -oP 'val mirthVersion.*?=.*?"\K[^"]+' build.gradle.kts | head -1)
+            PRERELEASE_TAG="${VERSION}-${SHORT_SHA}"
+          fi
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "prerelease_tag=${PRERELEASE_TAG}" >> $GITHUB_OUTPUT
+          echo "Building prerelease: ${PRERELEASE_TAG}"
+
+      - name: Download RPM package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-rpm-${{ github.sha }}
+          path: packages
+
+      - name: Download DEB package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-deb-${{ github.sha }}
+          path: packages
+
+      - name: Download tar.gz package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-tar-${{ github.sha }}
+          path: packages
+
+      - name: Rename packages with version
+        run: |
+          cd packages
+          TAG="${{ steps.version.outputs.prerelease_tag }}"
+          for f in *.rpm *.deb *.tar.gz; do
+            if [ -f "$f" ]; then
+              # Get extension (handles .tar.gz)
+              case "$f" in
+                *.tar.gz) ext=".tar.gz"; base="${f%.tar.gz}" ;;
+                *) ext=".${f##*.}"; base="${f%.*}" ;;
+              esac
+              mv "$f" "oie-${TAG}${ext}" 2>/dev/null || true
+            fi
+          done
+          echo "=== Prerelease Packages ==="
+          ls -la
+
+      - name: Delete existing prerelease if exists
+        run: |
+          gh release delete "${{ steps.version.outputs.prerelease_tag }}" --yes 2>/dev/null || true
+          # Only delete tag if it wasn't the trigger (avoid deleting the tag we're building from)
+          if [[ "${{ github.ref }}" != "refs/tags/${{ steps.version.outputs.prerelease_tag }}" ]]; then
+            git push --delete origin "refs/tags/${{ steps.version.outputs.prerelease_tag }}" 2>/dev/null || true
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.prerelease_tag }}
+          name: "Prerelease ${{ steps.version.outputs.prerelease_tag }}"
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            packages/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
     name: Create Release Artifacts

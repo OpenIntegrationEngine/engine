@@ -3,6 +3,7 @@
 ##############################
 .mtj.tmp/
 *.class
+META-INF/
 # Re-enable after move to MVN or Gradle
 #*.jar
 *.war

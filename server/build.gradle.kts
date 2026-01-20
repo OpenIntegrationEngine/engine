@@ -416,22 +416,47 @@ val serverLauncherJar by tasks.registering(Jar::class) {
         include("com/mirth/connect/server/launcher/**")
         include("com/mirth/connect/server/extprops/**")
     }
-    // Dynamically build classpath from resolved dependencies
+    // Dynamically build classpath from resolved dependencies with subdirectory paths
     // These are the minimal dependencies needed by the launcher to start
     val launcherDeps = listOf(
         "commons-io", "commons-configuration2", "commons-lang3",
         "commons-logging", "commons-beanutils", "commons-text", "commons-collections"
     )
     doFirst {
-        val classpathEntries = configurations.runtimeClasspath.get().files
-            .filter { file -> launcherDeps.any { dep -> file.name.startsWith(dep) } }
-            .map { "server-lib/${it.name}" }
-            .sorted()
-            .toMutableList()
+        // Build classpath entries with subdirectory paths
+        val classpathEntries = mutableListOf<String>()
+        val manifestCopied = mutableSetOf<String>()
+
+        // Process launcher dependencies using categorization
+        serverLibCategories.entries.sortedByDescending { it.key.count { c -> c == '/' } }.forEach { (subdir, patterns) ->
+            configurations.runtimeClasspath.get().files
+                .filter { jar ->
+                    jar.name !in manifestCopied &&
+                    launcherDeps.any { dep -> jar.name.startsWith(dep) } &&
+                    patterns.any { p -> jar.name.matches(Regex(p.replace("*", ".*"))) }
+                }
+                .forEach { jar ->
+                    classpathEntries.add("server-lib/$subdir/${jar.name}")
+                    manifestCopied.add(jar.name)
+                }
+        }
+
+        // Add remaining launcher deps that didn't match any category (root level)
+        configurations.runtimeClasspath.get().files
+            .filter { jar ->
+                jar.name !in manifestCopied &&
+                launcherDeps.any { dep -> jar.name.startsWith(dep) }
+            }
+            .forEach { jar ->
+                classpathEntries.add("server-lib/${jar.name}")
+                manifestCopied.add(jar.name)
+            }
+
         // Add log4j jars with subdirectory path
         configurations.runtimeClasspath.get().files
             .filter { it.name.startsWith("log4j-") }
             .forEach { classpathEntries.add("server-lib/log4j/${it.name}") }
+
         manifest {
             attributes(
                 "Main-Class" to "com.mirth.connect.server.launcher.MirthLauncher",
@@ -579,6 +604,36 @@ val extensionConfigs = listOf(
 )
 
 // =============================================================================
+// JAR Categorization for server-lib Subdirectories
+// =============================================================================
+
+// JAR categorization for server-lib subdirectories to match official distribution structure
+val serverLibCategories = mapOf(
+    "aws" to listOf("annotations-2.*", "apache-client-2.*", "auth-2.*", "aws-*", "eventstream-*", "http-client-spi-*", "kms-*", "metrics-spi-*", "profiles-*", "protocol-core-*", "regions-*", "s3-*", "sdk-core-*", "sts-*", "arns-*", "utils-2.*"),
+    "aws/ext/netty" to listOf("netty-*"),
+    "aws/ext" to listOf("reactive-streams-*"),
+    "commons" to listOf("commons-*", "httpclient-4.*", "httpcore-4.*", "httpmime-*"),
+    "database" to listOf("derby*", "jtds-*", "mssql-jdbc-*", "mysql-connector-*", "ojdbc*", "postgresql-*", "sqlite-jdbc-*", "ucp-*", "oraclepki-*", "osdt_*", "simplefan-*", "ons-*"),
+    "donkey" to listOf("HikariCP-*", "guice-*", "quartz-*", "slf4j-*"),
+    "donkey/guava" to listOf("guava-*", "checker-qual-*", "error_prone_*", "failureaccess-*", "j2objc-*", "jsr305-*", "listenablefuture-*"),
+    "hapi" to listOf("hapi-*"),
+    "jackson" to listOf("jackson-*"),
+    "javax" to listOf("javax.activation-*", "javax.annotation-*", "javax.inject-*", "javax.json*", "javax.mail*", "javax.servlet-*", "javax.ws.rs-*", "jakarta.*"),
+    "javax/jaxb" to listOf("jaxb-api-*", "jaxb-runtime-*"),
+    "javax/jaxb/ext" to listOf("istack-commons-*", "txw2-*"),
+    "javax/jaxws" to listOf("jaxws-*", "javax.xml.soap-*"),
+    "javax/jaxws/ext" to listOf("FastInfoset-*", "gmbal-*", "ha-api-*", "jsr181-*", "management-api-*", "mimepull-*", "policy-*", "saaj-*", "stax-ex-*", "streambuffer-*"),
+    "jersey" to listOf("jersey-*"),
+    "jersey/ext" to listOf("aopalliance*", "asm-*", "hk2-*", "org.osgi.*", "osgi-resource-*", "persistence-api-*", "validation-api-*"),
+    "jetty" to listOf("jetty-*"),
+    "jetty/jsp" to listOf("apache-jsp-*", "apache-el-*", "taglibs-*", "ecj-*"),
+    "jms" to listOf("geronimo-*"),
+    "log4j" to listOf("log4j-*"),
+    "swagger" to listOf("swagger-*"),
+    "swagger/ext" to listOf("reflections-*")
+)
+
+// =============================================================================
 // Setup Directory Assembly
 // =============================================================================
 
@@ -621,40 +676,56 @@ val assembleSetup by tasks.registering {
         file("$setupDir/docs").mkdirs()
         file("$setupDir/public_html").mkdirs()
         file("$setupDir/public_api_html").mkdirs()
-        file("$setupDir/lib/donkey").mkdirs()
+        file("$setupDir/server-lib/donkey").mkdirs()
 
-        // Copy donkey JARs to lib/donkey (without version numbers)
+        // Copy donkey JARs to server-lib/donkey (without version numbers)
         val donkeyProject = project(":donkey")
         copy {
             from(donkeyProject.tasks.named("donkeyModelJar"))
-            into("$setupDir/lib/donkey")
+            into("$setupDir/server-lib/donkey")
             rename { "donkey-model.jar" }
         }
         copy {
             from(donkeyProject.tasks.named("donkeyServerJar"))
-            into("$setupDir/lib/donkey")
+            into("$setupDir/server-lib/donkey")
             rename { "donkey-server.jar" }
         }
         copy {
             from(donkeyProject.tasks.named("donkeyDbconfJar"))
-            into("$setupDir/lib/donkey")
+            into("$setupDir/server-lib/donkey")
             rename { "donkey-dbconf.jar" }
         }
 
-        // Copy server-lib dependencies (excluding log4j which goes in subdirectory)
+        // Copy server-lib dependencies with subdirectory organization
+        val copiedJars = mutableSetOf<String>()
+
+        // First pass: copy to categorized subdirectories (process deepest paths first)
+        serverLibCategories.entries.sortedByDescending { it.key.count { c -> c == '/' } }.forEach { (subdir, patterns) ->
+            val targetDir = file("$setupDir/server-lib/$subdir")
+            targetDir.mkdirs()
+
+            configurations.runtimeClasspath.get().files
+                .filter { jar ->
+                    jar.name !in copiedJars &&
+                    patterns.any { pattern ->
+                        jar.name.matches(Regex(pattern.replace("*", ".*")))
+                    }
+                }
+                .forEach { jar ->
+                    copy {
+                        from(jar)
+                        into(targetDir)
+                    }
+                    copiedJars.add(jar.name)
+                }
+        }
+
+        // Second pass: copy remaining JARs to server-lib root
         copy {
             from(configurations.runtimeClasspath)
             into("$setupDir/server-lib")
+            exclude { it.file.name in copiedJars }
             exclude("**/ant/**")
-            exclude("**/log4j-*.jar")
-        }
-
-        // Copy log4j JARs to server-lib/log4j subdirectory
-        file("$setupDir/server-lib/log4j").mkdirs()
-        copy {
-            from(configurations.runtimeClasspath)
-            into("$setupDir/server-lib/log4j")
-            include("**/log4j-*.jar")
         }
 
         // Copy core JARs to server-lib (without version numbers for launcher compatibility)

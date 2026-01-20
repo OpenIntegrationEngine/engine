@@ -614,7 +614,7 @@ val serverLibCategories = mapOf(
     "aws/ext" to listOf("reactive-streams-*"),
     "commons" to listOf("commons-*", "httpclient-4.*", "httpcore-4.*", "httpmime-*"),
     "database" to listOf("derby*", "jtds-*", "mssql-jdbc-*", "mysql-connector-*", "ojdbc*", "postgresql-*", "sqlite-jdbc-*", "ucp-*", "oraclepki-*", "osdt_*", "simplefan-*", "ons-*"),
-    "donkey" to listOf("HikariCP-*", "guice-*", "quartz-*", "slf4j-*"),
+    "donkey" to listOf("HikariCP-*", "guice-*", "quartz-*", "slf4j-*", "javassist-*"),
     "donkey/guava" to listOf("guava-*", "checker-qual-*", "error_prone_*", "failureaccess-*", "j2objc-*", "jsr305-*", "listenablefuture-*"),
     "hapi" to listOf("hapi-*"),
     "jackson" to listOf("jackson-*"),
@@ -727,6 +727,29 @@ val assembleSetup by tasks.registering {
             exclude { it.file.name in copiedJars }
             exclude("**/ant/**")
         }
+
+        // Add duplicates at root level (matching official distribution)
+        // These JARs need to exist in both donkey/ and root for compatibility
+        val rootDuplicatePatterns = listOf("HikariCP-*", "guice-*", "quartz-*", "javassist-*")
+        configurations.runtimeClasspath.get().files
+            .filter { jar -> rootDuplicatePatterns.any { p -> jar.name.matches(Regex(p.replace("*", ".*"))) } }
+            .forEach { jar ->
+                copy {
+                    from(jar)
+                    into("$setupDir/server-lib")
+                }
+            }
+
+        // Also copy log4j JARs to donkey/ (matching official distribution)
+        // log4j is in server-lib/log4j/ for the launcher, but also needs to be in donkey/
+        configurations.runtimeClasspath.get().files
+            .filter { it.name.startsWith("log4j-") }
+            .forEach { jar ->
+                copy {
+                    from(jar)
+                    into("$setupDir/server-lib/donkey")
+                }
+            }
 
         // Copy core JARs to server-lib (without version numbers for launcher compatibility)
         copy {

@@ -1,0 +1,42 @@
+#!/bin/bash
+# Debian pre-remove script for Open Integration Engine
+# Stops the service before removal
+
+set -e
+
+case "$1" in
+    remove|purge)
+        echo "Stopping Open Integration Engine service..."
+
+        # Stop the service if it's running
+        if systemctl is-active --quiet oie; then
+            systemctl stop oie
+            echo "Service stopped."
+        fi
+
+        # Disable the service
+        if systemctl is-enabled --quiet oie 2>/dev/null; then
+            systemctl disable oie
+            echo "Service disabled."
+        fi
+        ;;
+
+    upgrade|deconfigure)
+        # On upgrade, stop the service but don't disable it
+        if systemctl is-active --quiet oie; then
+            systemctl stop oie
+            echo "Service stopped for upgrade."
+        fi
+        ;;
+
+    failed-upgrade)
+        # Nothing to do
+        ;;
+
+    *)
+        echo "prerm called with unknown argument: $1" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

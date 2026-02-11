@@ -1,0 +1,47 @@
+[Unit]
+Description=Open Integration Engine
+Documentation=https://github.com/nextgenhealthcare/connect
+After=network.target
+
+[Service]
+Type=simple
+User=oie
+Group=oie
+WorkingDirectory=/opt/oie
+
+# Environment configuration
+EnvironmentFile=-/etc/oie/oie.env
+
+# JVM memory settings (override in /etc/oie/oie.env)
+Environment="JAVA_OPTS=-Xms256m -Xmx1024m"
+
+# Start command
+ExecStart=/opt/oie/oieserver start
+
+# Graceful shutdown
+ExecStop=/opt/oie/oieserver stop
+TimeoutStopSec=60
+
+# Restart policy
+Restart=on-failure
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+
+# Allow write access to required directories
+ReadWritePaths=/var/log/oie /var/lib/oie /opt/oie/appdata /opt/oie/logs
+
+# Limit resource usage
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+	<classpathentry kind="src" output="bin/main" path="src">
 		<attributes>
-			<attribute name="owner.project.facets" value="java"/>
+			<attribute name="gradle_scope" value="main"/>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/commons-logging-1.2.jar"/>
-	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/displaytag-1.2.jar"/>
-	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/json-simple-1.1.1.jar"/>
-	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/stripes.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17/"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
+	<classpathentry kind="con" path="org.eclipse.buildship.core.gradleclasspathcontainer"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Server">
 		<accessrules>
 			<accessrule kind="accessible" pattern="com/mirth/connect/client/core/**"/>
@@ -26,7 +25,5 @@
 			<accessrule kind="nonaccessible" pattern="*/**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="/Server/lib/javax/javax.servlet-api-3.1.0.jar"/>
-	<classpathentry kind="lib" path="/Server/lib/jetty/jsp/org.mortbay.jasper.apache-jsp-8.5.70.jar"/>
-	<classpathentry kind="output" path="build/classes"/>
+	<classpathentry kind="output" path="bin/default"/>
 </classpath>

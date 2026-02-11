@@ -4,13 +4,47 @@ on:
   push:
     branches:
       - main
+      - release
+    tags:
+      - 'v*'
+      - '[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
     branches:
       - main
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip integration tests'
+        required: false
+        default: false
+        type: boolean
+      create_prerelease:
+        description: 'Create a prerelease from this build'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
-  build:
+  build-gradle:
+    name: Build with Gradle
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: donkeytest
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -21,22 +55,249 @@ jobs:
           java-version: '17'
           java-package: 'jdk+fx'
           distribution: 'zulu'
+          cache: 'gradle'
 
-      - name: Build OIE (signed)
-        if: github.ref == 'refs/heads/main'
-        working-directory: server
-        run: ant -f mirth-build.xml
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
 
-      - name: Build OIE (unsigned)
-        if: github.ref != 'refs/heads/main'
-        working-directory: server
-        run: ant -f mirth-build.xml -DdisableSigning=true
+      - name: Install local dependencies
+        run: ./libs-local/install-local-deps.sh
 
-      - name: Package distribution
-        run: tar czf openintegrationengine.tar.gz -C server/ setup --transform 's|^setup|openintegrationengine/|'
+      - name: Configure signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Using provided signing certificate from secrets..."
+            echo "$KEYSTORE_BASE64" | base64 -d > server/keystore.jks
+            cat > server/keystore.properties << EOF
+          key.keystore=\${basedir}/keystore.jks
+          key.storepass=${KEYSTORE_PASSWORD}
+          key.alias=${KEY_ALIAS}
+          key.keypass=${KEY_PASSWORD}
+          EOF
+          else
+            echo "No signing secrets configured - generating self-signed certificate..."
+            rm -f server/keystore.jks
+            keytool -genkeypair \
+              -alias oie \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 365 \
+              -storetype PKCS12 \
+              -keystore server/keystore.jks \
+              -storepass changeit \
+              -keypass changeit \
+              -dname "CN=Open Integration Engine, OU=Development, O=OIE, L=Unknown, ST=Unknown, C=US" \
+              -noprompt
+            cat > server/keystore.properties << EOF
+          key.keystore=\${basedir}/keystore.jks
+          key.storepass=changeit
+          key.alias=oie
+          key.keypass=changeit
+          EOF
+            echo "::notice::Using self-signed certificate for JAR signing"
+          fi
 
-      - name: Create artifact
+      - name: Build with Gradle
+        run: ./gradlew build assembleSetup buildLinuxPackages -x :donkey:test -x :server:test --no-daemon
+
+      - name: Run Donkey integration tests
+        if: ${{ !inputs.skip_tests }}
+        run: ./gradlew :donkey:test --no-daemon
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: donkey-test-results
+          path: donkey/build/reports/tests/test/
+          if-no-files-found: ignore
+
+      - name: List built packages
+        run: |
+          echo "=== Built Packages ==="
+          ls -la server/build/distributions/
+
+      - name: Upload RPM package
         uses: actions/upload-artifact@v4
         with:
-          name: oie-build
+          name: oie-rpm-${{ github.sha }}
+          path: server/build/distributions/*.rpm
+          if-no-files-found: error
+
+      - name: Upload DEB package
+        uses: actions/upload-artifact@v4
+        with:
+          name: oie-deb-${{ github.sha }}
+          path: server/build/distributions/*.deb
+          if-no-files-found: error
+
+      - name: Upload tar.gz package
+        uses: actions/upload-artifact@v4
+        with:
+          name: oie-tar-${{ github.sha }}
+          path: server/build/distributions/*.tar.gz
+          if-no-files-found: error
+
+      - name: Create legacy artifact (for backward compatibility)
+        run: tar czf openintegrationengine.tar.gz -C server/setup . --transform 's|^|openintegrationengine/|'
+
+      - name: Upload legacy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oie-build-gradle
           path: openintegrationengine.tar.gz
+
+      - name: Clean up signing artifacts
+        if: always()
+        run: |
+          rm -f server/keystore.jks server/keystore.properties
+
+  prerelease:
+    name: Create Prerelease
+    runs-on: ubuntu-latest
+    needs: [build-gradle]
+    # Trigger on: tag push, release branch push, or manual with create_prerelease checked
+    if: |
+      startsWith(github.ref, 'refs/tags/') ||
+      github.ref == 'refs/heads/release' ||
+      (github.event_name == 'workflow_dispatch' && inputs.create_prerelease)
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version info
+        id: version
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+
+          # If triggered by a tag, use the tag name
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME="${{ github.ref_name }}"
+            # Strip leading 'v' if present
+            VERSION="${TAG_NAME#v}"
+            PRERELEASE_TAG="${VERSION}"
+          else
+            # Extract version from build.gradle.kts - handles both formats:
+            # val mirthVersion by extra("4.5.2")
+            # val mirthVersion = "4.5.2"
+            VERSION=$(grep -E 'val mirthVersion' build.gradle.kts | grep -oE '"[0-9]+\.[0-9]+\.[0-9]+[^"]*"' | tr -d '"' | head -1)
+            if [ -z "$VERSION" ]; then
+              echo "::error::Could not extract version from build.gradle.kts"
+              exit 1
+            fi
+            PRERELEASE_TAG="${VERSION}-${SHORT_SHA}"
+          fi
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "prerelease_tag=${PRERELEASE_TAG}" >> $GITHUB_OUTPUT
+          echo "Building prerelease: ${PRERELEASE_TAG}"
+
+      - name: Download RPM package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-rpm-${{ github.sha }}
+          path: packages
+
+      - name: Download DEB package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-deb-${{ github.sha }}
+          path: packages
+
+      - name: Download tar.gz package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-tar-${{ github.sha }}
+          path: packages
+
+      - name: Rename packages with version
+        run: |
+          cd packages
+          TAG="${{ steps.version.outputs.prerelease_tag }}"
+          for f in *.rpm *.deb *.tar.gz; do
+            if [ -f "$f" ]; then
+              # Get extension (handles .tar.gz)
+              case "$f" in
+                *.tar.gz) ext=".tar.gz"; base="${f%.tar.gz}" ;;
+                *) ext=".${f##*.}"; base="${f%.*}" ;;
+              esac
+              mv "$f" "oie-${TAG}${ext}" 2>/dev/null || true
+            fi
+          done
+          echo "=== Prerelease Packages ==="
+          ls -la
+
+      - name: Delete existing prerelease if exists
+        run: |
+          gh release delete "${{ steps.version.outputs.prerelease_tag }}" --yes 2>/dev/null || true
+          # Only delete tag if it wasn't the trigger (avoid deleting the tag we're building from)
+          if [[ "${{ github.ref }}" != "refs/tags/${{ steps.version.outputs.prerelease_tag }}" ]]; then
+            git push --delete origin "refs/tags/${{ steps.version.outputs.prerelease_tag }}" 2>/dev/null || true
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.prerelease_tag }}
+          name: "Prerelease ${{ steps.version.outputs.prerelease_tag }}"
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            packages/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    name: Create Release Artifacts
+    runs-on: ubuntu-latest
+    needs: [build-gradle]
+    if: github.event_name == 'release'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download RPM package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-rpm-${{ github.sha }}
+          path: packages
+
+      - name: Download DEB package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-deb-${{ github.sha }}
+          path: packages
+
+      - name: Download tar.gz package
+        uses: actions/download-artifact@v4
+        with:
+          name: oie-tar-${{ github.sha }}
+          path: packages
+
+      - name: List release artifacts
+        run: |
+          echo "=== Release Artifacts ==="
+          ls -la packages/
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            packages/*.rpm
+            packages/*.deb
+            packages/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

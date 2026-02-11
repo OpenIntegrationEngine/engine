@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="src" path="test"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="src" output="bin/main" path="src">
+		<attributes>
+			<attribute name="gradle_scope" value="main"/>
+			<attribute name="gradle_used_by_scope" value="main,test"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="bin/test" path="test">
+		<attributes>
+			<attribute name="gradle_scope" value="test"/>
+			<attribute name="gradle_used_by_scope" value="test"/>
+			<attribute name="test" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17/"/>
+	<classpathentry kind="con" path="org.eclipse.buildship.core.gradleclasspathcontainer"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Server">
 		<accessrules>
 			<accessrule kind="accessible" pattern="com/mirth/connect/client/core/**"/>
@@ -103,115 +114,5 @@
 			<accessrule kind="nonaccessible" pattern="*/**"/>
 		</accessrules>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/log4j-1.2-api-2.17.2.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="https://logging.apache.org/log4j/2.x/log4j-1.2-api/apidocs/"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="lib/log4j-api-2.17.2.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="https://logging.apache.org/log4j/2.x/log4j-api/apidocs/"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="lib/log4j-core-2.17.2.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="https://logging.apache.org/log4j/2.x/log4j-core/apidocs/"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="lib/wizard.jar"/>
-	<classpathentry kind="lib" path="lib/xpp3-1.1.4c.jar"/>
-	<classpathentry kind="lib" path="lib/commons-logging-1.2.jar"/>
-	<classpathentry kind="lib" path="lib/looks-2.3.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-io-2.13.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons-lang3-3.20.0.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="http://commons.apache.org/lang/api/"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/Server/lib/extensions/dicomviewer/ij.jar"/>
-	<classpathentry kind="lib" path="/Server/lib/extensions/pdfviewer/PDFRenderer.jar"/>
-	<classpathentry kind="lib" path="/Server/lib/extensions/ws/wsdl4j-1.6.2-fixed.jar"/>
-	<classpathentry kind="lib" path="lib/swingx-core-1.6.2.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="http://www.jarvana.com/jarvana/view/org/swinglabs/swingx-core/1.6.2-2/swingx-core-1.6.2-2-javadoc.jar!/"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/Server/lib/extensions/dimse/dcm4che-core-2.0.29.jar"/>
-	<classpathentry kind="lib" path="/Server/setup/client-lib/userutil-sources.jar"/>
-	<classpathentry kind="lib" path="lib/miglayout-swing-4.2.jar"/>
-	<classpathentry kind="lib" path="lib/miglayout-core-4.2.jar"/>
-	<classpathentry kind="lib" path="lib/commons-beanutils-1.9.4.jar"/>
-	<classpathentry kind="lib" path="lib/velocity-engine-core-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/velocity-tools-generic-3.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-configuration2-2.8.0.jar"/>
-	<classpathentry kind="lib" path="lib/javax.mail-1.5.0.jar"/>
-	<classpathentry kind="lib" path="lib/rsyntaxtextarea-2.5.6.jar"/>
-	<classpathentry kind="lib" path="lib/autocomplete-2.5.4.jar"/>
-	<classpathentry kind="lib" path="lib/language_support.jar"/>
-	<classpathentry kind="lib" path="lib/javaparser-1.0.8.jar"/>
-	<classpathentry kind="lib" path="lib/quartz-2.3.2.jar"/>
-	<classpathentry kind="lib" path="lib/jai_imageio.jar"/>
-	<classpathentry kind="lib" path="lib/istack-commons-runtime-3.0.6.jar"/>
-	<classpathentry kind="lib" path="lib/javax.ws.rs-api-2.0.1.jar"/>
-	<classpathentry kind="lib" path="lib/jersey-client-2.22.1.jar"/>
-	<classpathentry kind="lib" path="lib/jersey-proxy-client-2.22.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-collections4-4.4.jar"/>
-	<classpathentry kind="lib" path="lib/reflections-0.9.10.jar"/>
-	<classpathentry kind="lib" path="lib/jersey-common-2.22.1.jar"/>
-	<classpathentry kind="lib" path="lib/hk2-api-2.4.0-b31.jar"/>
-	<classpathentry kind="lib" path="lib/hk2-locator-2.4.0-b31.jar"/>
-	<classpathentry kind="lib" path="lib/hk2-utils-2.4.0-b31.jar"/>
-	<classpathentry kind="lib" path="lib/jersey-guava-2.22.1.jar"/>
-	<classpathentry kind="lib" path="lib/guava-32.0.1-jre.jar"/>
-	<classpathentry kind="lib" path="lib/javassist-3.26.0-GA.jar"/>
-	<classpathentry kind="lib" path="lib/javax.inject-2.4.0-b31.jar"/>
-	<classpathentry kind="lib" path="lib/jersey-media-multipart-2.22.1.jar"/>
-	<classpathentry kind="lib" path="lib/mimepull-1.9.7.jar"/>
-	<classpathentry kind="lib" path="lib/zip4j_1.3.3.jar"/>
-	<classpathentry kind="lib" path="lib/joda-time-2.9.9.jar"/>
-	<classpathentry kind="lib" path="lib/bcpkix-jdk18on-1.78.1.jar"/>
-	<classpathentry kind="lib" path="lib/bcprov-jdk18on-1.78.1.jar"/>
-	<classpathentry kind="lib" path="lib/bcutil-jdk18on-1.78.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-vfs2-2.10.0.jar"/>
-	<classpathentry kind="lib" path="lib/staxon-1.3.jar"/>
-	<classpathentry kind="lib" path="lib/jetty-util-9.4.57.v20241219.jar"/>
-	<classpathentry kind="lib" path="lib/commons-compress-1.24.0.jar"/>
-	<classpathentry kind="lib" path="lib/javax.activation-1.2.0.jar"/>
-	<classpathentry kind="lib" path="lib/javax.activation-api-1.2.0.jar"/>
-	<classpathentry kind="lib" path="lib/javax.annotation-api-1.3.2.jar"/>
-	<classpathentry kind="lib" path="lib/openjfx.jar"/>
-	<classpathentry kind="lib" path="lib/jaxb-api-2.4.0-b180725.0427.jar"/>
-	<classpathentry kind="lib" path="lib/jaxb-runtime-2.4.0-b180725.0644.jar"/>
-	<classpathentry kind="lib" path="lib/commons-codec-1.16.0.jar"/>
-	<classpathentry kind="lib" path="lib/httpcore-4.4.13.jar"/>
-	<classpathentry kind="lib" path="lib/swagger-annotations-2.0.10.jar"/>
-	<classpathentry kind="lib" path="lib/jcifs-ng-2.1.10.jar"/>
-	<classpathentry kind="lib" path="lib/commons-text-1.15.0.jar"/>
-	<classpathentry kind="lib" path="lib/regions-2.15.28.jar"/>
-	<classpathentry kind="lib" path="lib/utils-2.15.28.jar"/>
-	<classpathentry kind="lib" path="lib/jackson-annotations-2.14.3.jar"/>
-	<classpathentry kind="lib" path="lib/jackson-core-2.14.3.jar"/>
-	<classpathentry kind="lib" path="lib/jackson-databind-2.14.3.jar"/>
-	<classpathentry kind="lib" path="lib/httpclient-4.5.13.jar"/>
-	<classpathentry kind="lib" path="lib/httpmime-4.5.13.jar"/>
-	<classpathentry kind="lib" path="lib/slf4j-api-1.7.30.jar"/>
-	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.7.30.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-base-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-structures-v21-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-structures-v22-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-structures-v23-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-structures-v231-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-structures-v24-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-structures-v25-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-structures-v251-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-structures-v26-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-structures-v27-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-structures-v28-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/hapi-structures-v281-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/rhino-1.7.13.jar"/>
-	<classpathentry kind="lib" path="lib/xstream-1.4.20.jar"/>
-	<classpathentry kind="lib" path="lib/libphonenumber-8.12.50.jar"/>
-	<classpathentry kind="lib" path="lib/commons-pool2-2.3.jar"/>
-	<classpathentry kind="lib" path="lib/java-semver-0.10.2.jar"/>
-	<classpathentry kind="output" path="bin"/>
+	<classpathentry kind="output" path="bin/default"/>
 </classpath>

@@ -41,6 +41,8 @@ public class MessageFilterToStringStyle extends ToStringStyle {
                 }
             }
             buffer.append("]");
+        } else {
+            super.appendDetail(buffer, fieldName, coll);
         }
     }
 }

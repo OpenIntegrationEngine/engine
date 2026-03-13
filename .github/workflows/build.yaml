@@ -34,13 +34,11 @@ jobs:
 
       - name: Build OIE (signed)
         if: github.ref == 'refs/heads/main'
-        working-directory: server
-        run: ant -f mirth-build.xml
+        run: ./gradlew build
 
       - name: Build OIE (unsigned)
         if: github.ref != 'refs/heads/main'
-        working-directory: server
-        run: ant -f mirth-build.xml -DdisableSigning=true -Dcoverage=true
+        run: ./gradlew build -PdisableSigning=true -Pcoverage=true
 
       - name: Package distribution
         run: tar czf openintegrationengine.tar.gz -C server/ setup --transform 's|^setup|openintegrationengine/|'

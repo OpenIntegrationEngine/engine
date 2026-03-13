@@ -1,9 +1,20 @@
 /*
  * Root build file
- * 
- * For more detailed information on multi-project builds, please refer to 
+ *
+ * For more detailed information on multi-project builds, please refer to
  * https://docs.gradle.org/9.2.1/userguide/multi_project_builds.html
  */
+
+allprojects {
+    group = "com.mirth.connect"
+    version = providers.gradleProperty("version").get()
+}
+
+subprojects {
+    repositories {
+        mavenCentral()
+    }
+}
 
 // Configure Ant to have access to JUnit task
 
@@ -52,14 +63,17 @@ project.findProperty("disableTests")?.let {
     ant.properties["disableTests"] = it.toString()
 }
 
+project.findProperty("coverage")?.let {
+    ant.properties["coverage"] = it.toString()
+}
+
 // Import existing Ant build for gradual migration
 ant.importBuild("server/mirth-build.xml") { antTargetName ->
     // Rename conflicting Ant targets to avoid collision with Gradle built-in tasks
     when (antTargetName) {
         "init" -> "ant-init"
         "build" -> "ant-build"
-
-		else -> antTargetName
+        else -> antTargetName
     }
 }
 

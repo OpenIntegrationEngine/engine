@@ -56,6 +56,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 import com.mirth.connect.client.core.BrandingConstants;
 import com.mirth.connect.client.core.Client;
 import com.mirth.connect.client.core.ClientException;
+import com.mirth.connect.client.core.UnauthorizedException;
 import com.mirth.connect.client.core.ListHandlerException;
 import com.mirth.connect.client.core.PaginatedEventList;
 import com.mirth.connect.client.core.PaginatedMessageList;
@@ -216,14 +217,19 @@ public class CommandLineInterface {
                 runConsole();
             }
             client.logout();
-            client.close();
             out.println("Disconnected from server.");
+        } catch (UnauthorizedException ue) {
+            error("Could not login to server: invalid username or password.", null);
         } catch (ClientException ce) {
-            ce.printStackTrace();
+            error("A client error occurred.", ce);
         } catch (IOException ioe) {
             error("Could not load script file.", ioe);
         } catch (URISyntaxException e) {
             error("Invalid server address.", e);
+        } finally {
+            if (client != null) {
+                client.close();
+            }
         }
     }
 

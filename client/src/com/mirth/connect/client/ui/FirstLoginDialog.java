@@ -184,13 +184,9 @@ public class FirstLoginDialog extends javax.swing.JDialog implements UserDialogI
         contentTextPane.setEditable(false);
         contentTextPane.addHyperlinkListener(new HyperlinkListener() {
             public void hyperlinkUpdate(HyperlinkEvent evt) {
-                if (evt.getEventType() == EventType.ACTIVATED && Desktop.isDesktopSupported()) {
+                if (evt.getEventType() == EventType.ACTIVATED) {
                     try {
-                        if (Desktop.isDesktopSupported()) {
-                            Desktop.getDesktop().browse(evt.getURL().toURI());
-                        } else {
-                            BareBonesBrowserLaunch.openURL(evt.getURL().toString());
-                        }
+                        BareBonesBrowserLaunch.openURL(evt.getURL().toString());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

@@ -7,12 +7,14 @@ import java.awt.Color;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.awt.Desktop;
 import java.io.IOException;
 import java.util.prefs.Preferences;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.InputMap;
+import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
@@ -253,6 +255,13 @@ public class Mirth {
      *            String[]
      */
     public static void main(String[] args) {
+        var missingPrerequisite = ClientPrerequisites.getMissing();
+        if (missingPrerequisite != null) {
+            showUnsupportedJreDialog(missingPrerequisite);
+            System.exit(1);
+            return;
+        }
+
         CommandLineOptions opts = new CommandLineOptions(args);
 
         if (StringUtils.isNotBlank(opts.getProtocols())) {
@@ -265,6 +274,23 @@ public class Mirth {
         PlatformUI.CLIENT_VERSION = opts.getVersion();
 
         start(opts.getServer(), opts.getVersion(), opts.getUsername(), opts.getPassword());
+    }
+
+    private static void showUnsupportedJreDialog(String missingPrerequisite) {
+        try {
+            var message = String.format(
+                "%s Client requires %s%nPlease review the system requirements and try again.",
+                BrandingConstants.PRODUCT_NAME, missingPrerequisite);
+            var options = new Object[] { "View System Requirements", "Exit" };
+            var result = JOptionPane.showOptionDialog(
+                null, message, "Unsupported Java Runtime", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, options, options[0]);
+
+            if (result == 0) {
+                Desktop.getDesktop().browse(java.net.URI.create(BrandingConstants.SYSTEM_REQUIREMENTS_URL));
+            }
+        } catch (Throwable t) {
+            System.err.println(String.format("Missing prerequisite: %s", missingPrerequisite));
+        }
     }
 
     private static void start(final String server, final String version, final String username, final String password) {

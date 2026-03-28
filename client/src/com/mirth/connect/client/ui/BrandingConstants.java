@@ -30,6 +30,9 @@ public class BrandingConstants {
     // The URL that is opened when clicking "Help" button in Administrator
     public static String HELP_URL_LOCATION = "https://github.com/OpenIntegrationEngine/engine/discussions";
 
+    // The URL that is opened when clicking "System Requirements" button in the error dialog when an unsupported Java version is detected
+    public static final String SYSTEM_REQUIREMENTS_URL = "https://docs.openintegrationengine.org/engine/getting_started.html#system-requirements";
+
     // The "More info" in Server settings "Provide usage statistics"
     public static final String PRIVACY_URL = "https://github.com/openintegrationengine";
     public static final String PRIVACY_TOOLTIP = "Privacy Information";

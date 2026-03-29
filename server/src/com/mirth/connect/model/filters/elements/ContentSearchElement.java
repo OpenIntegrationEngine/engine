@@ -6,6 +6,7 @@ package com.mirth.connect.model.filters.elements;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -40,5 +41,23 @@ public class ContentSearchElement implements Serializable {
     @Override
     public String toString() {
         return ToStringBuilder.reflectionToString(this, ContentSearchElementToStringStyle.instance());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof ContentSearchElement
+            && equals((ContentSearchElement) obj);
+    }
+
+    /** Check if the element has logically identical criteria */
+    public boolean equals(ContentSearchElement element) {
+        return element != null
+            && contentCode == element.contentCode
+            && Objects.equals(searches, element.searches);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(contentCode, searches);
     }
 }

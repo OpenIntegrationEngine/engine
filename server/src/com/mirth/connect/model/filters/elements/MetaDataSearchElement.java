@@ -3,6 +3,7 @@
 
 package com.mirth.connect.model.filters.elements;
 
+import java.util.Objects;
 import java.io.Serializable;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -60,5 +61,25 @@ public class MetaDataSearchElement implements Serializable {
     @Override
     public String toString() {
         return ToStringBuilder.reflectionToString(this, SearchElementToStringStyle.instance());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof MetaDataSearchElement
+            && equals((MetaDataSearchElement) obj);
+    }
+
+    /** Check if the element has logically identical criteria */
+    public boolean equals(MetaDataSearchElement element) {
+        return element != null
+            && Objects.equals(columnName, element.columnName)
+            && Objects.equals(operator, element.operator)
+            && Objects.equals(value, element.value)
+            && Objects.equals(ignoreCase, element.ignoreCase);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(columnName, operator, value, ignoreCase);
     }
 }

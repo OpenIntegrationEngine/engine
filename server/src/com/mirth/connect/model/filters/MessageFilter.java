@@ -36,6 +36,8 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
  */
 @XStreamAlias("messageFilter")
 public class MessageFilter implements Serializable {
+    private static final MessageFilter EMPTY_FILTER = new MessageFilter();
+
     /*
      * Note that any filter criteria that is an int must be represented using Integer otherwise it
      * will default to 0 and not pass the isNotNull check in the SQL mapping.
@@ -59,6 +61,10 @@ public class MessageFilter implements Serializable {
     private List<String> textSearchMetaDataColumns;
     private Integer sendAttemptsLower;
     private Integer sendAttemptsUpper;
+    /*
+     * Despite the comment above, "false" for attachment and error actually mean "not set".
+     * There's no way to search for messages that don't have attachments/errors.
+     */
     private Boolean attachment;
     private Boolean error;
 
@@ -228,6 +234,52 @@ public class MessageFilter implements Serializable {
 
     public void setError(Boolean error) {
         this.error = error;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof MessageFilter
+            && equals((MessageFilter) obj);
+    }
+
+    /** Check if the filter has logically identical criteria */
+    public boolean equals(MessageFilter filter) {
+        return filter != null
+            && Objects.equals(maxMessageId, filter.maxMessageId)
+            && Objects.equals(minMessageId, filter.minMessageId)
+            && Objects.equals(originalIdUpper, filter.originalIdUpper)
+            && Objects.equals(originalIdLower, filter.originalIdLower)
+            && Objects.equals(importIdUpper, filter.importIdUpper)
+            && Objects.equals(importIdLower, filter.importIdLower)
+            && Objects.equals(startDate, filter.startDate)
+            && Objects.equals(endDate, filter.endDate)
+            && Objects.equals(textSearch, filter.textSearch)
+            && Objects.equals(textSearchRegex, filter.textSearchRegex)
+            && Objects.equals(statuses, filter.statuses)
+            && Objects.equals(
+                (includedMetaDataIds == null || includedMetaDataIds.isEmpty()) ? null : includedMetaDataIds,
+                (filter.includedMetaDataIds == null || filter.includedMetaDataIds.isEmpty()) ? null : filter.includedMetaDataIds)
+            && Objects.equals(
+                (excludedMetaDataIds == null || excludedMetaDataIds.isEmpty()) ? null : excludedMetaDataIds,
+                (filter.excludedMetaDataIds == null || filter.excludedMetaDataIds.isEmpty()) ? null : filter.excludedMetaDataIds)
+            && Objects.equals(serverId, filter.serverId)
+            && Objects.equals(contentSearch, filter.contentSearch)
+            && Objects.equals(metaDataSearch, filter.metaDataSearch)
+            && Objects.equals(textSearchMetaDataColumns, filter.textSearchMetaDataColumns)
+            && Objects.equals(sendAttemptsLower, filter.sendAttemptsLower)
+            && Objects.equals(sendAttemptsUpper, filter.sendAttemptsUpper)
+            && Objects.equals(Boolean.TRUE.equals(attachment), Boolean.TRUE.equals(filter.attachment))
+            && Objects.equals(Boolean.TRUE.equals(error), Boolean.TRUE.equals(filter.error));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maxMessageId, startDate, endDate, textSearch);
+    }
+
+    /** Check if the filter has any criteria */
+    public boolean isEmpty() {
+        return this.equals(EMPTY_FILTER);
     }
 
     /** Serialize to event log audit string */

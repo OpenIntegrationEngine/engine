@@ -26,30 +26,138 @@ public class MessageFilterModelTest {
     @Test
     public void testMessageFilterEqualityAndToString() {
         var left = new MessageFilter();
+        var right = new MessageFilter();
 
-        assertEquals("(no criteria)", left.toDisplayString(Map.of(), "\n", false));
+        assertTrue(left.isEmpty());
+        assertEquals(left, right);
+        assertEquals("(no criteria)", left.toDisplayString());
+        assertFalse(left.equals((Object) null));
 
         left.setMaxMessageId(200L);
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setMaxMessageId(200L);
+        assertEquals(left, right);
+
         left.setMinMessageId(100L);
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setMinMessageId(100L);
+        assertEquals(left, right);
+
         left.setOriginalIdLower(10L);
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setOriginalIdLower(10L);
+        assertEquals(left, right);
+
         left.setOriginalIdUpper(20L);
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setOriginalIdUpper(20L);
+        assertEquals(left, right);
+
         left.setImportIdLower(25L);
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setImportIdLower(25L);
+        assertEquals(left, right);
+
         left.setImportIdUpper(30L);
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setImportIdUpper(30L);
+        assertEquals(left, right);
+
         left.setStartDate(calendar(2024, 1, 2, 3, 4, 0));
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setStartDate(calendar(2024, 1, 2, 3, 4, 0));
+        assertEquals(left, right);
+
         left.setEndDate(calendar(2024, 2, 3, 4, 5, 0));
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setEndDate(calendar(2024, 2, 3, 4, 5, 0));
+        assertEquals(left, right);
+
         left.setTextSearch("alpha");
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setTextSearch("alpha");
+        assertEquals(left, right);
+
         left.setTextSearchRegex(false);
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setTextSearchRegex(false);
+        assertEquals(left, right);
+
         left.setStatuses(EnumSet.of(Status.RECEIVED, Status.ERROR));
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setStatuses(EnumSet.of(Status.RECEIVED, Status.ERROR));
+        assertEquals(left, right);
+
         left.setIncludedMetaDataIds(List.of(1, 2));
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setIncludedMetaDataIds(List.of(1, 2));
+        assertEquals(left, right);
+
         left.setExcludedMetaDataIds(List.of(3));
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setExcludedMetaDataIds(List.of(3));
+        assertEquals(left, right);
+
         left.setServerId("server-1");
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setServerId("server-1");
+        assertEquals(left, right);
+
         left.setContentSearch(List.of(new ContentSearchElement(ContentType.RAW.getContentTypeCode(), List.of("needle", "haystack"))));
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setContentSearch(List.of(new ContentSearchElement(ContentType.RAW.getContentTypeCode(), List.of("needle", "haystack"))));
+        assertEquals(left, right);
+
         left.setMetaDataSearch(List.of(new MetaDataSearchElement("mirth_type", "EQUAL", "asdf", null)));
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setMetaDataSearch(List.of(new MetaDataSearchElement("mirth_type", "EQUAL", "asdf", null)));
+        assertEquals(left, right);
+
         left.setTextSearchMetaDataColumns(List.of("columnA", "columnB"));
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setTextSearchMetaDataColumns(List.of("columnA", "columnB"));
+        assertEquals(left, right);
+
         left.setSendAttemptsLower(1);
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setSendAttemptsLower(1);
+        assertEquals(left, right);
+
         left.setSendAttemptsUpper(5);
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setSendAttemptsUpper(5);
+        assertEquals(left, right);
+
         left.setAttachment(true);
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setAttachment(true);
+        assertEquals(left, right);
+
         left.setError(true);
+        assertNotEquals(left, right);
+        assertNotNull(left.toDisplayString());
+        right.setError(true);
+        assertEquals(left, right);
 
         var expected = String.join("\n",
             "Max Message Id: 200",
@@ -71,7 +179,7 @@ public class MessageFilterModelTest {
 
         assertEquals(expected, left.toDisplayString(Map.of(1, "Source", 2, "Destination", 3, "Filtered"), "\n", false));
     }
-    
+
     @Test
     public void testMessageFilterToStringFallsBackToConnectorIds() {
         var filter = new MessageFilter();

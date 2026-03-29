@@ -510,6 +510,81 @@ public class MessageBrowserAdvancedFilter extends MirthDialog {
         return hasAdvancedCriteria;
     }
 
+    public void applyFilter(MessageFilter messageFilter) {
+        stopEditing();
+        resetSelections();
+
+        if (messageFilter == null) {
+            return;
+        }
+
+        ItemSelectionTableModel<Integer, String> connectorModel = ((ItemSelectionTableModel<Integer, String>) connectorTable.getModel());
+        DefaultTableModel contentSearchModel = ((DefaultTableModel) contentSearchTable.getModel());
+        DefaultTableModel metaDataSearchModel = ((DefaultTableModel) metaDataSearchTable.getModel());
+
+        List<Integer> includedMetaDataIds = messageFilter.getIncludedMetaDataIds();
+        List<Integer> excludedMetaDataIds = messageFilter.getExcludedMetaDataIds();
+
+        if (includedMetaDataIds != null) {
+            connectorModel.unselectAllKeys();
+            for (Integer metaDataId : includedMetaDataIds) {
+                connectorModel.selectKey(metaDataId);
+            }
+        } else if (excludedMetaDataIds != null) {
+            connectorModel.selectAllKeys();
+            for (int row = 0; row < connectorModel.getRowCount(); row++) {
+                Integer metaDataId = (Integer) connectorModel.getValueAt(row, ItemSelectionTableModel.KEY_COLUMN);
+                if (excludedMetaDataIds.contains(metaDataId)) {
+                    connectorModel.setValueAt(Boolean.FALSE, row, ItemSelectionTableModel.CHECKBOX_COLUMN);
+                }
+            }
+        }
+
+        messageIdLowerField.setText((messageFilter.getMinMessageId() == null) ? "" : String.valueOf(messageFilter.getMinMessageId()));
+        messageIdUpperField.setText((messageFilter.getMaxMessageId() == null) ? "" : String.valueOf(messageFilter.getMaxMessageId()));
+        originalIdLowerField.setText((messageFilter.getOriginalIdLower() == null) ? "" : String.valueOf(messageFilter.getOriginalIdLower()));
+        originalIdUpperField.setText((messageFilter.getOriginalIdUpper() == null) ? "" : String.valueOf(messageFilter.getOriginalIdUpper()));
+        importIdLowerField.setText((messageFilter.getImportIdLower() == null) ? "" : String.valueOf(messageFilter.getImportIdLower()));
+        importIdUpperField.setText((messageFilter.getImportIdUpper() == null) ? "" : String.valueOf(messageFilter.getImportIdUpper()));
+        serverIdField.setText(StringUtils.defaultString(messageFilter.getServerId()));
+        sendAttemptsLower.setValue((messageFilter.getSendAttemptsLower() == null) ? 0 : messageFilter.getSendAttemptsLower());
+        sendAttemptsUpper.setValue((messageFilter.getSendAttemptsUpper() == null) ? "" : String.valueOf(messageFilter.getSendAttemptsUpper()));
+        attachmentCheckBox.setSelected(Boolean.TRUE.equals(messageFilter.getAttachment()));
+        errorCheckBox.setSelected(Boolean.TRUE.equals(messageFilter.getError()));
+
+        if (messageFilter.getContentSearch() != null) {
+            for (ContentSearchElement contentSearchElement : messageFilter.getContentSearch()) {
+                for (String search : contentSearchElement.getSearches()) {
+                    contentSearchModel.addRow(new Object[] { ContentType.fromCode(contentSearchElement.getContentCode()), search });
+                }
+            }
+        }
+
+        if (messageFilter.getMetaDataSearch() != null) {
+            for (MetaDataSearchElement metaDataSearchElement : messageFilter.getMetaDataSearch()) {
+                if (cachedMetaDataColumns.containsKey(metaDataSearchElement.getColumnName())) {
+                    metaDataSearchModel.addRow(new Object[] {
+                            metaDataSearchElement.getColumnName(),
+                            MetaDataSearchOperator.fromString(metaDataSearchElement.getOperator()),
+                            formatMetaDataValue(metaDataSearchElement.getValue()),
+                            Boolean.TRUE.equals(metaDataSearchElement.getIgnoreCase()) });
+                }
+            }
+        }
+    }
+
+    private String formatMetaDataValue(Object value) {
+        if (value == null) {
+            return "";
+        }
+
+        if (value instanceof java.util.Calendar) {
+            return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(((java.util.Calendar) value).getTime());
+        }
+
+        return String.valueOf(value);
+    }
+
     private void stopEditing() {
         // if the user had typed in a value in the content search table, close the cell editor so that any value that was entered will be included in the search
         TableCellEditor cellEditor = contentSearchTable.getCellEditor();

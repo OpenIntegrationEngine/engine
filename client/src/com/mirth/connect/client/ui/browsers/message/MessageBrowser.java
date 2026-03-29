@@ -150,6 +150,7 @@ public class MessageBrowser extends javax.swing.JPanel {
     private String channelId;
     protected List<String> channelIds = new ArrayList<String>();
     private String channelName;
+    private MessageBrowserRecentFilterStore recentFilterStore;
     private boolean isChannelDeployed;
     private boolean isCURESPHILoggingOn;
     protected boolean isChannelMessagesPanelFirstLoadSearch;
@@ -331,6 +332,7 @@ public class MessageBrowser extends javax.swing.JPanel {
 
         this.channelId = channelId;
         this.channelName = channelName;
+        this.recentFilterStore = new MessageBrowserRecentFilterStore(channelId);
         this.connectors = connectors;
         this.connectors.put(null, "Deleted Connectors");
         initMetaDataColumns(channelModel);
@@ -340,6 +342,7 @@ public class MessageBrowser extends javax.swing.JPanel {
         resetSearchCriteria();
         advancedSearchPopup.setSelectedMetaDataIds(selectedMetaDataIds);
         updateAdvancedSearchButtonFont();
+        recentFiltersButton.setEnabled(!recentFilterStore.getRecentFilters().isEmpty());
 
         lastUserSelectedMessageType = "Raw";
         updateMessageRadioGroup();
@@ -450,6 +453,75 @@ public class MessageBrowser extends javax.swing.JPanel {
         } else {
             advSearchButton.setFont(advSearchButton.getFont().deriveFont(Font.PLAIN));
         }
+    }
+
+    private void restoreRecentFilter() {
+        // Multi-channel browse may be null
+        if (recentFilterStore == null) return;
+
+        JPopupMenu popupMenu = new JPopupMenu();
+        for (MessageFilter filter : recentFilterStore.getRecentFilters()) {
+            var menuItem = new JMenuItem(filter.toDisplayString(connectors, "; ", /* includeEmptyCriteria: */ false));
+            menuItem.addActionListener(e -> applyMessageFilter(filter));
+            popupMenu.add(menuItem);
+        }
+        popupMenu.show(recentFiltersButton, 0, recentFiltersButton.getHeight());
+    }
+    
+    private void applyMessageFilter(MessageFilter filter) {
+        resetSearchCriteria();
+
+        boolean allDay = inferAllDay(filter);
+
+        mirthDatePicker1.setDate((filter.getStartDate() == null) ? null : filter.getStartDate().getTime());
+        mirthDatePicker2.setDate((filter.getEndDate() == null) ? null : filter.getEndDate().getTime());
+        allDayCheckBox.setSelected(allDay);
+        mirthTimePicker1.setEnabled(mirthDatePicker1.getDate() != null && !allDay);
+        mirthTimePicker2.setEnabled(mirthDatePicker2.getDate() != null && !allDay);
+
+        if (filter.getStartDate() != null) {
+            mirthTimePicker1.setDate(new SimpleDateFormat("HH:mm").format(filter.getStartDate().getTime()));
+        }
+        if (filter.getEndDate() != null && !allDay) {
+            mirthTimePicker2.setDate(new SimpleDateFormat("HH:mm").format(filter.getEndDate().getTime()));
+        }
+
+        textSearchField.setText(StringUtils.defaultString(filter.getTextSearch()));
+        regexTextSearchCheckBox.setSelected(Boolean.TRUE.equals(filter.getTextSearchRegex()));
+
+        Set<Status> statuses = filter.getStatuses();
+        statusBoxReceived.setSelected(statuses != null && statuses.contains(Status.RECEIVED));
+        statusBoxTransformed.setSelected(statuses != null && statuses.contains(Status.TRANSFORMED));
+        statusBoxFiltered.setSelected(statuses != null && statuses.contains(Status.FILTERED));
+        statusBoxQueued.setSelected(statuses != null && statuses.contains(Status.QUEUED));
+        statusBoxPending.setSelected(statuses != null && statuses.contains(Status.PENDING));
+        statusBoxSent.setSelected(statuses != null && statuses.contains(Status.SENT));
+        statusBoxError.setSelected(statuses != null && statuses.contains(Status.ERROR));
+
+        advancedSearchPopup.applyFilter(filter);
+        updateAdvancedSearchButtonFont();
+        updateFilterButtonFont(Font.BOLD);
+    }
+
+    private boolean inferAllDay(MessageFilter filter) {
+        if (filter == null) {
+            return false;
+        }
+
+        Calendar endDate = filter.getEndDate();
+        if (endDate != null) {
+            return endDate.get(Calendar.HOUR_OF_DAY) == 23
+                && endDate.get(Calendar.MINUTE) == 59
+                && endDate.get(Calendar.SECOND) == 59
+                && endDate.get(Calendar.MILLISECOND) == 999;
+        }
+
+        Calendar startDate = filter.getStartDate();
+        return startDate != null
+            && startDate.get(Calendar.HOUR_OF_DAY) == 0
+            && startDate.get(Calendar.MINUTE) == 0
+            && startDate.get(Calendar.SECOND) == 0
+            && startDate.get(Calendar.MILLISECOND) == 0;
     }
 
     public String getChannelId() {
@@ -654,6 +726,13 @@ public class MessageBrowser extends javax.swing.JPanel {
         advancedSearchPopup.applySelectionsToFilter(messageFilter);
         selectedMetaDataIds = messageFilter.getIncludedMetaDataIds();
 
+        if (recentFilterStore != null && !messageFilter.isEmpty()) {
+            recentFilterStore.addRecentFilter(messageFilter);
+            recentFiltersButton.setEnabled(true);
+        }
+
+        // To keep page results consistent, the search is "capped" to the most
+        // recent message that has been received by the channel.
         if (messageFilter.getMaxMessageId() == null) {
             try {
                 Long maxMessageId = parent.mirthClient.getMaxMessageId(channelId);
@@ -684,7 +763,7 @@ public class MessageBrowser extends javax.swing.JPanel {
             clearCache();
             loadPageNumber(1);
 
-            lastSearchCriteria.setText(messageFilter.toDisplayString(connectors, "\n", true));
+            lastSearchCriteria.setText(messageFilter.toDisplayString(connectors, "\n", /* includeEmptyCriteria: */ true));
             auditSearch();
         }
     }
@@ -2648,6 +2727,11 @@ public class MessageBrowser extends javax.swing.JPanel {
             }
         });
 
+        recentFiltersButton = new javax.swing.JButton();
+        recentFiltersButton.setText("Recent...");
+        recentFiltersButton.setEnabled(false);
+        recentFiltersButton.addActionListener(e -> restoreRecentFilter());
+
         statusBoxFiltered.setBackground(new java.awt.Color(255, 255, 255));
         statusBoxFiltered.setText("FILTERED");
         statusBoxFiltered.setFont(new java.awt.Font("Lucida Grande", 0, 11)); // NOI18N
@@ -2775,8 +2859,9 @@ public class MessageBrowser extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(allDayCheckBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(filterButton, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(regexTextSearchCheckBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(recentFiltersButton, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(regexTextSearchCheckBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(filterButton, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(statusBoxQueued, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -2830,7 +2915,8 @@ public class MessageBrowser extends javax.swing.JPanel {
                                     .addComponent(mirthTimePicker2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                         .addComponent(mirthDatePicker2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(recentFiltersButton))
                                 .addGap(7, 7, 7)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                     .addComponent(textSearchField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -3110,6 +3196,7 @@ public class MessageBrowser extends javax.swing.JPanel {
     private javax.swing.JLabel processedResponseLabel;
     private javax.swing.JLabel processedResponseStatusLabel;
     private com.mirth.connect.client.ui.components.MirthSyntaxTextArea processedResponseStatusTextArea;
+    private javax.swing.JButton recentFiltersButton;
     private com.mirth.connect.client.ui.components.MirthCheckBox regexTextSearchCheckBox;
     private javax.swing.JButton resetButton;
     private javax.swing.JLabel responseLabel;

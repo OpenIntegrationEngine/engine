@@ -103,6 +103,11 @@ public class ExtensionServlet extends MirthServlet implements ExtensionServletIn
     }
 
     @Override
+    public Set<String> getDisabledExtensions() {
+        return extensionController.getDisabledExtensions();
+    }
+
+    @Override
     public void setExtensionEnabled(String extensionName, boolean enabled) {
         try {
             extensionController.setExtensionEnabled(extensionName, enabled);

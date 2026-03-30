@@ -724,6 +724,7 @@ public class Frame extends JXFrame {
     private void loadExtensionMetaData() throws ClientException {
         loadedPlugins = mirthClient.getPluginMetaData();
         loadedConnectors = mirthClient.getConnectorMetaData();
+        Set<String> disabledExtensions = mirthClient.getDisabledExtensions();
 
         // Register extension JAX-RS providers with the client
         Set<String> apiProviderPackages = new HashSet<String>();
@@ -731,7 +732,7 @@ public class Frame extends JXFrame {
 
         for (Object extensionMetaData : CollectionUtils.union(loadedPlugins.values(), loadedConnectors.values())) {
             MetaData metaData = (MetaData) extensionMetaData;
-            if (mirthClient.isExtensionEnabled(metaData.getName())) {
+            if (!disabledExtensions.contains(metaData.getName())) {
                 for (ApiProvider provider : metaData.getApiProviders(Version.getLatest())) {
                     switch (provider.getType()) {
                         case SERVLET_INTERFACE_PACKAGE:

@@ -2623,6 +2623,16 @@ public class Client implements UserServletInterface, ConfigurationServletInterfa
     }
 
     /**
+     * Returns the disabled extensions on the classpath.
+     * 
+     * @see ExtensionServletInterface#getDisabledExtensions
+     */
+    @Override
+    public Set<String> getDisabledExtensions() throws ClientException {
+        return getServlet(ExtensionServletInterface.class).getDisabledExtensions();
+    }
+
+    /**
      * Enables or disables an extension.
      * 
      * @see ExtensionServletInterface#setExtensionEnabled

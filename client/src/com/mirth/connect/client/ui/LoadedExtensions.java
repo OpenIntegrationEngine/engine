@@ -102,12 +102,20 @@ public class LoadedExtensions {
         // initialized again
         clearExtensionMaps();
 
+        Set<String> disabledExtensions;
+        try {
+            disabledExtensions = PlatformUI.MIRTH_FRAME.mirthClient.getDisabledExtensions();
+        } catch (Exception e) {
+            PlatformUI.MIRTH_FRAME.alertThrowable(PlatformUI.MIRTH_FRAME, e);
+            return;
+        }
+
         // Order all the plugins by their weight before loading any of them.
         Map<String, String> pluginNameMap = new HashMap<String, String>();
         NavigableMap<Integer, List<String>> weightedPlugins = new TreeMap<Integer, List<String>>();
         for (PluginMetaData metaData : PlatformUI.MIRTH_FRAME.getPluginMetaData().values()) {
             try {
-                if (PlatformUI.MIRTH_FRAME.mirthClient.isExtensionEnabled(metaData.getName())) {
+                if (!disabledExtensions.contains(metaData.getName())) {
                     extensionVersions.put(metaData.getName(), metaData.getPluginVersion());
                     if (metaData.getClientClasses() != null) {
                         for (PluginClass pluginClass : metaData.getClientClasses()) {
@@ -150,7 +158,7 @@ public class LoadedExtensions {
         // Load connector code template plugins before anything else
         for (ConnectorMetaData metaData : PlatformUI.MIRTH_FRAME.getConnectorMetaData().values()) {
             try {
-                if (PlatformUI.MIRTH_FRAME.mirthClient.isExtensionEnabled(metaData.getName())) {
+                if (!disabledExtensions.contains(metaData.getName())) {
                     extensionVersions.put(metaData.getName(), metaData.getPluginVersion());
                     if (StringUtils.isNotEmpty(metaData.getTemplateClassName())) {
                         Class<?> clazz = Class.forName(metaData.getTemplateClassName());
@@ -205,7 +213,7 @@ public class LoadedExtensions {
 
         for (ConnectorMetaData metaData : PlatformUI.MIRTH_FRAME.getConnectorMetaData().values()) {
             try {
-                if (PlatformUI.MIRTH_FRAME.mirthClient.isExtensionEnabled(metaData.getName())) {
+                if (!disabledExtensions.contains(metaData.getName())) {
 
                     String connectorName = metaData.getName();
                     ConnectorSettingsPanel connectorSettingsPanel = (ConnectorSettingsPanel) Class.forName(metaData.getClientClassName()).newInstance();

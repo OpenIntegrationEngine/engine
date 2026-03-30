@@ -111,6 +111,16 @@ public interface ExtensionServletInterface extends BaseServletInterface {
     @MirthOperation(name = "isExtensionEnabled", display = "Check if extension is enabled", auditable = false)
     public boolean isExtensionEnabled(@Param("extensionName") @Parameter(description = "The name of the extension to retrieve.", required = true) @PathParam("extensionName") String extensionName) throws ClientException;
 
+    @GET
+    @Path("/disabled")
+    @Operation(summary = "Returns the disabled extensions on the classpath.")
+    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+            @ExampleObject(name = "disabledExtensions", value = "<set><string>Channel Reader</string></set>") }),
+            @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
+                    @ExampleObject(name = "disabledExtensions", value = "[\"Channel Reader\"]") }) })
+    @MirthOperation(name = "getDisabledExtensions", display = "Get disabled extensions", auditable = false)
+    public Set<String> getDisabledExtensions() throws ClientException;
+
     @POST
     @Path("/{extensionName}/_setEnabled")
     @Operation(summary = "Enables or disables an extension.")

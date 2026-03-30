@@ -87,6 +87,11 @@ public abstract class ExtensionController extends Controller {
     public abstract boolean isExtensionEnabled(String name);
 
     /**
+     * Returns the names of disabled extensions on the classpath.
+     */
+    public abstract Set<String> getDisabledExtensions();
+
+    /**
      * Invokes the start method on all loaded server plugins.
      */
     public abstract void startPlugins();

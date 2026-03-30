@@ -23,6 +23,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -362,6 +363,25 @@ public class DefaultExtensionController extends ExtensionController {
     @Override
     public boolean isExtensionEnabled(String extensionName) {
         return extensionStatuses.isEnabled(extensionName);
+    }
+
+    @Override
+    public Set<String> getDisabledExtensions() {
+        Set<String> disabledExtensions = new LinkedHashSet<String>();
+
+        for (MetaData metaData : getPluginMetaData().values()) {
+            if (!isExtensionEnabled(metaData.getName())) {
+                disabledExtensions.add(metaData.getName());
+            }
+        }
+
+        for (MetaData metaData : getConnectorMetaData().values()) {
+            if (!isExtensionEnabled(metaData.getName())) {
+                disabledExtensions.add(metaData.getName());
+            }
+        }
+
+        return disabledExtensions;
     }
 
     @Override

@@ -2935,8 +2935,8 @@ public class JdbcDao implements DonkeyDao {
             statement = connection.prepareStatement(querySource.getQuery("getMetaDataMapByMessageId", values));
             resultSet = statement.executeQuery();
 
-            MetaDataColumnType[] columnTypes = null;
-            String[] columnNames = null;
+            // Cache column types and names once — the schema is the same for every row,
+            // so calling getColumnType()/getColumnName() per row is wasteful.
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int columnCount = resultSetMetaData.getColumnCount();
             MetaDataColumnType[] columnTypes = new MetaDataColumnType[columnCount];

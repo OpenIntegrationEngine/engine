@@ -2937,20 +2937,16 @@ public class JdbcDao implements DonkeyDao {
 
             MetaDataColumnType[] columnTypes = null;
             String[] columnNames = null;
-            int columnCount = 0;
+            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+            int columnCount = resultSetMetaData.getColumnCount();
+            MetaDataColumnType[] columnTypes = new MetaDataColumnType[columnCount];
+            String[] columnNames = new String[columnCount];
+            for (int i = 0; i < columnCount; i++) {
+                columnTypes[i] = MetaDataColumnType.fromSqlType(resultSetMetaData.getColumnType(i + 1));
+                columnNames[i] = resultSetMetaData.getColumnName(i + 1).toUpperCase();
+            }
 
             while (resultSet.next()) {
-                if (columnTypes == null) {
-                    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                    columnCount = resultSetMetaData.getColumnCount();
-                    columnTypes = new MetaDataColumnType[columnCount];
-                    columnNames = new String[columnCount];
-                    for (int i = 0; i < columnCount; i++) {
-                        columnTypes[i] = MetaDataColumnType.fromSqlType(resultSetMetaData.getColumnType(i + 1));
-                        columnNames[i] = resultSetMetaData.getColumnName(i + 1).toUpperCase();
-                    }
-                }
-
                 Long messageId = resultSet.getLong("message_id");
                 Integer metaDataId = resultSet.getInt("metadata_id");
 

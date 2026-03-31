@@ -2935,7 +2935,24 @@ public class JdbcDao implements DonkeyDao {
             statement = connection.prepareStatement(querySource.getQuery("getMetaDataMapByMessageId", values));
             resultSet = statement.executeQuery();
 
+            // Cache ResultSet metadata before the loop — the schema is the same for every row,
+            // so calling getMetaData()/getColumnType()/getColumnName() per row is wasteful.
+            MetaDataColumnType[] columnTypes = null;
+            String[] columnNames = null;
+            int columnCount = 0;
+
             while (resultSet.next()) {
+                if (columnTypes == null) {
+                    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                    columnCount = resultSetMetaData.getColumnCount();
+                    columnTypes = new MetaDataColumnType[columnCount];
+                    columnNames = new String[columnCount];
+                    for (int i = 0; i < columnCount; i++) {
+                        columnTypes[i] = MetaDataColumnType.fromSqlType(resultSetMetaData.getColumnType(i + 1));
+                        columnNames[i] = resultSetMetaData.getColumnName(i + 1).toUpperCase();
+                    }
+                }
+
                 Long messageId = resultSet.getLong("message_id");
                 Integer metaDataId = resultSet.getInt("metadata_id");
 
@@ -2951,29 +2968,26 @@ public class JdbcDao implements DonkeyDao {
                     connectorMetaDataMap.put(metaDataId, metaDataMap);
                 }
 
-                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                int columnCount = resultSetMetaData.getColumnCount();
-
-                for (int i = 1; i <= columnCount; i++) {
-                    MetaDataColumnType metaDataColumnType = MetaDataColumnType.fromSqlType(resultSetMetaData.getColumnType(i));
+                for (int i = 0; i < columnCount; i++) {
                     Object value = null;
+                    int colIndex = i + 1;
 
-                    switch (metaDataColumnType) {//@formatter:off
+                    switch (columnTypes[i]) {//@formatter:off
                         case STRING:
-                            value = resultSet.getString(i);
+                            value = resultSet.getString(colIndex);
                             if (encryptor != null && StringUtils.startsWith((String) value, Encryptor.HEADER_INDICATOR)) {
                                 try {
                                     value = encryptor.decrypt((String) value);
                                 } catch (Exception e) {
-                                    logger.debug("Unable to decrypt custom metadata column " + resultSetMetaData.getColumnName(i).toUpperCase() + " for channel " + channelId + ", messsage " + messageId + "-" + metaDataId, e);
+                                    logger.debug("Unable to decrypt custom metadata column " + columnNames[i] + " for channel " + channelId + ", messsage " + messageId + "-" + metaDataId, e);
                                 }
                             }
                             break;
-                        case NUMBER: value = resultSet.getBigDecimal(i); break;
-                        case BOOLEAN: value = resultSet.getBoolean(i); break;
+                        case NUMBER: value = resultSet.getBigDecimal(colIndex); break;
+                        case BOOLEAN: value = resultSet.getBoolean(colIndex); break;
                         case TIMESTAMP:
-                            
-                            Timestamp timestamp = resultSet.getTimestamp(i);
+
+                            Timestamp timestamp = resultSet.getTimestamp(colIndex);
                             if (timestamp != null) {
                                 value = Calendar.getInstance();
                                 ((Calendar) value).setTimeInMillis(timestamp.getTime());
@@ -2983,7 +2997,7 @@ public class JdbcDao implements DonkeyDao {
                         default: throw new Exception("Unrecognized MetaDataColumnType");
                     } //@formatter:on
 
-                    metaDataMap.put(resultSetMetaData.getColumnName(i).toUpperCase(), value);
+                    metaDataMap.put(columnNames[i], value);
                 }
             }
 

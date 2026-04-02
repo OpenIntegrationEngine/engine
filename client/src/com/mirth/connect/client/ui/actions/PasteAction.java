@@ -17,11 +17,15 @@ import java.awt.event.ActionEvent;
 
 import javax.swing.AbstractAction;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.mirth.connect.client.ui.components.MirthTextInterface;
 
 /** Allows for Pasting in text components. */
 public class PasteAction extends AbstractAction {
 
+    private static final Logger logger = LogManager.getLogger(PasteAction.class);
     MirthTextInterface comp;
 
     public PasteAction(MirthTextInterface comp) {
@@ -45,6 +49,9 @@ public class PasteAction extends AbstractAction {
                 }
                 return false;
             } catch (IllegalStateException e) {
+                return false;
+            } catch (Error e) {
+                logger.warn("Could not check clipboard contents.", e);
                 return false;
             }
         } else {

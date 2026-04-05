@@ -249,7 +249,7 @@ public class WebStartServlet extends HttpServlet {
         }
 
         for (String extensionPath : extensionPathsToAddToJnlp) {
-            getExtensionJnlp(extensionPath, document, resourcesElement);
+            getExtensionJnlp(extensionPath, allExtensions, document, resourcesElement);
         }
 
         Element applicationDescElement = (Element) jnlpElement.getElementsByTagName("application-desc").item(0);
@@ -299,16 +299,13 @@ public class WebStartServlet extends HttpServlet {
         return false;
     }
 
-    private void getExtensionJnlp(String extensionPath, Document document, Element resourcesElement) throws Exception {
-        List<MetaData> allExtensions = new ArrayList<MetaData>();
-        allExtensions.addAll(ControllerFactory.getFactory().createExtensionController().getConnectorMetaData().values());
-        allExtensions.addAll(ControllerFactory.getFactory().createExtensionController().getPluginMetaData().values());
+    private void getExtensionJnlp(String extensionPath, List<MetaData> allExtensions, Document document, Element resourcesElement) throws Exception {
         Set<String> librariesToAddToJnlp = new HashSet<String>();
-        List<String> extensionsWithThePath = new ArrayList<String>();
+        boolean foundExtensionPath = false;
 
         for (MetaData metaData : allExtensions) {
             if (metaData.getPath().equals(extensionPath)) {
-                extensionsWithThePath.add(metaData.getName());
+                foundExtensionPath = true;
 
                 for (ExtensionLibrary library : metaData.getLibraries()) {
                     if (library.getType().equals(ExtensionLibrary.Type.CLIENT) || library.getType().equals(ExtensionLibrary.Type.SHARED)) {
@@ -318,7 +315,7 @@ public class WebStartServlet extends HttpServlet {
             }
         }
 
-        if (extensionsWithThePath.isEmpty()) {
+        if (!foundExtensionPath) {
             throw new Exception("Extension metadata could not be located for the path: " + extensionPath);
         }
 

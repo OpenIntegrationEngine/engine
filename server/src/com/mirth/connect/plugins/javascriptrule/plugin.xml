@@ -2,7 +2,7 @@
 	<name>JavaScript Filter Rule</name>
 	<author>NextGen Healthcare</author>
 	<pluginVersion>@mirthversion</pluginVersion>
-	<mirthVersion>4.5.2</mirthVersion>
+	<mirthVersion>@mirthversion</mirthVersion>
 	<url>https://openintegrationengine.org</url>
 	<description>This plugin provides a JavaScript rule-type for Open Integration Engine filters</description>
 	<clientClasses>

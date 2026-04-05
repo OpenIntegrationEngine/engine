@@ -164,7 +164,7 @@ public class ConnectServiceUtilTest {
     @Test
     public void test_filterNotifications_currentVersionNewerThanAllOther() throws Exception {
         HttpEntity entity = createEntityFromFile(FILE_POPULATED);
-        Version current = Version.parse("4.6.0");
+        Version current = Version.parse("100.0.0");
         Stream<JsonNode> notifications = ConnectServiceUtil.toJsonStream(entity)
                 .filter(ConnectServiceUtil.dropOlderThan(current));
         assertEquals("Expected no notifications given a current version newer than all others", 0L, notifications.count());
@@ -182,7 +182,7 @@ public class ConnectServiceUtilTest {
     @Test
     public void test_filterNotifications_matchingLatestVersion() throws Exception {
         HttpEntity entity = createEntityFromFile(FILE_POPULATED);
-        Version current = Version.parse("4.5.2");
+        Version current = Version.parse("99.99.99");
         Stream<JsonNode> notifications = ConnectServiceUtil.toJsonStream(entity)
                 .filter(ConnectServiceUtil.dropOlderThan(current));
         assertEquals("Expected no notifications given a current version matching the latest in other list", 0L, notifications.count());

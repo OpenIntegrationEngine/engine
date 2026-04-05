@@ -2,7 +2,7 @@
 	<name>Dashboard Connector Status Monitor</name>
 	<author>NextGen Healthcare</author>
 	<pluginVersion>@mirthversion</pluginVersion>
-	<mirthVersion>4.5.2</mirthVersion>
+	<mirthVersion>@mirthversion</mirthVersion>
 	<url>https://openintegrationengine.org</url>
 	<description>This plugin provides a real-time connection status column on the Open Integration Engine client</description>
 	<serverClasses>

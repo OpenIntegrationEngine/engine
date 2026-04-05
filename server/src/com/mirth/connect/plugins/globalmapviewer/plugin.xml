@@ -2,7 +2,7 @@
 	<name>Global Map Viewer</name>
 	<author>NextGen Healthcare</author>
 	<pluginVersion>@mirthversion</pluginVersion>
-	<mirthVersion>4.5.2</mirthVersion>
+	<mirthVersion>@mirthversion</mirthVersion>
 	<url>https://openintegrationengine.org</url>
 	<description>This plugin allows you to view the global map and global channel maps in the Open Integration Engine Administrator.</description>
 	<serverClasses>

@@ -2,7 +2,7 @@
 	<name>Server Log</name>
 	<author>NextGen Healthcare</author>
 	<pluginVersion>@mirthversion</pluginVersion>
-	<mirthVersion>4.5.2</mirthVersion>
+	<mirthVersion>@mirthversion</mirthVersion>
 	<url>https://openintegrationengine.org</url>
 	<description>This plugin allows you to view the server log on the Open Integration Engine administrator.</description>
 	<serverClasses>

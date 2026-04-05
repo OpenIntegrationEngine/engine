@@ -2,7 +2,7 @@
 	<name>Document Writer</name>
 	<author>NextGen Healthcare</author>
 	<pluginVersion>@mirthversion</pluginVersion>
-	<mirthVersion>4.5.2</mirthVersion>
+	<mirthVersion>@mirthversion</mirthVersion>
 	<url>https://openintegrationengine.org</url>
 	<description>This connector allows Open Integration Engine to create RTF or PDF documents based on an HTML template. PDF files can be password protected.</description>
 	<clientClassName>com.mirth.connect.connectors.doc.DocumentWriter</clientClassName>

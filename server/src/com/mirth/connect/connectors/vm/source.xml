@@ -2,7 +2,7 @@
 	<name>Channel Reader</name>
 	<author>NextGen Healthcare</author>
 	<pluginVersion>@mirthversion</pluginVersion>
-	<mirthVersion>4.5.2</mirthVersion>
+	<mirthVersion>@mirthversion</mirthVersion>
 	<url>https://openintegrationengine.org</url>
 	<description>This connector allows Open Integration Engine to listen for incoming events from other channels in the same Open Integration Engine instance.</description>
 	<clientClassName>com.mirth.connect.connectors.vm.ChannelReader</clientClassName>

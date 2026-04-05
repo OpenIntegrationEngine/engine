@@ -3,7 +3,7 @@
     "url": "https://api.github.com/repos/nextgenhealthcare/connect/releases/176445080",
     "assets_url": "https://api.github.com/repos/nextgenhealthcare/connect/releases/176445080/assets",
     "upload_url": "https://uploads.github.com/repos/nextgenhealthcare/connect/releases/176445080/assets{?name,label}",
-    "html_url": "https://github.com/nextgenhealthcare/connect/releases/tag/4.5.2",
+    "html_url": "https://github.com/nextgenhealthcare/connect/releases/tag/99.99.99",
     "id": 176445080,
     "author": {
       "login": "jdonextgen",
@@ -27,9 +27,9 @@
       "site_admin": false
     },
     "node_id": "RE_kwDOCCE7Tc4KhFaY",
-    "tag_name": "4.5.2",
+    "tag_name": "99.99.99",
     "target_commitish": "development",
-    "name": "Mirth Connect 4.5.2",
+    "name": "Mirth Connect 99.99.99",
     "draft": false,
     "prerelease": false,
     "created_at": "2024-09-10T13:12:21Z",
@@ -37,9 +37,9 @@
     "assets": [
 
     ],
-    "tarball_url": "https://api.github.com/repos/nextgenhealthcare/connect/tarball/4.5.2",
-    "zipball_url": "https://api.github.com/repos/nextgenhealthcare/connect/zipball/4.5.2",
-    "body_html": "<p>Mirth® Connect 4.5.2 is a patch release that includes enhancements, bug fixes, and security improvements. For more details, visit our See What's New and Release Notes pages linked below.</p>\n<p><strong>NOTICE: In 2025, Mirth® Connect will move to Java 17 as the minimum supported Java version.</strong></p>\n<p><a href=\"https://github.com/nextgenhealthcare/connect/wiki/4.5.2---What's-New\">See What's New</a> | <a href=\"https://github.com/nextgenhealthcare/connect/wiki/Upgrading\">Upgrade Guide</a> | <a href=\"https://github.com/nextgenhealthcare/connect/milestone/85?closed=1\">Release Notes</a></p>",
+    "tarball_url": "https://api.github.com/repos/nextgenhealthcare/connect/tarball/99.99.99",
+    "zipball_url": "https://api.github.com/repos/nextgenhealthcare/connect/zipball/99.99.99",
+    "body_html": "<p>Mirth® Connect 99.99.99 is a patch release that includes enhancements, bug fixes, and security improvements. For more details, visit our See What's New and Release Notes pages linked below.</p>\n<p><strong>NOTICE: In 2025, Mirth® Connect will move to Java 17 as the minimum supported Java version.</strong></p>\n<p><a href=\"https://github.com/nextgenhealthcare/connect/wiki/99.99.99---What's-New\">See What's New</a> | <a href=\"https://github.com/nextgenhealthcare/connect/wiki/Upgrading\">Upgrade Guide</a> | <a href=\"https://github.com/nextgenhealthcare/connect/milestone/85?closed=1\">Release Notes</a></p>",
     "discussion_url": "https://github.com/nextgenhealthcare/connect/discussions/6310"
   },
   {

@@ -2,7 +2,7 @@
 	<name>XSLT Transformer Step</name>
 	<author>NextGen Healthcare</author>
 	<pluginVersion>@mirthversion</pluginVersion>
-	<mirthVersion>4.5.2</mirthVersion>
+	<mirthVersion>@mirthversion</mirthVersion>
 	<url>https://openintegrationengine.org</url>
 	<description>This plugin provides a XSLT support step-type for Open Integration Engine transformers</description>
 	<clientClasses>

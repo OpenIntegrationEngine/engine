@@ -2,7 +2,7 @@
 	<name>File Reader</name>
 	<author>NextGen Healthcare</author>
 	<pluginVersion>@mirthversion</pluginVersion>
-	<mirthVersion>4.5.2</mirthVersion>
+	<mirthVersion>@mirthversion</mirthVersion>
 	<url>https://openintegrationengine.org</url>
 	<description>This connector allows Open Integration Engine to poll for files from a local or network file system.</description>
 	<clientClassName>com.mirth.connect.connectors.file.FileReader</clientClassName>

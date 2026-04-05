@@ -2,7 +2,7 @@
 	<name>JavaScript Reader</name>
 	<author>NextGen Healthcare</author>
 	<pluginVersion>@mirthversion</pluginVersion>
-	<mirthVersion>4.5.2</mirthVersion>
+	<mirthVersion>@mirthversion</mirthVersion>
 	<url>https://openintegrationengine.org</url>
 	<description>This connector allows Open Integration Engine to execute arbitrary JavaScript to pull in messages to a channel.</description>
 	<clientClassName>com.mirth.connect.connectors.js.JavaScriptReader</clientClassName>

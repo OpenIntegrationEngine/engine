@@ -264,9 +264,7 @@ public class WebStartServlet extends HttpServlet {
         }
 
         for (String extensionPath : extensionPathsToAddToJnlp) {
-            Element extensionElement = document.createElement("extension");
-            extensionElement.setAttribute("href", "webstart/extensions/" + extensionPath + ".jnlp");
-            resourcesElement.appendChild(extensionElement);
+            getExtensionJnlp(extensionPath, document, resourcesElement);
         }
 
         Element applicationDescElement = (Element) jnlpElement.getElementsByTagName("application-desc").item(0);
@@ -320,23 +318,12 @@ public class WebStartServlet extends HttpServlet {
         List<MetaData> allExtensions = new ArrayList<MetaData>();
         allExtensions.addAll(ControllerFactory.getFactory().createExtensionController().getConnectorMetaData().values());
         allExtensions.addAll(ControllerFactory.getFactory().createExtensionController().getPluginMetaData().values());
-        Set<String> librariesToAddToJnlp = new HashSet<String>();
         List<String> extensionsWithThePath = new ArrayList<String>();
 
         for (MetaData metaData : allExtensions) {
             if (metaData.getPath().equals(extensionPath)) {
                 extensionsWithThePath.add(metaData.getName());
-
-                for (ExtensionLibrary library : metaData.getLibraries()) {
-                    if (library.getType().equals(ExtensionLibrary.Type.CLIENT) || library.getType().equals(ExtensionLibrary.Type.SHARED)) {
-                        librariesToAddToJnlp.add(library.getPath());
-                    }
-                }
             }
-        }
-
-        if (extensionsWithThePath.isEmpty()) {
-            throw new Exception("Extension metadata could not be located for the path: " + extensionPath);
         }
 
         DocumentBuilderFactory dbf = getSecureDocumentBuilderFactory();
@@ -361,21 +348,50 @@ public class WebStartServlet extends HttpServlet {
 
         Element resourcesElement = document.createElement("resources");
 
-        File extensionDirectory = new File(ExtensionController.getExtensionsPath() + extensionPath);
-
-        for (String library : librariesToAddToJnlp) {
-            Element jarElement = document.createElement("jar");
-            jarElement.setAttribute("download", "eager");
-            // this path is relative to the servlet path
-            jarElement.setAttribute("href", "libs/" + extensionPath + "/" + library);
-            jarElement.setAttribute("sha256", getDigest(extensionDirectory, library));
-            resourcesElement.appendChild(jarElement);
-        }
+        getExtensionJnlp(extensionPath, document, resourcesElement, "libs/");
 
         jnlpElement.appendChild(resourcesElement);
         jnlpElement.appendChild(document.createElement("component-desc"));
         document.appendChild(jnlpElement);
         return document;
+    }
+
+    protected void getExtensionJnlp(String extensionPath, Document document, Element resourcesElement) throws Exception {
+        getExtensionJnlp(extensionPath, document, resourcesElement, "webstart/extensions/libs/");
+    }
+
+    private void getExtensionJnlp(String extensionPath, Document document, Element resourcesElement, String libraryPathPrefix) throws Exception {
+        List<MetaData> allExtensions = new ArrayList<MetaData>();
+        allExtensions.addAll(ControllerFactory.getFactory().createExtensionController().getConnectorMetaData().values());
+        allExtensions.addAll(ControllerFactory.getFactory().createExtensionController().getPluginMetaData().values());
+        Set<String> librariesToAddToJnlp = new HashSet<String>();
+        List<String> extensionsWithThePath = new ArrayList<String>();
+
+        for (MetaData metaData : allExtensions) {
+            if (metaData.getPath().equals(extensionPath)) {
+                extensionsWithThePath.add(metaData.getName());
+
+                for (ExtensionLibrary library : metaData.getLibraries()) {
+                    if (library.getType().equals(ExtensionLibrary.Type.CLIENT) || library.getType().equals(ExtensionLibrary.Type.SHARED)) {
+                        librariesToAddToJnlp.add(library.getPath());
+                    }
+                }
+            }
+        }
+
+        if (extensionsWithThePath.isEmpty()) {
+            throw new Exception("Extension metadata could not be located for the path: " + extensionPath);
+        }
+
+        File extensionDirectory = new File(ExtensionController.getExtensionsPath() + extensionPath);
+
+        for (String library : librariesToAddToJnlp) {
+            Element jarElement = document.createElement("jar");
+            jarElement.setAttribute("download", "eager");
+            jarElement.setAttribute("href", libraryPathPrefix + extensionPath + "/" + library);
+            jarElement.setAttribute("sha256", getDigest(extensionDirectory, library));
+            resourcesElement.appendChild(jarElement);
+        }
     }
 
     private String getDigest(File directory, String filePath) throws Exception {

@@ -347,7 +347,6 @@ public class MirthWebServer extends Server {
         servletContextHandler.addFilter(new FilterHolder(new MethodFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
         servletContextHandler.addServlet(new ServletHolder(new WebStartServlet()), "/webstart.jnlp");
         servletContextHandler.addServlet(new ServletHolder(new WebStartServlet()), "/webstart");
-        servletContextHandler.addServlet(new ServletHolder(new WebStartServlet()), "/webstart/extensions/*");
         handlers.addHandler(servletContextHandler);
 
         // add the default handler for misc requests (favicon, etc.)

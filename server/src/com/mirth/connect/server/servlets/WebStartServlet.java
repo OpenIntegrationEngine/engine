@@ -30,7 +30,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
@@ -85,10 +84,6 @@ public class WebStartServlet extends HttpServlet {
             if ((request.getRequestURI().equals(contextPathProp + "/webstart.jnlp") || request.getRequestURI().equals(contextPathProp + "/webstart")) && isWebstartRequestValid(request)) {
                 jnlpDocument = getAdministratorJnlp(request);
                 response.setHeader("Content-Disposition", "attachment; filename = \"webstart.jnlp\"");
-            } else if (request.getServletPath().equals("/webstart/extensions") && isWebstartExtensionsRequestValid(request, contextPathProp)) {
-                String extensionPath = getExtensionPath(request);
-                jnlpDocument = getExtensionJnlp(getExtensionPath(request));
-                response.setHeader("Content-Disposition", "attachment; filename = \"" + extensionPath +  ".jnlp\"");
             } else {
             	response.setContentType("");
             }
@@ -123,16 +118,6 @@ public class WebStartServlet extends HttpServlet {
         return true;
     }
     
-    private boolean isWebstartExtensionsRequestValid(HttpServletRequest request, String contextPathProp) {
-        // Don't allow any parameters and don't allow modified URIs
-        return request.getParameterMap().isEmpty() 
-                && (contextPathProp + request.getServletPath() + "/" + getExtensionPath(request)).equals(StringUtils.removeEnd(request.getRequestURI(), ".jnlp"));
-    }
-    
-    private String getExtensionPath(HttpServletRequest request) {
-    	return StringUtils.removeEnd(StringUtils.removeStart(request.getPathInfo(), "/"), ".jnlp");
-    }
-
     protected Document getAdministratorJnlp(HttpServletRequest request) throws Exception {
         InputStream clientJnlpIs = null;
         Document document;
@@ -314,53 +299,7 @@ public class WebStartServlet extends HttpServlet {
         return false;
     }
 
-    protected Document getExtensionJnlp(String extensionPath) throws Exception {
-        List<MetaData> allExtensions = new ArrayList<MetaData>();
-        allExtensions.addAll(ControllerFactory.getFactory().createExtensionController().getConnectorMetaData().values());
-        allExtensions.addAll(ControllerFactory.getFactory().createExtensionController().getPluginMetaData().values());
-        List<String> extensionsWithThePath = new ArrayList<String>();
-
-        for (MetaData metaData : allExtensions) {
-            if (metaData.getPath().equals(extensionPath)) {
-                extensionsWithThePath.add(metaData.getName());
-            }
-        }
-
-        DocumentBuilderFactory dbf = getSecureDocumentBuilderFactory();
-        Document document = dbf.newDocumentBuilder().newDocument();
-        Element jnlpElement = document.createElement("jnlp");
-
-        Element informationElement = document.createElement("information");
-
-        Element titleElement = document.createElement("title");
-        titleElement.setTextContent("Mirth Connect Extension - [" + StringUtils.join(extensionsWithThePath, ",") + "]");
-        informationElement.appendChild(titleElement);
-
-        Element vendorElement = document.createElement("vendor");
-        vendorElement.setTextContent(BrandingConstants.COMPANY_NAME);
-        informationElement.appendChild(vendorElement);
-
-        jnlpElement.appendChild(informationElement);
-
-        Element securityElement = document.createElement("security");
-        securityElement.appendChild(document.createElement("all-permissions"));
-        jnlpElement.appendChild(securityElement);
-
-        Element resourcesElement = document.createElement("resources");
-
-        getExtensionJnlp(extensionPath, document, resourcesElement, "libs/");
-
-        jnlpElement.appendChild(resourcesElement);
-        jnlpElement.appendChild(document.createElement("component-desc"));
-        document.appendChild(jnlpElement);
-        return document;
-    }
-
-    protected void getExtensionJnlp(String extensionPath, Document document, Element resourcesElement) throws Exception {
-        getExtensionJnlp(extensionPath, document, resourcesElement, "webstart/extensions/libs/");
-    }
-
-    private void getExtensionJnlp(String extensionPath, Document document, Element resourcesElement, String libraryPathPrefix) throws Exception {
+    private void getExtensionJnlp(String extensionPath, Document document, Element resourcesElement) throws Exception {
         List<MetaData> allExtensions = new ArrayList<MetaData>();
         allExtensions.addAll(ControllerFactory.getFactory().createExtensionController().getConnectorMetaData().values());
         allExtensions.addAll(ControllerFactory.getFactory().createExtensionController().getPluginMetaData().values());
@@ -388,7 +327,7 @@ public class WebStartServlet extends HttpServlet {
         for (String library : librariesToAddToJnlp) {
             Element jarElement = document.createElement("jar");
             jarElement.setAttribute("download", "eager");
-            jarElement.setAttribute("href", libraryPathPrefix + extensionPath + "/" + library);
+            jarElement.setAttribute("href", "webstart/extensions/libs/" + extensionPath + "/" + library);
             jarElement.setAttribute("sha256", getDigest(extensionDirectory, library));
             resourcesElement.appendChild(jarElement);
         }

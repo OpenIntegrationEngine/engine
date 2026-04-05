@@ -203,91 +203,6 @@ public class WebStartServletTest {
 		assertNull(response.getHeader("Content-Disposition"));
 	}
 
-	@Test
-	public void testDoGetExtension() throws Exception {
-		// Test /webstart/extensions/testextension
-		HttpServletRequest request = mock(HttpServletRequest.class);
-		when(request.getRequestURI()).thenReturn("/webstart/extensions/testextension");
-		when(request.getServletPath()).thenReturn("/webstart/extensions");
-		when(request.getPathInfo()).thenReturn("/testextension");
-		when(request.getParameterNames()).thenReturn(Collections.emptyEnumeration());
-
-		TestHttpServletResponse response = new TestHttpServletResponse();
-
-		webStartServlet.doGet(request, response);
-
-		assertEquals(normalizeWhitespace(EXTENSION_JNLP), normalizeWhitespace(response.getResponseString()));
-		assertEquals("application/x-java-jnlp-file", response.getContentType());
-		assertEquals("no-cache", response.getHeader("Pragma"));
-		assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
-		assertEquals("attachment; filename = \"testextension.jnlp\"", response.getHeader("Content-Disposition"));
-
-		// Test /webstart/extensions/testextension.jnlp
-		request = mock(HttpServletRequest.class);
-		when(request.getRequestURI()).thenReturn("/webstart/extensions/testextension.jnlp");
-		when(request.getServletPath()).thenReturn("/webstart/extensions");
-		when(request.getPathInfo()).thenReturn("/testextension");
-		when(request.getParameterNames()).thenReturn(Collections.emptyEnumeration());
-
-		response = new TestHttpServletResponse();
-
-		webStartServlet.doGet(request, response);
-
-		assertEquals(normalizeWhitespace(EXTENSION_JNLP), normalizeWhitespace(response.getResponseString()));
-		assertEquals("application/x-java-jnlp-file", response.getContentType());
-		assertEquals("no-cache", response.getHeader("Pragma"));
-		assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
-		assertEquals("attachment; filename = \"testextension.jnlp\"", response.getHeader("Content-Disposition"));
-	}
-
-	@Test
-	public void testDoGetExtensionQueryParams() throws Exception {
-		HttpServletRequest request = mock(HttpServletRequest.class);
-		when(request.getRequestURI()).thenReturn("/webstart/extensions/testextension");
-		when(request.getServletPath()).thenReturn("/webstart/extensions");
-		when(request.getPathInfo()).thenReturn("/testextension");
-
-		Map<String, String[]> parameters = new HashMap<>();
-		parameters.put("maxHeapSize", new String[] { "1024m" });
-
-		when(request.getParameterNames()).thenReturn(Collections.enumeration(parameters.keySet()));
-		when(request.getParameter(anyString())).thenAnswer(new Answer<String>() {
-			@Override
-			public String answer(InvocationOnMock invocation) throws Throwable {
-				Object[] args = invocation.getArguments();
-				return parameters.get((String) args[0])[0];
-			}
-		});
-		when(request.getParameterMap()).thenReturn(parameters);
-
-		TestHttpServletResponse response = new TestHttpServletResponse();
-
-		webStartServlet.doGet(request, response);
-
-		assertEquals("", response.getResponseString().trim());
-		assertEquals("", response.getResponseString().trim());
-		assertEquals("", response.getContentType());
-		assertNull(response.getHeader("Content-Disposition"));
-	}
-
-	@Test
-	public void testDoGetExtensionModifiedURL() throws Exception {
-		HttpServletRequest request = mock(HttpServletRequest.class);
-		when(request.getRequestURI()).thenReturn("/webstart/extensions/testextension;rfd.bat");
-		when(request.getServletPath()).thenReturn("/webstart/extensions");
-		when(request.getPathInfo()).thenReturn("/testextension");
-		when(request.getParameterNames()).thenReturn(Collections.emptyEnumeration());
-
-		TestHttpServletResponse response = new TestHttpServletResponse();
-
-		webStartServlet.doGet(request, response);
-
-		assertEquals("", response.getResponseString().trim());
-		assertEquals("", response.getResponseString().trim());
-		assertEquals("", response.getContentType());
-		assertNull(response.getHeader("Content-Disposition"));
-	}
-
 	private static class TestHttpServletResponse implements HttpServletResponse {
 
 		private String contentType;
@@ -521,13 +436,6 @@ public class WebStartServletTest {
 			return factory.newDocumentBuilder()
 					.parse(new ByteArrayInputStream(CORE_JNLP.getBytes()));
 		}
-
-		@Override
-		protected Document getExtensionJnlp(String extensionPath) throws Exception {
-	        DocumentBuilderFactory factory = getSecureDocumentBuilderFactory();
-			return factory.newDocumentBuilder()
-					.parse(new ByteArrayInputStream(EXTENSION_JNLP.getBytes()));
-		}
 	}
 	
 	private static DocumentBuilderFactory getSecureDocumentBuilderFactory() throws Exception {
@@ -558,16 +466,9 @@ public class WebStartServletTest {
 			+ "		<j2se href=\"http://java.sun.com/products/autodl/j2se\" max-heap-size=\"512m\" version=\"1.6+\"/>\n"
 			+ "	<jar download=\"eager\" href=\"webstart/client-lib/mirth-client.jar\" main=\"true\" sha256=\"0Lv3mOM4e10OBhk78/ST2CzHrXtm+EcZibxV7VfdbI8=\"/>\n"
 			+ "        <jar download=\"eager\" href=\"webstart/client-lib/mirth-client-core.jar\" sha256=\"testsha256\"/>\n"
-			+ "        <extension href=\"webstart/extensions/test.jnlp\"/>\n" + "    </resources>\n" + "	\n"
+			+ "        <jar download=\"eager\" href=\"webstart/extensions/libs/file/test-client.jar\" sha256=\"testsha256\"/>\n"
+			+ "        <jar download=\"eager\" href=\"webstart/extensions/libs/file/test-shared.jar\" sha256=\"testsha256\"/>\n" + "    </resources>\n" + "	\n"
 			+ "	<application-desc main-class=\"com.mirth.connect.client.ui.Mirth\">\n"
 			+ "        <argument>https://localhost:8443</argument>\n" + "        <argument>99.99.99</argument>\n"
 			+ "    </application-desc>\n" + "</jnlp>";
-
-	private static String EXTENSION_JNLP = "<jnlp>\n" + "    <information>\n"
-			+ "        <title>Mirth Connect Extension - [Test Writer,Test Reader]</title>\n"
-			+ "        <vendor>NextGen Healthcare</vendor>\n" + "    </information>\n" + "    <security>\n"
-			+ "        <all-permissions/>\n" + "    </security>\n" + "    <resources>\n"
-			+ "        <jar download=\"eager\" href=\"libs/file/test-client.jar\" sha256=\"testsha256\"/>\n"
-			+ "        <jar download=\"eager\" href=\"libs/file/test-shared.jar\" sha256=\"testsha256\"/>\n"
-			+ "    </resources>\n" + "    <component-desc/>\n" + "</jnlp>\n" + "";
 }

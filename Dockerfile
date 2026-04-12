@@ -13,6 +13,7 @@ FROM ubuntu:noble-20251013 AS builder
 WORKDIR /app
 # sdkman requires bash
 SHELL ["/bin/bash", "-c"]
+ARG ANT_BUILD_ARGS="-DdisableSigning=true"
 
 # Stage 1a: Install dependencies
 # Install necessary tools
@@ -28,7 +29,7 @@ RUN apt-get update\
 COPY . .
 WORKDIR /app/server
 RUN source "$HOME/.sdkman/bin/sdkman-init.sh" \
-    && ANT_OPTS="-Dfile.encoding=UTF8" ant -f mirth-build.xml -DdisableSigning=true
+    && ANT_OPTS="-Dfile.encoding=UTF8" ant -f mirth-build.xml ${ANT_BUILD_ARGS}
 
 ##########################################
 #
@@ -59,7 +60,7 @@ VOLUME /opt/engine/custom-extensions
 EXPOSE 8443
 
 USER engine
-ENTRYPOINT ["./configure-from-env.sh"]
+ENTRYPOINT ["./configure-from-env"]
 CMD ["./oieserver"]
 
 ##########################################

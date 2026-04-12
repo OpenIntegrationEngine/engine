@@ -60,3 +60,4 @@ pom.xml.tag
 pom.xml.versionsBackup
 release.properties
 replay_pid*
+.github/

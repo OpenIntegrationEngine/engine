@@ -10,13 +10,15 @@
 	<sharedClassName>com.mirth.connect.connectors.dimse.DICOMReceiverProperties</sharedClassName>
 	<library type="CLIENT" path="dicom-client.jar" />
 	<library type="SHARED" path="dicom-shared.jar" />
-	<library type="SHARED" path="lib/dcm4che-core-2.0.29.jar" />
 	<library type="SERVER" path="dicom-server.jar" />
 	<library type="SERVER" path="lib/jai_imageio.jar" />
-	<library type="SERVER" path="lib/dcm4che-net-2.0.29.jar" />
-	<library type="SERVER" path="lib/dcm4che-tool-dcmrcv-2.0.29.jar" />
-	<library type="SERVER" path="lib/dcm4che-tool-dcmsnd-2.0.29.jar" />
-	<library type="SERVER" path="lib/dcm4che-filecache-2.0.29.jar" />
+	<library type="SERVER" path="dicom-server-dcm2.jar" variant="dicom.library:dcm4che2" />
+	<library type="SHARED" path="lib/dcm4che-core-2.0.29.jar" variant="dicom.library:dcm4che2" />
+	<library type="SERVER" path="lib/dcm4che-net-2.0.29.jar" variant="dicom.library:dcm4che2" />
+	<library type="SERVER" path="lib/dcm4che-filecache-2.0.29.jar" variant="dicom.library:dcm4che2" />
+	<library type="SERVER" path="dicom-server-dcm5.jar" variant="dicom.library:dcm4che5" />
+	<library type="SHARED" path="lib/dcm4che-core-5.34.3.jar" variant="dicom.library:dcm4che5" />
+	<library type="SERVER" path="lib/dcm4che-net-5.34.3.jar" variant="dicom.library:dcm4che5" />
 	<transformers></transformers>
 	<protocol>dicom</protocol>
 	<type>SOURCE</type>

@@ -1,8 +1,8 @@
 /*
  * Copyright (c) Mirth Corporation. All rights reserved.
- * 
+ *
  * http://www.mirthcorp.com
- * 
+ *
  * The software in this package is published under the terms of the MPL license a copy of which has
  * been included with this distribution in the LICENSE.txt file.
  */
@@ -13,8 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.dcm4che2.data.DicomObject;
-
+import com.mirth.connect.connectors.dimse.dicom.OieDicomObject;
 import com.mirth.connect.donkey.model.message.MessageSerializerException;
 import com.mirth.connect.donkey.util.Base64Util;
 import com.mirth.connect.model.converters.DICOMConverter;
@@ -30,7 +29,7 @@ public class DICOMUtil {
     /**
      * Re-attaches DICOM attachments with the header data in the connector message and returns the
      * resulting merged data as a Base64-encoded string.
-     * 
+     *
      * @param connectorMessage
      *            The connector message to retrieve merged DICOM data for.
      * @return The merged DICOM data, Base64-encoded.
@@ -42,7 +41,7 @@ public class DICOMUtil {
     /**
      * Re-attaches DICOM attachments with the header data in the connector message and returns the
      * resulting merged data as a byte array.
-     * 
+     *
      * @param connectorMessage
      *            The connector message to retrieve merged DICOM data for.
      * @return The merged DICOM data as a byte array.
@@ -54,7 +53,7 @@ public class DICOMUtil {
     /**
      * Re-attaches DICOM attachments with the header data in the connector message and returns the
      * resulting merged data as a byte array.
-     * 
+     *
      * @param connectorMessage
      *            The connector message to retrieve merged DICOM data for.
      * @return The merged DICOM data as a byte array.
@@ -66,7 +65,7 @@ public class DICOMUtil {
     /**
      * Re-attaches DICOM attachments with the header data in the connector message and returns the
      * resulting merged data as a Base-64 encoded String.
-     * 
+     *
      * @param connectorMessage
      *            The connector message containing header data to merge DICOM attachments with.
      * @param attachments
@@ -84,7 +83,7 @@ public class DICOMUtil {
     /**
      * Re-attaches DICOM attachments with the given header data and returns the resulting merged
      * data as a Base-64 encoded String.
-     * 
+     *
      * @param header
      *            The header data to merge DICOM attachments with.
      * @param images
@@ -107,7 +106,7 @@ public class DICOMUtil {
     /**
      * Returns the number of slices in the fully-merged DICOM data associated with a given connector
      * message.
-     * 
+     *
      * @param connectorMessage
      *            The connector message to retrieve DICOM data for.
      * @return The number of slices in the DICOM data.
@@ -118,7 +117,7 @@ public class DICOMUtil {
 
     /**
      * Converts merged DICOM data associated with a connector message into a specified image format.
-     * 
+     *
      * @param imageType
      *            The image format to convert the DICOM data to (e.g. "jpg").
      * @param connectorMessage
@@ -133,7 +132,7 @@ public class DICOMUtil {
 
     /**
      * Converts merged DICOM data associated with a connector message into a specified image format.
-     * 
+     *
      * @param imageType
      *            The image format to convert the DICOM data to (e.g. "jpg").
      * @param connectorMessage
@@ -146,7 +145,7 @@ public class DICOMUtil {
 
     /**
      * Converts merged DICOM data associated with a connector message into a specified image format.
-     * 
+     *
      * @param imageType
      *            The image format to convert the DICOM data to (e.g. "jpg").
      * @param connectorMessage
@@ -162,7 +161,7 @@ public class DICOMUtil {
 
     /**
      * Converts merged DICOM data associated with a connector message into a specified image format.
-     * 
+     *
      * @param imageType
      *            The image format to convert the DICOM data to (e.g. "jpg").
      * @param connectorMessage
@@ -180,7 +179,7 @@ public class DICOMUtil {
 
     /**
      * Converts merged DICOM data associated with a connector message into a specified image format.
-     * 
+     *
      * @param imageType
      *            The image format to convert the DICOM data to (e.g. "jpg").
      * @param connectorMessage
@@ -193,7 +192,7 @@ public class DICOMUtil {
 
     /**
      * Converts merged DICOM data associated with a connector message into a specified image format.
-     * 
+     *
      * @param imageType
      *            The image format to convert the DICOM data to (e.g. "jpg").
      * @param connectorMessage
@@ -209,7 +208,7 @@ public class DICOMUtil {
 
     /**
      * Converts merged DICOM data associated with a connector message into a specified image format.
-     * 
+     *
      * @param imageType
      *            The image format to convert the DICOM data to (e.g. "jpg").
      * @param connectorMessage
@@ -226,30 +225,39 @@ public class DICOMUtil {
     }
 
     /**
-     * Converts a byte array into a dcm4che DicomObject.
-     * 
+     * Converts a byte array into a version-neutral DICOM object wrapper.
+     *
+     * <p>The returned {@link OieDicomObject} provides common accessors such as
+     * {@code getString(int)}, {@code getString(int, String)}, and
+     * {@code getInt(int, int)}. If you need access to library-specific methods
+     * (e.g., dcm4che2 {@code DicomObject}), call {@link OieDicomObject#unwrap()}
+     * and cast:
+     * <pre>{@code
+     * DicomObject dcm = (DicomObject) dicomObj.unwrap();
+     * }</pre>
+     *
      * @param bytes
      *            The binary data to convert.
      * @param decodeBase64
      *            If true, the data is assumed to be Base64-encoded.
-     * @return The converted DicomObject.
+     * @return The converted OieDicomObject.
      * @throws IOException
-     *             If Base64 encoding failed.
+     *             If parsing fails.
      */
-    public static DicomObject byteArrayToDicomObject(byte[] bytes, boolean decodeBase64) throws IOException {
+    public static OieDicomObject byteArrayToDicomObject(byte[] bytes, boolean decodeBase64) throws IOException {
         return DICOMConverter.byteArrayToDicomObject(bytes, decodeBase64);
     }
 
     /**
-     * Converts a dcm4che DicomObject into a byte array.
-     * 
+     * Converts a DICOM object into a byte array.
+     *
      * @param dicomObject
-     *            The DicomObject to convert.
+     *            The OieDicomObject to convert.
      * @return The converted byte array.
      * @throws IOException
-     *             If Base64 encoding failed.
+     *             If serialization fails.
      */
-    public static byte[] dicomObjectToByteArray(DicomObject dicomObject) throws IOException {
+    public static byte[] dicomObjectToByteArray(OieDicomObject dicomObject) throws IOException {
         return DICOMConverter.dicomObjectToByteArray(dicomObject);
     }
 }

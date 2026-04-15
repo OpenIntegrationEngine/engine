@@ -1,24 +1,21 @@
 package com.mirth.connect.connectors.dimse;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 
-import org.dcm4che2.data.BasicDicomObject;
-import org.dcm4che2.data.DicomObject;
-import org.dcm4che2.data.SequenceDicomElement;
-import org.dcm4che2.data.Tag;
-import org.dcm4che2.data.VR;
-import org.dcm4che2.net.ConfigurationException;
-import org.dcm4che2.net.NetworkConnection;
-import org.dcm4che2.tool.dcmsnd.CustomDimseRSPHandler;
-import org.dcm4che2.tool.dcmsnd.MirthDcmSnd;
-import org.dcm4che2.util.StringUtils;
 import org.junit.Test;
 
 import com.mirth.connect.connectors.dimse.DICOMDispatcher.CommandDataDimseRSPHandler;
+import com.mirth.connect.connectors.dimse.dicom.DicomConstants;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomElement;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomObject;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomSender;
+import com.mirth.connect.connectors.dimse.dicom.OieDimseRspHandler;
+import com.mirth.connect.connectors.dimse.dicom.DicomLibraryFactory;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomConverter;
 import com.mirth.connect.donkey.model.message.ConnectorMessage;
 import com.mirth.connect.donkey.model.message.Response;
 import com.mirth.connect.donkey.model.message.Status;
@@ -32,7 +29,7 @@ public class DICOMDispatcherTest {
 
     @Test
     public void testSendWithStatusCodes() {
-        // send message using our custom MirthDcmSnd
+        // send message using our custom sender
         TestDICOMDispatcher dispatcher = new TestDICOMDispatcher();
         dispatcher.configuration = new DefaultDICOMConfiguration();
         DICOMDispatcherProperties props = new DICOMDispatcherProperties();
@@ -44,8 +41,8 @@ public class DICOMDispatcherTest {
         Status status = null;
         String statusMessage = null;
 
-        TestMirthDcmSnd.setCommitSucceeded(true);
-        TestMirthDcmSnd.setCmdStatus(0);
+        TestDicomSender.setCommitSucceeded(true);
+        TestDicomSender.setCmdStatus(0);
         response = dispatcher.send(props, message);
         status = response.getStatus();
         statusMessage = response.getStatusMessage();
@@ -55,39 +52,39 @@ public class DICOMDispatcherTest {
         assertEquals("DICOM message successfully sent", statusMessage);
 
         // check with 0xB000 || 0xB006 || 0xB007 status
-        TestMirthDcmSnd.setCmdStatus(0xB000);
+        TestDicomSender.setCmdStatus(0xB000);
         response = dispatcher.send(props, message);
         status = response.getStatus();
         statusMessage = response.getStatusMessage();
         assertEquals(Status.SENT, status);
-        assertEquals("DICOM message successfully sent with warning status code: 0x" + StringUtils.shortToHex(0xB000), statusMessage);
+        assertEquals("DICOM message successfully sent with warning status code: 0x" + DicomConstants.shortToHex(0xB000), statusMessage);
 
-        TestMirthDcmSnd.setCmdStatus(0xB006);
+        TestDicomSender.setCmdStatus(0xB006);
         response = dispatcher.send(props, message);
         status = response.getStatus();
         statusMessage = response.getStatusMessage();
         assertEquals(Status.SENT, status);
-        assertEquals("DICOM message successfully sent with warning status code: 0x" + StringUtils.shortToHex(0xB006), statusMessage);
+        assertEquals("DICOM message successfully sent with warning status code: 0x" + DicomConstants.shortToHex(0xB006), statusMessage);
 
-        TestMirthDcmSnd.setCmdStatus(0xB007);
+        TestDicomSender.setCmdStatus(0xB007);
         response = dispatcher.send(props, message);
         status = response.getStatus();
         statusMessage = response.getStatusMessage();
         assertEquals(Status.SENT, status);
-        assertEquals("DICOM message successfully sent with warning status code: 0x" + StringUtils.shortToHex(0xB007), statusMessage);
+        assertEquals("DICOM message successfully sent with warning status code: 0x" + DicomConstants.shortToHex(0xB007), statusMessage);
 
         // check other status == QUEUED
-        TestMirthDcmSnd.setCmdStatus(0xB008);
+        TestDicomSender.setCmdStatus(0xB008);
         response = dispatcher.send(props, message);
         status = response.getStatus();
         statusMessage = response.getStatusMessage();
         assertEquals(Status.QUEUED, status);
-        assertEquals("Error status code received from DICOM server: 0x" + StringUtils.shortToHex(0xB008), statusMessage);
+        assertEquals("Error status code received from DICOM server: 0x" + DicomConstants.shortToHex(0xB008), statusMessage);
     }
 
     @Test
     public void testResponseData() throws DonkeyElementException {
-        // send message using our custom MirthDcmSnd
+        // send message using our custom sender
         TestDICOMDispatcher dispatcher = new TestDICOMDispatcher();
         dispatcher.configuration = new DefaultDICOMConfiguration();
         DICOMDispatcherProperties props = new DICOMDispatcherProperties();
@@ -95,8 +92,8 @@ public class DICOMDispatcherTest {
         props.setPort("9000");
         ConnectorMessage message = new ConnectorMessage();
 
-        TestMirthDcmSnd.setCmdStatus(0);
-        TestMirthDcmSnd.setCommitSucceeded(true);
+        TestDicomSender.setCmdStatus(0);
+        TestDicomSender.setCommitSucceeded(true);
         Response response = dispatcher.send(props, message);
         String responseData = response.getMessage();
 
@@ -115,8 +112,8 @@ public class DICOMDispatcherTest {
         props.setStgcmt(true);
         ConnectorMessage message = new ConnectorMessage();
 
-        TestMirthDcmSnd.setCmdStatus(0);
-        TestMirthDcmSnd.setCommitSucceeded(false);
+        TestDicomSender.setCmdStatus(0);
+        TestDicomSender.setCommitSucceeded(false);
 
         Response response = null;
         Status status = null;
@@ -130,9 +127,9 @@ public class DICOMDispatcherTest {
         assertEquals("DICOM message successfully sent but Storage Commitment failed with reason: Unknown", statusMessage);
 
         // Test the case where the stgcmt request succeeds but contains failed SOP items
-        TestMirthDcmSnd.setCommitSucceeded(true);
-        TestMirthDcmSnd.setFailedSOP(true);
-        TestMirthDcmSnd.setFailureReason(1);
+        TestDicomSender.setCommitSucceeded(true);
+        TestDicomSender.setFailedSOP(true);
+        TestDicomSender.setFailureReason(1);
 
         response = dispatcher.send(props, message);
         status = response.getStatus();
@@ -141,11 +138,11 @@ public class DICOMDispatcherTest {
         assertEquals(Status.QUEUED, status);
         assertEquals("DICOM message successfully sent but Storage Commitment failed with reason: 1", statusMessage);
 
-        TestMirthDcmSnd.setCommitSucceeded(false);
-        TestMirthDcmSnd.setFailedSOP(false);
-        TestMirthDcmSnd.setFailureReason(0);
+        TestDicomSender.setCommitSucceeded(false);
+        TestDicomSender.setFailedSOP(false);
+        TestDicomSender.setFailureReason(0);
 
-        // test that a failed storage commitment doesn't cause the message to fail 
+        // test that a failed storage commitment doesn't cause the message to fail
         // if the dispatcher isn't configured to care
         props.setStgcmt(false);
         response = dispatcher.send(props, message);
@@ -157,32 +154,32 @@ public class DICOMDispatcherTest {
 
         // check with 0xB000 and requesting storage commitment
         props.setStgcmt(true);
-        TestMirthDcmSnd.setCmdStatus(0xB000);
+        TestDicomSender.setCmdStatus(0xB000);
         response = dispatcher.send(props, message);
         status = response.getStatus();
         statusMessage = response.getStatusMessage();
         assertEquals(Status.QUEUED, status);
-        String expectedMessage = "DICOM message successfully sent with warning status code: 0x" + StringUtils.shortToHex(0xB000) + " but Storage Commitment failed with reason: Unknown";
+        String expectedMessage = "DICOM message successfully sent with warning status code: 0x" + DicomConstants.shortToHex(0xB000) + " but Storage Commitment failed with reason: Unknown";
         assertEquals(expectedMessage, statusMessage);
 
         // check other status and requesting storage commitment
-        TestMirthDcmSnd.setCmdStatus(0xB008);
+        TestDicomSender.setCmdStatus(0xB008);
         response = dispatcher.send(props, message);
         status = response.getStatus();
         statusMessage = response.getStatusMessage();
         assertEquals(Status.QUEUED, status);
-        assertEquals("Error status code received from DICOM server: 0x" + StringUtils.shortToHex(0xB008), statusMessage);
+        assertEquals("Error status code received from DICOM server: 0x" + DicomConstants.shortToHex(0xB008), statusMessage);
     }
 
-    private static class TestMirthDcmSnd extends MirthDcmSnd {
+    /**
+     * Test OieDicomSender that stubs out all network operations.
+     */
+    private static class TestDicomSender implements OieDicomSender {
         private static int cmdStatus;
         private static boolean commitSucceeded = true;
         private static boolean failedSOP = false;
         private static int failureReason = 0;
-
-        public TestMirthDcmSnd(DICOMConfiguration configuration) {
-            super(configuration);
-        }
+        private boolean storageCommitment = false;
 
         public static void setCmdStatus(int status) {
             cmdStatus = status;
@@ -193,69 +190,85 @@ public class DICOMDispatcherTest {
         }
 
         public static void setFailedSOP(boolean failedSOP) {
-            TestMirthDcmSnd.failedSOP = failedSOP;
+            TestDicomSender.failedSOP = failedSOP;
         }
 
         public static void setFailureReason(int failureReason) {
-            TestMirthDcmSnd.failureReason = failureReason;
+            TestDicomSender.failureReason = failureReason;
         }
 
         @Override
-        protected void init() {
-            conn = createNetworkConnection();
-            remoteConn = createNetworkConnection();
+        public void send(OieDimseRspHandler handler) {
+            OieDicomConverter converter = DicomLibraryFactory.getConverter();
+            OieDicomObject cmd = converter.createDicomObject();
+            cmd.putInt(DicomConstants.TAG_STATUS, DicomConstants.VR_IS, cmdStatus);
+            handler.onDimseRSP(cmd, null);
         }
 
         @Override
-        public void start() throws IOException {}
-
-        @Override
-        public void open() throws IOException, ConfigurationException, InterruptedException {}
-
-        @Override
-        public void close() {}
-
-        @Override
-        public void stop() {}
-
-        @Override
-        public void addFile(File f) {}
-
-        @Override
-        public void send(CustomDimseRSPHandler responseHandler) {
-            CommandDataDimseRSPHandler handler = (CommandDataDimseRSPHandler) responseHandler;
-            BasicDicomObject cmd = new BasicDicomObject();
-            cmd.putInt(Tag.Status, VR.IS, cmdStatus);
-            handler.onDimseRSP(null, cmd, null);
-        }
-
-        @Override
-        public synchronized DicomObject waitForStgCmtResult() throws InterruptedException {
-            BasicDicomObject rsp = new BasicDicomObject();
+        public OieDicomObject waitForStgCmtResult() throws InterruptedException {
+            OieDicomConverter converter = DicomLibraryFactory.getConverter();
+            OieDicomObject rsp = converter.createDicomObject();
             if (failedSOP) {
-                SequenceDicomElement failedSOPSq = (SequenceDicomElement) rsp.putSequence(Tag.FailedSOPSequence);
-                BasicDicomObject failedSOPItem = new BasicDicomObject();
-                failedSOPItem.putInt(Tag.FailureReason, VR.IS, failureReason);
+                OieDicomElement failedSOPSq = rsp.putSequence(DicomConstants.TAG_FAILED_SOP_SEQUENCE);
+                OieDicomObject failedSOPItem = converter.createDicomObject();
+                failedSOPItem.putInt(DicomConstants.TAG_FAILURE_REASON, DicomConstants.VR_IS, failureReason);
                 failedSOPSq.addDicomObject(failedSOPItem);
             }
             return rsp;
         }
 
-        @Override
-        protected NetworkConnection createNetworkConnection() {
-            return mock(NetworkConnection.class);
-        }
-
-        @Override
-        public boolean commit() {
-            return commitSucceeded;
-        }
+        @Override public boolean commit() { return commitSucceeded; }
+        @Override public boolean isStorageCommitment() { return storageCommitment; }
+        @Override public void setCalledAET(String aet) {}
+        @Override public void setRemoteHost(String host) {}
+        @Override public void setRemotePort(int port) {}
+        @Override public void setCalling(String aet) {}
+        @Override public void setLocalHost(String host) {}
+        @Override public void setLocalPort(int port) {}
+        @Override public void addFile(File file) {}
+        @Override public void setAcceptTimeout(int timeout) {}
+        @Override public void setMaxOpsInvoked(int maxOps) {}
+        @Override public void setTranscoderBufferSize(int size) {}
+        @Override public void setConnectTimeout(int timeout) {}
+        @Override public void setPriority(int priority) {}
+        @Override public void setPackPDV(boolean packPDV) {}
+        @Override public void setMaxPDULengthReceive(int length) {}
+        @Override public void setMaxPDULengthSend(int length) {}
+        @Override public void setReceiveBufferSize(int size) {}
+        @Override public void setSendBufferSize(int size) {}
+        @Override public void setAssociationReaperPeriod(int period) {}
+        @Override public void setReleaseTimeout(int timeout) {}
+        @Override public void setDimseRspTimeout(int timeout) {}
+        @Override public void setShutdownDelay(int delay) {}
+        @Override public void setSocketCloseDelay(int delay) {}
+        @Override public void setTcpNoDelay(boolean tcpNoDelay) {}
+        @Override public void setOfferDefaultTransferSyntaxInSeparatePresentationContext(boolean ts1) {}
+        @Override public void setStorageCommitment(boolean stgcmt) { this.storageCommitment = stgcmt; }
+        @Override public void setUserIdentity(String username, String passcode, boolean positiveResponseRequested) {}
+        @Override public void setTlsWithoutEncryption() {}
+        @Override public void setTls3DES_EDE_CBC() {}
+        @Override public void setTlsAES_128_CBC() {}
+        @Override public void setTrustStoreURL(String url) {}
+        @Override public void setTrustStorePassword(String password) {}
+        @Override public void setKeyPassword(String password) {}
+        @Override public void setKeyStoreURL(String url) {}
+        @Override public void setKeyStorePassword(String password) {}
+        @Override public void setTlsNeedClientAuth(boolean needClientAuth) {}
+        @Override public void setTlsProtocol(String[] protocols) {}
+        @Override public void initTLS() {}
+        @Override public void configureTransferCapability() {}
+        @Override public void start() {}
+        @Override public void open() {}
+        @Override public void close() {}
+        @Override public void stop() {}
+        @Override public Object unwrap() { return null; }
     }
 
     private class TestDICOMDispatcher extends DICOMDispatcher {
         @Override
-        protected MirthDcmSnd getDcmSnd(DICOMConfiguration configuration) {
-            return new TestMirthDcmSnd(configuration);
+        protected OieDicomSender createDicomSender(DICOMConfiguration configuration) {
+            return new TestDicomSender();
         }
 
         @Override

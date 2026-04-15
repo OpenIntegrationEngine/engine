@@ -41,7 +41,11 @@ public class MirthDcmSnd extends DcmSnd {
 
     @Override
     protected NetworkConnection createNetworkConnection() {
-        return dicomConfiguration.createNetworkConnection();
+        Object custom = dicomConfiguration.createNetworkConnection();
+        if (custom instanceof NetworkConnection) {
+            return (NetworkConnection) custom;
+        }
+        return new NetworkConnection();
     }
 
     @Override

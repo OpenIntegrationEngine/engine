@@ -70,7 +70,9 @@ terms.
 	DcmRcv and DcmSnd were modified to allow overriding of the network
 	connections.
 
-	HAPI 2.3 (source code can be downloaded at: 
+	dcm4che 5.34.3 (source code can be downloaded at: http://www.dcm4che.org/)
+
+	HAPI 2.3 (source code can be downloaded at:
 	https://github.com/hapifhir/hapi-hl7v2)
 
 	iText, a free Java-PDF library version 2.1.7 (source code can be downloaded 

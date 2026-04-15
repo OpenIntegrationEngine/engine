@@ -28,6 +28,9 @@ public class ExtensionLibrary implements Serializable {
     @XStreamAsAttribute
     private Type type;
 
+    @XStreamAsAttribute
+    private String variant;
+
     public Type getType() {
         return type;
     }
@@ -42,6 +45,14 @@ public class ExtensionLibrary implements Serializable {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public String getVariant() {
+        return variant;
+    }
+
+    public void setVariant(String variant) {
+        this.variant = variant;
     }
 
     @Override

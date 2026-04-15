@@ -1,47 +1,30 @@
 /*
  * Copyright (c) Mirth Corporation. All rights reserved.
- * 
+ *
  * http://www.mirthcorp.com
- * 
+ *
  * The software in this package is published under the terms of the MPL license a copy of which has
  * been included with this distribution in the LICENSE.txt file.
  */
 
 package com.mirth.connect.plugins.datatypes.dicom;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.sax.SAXTransformerFactory;
-import javax.xml.transform.sax.TransformerHandler;
-import javax.xml.transform.stream.StreamResult;
-
-import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.StringUtils;
-import org.apache.commons.io.IOUtils;
-import org.dcm4che2.data.BasicDicomObject;
-import org.dcm4che2.data.DicomObject;
-import org.dcm4che2.data.Tag;
-import org.dcm4che2.io.ContentHandlerAdapter;
-import org.dcm4che2.io.DicomInputStream;
-import org.dcm4che2.io.SAXWriter;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
+import com.mirth.connect.connectors.dimse.dicom.DicomConstants;
+import com.mirth.connect.connectors.dimse.dicom.DicomLibraryFactory;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomConverter;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomObject;
 import com.mirth.connect.donkey.model.message.MessageSerializer;
 import com.mirth.connect.donkey.model.message.MessageSerializerException;
 import com.mirth.connect.donkey.util.Base64Util;
@@ -68,10 +51,11 @@ public class DICOMSerializer implements IMessageSerializer {
     }
 
     public static byte[] removePixelData(byte[] content) throws IOException {
-        DicomObject dicomObject = DICOMConverter.byteArrayToDicomObject(content, false);
-        dicomObject.remove(Tag.PixelData);
+        OieDicomConverter converter = DicomLibraryFactory.getConverter();
+        OieDicomObject dicomObject = converter.byteArrayToDicomObject(content, false);
+        dicomObject.remove(DicomConstants.TAG_PIXEL_DATA);
 
-        return DICOMConverter.dicomObjectToByteArray(dicomObject);
+        return converter.dicomObjectToByteArray(dicomObject);
     }
 
     @Override
@@ -132,14 +116,10 @@ public class DICOMSerializer implements IMessageSerializer {
                 charset = "utf-8";
             }
 
-            // parse the Document into a DicomObject
-            SAXParserFactory factory = SAXParserFactory.newInstance();
-            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-            SAXParser parser = factory.newSAXParser();
-            DicomObject dicomObject = new BasicDicomObject();
-            ContentHandlerAdapter contentHandler = new ContentHandlerAdapter(dicomObject);
-            byte[] documentBytes = documentSerializer.toXML(document).trim().getBytes(charset);
-            parser.parse(new InputSource(new ByteArrayInputStream(documentBytes)), contentHandler);
+            // parse the Document into a DicomObject via the converter
+            OieDicomConverter converter = DicomLibraryFactory.getConverter();
+            String xmlString = documentSerializer.toXML(document).trim();
+            OieDicomObject dicomObject = converter.xmlToDicomObject(xmlString, charset);
             return StringUtils.newStringUsAscii(Base64Util.encodeBase64(DICOMConverter.dicomObjectToByteArray(dicomObject)));
         } catch (Exception e) {
             throw new MessageSerializerException("Error converting XML to DICOM", e, ErrorMessageBuilder.buildErrorMessage(this.getClass().getSimpleName(), "Error converting XML to DICOM", e));
@@ -151,49 +131,19 @@ public class DICOMSerializer implements IMessageSerializer {
         try {
             byte[] encodedMessage = org.apache.commons.codec.binary.StringUtils.getBytesUsAscii(source);
 
-            StringWriter output = new StringWriter();
-            DicomInputStream dis = new DicomInputStream(new BufferedInputStream(new Base64InputStream(new ByteArrayInputStream(encodedMessage))));
-            /*
-             * This parameter was added in dcm4che 2.0.28. We use it to retain the memory allocation
-             * behavior from 2.0.25. http://www.mirthcorp.com/community/issues/browse/MIRTH-2166
-             * http://www.dcm4che.org/jira/browse/DCM-554
-             */
-            dis.setAllocateLimit(-1);
+            OieDicomConverter converter = DicomLibraryFactory.getConverter();
+            String serializedDicomObject = converter.dicomBytesToXml(encodedMessage);
 
-            try {
-            	TransformerFactory tf = TransformerFactory.newInstance();
-            	tf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            	tf.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
-                SAXTransformerFactory factory = (SAXTransformerFactory) tf;
-                TransformerHandler handler = factory.newTransformerHandler();
-                handler.getTransformer().setOutputProperty(OutputKeys.INDENT, "no");
-                handler.setResult(new StreamResult(output));
+            // rename the "attr" element to the tag ID
+            Document document = documentSerializer.fromXML(serializedDicomObject);
+            NodeList attrElements = document.getElementsByTagName("attr");
 
-                final SAXWriter writer = new SAXWriter(handler, null);
-                dis.setHandler(writer);
-                dis.readDicomObject(new BasicDicomObject(), -1);
-                String serializedDicomObject = output.toString();
-
-                // rename the "attr" element to the tag ID
-                Document document = documentSerializer.fromXML(serializedDicomObject);
-                NodeList attrElements = document.getElementsByTagName("attr");
-
-                for (int i = 0; i < attrElements.getLength(); i++) {
-                    Element attrElement = (Element) attrElements.item(i);
-                    renameAttrToTag(document, attrElement);
-                }
-
-                return documentSerializer.toXML(document);
-            } catch (Exception e) {
-                throw e;
-            } finally {
-                IOUtils.closeQuietly(dis);
-                IOUtils.closeQuietly(output);
-
-                if (dis != null) {
-                    dis.close();
-                }
+            for (int i = 0; i < attrElements.getLength(); i++) {
+                Element attrElement = (Element) attrElements.item(i);
+                renameAttrToTag(document, attrElement);
             }
+
+            return documentSerializer.toXML(document);
         } catch (Exception e) {
             throw new MessageSerializerException("Error converting DICOM to XML", e, ErrorMessageBuilder.buildErrorMessage(this.getClass().getSimpleName(), "Error converting DICOM to XML", e));
         }

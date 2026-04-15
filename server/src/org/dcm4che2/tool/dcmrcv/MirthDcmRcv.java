@@ -52,7 +52,11 @@ public class MirthDcmRcv extends DcmRcv {
 
     @Override
     protected NetworkConnection createNetworkConnection() {
-        return dicomConfiguration.createNetworkConnection();
+        Object custom = dicomConfiguration.createNetworkConnection();
+        if (custom instanceof NetworkConnection) {
+            return (NetworkConnection) custom;
+        }
+        return new NetworkConnection();
     }
 
     @Override

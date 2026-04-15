@@ -1,8 +1,8 @@
 /*
  * Copyright (c) Mirth Corporation. All rights reserved.
- * 
+ *
  * http://www.mirthcorp.com
- * 
+ *
  * The software in this package is published under the terms of the MPL license a copy of which has
  * been included with this distribution in the LICENSE.txt file.
  */
@@ -10,10 +10,10 @@
 package com.mirth.connect.server.attachments.dicom;
 
 import org.apache.commons.codec.binary.StringUtils;
-import org.dcm4che2.data.DicomElement;
-import org.dcm4che2.data.DicomObject;
-import org.dcm4che2.data.Tag;
 
+import com.mirth.connect.connectors.dimse.dicom.DicomConstants;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomElement;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomObject;
 import com.mirth.connect.donkey.model.message.RawMessage;
 import com.mirth.connect.donkey.model.message.attachment.Attachment;
 import com.mirth.connect.donkey.model.message.attachment.AttachmentException;
@@ -25,8 +25,8 @@ import com.mirth.connect.server.util.ServerUUIDGenerator;
 
 public class DICOMAttachmentHandler implements AttachmentHandler {
 
-    private DicomObject dicomObject;
-    private DicomElement dicomElement;
+    private OieDicomObject dicomObject;
+    private OieDicomElement dicomElement;
     private int index;
     private String attachmentId;
 
@@ -40,7 +40,7 @@ public class DICOMAttachmentHandler implements AttachmentHandler {
             if (message.isBinary()) {
                 messageBytes = message.getRawBytes();
             } else {
-                // Taking a string is much more inefficient than taking in a byte array. 
+                // Taking a string is much more inefficient than taking in a byte array.
                 // If the user manually sends a message, it will arrive as a base64 encoded string, so we must support Strings for DICOM still.
                 // However, DICOM messages that use this initializer should be relatively small in size.
                 messageBytes = StringUtils.getBytesUsAscii(message.getRawData());
@@ -48,7 +48,7 @@ public class DICOMAttachmentHandler implements AttachmentHandler {
             }
 
             dicomObject = DICOMConverter.byteArrayToDicomObject(messageBytes, decode);
-            dicomElement = dicomObject.remove(Tag.PixelData);
+            dicomElement = dicomObject.remove(DicomConstants.TAG_PIXEL_DATA);
             attachmentId = ServerUUIDGenerator.getUUID();
         } catch (Throwable t) {
             throw new AttachmentException(t);

@@ -1,8 +1,8 @@
 /*
  * Copyright (c) Mirth Corporation. All rights reserved.
- * 
+ *
  * http://www.mirthcorp.com
- * 
+ *
  * The software in this package is published under the terms of the MPL license a copy of which has
  * been included with this distribution in the LICENSE.txt file.
  */
@@ -17,12 +17,15 @@ import org.dcm4che2.net.NetworkConnection;
 import org.dcm4che2.tool.dcmrcv.MirthDcmRcv;
 import org.dcm4che2.tool.dcmsnd.MirthDcmSnd;
 
+import com.mirth.connect.connectors.dimse.dicom.dcm2.Dcm2DICOMConfiguration;
+import com.mirth.connect.connectors.dimse.dicom.dcm2.Dcm2DicomReceiver;
+import com.mirth.connect.connectors.dimse.dicom.dcm2.Dcm2DicomSender;
 import com.mirth.connect.donkey.server.channel.Connector;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.util.MirthSSLUtil;
 
-public class DefaultDICOMConfiguration implements DICOMConfiguration {
+public class DefaultDICOMConfiguration implements Dcm2DICOMConfiguration {
 
     private ConfigurationController configurationController = ControllerFactory.getFactory().createConfigurationController();
     private String[] protocols;
@@ -37,22 +40,24 @@ public class DefaultDICOMConfiguration implements DICOMConfiguration {
     }
 
     @Override
-    public NetworkConnection createNetworkConnection() {
-        return new NetworkConnection();
+    public void configureDcmRcv(MirthDcmRcv dcmrcv, DICOMReceiver connector,
+                                DICOMReceiverProperties connectorProperties) throws Exception {
+        DICOMConfigurationUtil.configureReceiver(new Dcm2DicomReceiver(dcmrcv), connector, connectorProperties, protocols);
     }
 
     @Override
-    public void configureDcmRcv(MirthDcmRcv dcmrcv, DICOMReceiver connector, DICOMReceiverProperties connectorProperties) throws Exception {
-        DICOMConfigurationUtil.configureDcmRcv(dcmrcv, connector, connectorProperties, protocols);
+    public void configureDcmSnd(MirthDcmSnd dcmsnd, DICOMDispatcher connector,
+                                DICOMDispatcherProperties connectorProperties) throws Exception {
+        DICOMConfigurationUtil.configureSender(new Dcm2DicomSender(dcmsnd), connector, connectorProperties, protocols);
     }
 
     @Override
-    public void configureDcmSnd(MirthDcmSnd dcmsnd, DICOMDispatcher connector, DICOMDispatcherProperties connectorProperties) throws Exception {
-        DICOMConfigurationUtil.configureDcmSnd(dcmsnd, connector, connectorProperties, protocols);
-    }
-
-    @Override
-    public Map<String, Object> getCStoreRequestInformation(Association as) {
+    public Map<String, Object> getCStoreRequestInformation(Association association) {
         return new HashMap<String, Object>();
+    }
+
+    @Override
+    public NetworkConnection createLegacyNetworkConnection() {
+        return new NetworkConnection();
     }
 }

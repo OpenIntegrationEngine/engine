@@ -34,7 +34,7 @@ To revert, change the value back to `dcm4che2` (or remove the line) and restart.
 
 | Area | Behavior |
 |------|----------|
-| Channel properties | All DICOM Listener and Sender properties work identically |
+| Channel properties | Listener and Sender UI properties work identically (see [Settings with no effect on dcm4che5](#settings-with-no-effect-on-dcm4che5) for two pure-tuning flags that are ignored) |
 | Source map keys | Same keys populated: `localApplicationEntityTitle`, `remoteApplicationEntityTitle`, `localAddress`, `localPort`, `remoteAddress`, `remotePort` |
 | DICOM object serialization | Byte-level output differs (different FMI implementation version UIDs), but all tag values are semantically equivalent |
 | C-STORE, C-ECHO | Both work through the standard channel lifecycle |
@@ -61,6 +61,46 @@ If your channel logic inspects DICOM element names (not tag numbers), be aware t
 
 // Safe approach: use tag numbers, which are identical across backends
 dicomObject.getString(Tag.PatientName)  // works on both
+```
+
+### Settings with no effect
+
+A few Listener and Sender UI fields have no corresponding implementation on the dcm4che5 backend. The dcm4che2 backend behavior is preserved unchanged. A `WARN`-level log is emitted on channel start when any of these are set to a non-default value on dcm4che5:
+
+| UI setting | Connector | Note |
+|---|---|---|
+| `bufSize` | Listener | File buffer size. dcm4che3 manages buffers internally; no equivalent API |
+| `bufSize` | Sender | Transcoder buffer size. dcm4che3 manages buffers internally via `DataWriterAdapter` |
+| `dest` (Store Received Objects in Directory) | Listener | Silently ignored on **both backends** — a long-standing upstream behavior. `MirthDcmRcv` streams DIMSE data directly to the channel and never consults this setting on either backend |
+
+None of these affect data integrity. Messages still arrive and dispatch through the channel correctly. The `bufSize` flags are pure performance tuning; revert `dicom.library` to `dcm4che2` if the throughput difference matters for your deployment.
+
+All other UI settings — TLS options, AE titles, timeouts, PDU lengths, transfer syntax selection, storage commitment, user identity, and priority — work identically on both backends.
+
+### DICOMUtil API (user transformer scripts)
+
+`DICOMUtil.byteArrayToDicomObject()` and `dicomObjectToByteArray()` now return / accept the version-neutral `OieDicomObject` type. For the vast majority of transformer scripts this change is invisible — Rhino's duck typing plus Object-type overloads on `OieDicomObject` mean existing calls keep working unchanged:
+
+```javascript
+// Existing scripts continue to work on default (dcm4che2) without changes:
+var dcm = DICOMUtil.byteArrayToDicomObject(bytes, false);
+dcm.getString(Tag.PatientName);                    // same method exists on OieDicomObject
+dcm.putString(Tag.PatientName, VR.PN, "SMITH");    // Object-overload routes via VR.toString()
+```
+
+Only these specific patterns require a one-line change:
+
+| Pattern | Change |
+|---|---|
+| `(DicomObject) DICOMUtil.byteArrayToDicomObject(...)` explicit cast | `(DicomObject) DICOMUtil.byteArrayToDicomObject(...).unwrap()` |
+| `dcm instanceof DicomObject` | `dcm.unwrap() instanceof DicomObject` |
+| Passing the result to a Java API that expects `org.dcm4che2.data.DicomObject` | Pass `dcm.unwrap()` instead |
+
+The recommended version-neutral pattern for new scripts is to use string VR codes instead of library-specific constants:
+
+```javascript
+// Works identically on both backends — no dependency on VR class:
+dcm.putString(Tag.PatientName, "PN", "SMITH");
 ```
 
 ## TLS Configuration

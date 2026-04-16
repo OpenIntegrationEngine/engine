@@ -58,6 +58,28 @@ public class Dcm5DicomObjectTest {
     }
 
     @Test
+    public void testPutStringAcceptsObjectVrViaToString() {
+        // Simulates a user transformer script passing a library-specific VR constant
+        // (e.g., dcm4che2 VR.PN) — the Object overload delegates via toString().
+        Object libraryVr = new Object() {
+            @Override public String toString() { return "PN"; }
+        };
+        Dcm5DicomObject obj = new Dcm5DicomObject();
+        obj.putString(Tag.PatientName, libraryVr, "Doe^John");
+        assertEquals("Doe^John", obj.getString(Tag.PatientName));
+    }
+
+    @Test
+    public void testPutIntAcceptsObjectVrViaToString() {
+        Object libraryVr = new Object() {
+            @Override public String toString() { return "US"; }
+        };
+        Dcm5DicomObject obj = new Dcm5DicomObject();
+        obj.putInt(Tag.Rows, libraryVr, 512);
+        assertEquals(512, obj.getInt(Tag.Rows));
+    }
+
+    @Test
     public void testPutSequence() {
         Dcm5DicomObject obj = new Dcm5DicomObject();
         OieDicomElement seq = obj.putSequence(Tag.ReferencedStudySequence);

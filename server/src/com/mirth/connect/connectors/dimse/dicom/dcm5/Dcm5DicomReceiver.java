@@ -273,8 +273,13 @@ public class Dcm5DicomReceiver implements OieDicomReceiver {
 
     @Override
     public void setDestination(String destination) {
-        // Not used — dcm5 receiver dispatches directly to the channel, not to filesystem
-        logger.trace("setDestination ignored in dcm5 receiver (no filesystem storage): " + destination);
+        // Matches dcm4che2's de facto behavior: MirthDcmRcv streams DIMSE data directly
+        // to the channel and never consults DcmRcv.setDestination, so the UI flag has
+        // been a no-op on both backends. Only reached when the user explicitly set a
+        // non-blank value in the Listener's "Store Received Objects in Directory" field.
+        logger.warn("destination={} has no effect on either DICOM backend (the flag has been "
+                + "silently ignored upstream for years). Remove this setting to clear the warning.",
+                destination);
     }
 
     @Override
@@ -345,9 +350,11 @@ public class Dcm5DicomReceiver implements OieDicomReceiver {
 
     @Override
     public void setFileBufferSize(int size) {
-        // dcm5 receiver writes directly to ByteArrayOutputStream, not filesystem.
-        // No file buffer applicable.
-        logger.trace("setFileBufferSize ignored in dcm5 receiver: " + size);
+        // dcm5 receiver streams directly to memory, with no file buffer concept.
+        // Only reached when the user explicitly changed bufSize from default,
+        // so warn instead of trace to surface the ignored setting.
+        logger.warn("bufSize={} has no effect on dcm4che5 receiver (dcm4che3 manages buffers internally). "
+                + "Revert dicom.library=dcm4che2 if this tuning is load-bearing.", size);
     }
 
     @Override

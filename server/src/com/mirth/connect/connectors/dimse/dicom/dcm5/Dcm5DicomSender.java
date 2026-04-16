@@ -197,8 +197,11 @@ public class Dcm5DicomSender implements OieDicomSender {
 
     @Override
     public void setTranscoderBufferSize(int size) {
-        // dcm4che5 does not have a transcoder buffer — transcoding is handled internally.
-        logger.trace("setTranscoderBufferSize ignored in dcm5 sender: " + size);
+        // dcm4che5 has no transcoder buffer — transcoding is handled internally via DataWriterAdapter.
+        // Only reached when the user explicitly changed bufSize from default, so warn instead of
+        // trace to surface the ignored setting.
+        logger.warn("bufSize={} has no effect on dcm4che5 sender (dcm4che3 manages transcoder buffers internally). "
+                + "Revert dicom.library=dcm4che2 if this tuning is load-bearing.", size);
     }
 
     @Override

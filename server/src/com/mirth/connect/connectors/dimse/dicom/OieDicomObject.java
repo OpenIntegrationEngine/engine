@@ -36,8 +36,7 @@ public interface OieDicomObject {
      * if the tag is not present.
      */
     default int getInt(int tag, int defaultValue) {
-        OieDicomElement elem = get(tag);
-        return elem != null ? getInt(tag) : defaultValue;
+        return contains(tag) ? getInt(tag) : defaultValue;
     }
 
     OieDicomElement get(int tag);
@@ -79,13 +78,40 @@ public interface OieDicomObject {
 
     void putString(int tag, String vr, String value);
 
+    /**
+     * Overload accepting any {@code Object} as the VR argument. Delegates to
+     * {@link #putString(int, String, String)} using {@code vr.toString()}.
+     *
+     * <p>Preserves backward compatibility for transformer scripts that pass a
+     * library-specific VR constant (e.g., dcm4che2's {@code VR.PN}), whose
+     * {@code toString()} returns the two-letter VR code.
+     */
+    default void putString(int tag, Object vr, String value) {
+        putString(tag, vr != null ? vr.toString() : null, value);
+    }
+
     void putInt(int tag, String vr, int value);
 
+    /** Object-VR overload of {@link #putInt(int, String, int)}; see {@link #putString(int, Object, String)}. */
+    default void putInt(int tag, Object vr, int value) {
+        putInt(tag, vr != null ? vr.toString() : null, value);
+    }
+
     void putBytes(int tag, String vr, byte[] value);
+
+    /** Object-VR overload of {@link #putBytes(int, String, byte[])}; see {@link #putString(int, Object, String)}. */
+    default void putBytes(int tag, Object vr, byte[] value) {
+        putBytes(tag, vr != null ? vr.toString() : null, value);
+    }
 
     OieDicomElement putSequence(int tag);
 
     OieDicomElement putFragments(int tag, String vr, boolean bigEndian, int capacity);
+
+    /** Object-VR overload of {@link #putFragments(int, String, boolean, int)}; see {@link #putString(int, Object, String)}. */
+    default OieDicomElement putFragments(int tag, Object vr, boolean bigEndian, int capacity) {
+        return putFragments(tag, vr != null ? vr.toString() : null, bigEndian, capacity);
+    }
 
     void add(OieDicomElement element);
 

@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: Saga IT, LLC
+
 package com.mirth.connect.connectors.dimse;
 
 import static org.junit.Assert.assertEquals;

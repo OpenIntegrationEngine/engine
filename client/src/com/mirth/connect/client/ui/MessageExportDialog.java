@@ -18,6 +18,7 @@ import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JSeparator;
+import javax.swing.SwingWorker;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -129,15 +130,14 @@ public class MessageExportDialog extends MirthDialog {
         add(cancelButton, "width 60");
     }
 
-    private void export() {        
+    private void export() {
         String errorMessage = messageExportPanel.validate(true);
         if (StringUtils.isNotEmpty(errorMessage)) {
             parent.alertError(this, errorMessage);
             return;
         }
 
-        int exportCount = 0;
-        MessageWriterOptions writerOptions = messageExportPanel.getMessageWriterOptions();
+        final MessageWriterOptions writerOptions = messageExportPanel.getMessageWriterOptions();
 
         if (StringUtils.isBlank(writerOptions.getRootFolder())) {
             parent.alertError(parent, "Please enter a valid root path to store exported files.");
@@ -146,65 +146,81 @@ public class MessageExportDialog extends MirthDialog {
         }
 
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        exportButton.setEnabled(false);
 
-        try {
-            if (!isChannelMessagesPanelFirstLoadSearch) {
-                LinkedHashMap<String, String> auditMessageAttributesMap = new LinkedHashMap<String, String>();
-                parent.mirthClient.auditExportMessages(auditMessageAttributesMap);
-                if (messageExportPanel.isExportLocal()) {                    
-                    PaginatedMessageList messageList = messages;
+        new SwingWorker<Integer, Void>() {
+            @Override
+            protected Integer doInBackground() throws Exception {
+                int exportCount = 0;
 
-                    writerOptions.setBaseFolder(SystemUtils.getUserHome().getAbsolutePath());
+                if (!isChannelMessagesPanelFirstLoadSearch) {
+                    LinkedHashMap<String, String> auditMessageAttributesMap = new LinkedHashMap<String, String>();
+                    parent.mirthClient.auditExportMessages(auditMessageAttributesMap);
+                    if (messageExportPanel.isExportLocal()) {
+                        PaginatedMessageList messageList = messages;
 
-                    MessageWriter messageWriter = MessageWriterFactory.getInstance().getMessageWriter(writerOptions, encryptor);
+                        writerOptions.setBaseFolder(SystemUtils.getUserHome().getAbsolutePath());
 
-                    AttachmentSource attachmentSource = null;
-                    if (writerOptions.includeAttachments()) {
-                        attachmentSource = new AttachmentSource() {
-                            @Override
-                            public List<Attachment> getMessageAttachments(Message message) throws ClientException {
-                                return PlatformUI.MIRTH_FRAME.mirthClient.getAttachmentsByMessageId(message.getChannelId(), message.getMessageId());
-                            }
-                        };
+                        MessageWriter messageWriter = MessageWriterFactory.getInstance().getMessageWriter(writerOptions, encryptor);
+
+                        AttachmentSource attachmentSource = null;
+                        if (writerOptions.includeAttachments()) {
+                            attachmentSource = new AttachmentSource() {
+                                @Override
+                                public List<Attachment> getMessageAttachments(Message message) throws ClientException {
+                                    return PlatformUI.MIRTH_FRAME.mirthClient.getAttachmentsByMessageId(message.getChannelId(), message.getMessageId());
+                                }
+                            };
+                        }
+
+                        try {
+                            exportCount = new MessageExporter().exportMessages(messageList, messageWriter, attachmentSource, writerOptions);
+                            messageWriter.finishWrite();
+                        } finally {
+                            messageWriter.close();
+                        }
+                    } else {
+                        exportCount = exportToServer(writerOptions);
                     }
+                }
 
-                    try {
-                        exportCount = new MessageExporter().exportMessages(messageList, messageWriter, attachmentSource, writerOptions); 
-                        messageWriter.finishWrite();
-                    } finally {
-                        messageWriter.close();
+                return exportCount;
+            }
+
+            @Override
+            protected void done() {
+                exportButton.setEnabled(true);
+                setCursor(Cursor.getDefaultCursor());
+
+                try {
+                    int exportCount = get();
+
+                    setVisible(false);
+
+                    if (isChannelMessagesPanelFirstLoadSearch) {
+                        parent.alertInformation(parent, "There are no messages to export. Please perform a search before exporting.");
+                    } else if (exportCount == 0) {
+                        parent.alertInformation(parent, "There are no messages to export.");
+                    } else {
+                        LinkedHashMap<String, String> auditMessageAttributesMap = new LinkedHashMap<String, String>();
+                        auditMessageAttributesMap.put("rootPath", writerOptions.getRootFolder());
+                        auditMessageAttributesMap.put("filePattern", writerOptions.getFilePattern());
+                        auditMessageAttributesMap.put("exportCount", String.valueOf(exportCount));
+                        auditMessageAttributesMap.put("contentType", writerOptions.getContentType() != null ? writerOptions.getContentType().toString() : "");
+                        auditMessageAttributesMap.put("encrypted", String.valueOf(writerOptions.isEncrypt()));
+                        auditMessageAttributesMap.put("includeAttachments", String.valueOf(writerOptions.includeAttachments()));
+                        auditMessageAttributesMap.put("compressionFormat", writerOptions.getArchiveFormat() != null ? getArchiveExtension(writerOptions.getArchiveFormat(), writerOptions.getCompressFormat()) : "");
+                        auditMessageAttributesMap.put("passwordProtected", String.valueOf(writerOptions.isPasswordEnabled()));
+                        parent.mirthClient.auditExportMessagesSuccess(auditMessageAttributesMap);
+
+                        parent.alertInformation(parent, exportCount + " message" + ((exportCount == 1) ? " has" : "s have") + " been successfully exported to: " + writerOptions.getRootFolder());
                     }
-                } else {
-                    exportCount = exportToServer(writerOptions);
+                } catch (Exception e) {
+                    Throwable cause = (e.getCause() == null) ? e : e.getCause();
+                    parent.alertThrowable(parent, cause);
                 }
             }
-
-            setVisible(false);
-            setCursor(Cursor.getDefaultCursor());
-            
-            if (isChannelMessagesPanelFirstLoadSearch) {
-                parent.alertInformation(parent, "There are no messages to export. Please perform a search before exporting.");
-            } else if (exportCount == 0) {
-                parent.alertInformation(parent, "There are no messages to export.");
-            } else {                
-                LinkedHashMap<String, String> auditMessageAttributesMap = new LinkedHashMap<String, String>();
-                auditMessageAttributesMap.put("rootPath", writerOptions.getRootFolder());
-                auditMessageAttributesMap.put("filePattern", writerOptions.getFilePattern());
-                auditMessageAttributesMap.put("exportCount", String.valueOf(exportCount));
-                auditMessageAttributesMap.put("contentType", writerOptions.getContentType() != null ? writerOptions.getContentType().toString() : "");
-                auditMessageAttributesMap.put("encrypted", String.valueOf(writerOptions.isEncrypt()));
-                auditMessageAttributesMap.put("includeAttachments", String.valueOf(writerOptions.includeAttachments()));
-                auditMessageAttributesMap.put("compressionFormat", writerOptions.getArchiveFormat() !=  null ? getArchiveExtension(writerOptions.getArchiveFormat(), writerOptions.getCompressFormat()) : "");
-                auditMessageAttributesMap.put("passwordProtected", String.valueOf(writerOptions.isPasswordEnabled()));
-                parent.mirthClient.auditExportMessagesSuccess(auditMessageAttributesMap);
-                
-                parent.alertInformation(parent, exportCount + " message" + ((exportCount == 1) ? " has" : "s have") + " been successfully exported to: " + writerOptions.getRootFolder());
-            }
-        } catch (Exception e) {
-            setCursor(Cursor.getDefaultCursor());
-            Throwable cause = (e.getCause() == null) ? e : e.getCause();
-            parent.alertThrowable(parent, cause);
-        }
+        }.execute();
     }
     
     protected int exportToServer(MessageWriterOptions writerOptions) throws ClientException {

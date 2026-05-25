@@ -101,7 +101,7 @@ public class Channel implements Runnable {
     private String contextFactoryId;
 
     private DeployedState initialState;
-    private DeployedState currentState = DeployedState.STOPPED;
+    private volatile DeployedState currentState = DeployedState.STOPPED;
 
     private StorageSettings storageSettings = new StorageSettings();
     private DonkeyDaoFactory daoFactory;

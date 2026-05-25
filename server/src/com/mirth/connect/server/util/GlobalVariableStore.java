@@ -69,11 +69,19 @@ public class GlobalVariableStore {
     // ##### SYNC METHODS #####
 
     public void lock(String key) {
-        globalVariableSyncMap.get(key).getLock().lock();
+        SyncObject obj = globalVariableSyncMap.get(key);
+        if (obj == null) {
+            throw new IllegalArgumentException("Sync key not found: " + key);
+        }
+        obj.getLock().lock();
     }
 
     public void unlock(String key) {
-        globalVariableSyncMap.get(key).getLock().unlock();
+        SyncObject obj = globalVariableSyncMap.get(key);
+        if (obj == null) {
+            throw new IllegalArgumentException("Sync key not found: " + key);
+        }
+        obj.getLock().unlock();
     }
 
     public boolean containsKeySync(String key) {

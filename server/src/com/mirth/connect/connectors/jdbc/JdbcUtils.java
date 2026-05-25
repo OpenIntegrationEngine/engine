@@ -102,7 +102,7 @@ public class JdbcUtils {
                 value = replacer.replaceValues(paramName, channelId, channelName);
             }
 
-            if (attachmentHandlerProvider != null && MirthAttachmentHandlerProvider.hasAttachmentKeys(value.toString())) {
+            if (value != null && attachmentHandlerProvider != null && MirthAttachmentHandlerProvider.hasAttachmentKeys(value.toString())) {
                 value = StringUtils.newString(attachmentHandlerProvider.reAttachMessage(value.toString(), connectorMessage, Constants.ATTACHMENT_CHARSET, false, reattach), Constants.ATTACHMENT_CHARSET);
             }
 

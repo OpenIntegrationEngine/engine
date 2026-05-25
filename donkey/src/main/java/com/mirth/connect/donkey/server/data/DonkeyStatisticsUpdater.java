@@ -80,8 +80,11 @@ public class DonkeyStatisticsUpdater extends Thread implements StatisticsUpdater
         if (!statistics.isEmpty() && daoFactory != null) {
             Statistics tempStats = new Statistics(false, true);
 
-            Map<String, Map<Integer, Map<Status, Long>>> stats = statistics.getStats();
-            tempStats.update(stats);
+            Map<String, Map<Integer, Map<Status, Long>>> stats;
+            synchronized (statistics) {
+                stats = statistics.getStats();
+                tempStats.update(stats);
+            }
 
             DonkeyDao dao = daoFactory.getDao();
             boolean commitSuccess = false;
@@ -90,15 +93,20 @@ public class DonkeyStatisticsUpdater extends Thread implements StatisticsUpdater
                 dao.commit();
                 commitSuccess = true;
 
-                // Invert the stats and update them on the Statistics object
-                for (Map<Integer, Map<Status, Long>> channelMap : stats.values()) {
-                    for (Map<Status, Long> connectorMap : channelMap.values()) {
-                        for (Entry<Status, Long> entry : connectorMap.entrySet()) {
-                            entry.setValue(-entry.getValue());
+                // Invert the stats and update them on the Statistics object.
+                // Synchronized on statistics so that update() calls from other threads
+                // cannot slip in between the snapshot and the inversion, which would
+                // cause those increments to be silently cancelled.
+                synchronized (statistics) {
+                    for (Map<Integer, Map<Status, Long>> channelMap : stats.values()) {
+                        for (Map<Status, Long> connectorMap : channelMap.values()) {
+                            for (Entry<Status, Long> entry : connectorMap.entrySet()) {
+                                entry.setValue(-entry.getValue());
+                            }
                         }
                     }
+                    statistics.update(stats);
                 }
-                statistics.update(stats);
             } catch (Throwable t) {
                 if (t instanceof InterruptedException) {
                     throw (InterruptedException) t;
@@ -130,7 +138,9 @@ public class DonkeyStatisticsUpdater extends Thread implements StatisticsUpdater
     @Override
     public void update(Statistics statistics) {
         if (!statistics.isEmpty()) {
-            this.statistics.update(statistics);
+            synchronized (this.statistics) {
+                this.statistics.update(statistics);
+            }
         }
     }
 }

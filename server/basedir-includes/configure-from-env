@@ -6,6 +6,15 @@
 
 set -e
 
+escape_sed_replacement() {
+    local value="$1"
+    # Escape backslash first, then & and /
+    value="${value//\\/\\\\}"
+    value="${value//&/\\&}"
+    value="${value//\//\\/}"
+    printf '%s' "$value"
+}
+
 APP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 custom_extension_count=`ls -1 "$APP_DIR"/custom-extensions/*.zip 2>/dev/null | wc -l`
@@ -18,72 +27,72 @@ fi
 
 # set storepass and keypass to 'changeme' so they aren't overwritten later
 KEYSTORE_PASS=changeme
-sed -i "s/^keystore\.storepass\s*=\s*.*\$/keystore.storepass = ${KEYSTORE_PASS//\//\\/}/" "$APP_DIR/conf/mirth.properties"
-sed -i "s/^keystore\.keypass\s*=\s*.*\$/keystore.keypass = ${KEYSTORE_PASS//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+sed -i "s/^keystore\.storepass\s*=\s*.*\$/keystore.storepass = $(escape_sed_replacement "$KEYSTORE_PASS")/" "$APP_DIR/conf/mirth.properties"
+sed -i "s/^keystore\.keypass\s*=\s*.*\$/keystore.keypass = $(escape_sed_replacement "$KEYSTORE_PASS")/" "$APP_DIR/conf/mirth.properties"
 
 # merge the environment variables into /opt/engine/conf/mirth.properties
 # db type
 if ! [ -z "${DATABASE+x}" ]; then
-	sed -i "s/^database\s*=\s*.*\$/database = ${DATABASE//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^database\s*=\s*.*\$/database = $(escape_sed_replacement "$DATABASE")/" "$APP_DIR/conf/mirth.properties"
 fi
 
 # db username
 if ! [ -z "${DATABASE_USERNAME+x}" ]; then
-	sed -i "s/^database\.username\s*=\s*.*\$/database.username = ${DATABASE_USERNAME//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^database\.username\s*=\s*.*\$/database.username = $(escape_sed_replacement "$DATABASE_USERNAME")/" "$APP_DIR/conf/mirth.properties"
 fi
 
 # db password
 if ! [ -z "${DATABASE_PASSWORD+x}" ]; then
-	sed -i "s/^database\.password\s*=\s*.*\$/database.password = ${DATABASE_PASSWORD//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^database\.password\s*=\s*.*\$/database.password = $(escape_sed_replacement "$DATABASE_PASSWORD")/" "$APP_DIR/conf/mirth.properties"
 fi
 
 # db url
 if ! [ -z "${DATABASE_URL+x}" ]; then
-	sed -i "s/^database\.url\s*=\s*.*\$/database.url = ${DATABASE_URL//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^database\.url\s*=\s*.*\$/database.url = $(escape_sed_replacement "$DATABASE_URL")/" "$APP_DIR/conf/mirth.properties"
 fi
 
 # database max connections
 if ! [ -z "${DATABASE_MAX_CONNECTIONS+x}" ]; then
-	sed -i "s/^database\.max-connections\s*=\s*.*\$/database.max-connections = ${DATABASE_MAX_CONNECTIONS//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^database\.max-connections\s*=\s*.*\$/database.max-connections = $(escape_sed_replacement "$DATABASE_MAX_CONNECTIONS")/" "$APP_DIR/conf/mirth.properties"
 fi
 
 # database max retries
 if ! [ -z "${DATABASE_MAX_RETRY+x}" ]; then
-	sed -i "s/^database\.connection\.maxretry\s*=\s*.*\$/database.connection.maxretry = ${DATABASE_MAX_RETRY//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^database\.connection\.maxretry\s*=\s*.*\$/database.connection.maxretry = $(escape_sed_replacement "$DATABASE_MAX_RETRY")/" "$APP_DIR/conf/mirth.properties"
 fi
 
 # database retry wait time
 if ! [ -z "${DATABASE_RETRY_WAIT+x}" ]; then
-	sed -i "s/^database\.connection\.retrywaitinmilliseconds\s*=\s*.*\$/database.connection.retrywaitinmilliseconds = ${DATABASE_RETRY_WAIT//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^database\.connection\.retrywaitinmilliseconds\s*=\s*.*\$/database.connection.retrywaitinmilliseconds = $(escape_sed_replacement "$DATABASE_RETRY_WAIT")/" "$APP_DIR/conf/mirth.properties"
 fi
 
 # keystore storepass
 if ! [ -z "${KEYSTORE_STOREPASS+x}" ]; then
-	sed -i "s/^keystore\.storepass\s*=\s*.*\$/keystore.storepass = ${KEYSTORE_STOREPASS//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^keystore\.storepass\s*=\s*.*\$/keystore.storepass = $(escape_sed_replacement "$KEYSTORE_STOREPASS")/" "$APP_DIR/conf/mirth.properties"
 fi
 
 # keystore keypass
 if ! [ -z "${KEYSTORE_KEYPASS+x}" ]; then
-	sed -i "s/^keystore\.keypass\s*=\s*.*\$/keystore.keypass = ${KEYSTORE_KEYPASS//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^keystore\.keypass\s*=\s*.*\$/keystore.keypass = $(escape_sed_replacement "$KEYSTORE_KEYPASS")/" "$APP_DIR/conf/mirth.properties"
 fi
 
 if ! [ -z "${KEYSTORE_TYPE+x}" ]; then
-	sed -i "s/^keystore\.type\s*=\s*.*\$/keystore.type = ${KEYSTORE_TYPE//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^keystore\.type\s*=\s*.*\$/keystore.type = $(escape_sed_replacement "$KEYSTORE_TYPE")/" "$APP_DIR/conf/mirth.properties"
 fi
 
 # session store
 if ! [ -z "${SESSION_STORE+x}" ]; then
 	LINE_COUNT=`grep "server.api.sessionstore" "$APP_DIR/conf/mirth.properties" | wc -l`
 	if [ $LINE_COUNT -lt 1 ]; then
-		echo -e "\nserver.api.sessionstore = ${SESSION_STORE//\//\\/}" >> "$APP_DIR/conf/mirth.properties"
+		echo -e "\nserver.api.sessionstore = $(escape_sed_replacement "$SESSION_STORE")" >> "$APP_DIR/conf/mirth.properties"
 	else
-		sed -i "s/^server\.api\.sessionstore\s*=\s*.*\$/server.api.sessionstore = ${SESSION_STORE//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+		sed -i "s/^server\.api\.sessionstore\s*=\s*.*\$/server.api.sessionstore = $(escape_sed_replacement "$SESSION_STORE")/" "$APP_DIR/conf/mirth.properties"
 	fi
 fi
 
 #server ID
 if ! [ -z "${SERVER_ID+x}" ]; then
-  echo -e "server.id = ${SERVER_ID//\//\\/}" > "$APP_DIR/appdata/server.id"
+  echo -e "server.id = $(escape_sed_replacement "$SERVER_ID")" > "$APP_DIR/appdata/server.id"
 fi
 
 # merge extra environment variables starting with _MP_ into mirth.properties
@@ -121,11 +130,11 @@ while read -r keyvalue; do
 			LINE_COUNT=`grep "^${ACTUAL_KEY}" "$APP_DIR/conf/mirth.properties" | wc -l`
 			if [ $LINE_COUNT -lt 1 ]; then
 				# echo "key ${ACTUAL_KEY} not found in mirth.properties, appending. Value = ${VALUE}"
-				echo -e "\n${ACTUAL_KEY} = ${VALUE//\//\\/}" >> "$APP_DIR/conf/mirth.properties"
+				echo -e "\n${ACTUAL_KEY} = $(escape_sed_replacement "$VALUE")" >> "$APP_DIR/conf/mirth.properties"
 			else # otherwise key exists, overwrite it
 				# echo "key ${ACTUAL_KEY} exists, overwriting. Value = ${VALUE}"
 				ESCAPED_KEY="${ACTUAL_KEY//./\\.}"
-				sed -i "s/^${ESCAPED_KEY}\s*=\s*.*\$/${ACTUAL_KEY} = ${VALUE//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+				sed -i "s/^${ESCAPED_KEY}\s*=\s*.*\$/${ACTUAL_KEY} = $(escape_sed_replacement "$VALUE")/" "$APP_DIR/conf/mirth.properties"
 			fi
 		fi
 	fi
@@ -164,11 +173,11 @@ if [ -f /run/secrets/mirth_properties ]; then
             LINE_COUNT=`grep "^${KEY}" "$APP_DIR/conf/mirth.properties" | wc -l`
             if [ $LINE_COUNT -lt 1 ]; then
                 # echo "key ${KEY} not found in mirth.properties, appending. Value = ${VALUE}"
-                echo -e "${KEY} = ${VALUE//\//\\/}" >> "$APP_DIR/conf/mirth.properties"
+                echo -e "${KEY} = $(escape_sed_replacement "$VALUE")" >> "$APP_DIR/conf/mirth.properties"
             else # otherwise key exists, overwrite it
                 # echo "key ${KEY} exists, overwriting. Value = ${VALUE}"
                 ESCAPED_KEY="${KEY//./\\.}"
-                sed -i "s/^${ESCAPED_KEY}\s*=\s*.*\$/${KEY} = ${VALUE//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+                sed -i "s/^${ESCAPED_KEY}\s*=\s*.*\$/${KEY} = $(escape_sed_replacement "$VALUE")/" "$APP_DIR/conf/mirth.properties"
             fi
         fi
     done <<< "`cat /run/secrets/mirth_properties`"

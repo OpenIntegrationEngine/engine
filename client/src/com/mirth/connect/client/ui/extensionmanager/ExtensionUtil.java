@@ -34,15 +34,14 @@ public class ExtensionUtil {
 
         try {
             URL url = new URL(address);
-            BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
-            String str = null;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                String str;
 
-            while ((str = in.readLine()) != null) {
-                builder.append(str);
-                builder.append("\r\n");
+                while ((str = in.readLine()) != null) {
+                    builder.append(str);
+                    builder.append("\r\n");
+                }
             }
-
-            in.close();
         } catch (Exception e) {
             // could not load page contents
         }

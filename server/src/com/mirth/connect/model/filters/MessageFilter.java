@@ -238,8 +238,7 @@ public class MessageFilter implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof MessageFilter
-            && equals((MessageFilter) obj);
+        return obj instanceof MessageFilter filter && equals(filter);
     }
 
     /** Check if the filter has logically identical criteria */
@@ -308,7 +307,7 @@ public class MessageFilter implements Serializable {
         }
 
         if (minMessageId != null) {
-            if (text.length() > 0) text.append(padding);
+            if (!text.isEmpty()) text.append(padding);
             text.append("Min Message Id: ");
             text.append(minMessageId);
         }
@@ -316,7 +315,7 @@ public class MessageFilter implements Serializable {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
         if (includeEmptyCriteria || startDate != null || endDate != null) {
-            if (text.length() > 0) text.append(padding);
+            if (!text.isEmpty()) text.append(padding);
             text.append("Date Range: ");
 
             if (startDate == null) {
@@ -335,7 +334,7 @@ public class MessageFilter implements Serializable {
         }
 
         if (includeEmptyCriteria || (statuses != null && !statuses.isEmpty())) {
-            if (text.length() > 0) text.append(padding);
+            if (!text.isEmpty()) text.append(padding);
             text.append("Statuses: ");
 
             if (statuses == null) {
@@ -346,47 +345,60 @@ public class MessageFilter implements Serializable {
         }
 
         if (textSearch != null) {
-            if (text.length() > 0) text.append(padding);
-            text.append("Text Search: " + textSearch);
+            if (!text.isEmpty()) text.append(padding);
+            text.append("Text Search: ");
+            text.append(textSearch);
         }
 
         if (includeEmptyCriteria
             || (includedMetaDataIds != null && !includedMetaDataIds.isEmpty())
-            || (excludedMetaDataIds != null && !excludedMetaDataIds.isEmpty())) {
+            || (excludedMetaDataIds != null && !excludedMetaDataIds.isEmpty())
+        ) {
             getConnectorSearchCriteriaText(text, padding, connectors);
         }
 
         if (originalIdLower != null || originalIdUpper != null) {
-            if (text.length() > 0) text.append(padding);
+            if (!text.isEmpty()) text.append(padding);
             text.append("Original Id: ");
             if (originalIdUpper == null) {
-                text.append("Greater than " + originalIdLower);
+                text.append("Greater than ");
+                text.append(originalIdLower);
             } else if (originalIdLower == null) {
-                text.append("Less than " + originalIdUpper);
+                text.append("Less than ");
+                text.append(originalIdUpper);
             } else {
-                text.append("Between " + originalIdLower + " and " + originalIdUpper);
+                text.append("Between ");
+                text.append(originalIdLower);
+                text.append(" and ");
+                text.append(originalIdUpper);
             }
         }
 
         if (importIdLower != null || importIdUpper != null) {
-            if (text.length() > 0) text.append(padding);
+            if (!text.isEmpty()) text.append(padding);
             text.append("Import Id: ");
             if (importIdUpper == null) {
-                text.append("Greater than " + importIdLower);
+                text.append("Greater than ");
+                text.append(importIdLower);
             } else if (importIdLower == null) {
-                text.append("Less than " + importIdUpper);
+                text.append("Less than ");
+                text.append(importIdUpper);
             } else {
-                text.append("Between " + importIdLower + " and " + importIdUpper);
+                text.append("Between ");
+                text.append(importIdLower);
+                text.append(" and ");
+                text.append(importIdUpper);
             }
         }
 
         if (serverId != null) {
-            if (text.length() > 0) text.append(padding);
-            text.append("Server Id: " + serverId);
+            if (!text.isEmpty()) text.append(padding);
+            text.append("Server Id: ");
+            text.append(serverId);
         }
 
         if (sendAttemptsLower != null || sendAttemptsUpper != null) {
-            if (text.length() > 0) text.append(padding);
+            if (!text.isEmpty()) text.append(padding);
             text.append("# of Send Attempts: ");
 
             if (sendAttemptsLower != null) {
@@ -407,19 +419,24 @@ public class MessageFilter implements Serializable {
         if (contentSearch != null) {
             for (ContentSearchElement element : contentSearch) {
                 for (String value : element.getSearches()) {
-                    if (text.length() > 0) text.append(padding);
-                    text.append(ContentType.fromCode(element.getContentCode()) + " contains \"" + value + "\"");
+                    if (!text.isEmpty()) text.append(padding);
+                    text.append(ContentType.fromCode(element.getContentCode()));
+                    text.append(" contains \"");
+                    text.append(value);
+                    text.append("\"");
                 }
             }
         }
 
         if (metaDataSearch != null) {
             for (MetaDataSearchElement element : metaDataSearch) {
-                if (text.length() > 0) text.append(padding);
-                text.append(element.getColumnName() + " " + MetaDataSearchOperator.fromString(element.getOperator()).toString() + " ");
-                if (element.getValue() instanceof Calendar) {
-                    Calendar date = (Calendar) element.getValue();
-                    text.append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date.getTime()));
+                if (!text.isEmpty()) text.append(padding);
+                text.append(element.getColumnName());
+                text.append(" ");
+                text.append(MetaDataSearchOperator.fromString(element.getOperator()).toString());
+                text.append(" ");
+                if (element.getValue() instanceof Calendar calendar) {
+                    text.append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(calendar.getTime()));
                 } else {
                     text.append(element.getValue());
                 }
@@ -430,12 +447,12 @@ public class MessageFilter implements Serializable {
         }
 
         if (Boolean.TRUE.equals(attachment)) {
-            if (text.length() > 0) text.append(padding);
+            if (!text.isEmpty()) text.append(padding);
             text.append("Has Attachment");
         }
 
         if (Boolean.TRUE.equals(error)) {
-            if (text.length() > 0) text.append(padding);
+            if (!text.isEmpty()) text.append(padding);
             text.append("Has Error");
         }
 
@@ -447,7 +464,7 @@ public class MessageFilter implements Serializable {
     }
     
     private void getConnectorSearchCriteriaText(StringBuilder text, String padding, Map<Integer, String> connectors) {
-    	if (text.length() > 0) text.append(padding);
+    	if (!text.isEmpty()) text.append(padding);
     	text.append("Connectors: ");
 
         if (includedMetaDataIds == null) {

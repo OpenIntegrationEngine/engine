@@ -45,8 +45,7 @@ public class ContentSearchElement implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof ContentSearchElement
-            && equals((ContentSearchElement) obj);
+        return obj instanceof ContentSearchElement element && equals(element);
     }
 
     /** Check if the element has logically identical criteria */

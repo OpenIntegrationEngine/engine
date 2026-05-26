@@ -65,8 +65,7 @@ public class MetaDataSearchElement implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof MetaDataSearchElement
-            && equals((MetaDataSearchElement) obj);
+        return obj instanceof MetaDataSearchElement element && equals(element);
     }
 
     /** Check if the element has logically identical criteria */

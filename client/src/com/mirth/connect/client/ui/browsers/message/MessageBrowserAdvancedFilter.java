@@ -11,8 +11,10 @@ package com.mirth.connect.client.ui.browsers.message;
 
 import java.awt.Component;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Map;
 import java.util.prefs.Preferences;
 
@@ -28,6 +30,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
+
+import java.text.SimpleDateFormat;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
@@ -540,15 +544,15 @@ public class MessageBrowserAdvancedFilter extends MirthDialog {
             }
         }
 
-        messageIdLowerField.setText((messageFilter.getMinMessageId() == null) ? "" : String.valueOf(messageFilter.getMinMessageId()));
-        messageIdUpperField.setText((messageFilter.getMaxMessageId() == null) ? "" : String.valueOf(messageFilter.getMaxMessageId()));
-        originalIdLowerField.setText((messageFilter.getOriginalIdLower() == null) ? "" : String.valueOf(messageFilter.getOriginalIdLower()));
-        originalIdUpperField.setText((messageFilter.getOriginalIdUpper() == null) ? "" : String.valueOf(messageFilter.getOriginalIdUpper()));
-        importIdLowerField.setText((messageFilter.getImportIdLower() == null) ? "" : String.valueOf(messageFilter.getImportIdLower()));
-        importIdUpperField.setText((messageFilter.getImportIdUpper() == null) ? "" : String.valueOf(messageFilter.getImportIdUpper()));
+        messageIdLowerField.setText(Objects.toString(messageFilter.getMinMessageId(), ""));
+        messageIdUpperField.setText(Objects.toString(messageFilter.getMaxMessageId(), ""));
+        originalIdLowerField.setText(Objects.toString(messageFilter.getOriginalIdLower(), ""));
+        originalIdUpperField.setText(Objects.toString(messageFilter.getOriginalIdUpper(), ""));
+        importIdLowerField.setText(Objects.toString(messageFilter.getImportIdLower(), ""));
+        importIdUpperField.setText(Objects.toString(messageFilter.getImportIdUpper(), ""));
         serverIdField.setText(StringUtils.defaultString(messageFilter.getServerId()));
         sendAttemptsLower.setValue((messageFilter.getSendAttemptsLower() == null) ? 0 : messageFilter.getSendAttemptsLower());
-        sendAttemptsUpper.setValue((messageFilter.getSendAttemptsUpper() == null) ? "" : String.valueOf(messageFilter.getSendAttemptsUpper()));
+        sendAttemptsUpper.setValue(Objects.toString(messageFilter.getSendAttemptsUpper(), ""));
         attachmentCheckBox.setSelected(Boolean.TRUE.equals(messageFilter.getAttachment()));
         errorCheckBox.setSelected(Boolean.TRUE.equals(messageFilter.getError()));
 
@@ -578,8 +582,8 @@ public class MessageBrowserAdvancedFilter extends MirthDialog {
             return "";
         }
 
-        if (value instanceof java.util.Calendar) {
-            return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(((java.util.Calendar) value).getTime());
+        if (value instanceof Calendar calendar) {
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(calendar.getTime());
         }
 
         return String.valueOf(value);

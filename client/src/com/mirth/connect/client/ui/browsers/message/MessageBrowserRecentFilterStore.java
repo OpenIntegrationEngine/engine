@@ -1,11 +1,5 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2025 Mitch Gaffigan
 
 package com.mirth.connect.client.ui.browsers.message;
 
@@ -14,7 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.mirth.connect.model.converters.ObjectXMLSerializer;
 import com.mirth.connect.model.filters.MessageFilter;
@@ -25,6 +20,7 @@ class MessageBrowserRecentFilterStore {
     // TODO: Replace with a cross-session time-limited encrypted store
     // (In-memory assuming text searches represent PHI)
     private static final Map<String, String> RECENT_FILTERS_BY_CHANNEL = new ConcurrentHashMap<>();
+    private Logger logger = LogManager.getLogger(this.getClass());
 
     private final String prefKey;
 
@@ -35,15 +31,15 @@ class MessageBrowserRecentFilterStore {
     public List<MessageFilter> getRecentFilters() {
         try {
             String serialized = RECENT_FILTERS_BY_CHANNEL.getOrDefault(prefKey, "");
-            if (StringUtils.isBlank(serialized)) return List.of();
+            if (serialized.isBlank()) return List.of();
 
-            var result = ObjectXMLSerializer.getInstance().deserialize(serialized, List.class);
+            var result = ObjectXMLSerializer.getInstance().deserializeList(serialized, MessageFilter.class);
             if (result == null) return List.of();
             
-            return (List<MessageFilter>) result;
+            return result;
         } catch (Exception e) {
             // Fail quietly if the stored filters cannot be deserialized for any reason.
-            e.printStackTrace();
+            logger.warn("Failed to deserialize recent message filters for key {}.", prefKey, e);
             return List.of();
         }
     }
@@ -53,7 +49,7 @@ class MessageBrowserRecentFilterStore {
             throw new IllegalArgumentException("Filter cannot be null");
         }
 
-        var filters = new ArrayList<MessageFilter>(getRecentFilters());
+        var filters = new ArrayList<>(getRecentFilters());
 
         // Remove then re-add to avoid duplicates
         filters.remove(filter);
@@ -67,7 +63,7 @@ class MessageBrowserRecentFilterStore {
         try {
             RECENT_FILTERS_BY_CHANNEL.put(prefKey, ObjectXMLSerializer.getInstance().serialize(filters));
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.warn("Failed to serialize recent message filters for key {}.", prefKey, e);
         }
     }
 }

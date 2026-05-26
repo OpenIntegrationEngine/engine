@@ -11,17 +11,20 @@ package com.mirth.connect.client.ui.browsers.message;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.prefs.Preferences;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.mirth.connect.client.ui.Mirth;
 import com.mirth.connect.model.converters.ObjectXMLSerializer;
 import com.mirth.connect.model.filters.MessageFilter;
 
 class MessageBrowserRecentFilterStore {
     private static final int MAX_RECENT_FILTERS = 10;
     private static final String RECENT_FILTERS_PREFERENCE_PREFIX = "messageBrowserRecentFilters.";
+    // TODO: Replace with a cross-session time-limited encrypted store
+    // (In-memory assuming text searches represent PHI)
+    private static final Map<String, String> RECENT_FILTERS_BY_CHANNEL = new ConcurrentHashMap<>();
 
     private final String prefKey;
 
@@ -31,7 +34,7 @@ class MessageBrowserRecentFilterStore {
 
     public List<MessageFilter> getRecentFilters() {
         try {
-            String serialized = Preferences.userNodeForPackage(Mirth.class).get(prefKey, "");
+            String serialized = RECENT_FILTERS_BY_CHANNEL.getOrDefault(prefKey, "");
             if (StringUtils.isBlank(serialized)) return List.of();
 
             var result = ObjectXMLSerializer.getInstance().deserialize(serialized, List.class);
@@ -62,8 +65,7 @@ class MessageBrowserRecentFilterStore {
         }
 
         try {
-            var preferences = Preferences.userNodeForPackage(Mirth.class);
-            preferences.put(prefKey, ObjectXMLSerializer.getInstance().serialize(filters));
+            RECENT_FILTERS_BY_CHANNEL.put(prefKey, ObjectXMLSerializer.getInstance().serialize(filters));
         } catch (Exception e) {
             e.printStackTrace();
         }

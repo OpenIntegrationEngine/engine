@@ -498,13 +498,14 @@ public class DashboardTreeTableModel extends SortableTreeTableModel {
     }
 
     private void updateChannelNodes(Map<String, DashboardStatus> statusMap, List<DashboardStatus> statuses, MutableTreeTableNode parent) {
+        Set<DashboardStatus> matched = new HashSet<>();
         for (int i = 0; i < parent.getChildCount(); i++) {
             AbstractDashboardTableNode node = (AbstractDashboardTableNode) parent.getChildAt(i);
 
             if (statusMap.containsKey(node.getDashboardStatus().getKey())) {
                 // Remove channels that do exist from the list of statuses so they will not be added again later.
                 DashboardStatus status = statusMap.get(node.getDashboardStatus().getKey());
-                statuses.remove(status);
+                matched.add(status);
                 // Update the channel status
                 node.setDashboardStatus(status);
                 modelSupport.firePathChanged(new TreePath(getPathToRoot(node)));
@@ -513,6 +514,7 @@ public class DashboardTreeTableModel extends SortableTreeTableModel {
                 updateConnector(statusMap, node);
             }
         }
+        statuses.removeAll(matched);
     }
 
     private void removeLingeringChannelNodes(List<DashboardStatus> statuses, MutableTreeTableNode root) {

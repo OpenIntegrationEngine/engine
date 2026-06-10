@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: Saga IT, LLC
 
 package com.mirth.connect.connectors.dimse;
 
@@ -13,9 +8,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.dcm4che2.data.UID;
-import org.dcm4che2.tool.dcmrcv.MirthDcmRcv;
 
+import com.mirth.connect.connectors.dimse.dicom.DicomConstants;
+import com.mirth.connect.connectors.dimse.dicom.DicomLibraryFactory;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomReceiver;
 import com.mirth.connect.donkey.model.event.ConnectionStatusEventType;
 import com.mirth.connect.donkey.server.ConnectorTaskException;
 import com.mirth.connect.donkey.server.channel.DispatchResult;
@@ -28,12 +24,12 @@ import com.mirth.connect.server.util.TemplateValueReplacer;
 
 public class DICOMReceiver extends SourceConnector {
     private Logger logger = LogManager.getLogger(this.getClass());
-    private DICOMReceiverProperties connectorProperties;
-    private EventController eventController = ControllerFactory.getFactory().createEventController();
+    protected DICOMReceiverProperties connectorProperties;
+    protected EventController eventController = ControllerFactory.getFactory().createEventController();
     private ConfigurationController configurationController = ControllerFactory.getFactory().createConfigurationController();
     private TemplateValueReplacer replacer = new TemplateValueReplacer();
-    private DICOMConfiguration configuration = null;
-    private MirthDcmRcv dcmrcv;
+    protected DICOMConfiguration configuration = null;
+    protected OieDicomReceiver dicomReceiver;
 
     @Override
     public void onDeploy() throws ConnectorTaskException {
@@ -42,12 +38,7 @@ public class DICOMReceiver extends SourceConnector {
         // load the default configuration
         String configurationClass = configurationController.getProperty(connectorProperties.getProtocol(), "dicomConfigurationClass");
 
-        try {
-            configuration = (DICOMConfiguration) Class.forName(configurationClass).newInstance();
-        } catch (Throwable t) {
-            logger.trace("could not find custom configuration class, using default");
-            configuration = new DefaultDICOMConfiguration();
-        }
+        configuration = DicomLibraryFactory.loadConfiguration(configurationClass);
 
         try {
             configuration.configureConnectorDeploy(this);
@@ -55,7 +46,7 @@ public class DICOMReceiver extends SourceConnector {
             throw new ConnectorTaskException(e);
         }
 
-        dcmrcv = new MirthDcmRcv(this, configuration);
+        dicomReceiver = createDicomReceiver(configuration);
     }
 
     @Override
@@ -64,105 +55,123 @@ public class DICOMReceiver extends SourceConnector {
     @Override
     public void onStart() throws ConnectorTaskException {
         try {
-            dcmrcv.setPort(NumberUtils.toInt(replacer.replaceValues(connectorProperties.getListenerConnectorProperties().getPort(), getChannelId(), getChannel().getName())));
-            dcmrcv.setHostname(replacer.replaceValues(connectorProperties.getListenerConnectorProperties().getHost(), getChannelId(), getChannel().getName()));
+            dicomReceiver.setPort(NumberUtils.toInt(replacer.replaceValues(connectorProperties.getListenerConnectorProperties().getPort(), getChannelId(), getChannel().getName())));
+            dicomReceiver.setHostname(replacer.replaceValues(connectorProperties.getListenerConnectorProperties().getHost(), getChannelId(), getChannel().getName()));
 
-            String[] only_def_ts = { UID.ImplicitVRLittleEndian };
-            String[] native_le_ts = { UID.ImplicitVRLittleEndian };
-            String[] native_ts = { UID.ImplicitVRLittleEndian };
-            String[] non_retired_ts = { UID.ImplicitVRLittleEndian };
+            String[] only_def_ts = { DicomConstants.IMPLICIT_VR_LITTLE_ENDIAN };
+            String[] native_le_ts = { DicomConstants.EXPLICIT_VR_LITTLE_ENDIAN,
+                                      DicomConstants.IMPLICIT_VR_LITTLE_ENDIAN };
+            String[] native_ts = { DicomConstants.EXPLICIT_VR_LITTLE_ENDIAN,
+                                   DicomConstants.EXPLICIT_VR_BIG_ENDIAN,
+                                   DicomConstants.IMPLICIT_VR_LITTLE_ENDIAN };
+            String[] non_retired_ts = {
+                DicomConstants.JPEG_LS_LOSSLESS,
+                DicomConstants.JPEG_LOSSLESS_SV1,
+                DicomConstants.JPEG_LOSSLESS_NH14,
+                DicomConstants.JPEG_2000_LOSSLESS,
+                DicomConstants.DEFLATED_EXPLICIT_VR_LITTLE_ENDIAN,
+                DicomConstants.RLE_LOSSLESS,
+                DicomConstants.EXPLICIT_VR_LITTLE_ENDIAN,
+                DicomConstants.EXPLICIT_VR_BIG_ENDIAN,
+                DicomConstants.IMPLICIT_VR_LITTLE_ENDIAN,
+                DicomConstants.JPEG_BASELINE,
+                DicomConstants.JPEG_EXTENDED,
+                DicomConstants.JPEG_LS_NEAR_LOSSLESS,
+                DicomConstants.JPEG_2000,
+                DicomConstants.MPEG2,
+            };
 
             String destination = replacer.replaceValues(connectorProperties.getDest(), getChannelId(), getChannel().getName());
             if (StringUtils.isNotBlank(destination)) {
-                dcmrcv.setDestination(destination);
+                dicomReceiver.setDestination(destination);
             }
 
             if (connectorProperties.isDefts()) {
-                dcmrcv.setTransferSyntax(only_def_ts);
+                dicomReceiver.setTransferSyntax(only_def_ts);
             } else if (connectorProperties.isNativeData()) {
                 if (connectorProperties.isBigEndian()) {
-                    dcmrcv.setTransferSyntax(native_ts);
+                    dicomReceiver.setTransferSyntax(native_ts);
                 } else {
-                    dcmrcv.setTransferSyntax(native_le_ts);
+                    dicomReceiver.setTransferSyntax(native_le_ts);
                 }
             } else if (connectorProperties.isBigEndian()) {
-                dcmrcv.setTransferSyntax(non_retired_ts);
+                dicomReceiver.setTransferSyntax(non_retired_ts);
             }
 
             String aeTitle = replacer.replaceValues(connectorProperties.getApplicationEntity(), getChannelId(), getChannel().getName());
             aeTitle = StringUtils.defaultIfBlank(aeTitle, null);
-            dcmrcv.setAEtitle(aeTitle);
+            dicomReceiver.setAEtitle(aeTitle);
 
             //TODO Allow variables
             int value = NumberUtils.toInt(connectorProperties.getReaper());
             if (value != 10) {
-                dcmrcv.setAssociationReaperPeriod(value);
+                dicomReceiver.setAssociationReaperPeriod(value);
             }
 
             value = NumberUtils.toInt(connectorProperties.getIdleTo());
             if (value != 60) {
-                dcmrcv.setIdleTimeout(value);
+                dicomReceiver.setIdleTimeout(value);
             }
 
             value = NumberUtils.toInt(connectorProperties.getRequestTo());
             if (value != 5) {
-                dcmrcv.setRequestTimeout(value);
+                dicomReceiver.setRequestTimeout(value);
             }
 
             value = NumberUtils.toInt(connectorProperties.getReleaseTo());
             if (value != 5) {
-                dcmrcv.setReleaseTimeout(value);
+                dicomReceiver.setReleaseTimeout(value);
             }
 
             value = NumberUtils.toInt(connectorProperties.getSoCloseDelay());
             if (value != 50) {
-                dcmrcv.setSocketCloseDelay(value);
+                dicomReceiver.setSocketCloseDelay(value);
             }
 
             value = NumberUtils.toInt(connectorProperties.getRspDelay());
             if (value > 0) {
-                dcmrcv.setDimseRspDelay(value);
+                dicomReceiver.setDimseRspDelay(value);
             }
 
             value = NumberUtils.toInt(connectorProperties.getRcvpdulen());
             if (value != 16) {
-                dcmrcv.setMaxPDULengthReceive(value);
+                dicomReceiver.setMaxPDULengthReceive(value);
             }
 
             value = NumberUtils.toInt(connectorProperties.getSndpdulen());
             if (value != 16) {
-                dcmrcv.setMaxPDULengthSend(value);
+                dicomReceiver.setMaxPDULengthSend(value);
             }
 
             value = NumberUtils.toInt(connectorProperties.getSosndbuf());
             if (value > 0) {
-                dcmrcv.setSendBufferSize(value);
+                dicomReceiver.setSendBufferSize(value);
             }
 
             value = NumberUtils.toInt(connectorProperties.getSorcvbuf());
             if (value > 0) {
-                dcmrcv.setReceiveBufferSize(value);
+                dicomReceiver.setReceiveBufferSize(value);
             }
 
             value = NumberUtils.toInt(connectorProperties.getBufSize());
             if (value != 1) {
-                dcmrcv.setFileBufferSize(value);
+                dicomReceiver.setFileBufferSize(value);
             }
 
-            dcmrcv.setPackPDV(connectorProperties.isPdv1());
-            dcmrcv.setTcpNoDelay(!connectorProperties.isTcpDelay());
+            dicomReceiver.setPackPDV(connectorProperties.isPdv1());
+            dicomReceiver.setTcpNoDelay(!connectorProperties.isTcpDelay());
 
             value = NumberUtils.toInt(connectorProperties.getAsync());
             if (value > 0) {
-                dcmrcv.setMaxOpsPerformed(value);
+                dicomReceiver.setMaxOpsPerformed(value);
             }
 
-            dcmrcv.initTransferCapability();
+            dicomReceiver.initTransferCapability();
 
-            configuration.configureDcmRcv(dcmrcv, this, connectorProperties);
+            configuration.configureReceiver(dicomReceiver, this, connectorProperties);
 
             // start the DICOM port
-            dcmrcv.start();
+            dicomReceiver.start();
 
             eventController.dispatchEvent(new ConnectionStatusEvent(getChannelId(), getMetaDataId(), getSourceName(), ConnectionStatusEventType.IDLE));
         } catch (Exception e) {
@@ -173,7 +182,7 @@ public class DICOMReceiver extends SourceConnector {
     @Override
     public void onStop() throws ConnectorTaskException {
         try {
-            dcmrcv.stop();
+            dicomReceiver.stop();
         } catch (Exception e) {
             logger.error("Unable to close DICOM port.", e);
         } finally {
@@ -195,5 +204,9 @@ public class DICOMReceiver extends SourceConnector {
 
     public TemplateValueReplacer getReplacer() {
         return replacer;
+    }
+
+    protected OieDicomReceiver createDicomReceiver(DICOMConfiguration configuration) {
+        return DicomLibraryFactory.createReceiver(this, configuration);
     }
 }

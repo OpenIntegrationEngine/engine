@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: Saga IT, LLC
 
 package com.mirth.connect.connectors.dimse;
 
@@ -16,16 +11,13 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.dcm4che2.data.BasicDicomObject;
-import org.dcm4che2.data.DicomElement;
-import org.dcm4che2.data.DicomObject;
-import org.dcm4che2.data.Tag;
-import org.dcm4che2.net.Association;
-import org.dcm4che2.net.UserIdentity;
-import org.dcm4che2.tool.dcmsnd.CustomDimseRSPHandler;
-import org.dcm4che2.tool.dcmsnd.MirthDcmSnd;
-import org.dcm4che2.util.StringUtils;
 
+import com.mirth.connect.connectors.dimse.dicom.DicomConstants;
+import com.mirth.connect.connectors.dimse.dicom.DicomLibraryFactory;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomElement;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomObject;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomSender;
+import com.mirth.connect.connectors.dimse.dicom.OieDimseRspHandler;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.donkey.model.event.ConnectionStatusEventType;
 import com.mirth.connect.donkey.model.event.ErrorEventType;
@@ -59,12 +51,7 @@ public class DICOMDispatcher extends DestinationConnector {
         // load the default configuration
         String configurationClass = configurationController.getProperty(connectorProperties.getProtocol(), "dicomConfigurationClass");
 
-        try {
-            configuration = (DICOMConfiguration) Class.forName(configurationClass).newInstance();
-        } catch (Throwable t) {
-            logger.trace("could not find custom configuration class, using default");
-            configuration = new DefaultDICOMConfiguration();
-        }
+        configuration = DicomLibraryFactory.loadConfiguration(configurationClass);
 
         try {
             configuration.configureConnectorDeploy(this);
@@ -125,7 +112,7 @@ public class DICOMDispatcher extends DestinationConnector {
         Status responseStatus = Status.QUEUED;
 
         File tempFile = null;
-        MirthDcmSnd dcmSnd = getDcmSnd(configuration);
+        OieDicomSender dcmSnd = createDicomSender(configuration);
 
         try {
             tempFile = File.createTempFile("temp", "tmp");
@@ -175,15 +162,8 @@ public class DICOMDispatcher extends DestinationConnector {
                 dcmSnd.setPriority(2);
             if (dicomDispatcherProperties.getUsername() != null && !dicomDispatcherProperties.getUsername().equals("")) {
                 String username = dicomDispatcherProperties.getUsername();
-                UserIdentity userId;
-                if (dicomDispatcherProperties.getPasscode() != null && !dicomDispatcherProperties.getPasscode().equals("")) {
-                    String passcode = dicomDispatcherProperties.getPasscode();
-                    userId = new UserIdentity.UsernamePasscode(username, passcode.toCharArray());
-                } else {
-                    userId = new UserIdentity.Username(username);
-                }
-                userId.setPositiveResponseRequested(dicomDispatcherProperties.isUidnegrsp());
-                dcmSnd.setUserIdentity(userId);
+                String passcode = dicomDispatcherProperties.getPasscode();
+                dcmSnd.setUserIdentity(username, passcode, dicomDispatcherProperties.isUidnegrsp());
             }
             dcmSnd.setPackPDV(dicomDispatcherProperties.isPdv1());
 
@@ -226,7 +206,7 @@ public class DICOMDispatcher extends DestinationConnector {
             dcmSnd.setStorageCommitment(dicomDispatcherProperties.isStgcmt());
             dcmSnd.setTcpNoDelay(!dicomDispatcherProperties.isTcpDelay());
 
-            configuration.configureDcmSnd(dcmSnd, this, dicomDispatcherProperties);
+            configuration.configureSender(dcmSnd, this, dicomDispatcherProperties);
 
             dcmSnd.setOfferDefaultTransferSyntaxInSeparatePresentationContext(dicomDispatcherProperties.isTs1());
             dcmSnd.configureTransferCapability();
@@ -240,15 +220,22 @@ public class DICOMDispatcher extends DestinationConnector {
             String storageCommitmentFailureReason = "Unknown";
             if (dcmSnd.isStorageCommitment()) {
                 if (dcmSnd.commit()) {
-                    DicomObject cmtrslt = dcmSnd.waitForStgCmtResult();
-                    DicomElement failedSOPSq = cmtrslt.get(Tag.FailedSOPSequence);
-                    if (failedSOPSq != null && failedSOPSq.countItems() > 0) {
-                        storageCommitmentFailed = true;
-                        DicomObject failedSOPItem = failedSOPSq.getDicomObject();
-                        int failureReason = failedSOPItem.getInt(Tag.FailureReason);
-                        if (failureReason != 0) {
-                            storageCommitmentFailureReason = String.valueOf(failureReason);
+                    OieDicomObject cmtrslt = dcmSnd.waitForStgCmtResult();
+                    if (cmtrslt != null) {
+                        OieDicomElement failedSOPSq = cmtrslt.get(DicomConstants.TAG_FAILED_SOP_SEQUENCE);
+                        if (failedSOPSq != null && failedSOPSq.countItems() > 0) {
+                            storageCommitmentFailed = true;
+                            OieDicomObject failedSOPItem = failedSOPSq.getDicomObject();
+                            if (failedSOPItem != null) {
+                                int failureReason = failedSOPItem.getInt(DicomConstants.TAG_FAILURE_REASON);
+                                if (failureReason != 0) {
+                                    storageCommitmentFailureReason = String.valueOf(failureReason);
+                                }
+                            }
                         }
+                    } else {
+                        logger.warn("Storage commitment result was null — remote SCP may not have responded");
+                        storageCommitmentFailed = true;
                     }
                 } else {
                     storageCommitmentFailed = true;
@@ -259,16 +246,16 @@ public class DICOMDispatcher extends DestinationConnector {
 
             int status = rspHandler.getStatus();
 
-            if (status == 0) {
+            if (status == DicomConstants.STATUS_SUCCESS) {
                 responseStatusMessage = "DICOM message successfully sent";
                 responseStatus = Status.SENT;
-            } else if (status == 0xB000 || status == 0xB006 || status == 0xB007) {
+            } else if (status == DicomConstants.STATUS_WARNING_COERCION || status == DicomConstants.STATUS_WARNING_ELEMENTS_DISCARDED || status == DicomConstants.STATUS_WARNING_DATA_SET_MISMATCH) {
                 // These status codes are used in DcmSnd.onDimseRSP to flag warnings
-                responseStatusMessage = "DICOM message successfully sent with warning status code: 0x" + StringUtils.shortToHex(status);
+                responseStatusMessage = "DICOM message successfully sent with warning status code: 0x" + DicomConstants.shortToHex(status);
                 responseStatus = Status.SENT;
             } else {
                 // Any other status is considered unsuccessful
-                responseStatusMessage = "Error status code received from DICOM server: 0x" + StringUtils.shortToHex(status);
+                responseStatusMessage = "Error status code received from DICOM server: 0x" + DicomConstants.shortToHex(status);
                 responseStatus = Status.QUEUED;
             }
 
@@ -283,6 +270,11 @@ public class DICOMDispatcher extends DestinationConnector {
             responseError = ErrorMessageBuilder.buildErrorMessage(connectorProperties.getName(), e.getMessage(), null);
             eventController.dispatchEvent(new ErrorEvent(getChannelId(), getMetaDataId(), connectorMessage.getMessageId(), ErrorEventType.DESTINATION_CONNECTOR, getDestinationName(), connectorProperties.getName(), e.getMessage(), null));
         } finally {
+            try {
+                dcmSnd.close();
+            } catch (Exception e) {
+                logger.debug("Error closing DICOM sender association", e);
+            }
             dcmSnd.stop();
 
             if (tempFile != null) {
@@ -295,37 +287,37 @@ public class DICOMDispatcher extends DestinationConnector {
         return new Response(responseStatus, responseData, responseStatusMessage, responseError);
     }
 
-    protected MirthDcmSnd getDcmSnd(DICOMConfiguration configuration) {
-        return new MirthDcmSnd(configuration);
+    protected OieDicomSender createDicomSender(DICOMConfiguration configuration) {
+        return DicomLibraryFactory.createSender(configuration);
     }
 
-    protected class CommandDataDimseRSPHandler extends CustomDimseRSPHandler {
+    protected class CommandDataDimseRSPHandler implements OieDimseRspHandler {
 
-        private DicomObject cmd;
+        private OieDicomObject cmd;
 
         @Override
-        public void onDimseRSP(Association as, DicomObject cmd, DicomObject data) {
+        public void onDimseRSP(OieDicomObject cmd, OieDicomObject data) {
             this.cmd = cmd;
         }
 
         public int getStatus() {
             if (cmd != null) {
-                return cmd.getInt(Tag.Status);
+                return cmd.getInt(DicomConstants.TAG_STATUS);
             } else {
                 return 0;
             }
         }
 
         public String getCommandData() {
-            if (cmd instanceof BasicDicomObject) {
+            if (cmd != null) {
                 try {
                     DonkeyElement dicom = new DonkeyElement("<dicom/>");
 
-                    for (Iterator<DicomElement> it = ((BasicDicomObject) cmd).commandIterator(); it.hasNext();) {
-                        DicomElement element = it.next();
-                        String tag = StringUtils.shortToHex(element.tag() >> 16) + StringUtils.shortToHex(element.tag());
+                    for (Iterator<OieDicomElement> it = cmd.commandIterator(); it.hasNext();) {
+                        OieDicomElement element = it.next();
+                        String tag = DicomConstants.shortToHex(element.tag() >> 16) + DicomConstants.shortToHex(element.tag());
 
-                        DonkeyElement child = dicom.addChildElement("tag" + tag, element.getValueAsString(null, 0));
+                        DonkeyElement child = dicom.addChildElement("tag" + tag, element.getValueAsString(0));
                         child.setAttribute("len", String.valueOf(element.length()));
                         child.setAttribute("tag", tag);
                         child.setAttribute("vr", String.valueOf(element.vr()));

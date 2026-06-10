@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: Saga IT, LLC
 
 package com.mirth.connect.server.servlets;
 
@@ -22,6 +17,7 @@ import java.util.Base64;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.ServletException;
@@ -55,6 +51,11 @@ import com.mirth.connect.server.util.ResourceUtil;
 import com.mirth.connect.util.MirthSSLUtil;
 
 public class WebStartServlet extends HttpServlet {
+    // Default values for variant-filtered libraries when the corresponding
+    // property is absent from mirth.properties. Must stay in sync with
+    // MirthLauncher.VARIANT_DEFAULTS so client and server select the same variant.
+    private static final Map<String, String> LIBRARY_VARIANT_DEFAULTS = Map.of("dicom.library", "dcm4che2");
+
     private Logger logger = LogManager.getLogger(this.getClass());
     private ConfigurationController configurationController = ControllerFactory.getFactory().createConfigurationController();
     private ExtensionController extensionController = ControllerFactory.getFactory().createExtensionController();
@@ -258,7 +259,7 @@ public class WebStartServlet extends HttpServlet {
         Set<String> extensionPathsToAddToJnlp = new HashSet<String>();
 
         for (MetaData extension : allExtensions) {
-            if (extensionController.isExtensionEnabled(extension.getName()) && doesExtensionHaveClientOrSharedLibraries(extension)) {
+            if (extensionController.isExtensionEnabled(extension.getName()) && doesExtensionHaveClientOrSharedLibraries(extension, mirthProperties)) {
                 extensionPathsToAddToJnlp.add(extension.getPath());
             }
         }
@@ -306,14 +307,45 @@ public class WebStartServlet extends HttpServlet {
         }
     }
 
-    private boolean doesExtensionHaveClientOrSharedLibraries(MetaData extension) {
+    private boolean doesExtensionHaveClientOrSharedLibraries(MetaData extension, PropertiesConfiguration mirthProperties) {
         for (ExtensionLibrary lib : extension.getLibraries()) {
-            if (lib.getType().equals(ExtensionLibrary.Type.CLIENT) || lib.getType().equals(ExtensionLibrary.Type.SHARED)) {
+            if ((lib.getType().equals(ExtensionLibrary.Type.CLIENT) || lib.getType().equals(ExtensionLibrary.Type.SHARED))
+                    && shouldServeLibrary(lib.getVariant(), mirthProperties)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Determines whether an extension library should be served to the Administrator
+     * based on its {@code variant} attribute and the current mirth.properties values.
+     * Mirrors {@code MirthLauncher.shouldLoadLibrary} so the client receives the same
+     * variant the server is running.
+     *
+     * <p>Variant format: {@code "propertyKey:requiredValue"} (e.g., {@code "dicom.library:dcm4che2"}).
+     * Libraries without a variant attribute are always served.
+     */
+    static boolean shouldServeLibrary(String variant, PropertiesConfiguration mirthProperties) {
+        if (variant == null || variant.isEmpty()) {
+            return true;
+        }
+
+        int colonIdx = variant.indexOf(':');
+        if (colonIdx <= 0) {
+            return true;
+        }
+
+        String propName = variant.substring(0, colonIdx);
+        String requiredValue = variant.substring(colonIdx + 1);
+        String actual = mirthProperties != null ? mirthProperties.getString(propName) : null;
+
+        if (actual == null || actual.trim().isEmpty()) {
+            actual = LIBRARY_VARIANT_DEFAULTS.getOrDefault(propName, "");
+        }
+
+        return requiredValue.equalsIgnoreCase(actual.trim());
     }
 
     protected Document getExtensionJnlp(String extensionPath) throws Exception {
@@ -323,12 +355,15 @@ public class WebStartServlet extends HttpServlet {
         Set<String> librariesToAddToJnlp = new HashSet<String>();
         List<String> extensionsWithThePath = new ArrayList<String>();
 
+        PropertiesConfiguration mirthProperties = getMirthProperties();
+
         for (MetaData metaData : allExtensions) {
             if (metaData.getPath().equals(extensionPath)) {
                 extensionsWithThePath.add(metaData.getName());
 
                 for (ExtensionLibrary library : metaData.getLibraries()) {
-                    if (library.getType().equals(ExtensionLibrary.Type.CLIENT) || library.getType().equals(ExtensionLibrary.Type.SHARED)) {
+                    if ((library.getType().equals(ExtensionLibrary.Type.CLIENT) || library.getType().equals(ExtensionLibrary.Type.SHARED))
+                            && shouldServeLibrary(library.getVariant(), mirthProperties)) {
                         librariesToAddToJnlp.add(library.getPath());
                     }
                 }

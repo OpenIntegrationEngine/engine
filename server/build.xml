@@ -160,13 +160,39 @@
 			<include name="com/mirth/connect/connectors/dimse/DICOMReceiverProperties.class" />
 			<include name="com/mirth/connect/connectors/dimse/DICOMDispatcherProperties.class" />
 		</jar>
-		<jar destfile="${connectors.dicom}/dicom-server.jar" modificationTime="${archive.entry.date}">
+		<!-- dicom-server.jar: version-neutral connector code (always loaded) -->
+		<jar destfile="${connectors.dicom}/dicom-server.jar" basedir="${classes}" modificationTime="${archive.entry.date}">
+			<include name="com/mirth/connect/connectors/dimse/**" />
+			<exclude name="com/mirth/connect/connectors/dimse/dicom/dcm2/**" />
+			<exclude name="com/mirth/connect/connectors/dimse/dicom/dcm5/**" />
+			<exclude name="com/mirth/connect/connectors/dimse/DefaultDICOMConfiguration.class" />
+			<exclude name="com/mirth/connect/connectors/dimse/DefaultDcm5DICOMConfiguration.class" />
+			<exclude name="com/mirth/connect/connectors/dimse/DICOMReceiverProperties.class" />
+			<exclude name="com/mirth/connect/connectors/dimse/DICOMDispatcherProperties.class" />
+		</jar>
+
+		<!-- dicom-server-dcm2.jar: dcm4che2-specific code (variant-loaded when dicom.library=dcm4che2) -->
+		<!-- Bundles stock tool classes from dcm4che-tool-*.jar to avoid signed/unsigned package split.
+		     Patched classes from ${classes} listed first; duplicate="preserve" keeps first entry. -->
+		<jar destfile="${connectors.dicom}/dicom-server-dcm2.jar" modificationTime="${archive.entry.date}"
+			 duplicate="preserve">
 			<fileset dir="${classes}">
-				<include name="com/mirth/connect/connectors/dimse/**" />
+				<include name="com/mirth/connect/connectors/dimse/dicom/dcm2/**" />
+				<include name="com/mirth/connect/connectors/dimse/DefaultDICOMConfiguration.class" />
 				<include name="org/dcm4che2/**" />
-				<exclude name="com/mirth/connect/connectors/dimse/DICOMReceiverProperties.class" />
-				<exclude name="com/mirth/connect/connectors/dimse/DICOMDispatcherProperties.class" />
 			</fileset>
+			<zipfileset src="${lib.extensions}/dimse/dcm4che-tool-dcmrcv-2.0.29.jar">
+				<include name="org/dcm4che2/**" />
+			</zipfileset>
+			<zipfileset src="${lib.extensions}/dimse/dcm4che-tool-dcmsnd-2.0.29.jar">
+				<include name="org/dcm4che2/**" />
+			</zipfileset>
+		</jar>
+
+		<!-- dicom-server-dcm5.jar: dcm4che5-specific code (variant-loaded when dicom.library=dcm4che5) -->
+		<jar destfile="${connectors.dicom}/dicom-server-dcm5.jar" basedir="${classes}" modificationTime="${archive.entry.date}">
+			<include name="com/mirth/connect/connectors/dimse/dicom/dcm5/**" />
+			<include name="com/mirth/connect/connectors/dimse/DefaultDcm5DICOMConfiguration.class" />
 		</jar>
 
 		<!-- connectors.doc -->

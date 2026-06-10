@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: Saga IT, LLC
 
 package com.mirth.connect.server.launcher;
 
@@ -18,6 +13,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.jar.JarFile;
 
@@ -46,6 +42,8 @@ public class MirthLauncher {
     private static final String[] LOG4J_JAR_FILES = { "./server-lib/log4j/log4j-core-2.25.3.jar",
             "./server-lib/log4j/log4j-api-2.25.3.jar",
             "./server-lib/log4j/log4j-1.2-api-2.25.3.jar" };
+
+    static final Map<String, String> VARIANT_DEFAULTS = Map.of("dicom.library", "dcm4che2");
 
     private static String appDataDir = null;
 
@@ -112,7 +110,7 @@ public class MirthLauncher {
             String currentVersion = versionProperties.getProperty("mirth.version");
 
             addManifestToClasspath(manifest, classpathUrls);
-            addExtensionsToClasspath(classpathUrls, currentVersion);
+            addExtensionsToClasspath(classpathUrls, currentVersion, mirthProperties);
             URLClassLoader classLoader = new URLClassLoader(classpathUrls.toArray(new URL[classpathUrls.size()]), Thread.currentThread().getContextClassLoader());
             Class<?> mirthClass = classLoader.loadClass("com.mirth.connect.server.Mirth");
             Thread mirthThread = (Thread) mirthClass.newInstance();
@@ -233,7 +231,7 @@ public class MirthLauncher {
         }
     }
 
-    private static void addExtensionsToClasspath(List<URL> urls, String currentVersion) throws Exception {
+    private static void addExtensionsToClasspath(List<URL> urls, String currentVersion, Properties mirthProperties) throws Exception {
         FileFilter extensionFileFilter = new NameFileFilter(new String[] { "plugin.xml",
                 "source.xml", "destination.xml" }, IOCase.INSENSITIVE);
         FileFilter directoryFilter = FileFilterUtils.directoryFileFilter();
@@ -266,6 +264,14 @@ public class MirthLauncher {
                                 String type = libraryElement.getAttribute("type");
 
                                 if (type.equalsIgnoreCase("server") || type.equalsIgnoreCase("shared")) {
+                                    String variant = libraryElement.getAttribute("variant");
+
+                                    if (!shouldLoadLibrary(variant, mirthProperties)) {
+                                        File pathFile = new File(directory, libraryElement.getAttribute("path"));
+                                        logger.trace("skipping variant-mismatched library: " + pathFile.getAbsolutePath());
+                                        continue;
+                                    }
+
                                     File pathFile = new File(directory, libraryElement.getAttribute("path"));
 
                                     if (pathFile.exists()) {
@@ -285,6 +291,38 @@ public class MirthLauncher {
         } else {
             logger.warn("no extensions found");
         }
+    }
+
+    /**
+     * Determines whether a library should be loaded based on its variant attribute
+     * and the current mirth.properties values.
+     *
+     * <p>Variant format: {@code "propertyKey:requiredValue"} (e.g., {@code "dicom.library:dcm4che2"}).
+     * Libraries without a variant attribute are always loaded.
+     *
+     * @param variant the variant attribute value (may be null or empty)
+     * @param mirthProperties the loaded mirth.properties
+     * @return true if the library should be loaded
+     */
+    static boolean shouldLoadLibrary(String variant, Properties mirthProperties) {
+        if (variant == null || variant.isEmpty()) {
+            return true;
+        }
+
+        int colonIdx = variant.indexOf(':');
+        if (colonIdx <= 0) {
+            return true;
+        }
+
+        String propName = variant.substring(0, colonIdx);
+        String requiredValue = variant.substring(colonIdx + 1);
+        String actual = mirthProperties.getProperty(propName);
+
+        if (actual == null || actual.trim().isEmpty()) {
+            actual = VARIANT_DEFAULTS.getOrDefault(propName, "");
+        }
+
+        return requiredValue.equalsIgnoreCase(actual.trim());
     }
 
     private static boolean isExtensionCompatible(String extensionVersion, String currentVersion) {

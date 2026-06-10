@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: dcm4che project
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: Saga IT, LLC
+
 package org.dcm4che2.tool.dcmrcv;
 
 import java.io.BufferedOutputStream;
@@ -52,7 +57,11 @@ public class MirthDcmRcv extends DcmRcv {
 
     @Override
     protected NetworkConnection createNetworkConnection() {
-        return dicomConfiguration.createNetworkConnection();
+        Object custom = dicomConfiguration.createNetworkConnection();
+        if (custom instanceof NetworkConnection) {
+            return (NetworkConnection) custom;
+        }
+        return new NetworkConnection();
     }
 
     @Override

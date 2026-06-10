@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: Saga IT, LLC
 
 package com.mirth.connect.server.util;
 
@@ -31,11 +26,10 @@ import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.dcm4che2.data.DicomElement;
-import org.dcm4che2.data.DicomObject;
-import org.dcm4che2.data.Tag;
-import org.dcm4che2.data.VR;
 
+import com.mirth.connect.connectors.dimse.dicom.DicomConstants;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomElement;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomObject;
 import com.mirth.connect.donkey.model.message.ConnectorMessage;
 import com.mirth.connect.donkey.model.message.MessageSerializerException;
 import com.mirth.connect.donkey.model.message.attachment.Attachment;
@@ -134,12 +128,12 @@ public class DICOMMessageUtil {
 
     public static byte[] mergeHeaderPixelData(byte[] header, List<Attachment> attachments) throws IOException {
         // 1. read in header
-        DicomObject dcmObj = DICOMConverter.byteArrayToDicomObject(header, false);
+        OieDicomObject dcmObj = DICOMConverter.byteArrayToDicomObject(header, false);
 
         // 2. Add pixel data to DicomObject
         if (attachments != null && !attachments.isEmpty()) {
             if (attachments.size() > 1) {
-                DicomElement dicomElement = dcmObj.putFragments(Tag.PixelData, VR.OB, dcmObj.bigEndian(), attachments.size());
+                OieDicomElement dicomElement = dcmObj.putFragments(DicomConstants.TAG_PIXEL_DATA, DicomConstants.VR_OB, dcmObj.bigEndian(), attachments.size());
 
                 for (Attachment attachment : attachments) {
                     dicomElement.addFragment(attachment.getContent());
@@ -147,12 +141,14 @@ public class DICOMMessageUtil {
 
                 dcmObj.add(dicomElement);
             } else {
-                dcmObj.putBytes(Tag.PixelData, VR.OB, attachments.get(0).getContent());
+                dcmObj.putBytes(DicomConstants.TAG_PIXEL_DATA, DicomConstants.VR_OB, attachments.get(0).getContent());
             }
         }
 
         // Memory Optimization. Free the references to the data in the attachments list.
-        attachments.clear();
+        if (attachments != null) {
+            attachments.clear();
+        }
 
         return DICOMConverter.dicomObjectToByteArray(dcmObj);
     }

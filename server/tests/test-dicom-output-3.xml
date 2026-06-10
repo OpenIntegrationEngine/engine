@@ -1,0 +1,9 @@
+<dicom>
+        
+    <tag00080060 len="2" tag="00080060" vr="CS">US</tag00080060>
+        
+    <tag00100010 len="10" tag="00100010" vr="PN">Brown^Bob</tag00100010>
+        
+    <tag00100020 len="6" tag="00100020" vr="LO">PAT003</tag00100020>
+    
+</dicom>

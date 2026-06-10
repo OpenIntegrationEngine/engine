@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: Saga IT, LLC
 
 package com.mirth.connect.connectors.dimse;
 
@@ -15,49 +10,58 @@ import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.dcm4che2.tool.dcmrcv.MirthDcmRcv;
-import org.dcm4che2.tool.dcmsnd.MirthDcmSnd;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import com.mirth.connect.connectors.dimse.dicom.OieDicomReceiver;
+import com.mirth.connect.connectors.dimse.dicom.OieDicomSender;
 import com.mirth.connect.util.MirthSSLUtil;
 
 public class DICOMConfigurationUtil {
 
-    public static void configureDcmRcv(MirthDcmRcv dcmrcv, DICOMReceiver connector, DICOMReceiverProperties connectorProperties, String[] protocols) throws Exception {
+    private static final Logger logger = LogManager.getLogger(DICOMConfigurationUtil.class);
+
+    public static void configureReceiver(OieDicomReceiver receiver, DICOMReceiver connector, DICOMReceiverProperties connectorProperties, String[] protocols) throws Exception {
         if (!StringUtils.equals(connectorProperties.getTls(), "notls")) {
             if (connectorProperties.getTls().equals("without")) {
-                dcmrcv.setTlsWithoutEncyrption();
+                logger.warn("DICOM receiver configured with TLS NULL encryption (SSL_RSA_WITH_NULL_SHA). "
+                        + "This provides authentication only — data is sent in cleartext. "
+                        + "Consider using AES encryption instead.");
+                receiver.setTlsWithoutEncryption();
             } else if (connectorProperties.getTls().equals("3des")) {
-                dcmrcv.setTls3DES_EDE_CBC();
+                logger.warn("DICOM receiver configured with deprecated 3DES cipher suite. "
+                        + "Consider using AES encryption instead.");
+                receiver.setTls3DES_EDE_CBC();
             } else if (connectorProperties.getTls().equals("aes")) {
-                dcmrcv.setTlsAES_128_CBC();
+                receiver.setTlsAES_128_CBC();
             }
 
             String trustStore = connector.getReplacer().replaceValues(connectorProperties.getTrustStore(), connector.getChannelId(), connector.getChannel().getName());
             if (StringUtils.isNotBlank(trustStore)) {
-                dcmrcv.setTrustStoreURL(trustStore);
+                receiver.setTrustStoreURL(trustStore);
             }
 
             String trustStorePW = connector.getReplacer().replaceValues(connectorProperties.getTrustStorePW(), connector.getChannelId(), connector.getChannel().getName());
             if (StringUtils.isNotBlank(trustStorePW)) {
-                dcmrcv.setTrustStorePassword(trustStorePW);
+                receiver.setTrustStorePassword(trustStorePW);
             }
 
             String keyPW = connector.getReplacer().replaceValues(connectorProperties.getKeyPW(), connector.getChannelId(), connector.getChannel().getName());
             if (StringUtils.isNotBlank(keyPW)) {
-                dcmrcv.setKeyPassword(keyPW);
+                receiver.setKeyPassword(keyPW);
             }
 
             String keyStore = connector.getReplacer().replaceValues(connectorProperties.getKeyStore(), connector.getChannelId(), connector.getChannel().getName());
             if (StringUtils.isNotBlank(keyStore)) {
-                dcmrcv.setKeyStoreURL(keyStore);
+                receiver.setKeyStoreURL(keyStore);
             }
 
             String keyStorePW = connector.getReplacer().replaceValues(connectorProperties.getKeyStorePW(), connector.getChannelId(), connector.getChannel().getName());
             if (StringUtils.isNotBlank(keyStorePW)) {
-                dcmrcv.setKeyStorePassword(keyStorePW);
+                receiver.setKeyStorePassword(keyStorePW);
             }
 
-            dcmrcv.setTlsNeedClientAuth(connectorProperties.isNoClientAuth());
+            receiver.setTlsNeedClientAuth(connectorProperties.isNoClientAuth());
 
             protocols = ArrayUtils.clone(protocols);
 
@@ -73,31 +77,38 @@ public class DICOMConfigurationUtil {
                 protocols = protocolsList.toArray(new String[protocolsList.size()]);
             }
 
-            dcmrcv.setTlsProtocol(MirthSSLUtil.getEnabledHttpsProtocols(protocols));
+            receiver.setTlsProtocol(MirthSSLUtil.getEnabledHttpsProtocols(protocols));
 
-            dcmrcv.initTLS();
+            receiver.initTLS();
         }
     }
 
-    public static void configureDcmSnd(MirthDcmSnd dcmsnd, DICOMDispatcher connector, DICOMDispatcherProperties connectorProperties, String[] protocols) throws Exception {
+    public static void configureSender(OieDicomSender sender, DICOMDispatcher connector, DICOMDispatcherProperties connectorProperties, String[] protocols) throws Exception {
         if (connectorProperties.getTls() != null && !connectorProperties.getTls().equals("notls")) {
-            if (connectorProperties.getTls().equals("without"))
-                dcmsnd.setTlsWithoutEncyrption();
-            if (connectorProperties.getTls().equals("3des"))
-                dcmsnd.setTls3DES_EDE_CBC();
+            if (connectorProperties.getTls().equals("without")) {
+                logger.warn("DICOM sender configured with TLS NULL encryption (SSL_RSA_WITH_NULL_SHA). "
+                        + "This provides authentication only — data is sent in cleartext. "
+                        + "Consider using AES encryption instead.");
+                sender.setTlsWithoutEncryption();
+            }
+            if (connectorProperties.getTls().equals("3des")) {
+                logger.warn("DICOM sender configured with deprecated 3DES cipher suite. "
+                        + "Consider using AES encryption instead.");
+                sender.setTls3DES_EDE_CBC();
+            }
             if (connectorProperties.getTls().equals("aes"))
-                dcmsnd.setTlsAES_128_CBC();
-            if (connectorProperties.getTrustStore() != null && !connectorProperties.getTrustStore().equals(""))
-                dcmsnd.setTrustStoreURL(connectorProperties.getTrustStore());
-            if (connectorProperties.getTrustStorePW() != null && !connectorProperties.getTrustStorePW().equals(""))
-                dcmsnd.setTrustStorePassword(connectorProperties.getTrustStorePW());
-            if (connectorProperties.getKeyPW() != null && !connectorProperties.getKeyPW().equals(""))
-                dcmsnd.setKeyPassword(connectorProperties.getKeyPW());
-            if (connectorProperties.getKeyStore() != null && !connectorProperties.getKeyStore().equals(""))
-                dcmsnd.setKeyStoreURL(connectorProperties.getKeyStore());
-            if (connectorProperties.getKeyStorePW() != null && !connectorProperties.getKeyStorePW().equals(""))
-                dcmsnd.setKeyStorePassword(connectorProperties.getKeyStorePW());
-            dcmsnd.setTlsNeedClientAuth(connectorProperties.isNoClientAuth());
+                sender.setTlsAES_128_CBC();
+            if (StringUtils.isNotBlank(connectorProperties.getTrustStore()))
+                sender.setTrustStoreURL(connectorProperties.getTrustStore());
+            if (StringUtils.isNotBlank(connectorProperties.getTrustStorePW()))
+                sender.setTrustStorePassword(connectorProperties.getTrustStorePW());
+            if (StringUtils.isNotBlank(connectorProperties.getKeyPW()))
+                sender.setKeyPassword(connectorProperties.getKeyPW());
+            if (StringUtils.isNotBlank(connectorProperties.getKeyStore()))
+                sender.setKeyStoreURL(connectorProperties.getKeyStore());
+            if (StringUtils.isNotBlank(connectorProperties.getKeyStorePW()))
+                sender.setKeyStorePassword(connectorProperties.getKeyStorePW());
+            sender.setTlsNeedClientAuth(connectorProperties.isNoClientAuth());
 
             protocols = ArrayUtils.clone(protocols);
 
@@ -115,9 +126,9 @@ public class DICOMConfigurationUtil {
 
             protocols = MirthSSLUtil.getEnabledHttpsProtocols(protocols);
 
-            dcmsnd.setTlsProtocol(protocols);
+            sender.setTlsProtocol(protocols);
 
-            dcmsnd.initTLS();
+            sender.initTLS();
         }
     }
 }

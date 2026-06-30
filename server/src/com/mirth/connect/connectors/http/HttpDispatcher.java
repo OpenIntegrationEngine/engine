@@ -320,8 +320,7 @@ public class HttpDispatcher extends DestinationConnector {
                     .setSocketTimeout(socketTimeout)
                     .setStaleConnectionCheckEnabled(true);
             if (httpDispatcherProperties.isOverrideLocalBinding()) {
-                final InetAddress localAddress = InetAddress.getByName(getLocalAddress());
-                requestConfigBuilder.setLocalAddress(localAddress);
+                requestConfigBuilder.setLocalAddress(InetAddress.getByName(TcpUtil.getFixedHost(httpDispatcherProperties.getLocalAddress())));
             }
             context.setRequestConfig(requestConfigBuilder.build());
 
@@ -719,9 +718,6 @@ public class HttpDispatcher extends DestinationConnector {
         }
     }
 
-    private String getLocalAddress() {
-        return TcpUtil.getFixedHost(replacer.replaceValues(getConnectorProperties().getLocalAddress(), getChannelId(), getChannel().getName()));
-    }
     @Override
     public HttpDispatcherProperties getConnectorProperties() {
         return (HttpDispatcherProperties) super.getConnectorProperties();

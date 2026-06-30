@@ -1,8 +1,8 @@
 /*
  * Copyright (c) Mirth Corporation. All rights reserved.
- * 
+ *
  * http://www.mirthcorp.com
- * 
+ *
  * The software in this package is published under the terms of the MPL license a copy of which has
  * been included with this distribution in the LICENSE.txt file.
  */
@@ -130,7 +130,7 @@ public class HttpSender extends ConnectorSettingsPanel {
                 checkContentEnabled();
             }
         });
-        
+
         initToolTips();
         initLayout();
     }
@@ -148,6 +148,8 @@ public class HttpSender extends ConnectorSettingsPanel {
         properties.setUseProxyServer(useProxyServerYesRadio.isSelected());
         properties.setProxyAddress(proxyAddressField.getText());
         properties.setProxyPort(proxyPortField.getText());
+        properties.setOverrideLocalBinding(overrideLocalBindingYesRadio.isSelected());
+        properties.setLocalAddress(localAddressField.getText());
 
         if (postButton.isSelected()) {
             properties.setMethod("post");
@@ -190,7 +192,7 @@ public class HttpSender extends ConnectorSettingsPanel {
         properties.setParametersMap(getProperties(queryParametersTable));
         properties.setUseParametersVariable(useQueryParamsVariableRadio.isSelected());
         properties.setParametersVariable(queryParamsVariableField.getText());
-        
+
         properties.setHeadersMap(getProperties(headersTable));
         properties.setUseHeadersVariable(useHeadersVariableRadio.isSelected());
         properties.setHeadersVariable(headersVariableField.getText());
@@ -218,6 +220,15 @@ public class HttpSender extends ConnectorSettingsPanel {
 
         proxyAddressField.setText(props.getProxyAddress());
         proxyPortField.setText(props.getProxyPort());
+
+        if (props.isOverrideLocalBinding()) {
+            overrideLocalBindingYesRadio.setSelected(true);
+            overrideLocalBindingYesRadioActionPerformed(null);
+        } else {
+            overrideLocalBindingNoRadio.setSelected(true);
+            overrideLocalBindingNoRadioActionPerformed(null);
+        }
+        localAddressField.setText(props.getLocalAddress());
 
         if (props.getMethod().equalsIgnoreCase("post")) {
             postButton.setSelected(true);
@@ -656,6 +667,15 @@ public class HttpSender extends ConnectorSettingsPanel {
             }
         }
 
+        if (props.isOverrideLocalBinding()) {
+            if (props.getLocalAddress().length() <= 3) {
+                valid = false;
+                if (highlight) {
+                    localAddressField.setBackground(UIConstants.INVALID_COLOR);
+                }
+            }
+        }
+
         return valid;
     }
 
@@ -670,6 +690,7 @@ public class HttpSender extends ConnectorSettingsPanel {
         headersVariableField.setBackground(null);
         contentTypeField.setBackground(null);
         contentTextArea.setBackground(null);
+        localAddressField.setBackground(null);
     }
 
     @Override
@@ -889,6 +910,12 @@ public class HttpSender extends ConnectorSettingsPanel {
         responseBinaryMimeTypesField = new MirthTextField();
         responseBinaryMimeTypesRegexCheckBox = new MirthCheckBox();
         patchButton = new MirthRadioButton();
+        overrideLocalBindingLabel = new JLabel();
+        overrideLocalBindingButtonGroup = new ButtonGroup();
+        overrideLocalBindingYesRadio = new MirthRadioButton();
+        overrideLocalBindingNoRadio = new MirthRadioButton();
+        localAddressLabel = new JLabel();
+        localAddressField = new MirthIconTextField();
 
         setBackground(new Color(255, 255, 255));
         setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
@@ -926,13 +953,13 @@ public class HttpSender extends ConnectorSettingsPanel {
         useQueryParamsTableRadio.addActionListener(event -> {
             useQueryParamsVariableFieldsEnabled(false);
         });
-        
+
         useQueryParamsVariableRadio.setText("Use Map:");
         useQueryParamsVariableRadio.setBackground(new Color(255, 255, 255));
         useQueryParamsVariableRadio.addActionListener(event -> {
             useQueryParamsVariableFieldsEnabled(true);
         });
-        
+
         ButtonGroup queryParamsButtonGroup = new ButtonGroup();
         queryParamsButtonGroup.add(useQueryParamsTableRadio);
         queryParamsButtonGroup.add(useQueryParamsVariableRadio);
@@ -989,17 +1016,17 @@ public class HttpSender extends ConnectorSettingsPanel {
         useHeadersTableRadio.addActionListener(event -> {
             useHeadersVariableFieldsEnabled(false);
         });
-        
+
         useHeadersVariableRadio.setText("Use Map:");
         useHeadersVariableRadio.setBackground(new Color(255, 255, 255));
         useHeadersVariableRadio.addActionListener(event -> {
             useHeadersVariableFieldsEnabled(true);
         });
-        
+
         ButtonGroup headersButtonGroup = new ButtonGroup();
         headersButtonGroup.add(useHeadersTableRadio);
         headersButtonGroup.add(useHeadersVariableRadio);
-        
+
         responseContentLabel.setText("Response Content:");
 
         responseContentXmlBodyRadio.setBackground(new Color(255, 255, 255));
@@ -1203,8 +1230,38 @@ public class HttpSender extends ConnectorSettingsPanel {
                 patchButtonActionPerformed(evt);
             }
         });
+
+        localAddressLabel.setText("Local Address:");
+
+        localAddressField.setToolTipText("<html>The local address that the client socket will be bound to, if Override Local Binding is set to Yes.<br/></html>");
+
+        overrideLocalBindingLabel.setText("Override Local Binding:");
+
+        overrideLocalBindingYesRadio.setBackground(new Color(255, 255, 255));
+        overrideLocalBindingYesRadio.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        overrideLocalBindingButtonGroup.add(overrideLocalBindingYesRadio);
+        overrideLocalBindingYesRadio.setText("Yes");
+        overrideLocalBindingYesRadio.setToolTipText("<html>Select Yes to override the local address that the client socket will be bound to.<br/>Select No to use the default values of 0.0.0.0:0.<br/></html>");
+        overrideLocalBindingYesRadio.setMargin(new Insets(0, 0, 0, 0));
+        overrideLocalBindingYesRadio.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                overrideLocalBindingYesRadioActionPerformed(evt);
+            }
+        });
+
+        overrideLocalBindingNoRadio.setBackground(new Color(255, 255, 255));
+        overrideLocalBindingNoRadio.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        overrideLocalBindingButtonGroup.add(overrideLocalBindingNoRadio);
+        overrideLocalBindingNoRadio.setText("No");
+        overrideLocalBindingNoRadio.setToolTipText("<html>Select Yes to override the local address that the client socket will be bound to.<br/>Select No to use the default values of 0.0.0.0:0.<br/></html>");
+        overrideLocalBindingNoRadio.setMargin(new Insets(0, 0, 0, 0));
+        overrideLocalBindingNoRadio.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                overrideLocalBindingNoRadioActionPerformed(evt);
+            }
+        });
     }
-    
+
     private void initToolTips() {
         urlField.setToolTipText("Enter the URL of the HTTP server to send each message to.");
         queryParametersTable.setToolTipText("Query parameters are encoded as x=y pairs as part of the request URL, separated from it by a '?' and from each other by an '&'.");
@@ -1243,15 +1300,15 @@ public class HttpSender extends ConnectorSettingsPanel {
         patchButton.setToolTipText("Selects the HTTP operation used to send each message.");
         useQueryParamsTableRadio.setToolTipText("<html>The table below will be used to populate query parameters.</html>");
         useQueryParamsVariableRadio.setToolTipText("<html>The Java map specified by the following variable will be used to populate query parameters.<br/>The map must have String keys and either String or List&lt;String&gt; values.</html>");
-        queryParamsVariableField.setToolTipText("<html>The variable of a Java map to use to populate query parameters.<br/>The map must have String keys and either String or List&lt;String&gt; values.</html>");  
+        queryParamsVariableField.setToolTipText("<html>The variable of a Java map to use to populate query parameters.<br/>The map must have String keys and either String or List&lt;String&gt; values.</html>");
         useHeadersTableRadio.setToolTipText("<html>The table below will be used to populate headers.</html>");
         useHeadersVariableRadio.setToolTipText("<html>The Java map specified by the following variable will be used to populate headers.<br/>The map must have String keys and either String or List&lt;String&gt; values.</html>");
         headersVariableField.setToolTipText("<html>The variable of a Java map to use to populate headers.<br/>The map must have String keys and either String or List&lt;String&gt; values.</html>");
     }
-    
+
     private void initLayout() {
         setLayout(new MigLayout("insets 0 8 0 8, novisualpadding, hidemode 3, gap 12 6", "[][]6[]", "[][][][][][][][][][][][][][][][][grow][][grow][][][][grow]"));
-        
+
         add(urlLabel, "right");
         add(urlField, "w 312!, sx, split 2");
         add(testConnection, "gapbefore 6");
@@ -1262,6 +1319,11 @@ public class HttpSender extends ConnectorSettingsPanel {
         add(proxyAddressField, "w 202!, sx");
         add(proxyPortLabel, "newline, right");
         add(proxyPortField, "w 56!, sx");
+        add(overrideLocalBindingLabel, "newline, right");
+        add(overrideLocalBindingYesRadio, "split 2");
+        add(overrideLocalBindingNoRadio);
+        add(localAddressLabel, "newline, right");
+        add(localAddressField, "w 200!, sx");
         add(methodLabel, "newline, right");
         add(postButton, "split 5");
         add(getButton);
@@ -1476,21 +1538,31 @@ public class HttpSender extends ConnectorSettingsPanel {
             charsetEncodingCombobox.setEnabled(true);
         }
     }
-    
+
     private void useHeadersVariableFieldsEnabled(boolean useVariable) {
         headersVariableField.setEnabled(useVariable);
         headersTable.setEnabled(!useVariable);
         headersNewButton.setEnabled(!useVariable);
         headersDeleteButton.setEnabled(!useVariable && headersTable.getSelectedRow() > -1);
     }
-    
+
     private void useQueryParamsVariableFieldsEnabled(boolean useVariable) {
         queryParamsVariableField.setEnabled(useVariable);
         queryParametersTable.setEnabled(!useVariable);
         queryParametersNewButton.setEnabled(!useVariable);
         queryParametersDeleteButton.setEnabled(!useVariable && queryParametersTable.getSelectedRow() > -1);
     }
-    
+
+    private void overrideLocalBindingYesRadioActionPerformed(ActionEvent evt) {
+        localAddressField.setEnabled(true);
+        localAddressLabel.setEnabled(true);
+    }
+
+    private void overrideLocalBindingNoRadioActionPerformed(ActionEvent evt) {
+        localAddressField.setEnabled(false);
+        localAddressLabel.setEnabled(false);
+    }
+
     private ButtonGroup authenticationButtonGroup;
     private JLabel authenticationLabel;
     private MirthRadioButton authenticationNoRadio;
@@ -1570,4 +1642,10 @@ public class HttpSender extends ConnectorSettingsPanel {
     private MirthRadioButton useProxyServerYesRadio;
     private MirthTextField usernameField;
     private JLabel usernameLabel;
+    private JLabel overrideLocalBindingLabel;
+    private ButtonGroup overrideLocalBindingButtonGroup;
+    private MirthRadioButton overrideLocalBindingNoRadio;
+    private MirthRadioButton overrideLocalBindingYesRadio;
+    private JLabel localAddressLabel;
+    private MirthIconTextField localAddressField;
 }

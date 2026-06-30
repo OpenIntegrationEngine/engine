@@ -1,8 +1,8 @@
 /*
  * Copyright (c) Mirth Corporation. All rights reserved.
- * 
+ *
  * http://www.mirthcorp.com
- * 
+ *
  * The software in this package is published under the terms of the MPL license a copy of which has
  * been included with this distribution in the LICENSE.txt file.
  */
@@ -10,6 +10,7 @@
 package com.mirth.connect.connectors.http;
 
 import java.io.File;
+import java.net.InetAddress;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -27,6 +28,8 @@ import javax.mail.internet.MimeMultipart;
 import javax.mail.util.ByteArrayDataSource;
 
 import com.mirth.connect.client.core.BrandingConstants;
+import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
+import com.mirth.connect.util.TcpUtil;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.fileupload.FileUploadBase;
@@ -192,6 +195,7 @@ public class HttpDispatcher extends DestinationConnector {
         httpDispatcherProperties.setHost(replacer.replaceValues(httpDispatcherProperties.getHost(), connectorMessage));
         httpDispatcherProperties.setProxyAddress(replacer.replaceValues(httpDispatcherProperties.getProxyAddress(), connectorMessage));
         httpDispatcherProperties.setProxyPort(replacer.replaceValues(httpDispatcherProperties.getProxyPort(), connectorMessage));
+        httpDispatcherProperties.setLocalAddress(replacer.replaceValues(httpDispatcherProperties.getLocalAddress(), connectorMessage));
         httpDispatcherProperties.setResponseBinaryMimeTypes(replacer.replaceValues(httpDispatcherProperties.getResponseBinaryMimeTypes(), connectorMessage));
         httpDispatcherProperties.setHeadersMap(replacer.replaceKeysAndValuesInMap(httpDispatcherProperties.getHeadersMap(), connectorMessage));
         httpDispatcherProperties.setHeadersVariable(replacer.replaceValues(httpDispatcherProperties.getHeadersVariable(), connectorMessage));
@@ -258,9 +262,9 @@ public class HttpDispatcher extends DestinationConnector {
 
             /*
              * If a charset is set in the Content Type field, use that.
-             * 
+             *
              * If the charset is NONE, keep it as null.
-             * 
+             *
              * Otherwise, use the charset from the Character Encoding drop-down menu.
              */
             Charset charset = null;
@@ -312,8 +316,15 @@ public class HttpDispatcher extends DestinationConnector {
                 logger.debug("using authentication with credentials: " + credentials);
             }
 
-            RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(socketTimeout).setSocketTimeout(socketTimeout).setStaleConnectionCheckEnabled(true).build();
-            context.setRequestConfig(requestConfig);
+            final RequestConfig.Builder requestConfigBuilder = RequestConfig.custom()
+                    .setConnectTimeout(socketTimeout)
+                    .setSocketTimeout(socketTimeout)
+                    .setStaleConnectionCheckEnabled(true);
+            if (httpDispatcherProperties.isOverrideLocalBinding()) {
+                final InetAddress localAddress = InetAddress.getByName(getLocalAddress());
+                requestConfigBuilder.setLocalAddress(localAddress);
+            }
+            context.setRequestConfig(requestConfigBuilder.build());
 
             // Set proxy information
             if (httpDispatcherProperties.isUseProxyServer()) {
@@ -444,7 +455,7 @@ public class HttpDispatcher extends DestinationConnector {
 
         return new Response(responseStatus, responseData, responseStatusMessage, responseError, validateResponse);
     }
-    
+
     protected boolean shouldParseMultipart(HttpDispatcherProperties httpDispatcherProperties, String mimeType) {
     	// Only parse multipart if XML Body is selected and Parse Multipart is enabled
     	return httpDispatcherProperties.isResponseXmlBody() && httpDispatcherProperties.isResponseParseMultipart() && mimeType.startsWith(FileUploadBase.MULTIPART);
@@ -709,6 +720,9 @@ public class HttpDispatcher extends DestinationConnector {
         }
     }
 
+    private String getLocalAddress() {
+        return TcpUtil.getFixedHost(replacer.replaceValues(getConnectorProperties().getLocalAddress(), getChannelId(), getChannel().getName()));
+    }
     @Override
     public HttpDispatcherProperties getConnectorProperties() {
         return (HttpDispatcherProperties) super.getConnectorProperties();

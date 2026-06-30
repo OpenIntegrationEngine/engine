@@ -1,8 +1,8 @@
 /*
  * Copyright (c) Mirth Corporation. All rights reserved.
- * 
+ *
  * http://www.mirthcorp.com
- * 
+ *
  * The software in this package is published under the terms of the MPL license a copy of which has
  * been included with this distribution in the LICENSE.txt file.
  */
@@ -32,6 +32,8 @@ public class HttpDispatcherProperties extends ConnectorProperties implements Des
     private boolean useProxyServer;
     private String proxyAddress;
     private String proxyPort;
+    private boolean overrideLocalBinding;
+    private String localAddress;
     private String method;
     private Map<String, List<String>> headers;
     private Map<String, List<String>> parameters;
@@ -63,6 +65,8 @@ public class HttpDispatcherProperties extends ConnectorProperties implements Des
         this.useProxyServer = false;
         this.proxyAddress = "";
         this.proxyPort = "";
+        this.overrideLocalBinding = false;
+        this.localAddress = "0.0.0.0";
         this.method = "post";
         this.headers = new LinkedHashMap<String, List<String>>();
         this.useHeadersVariable = false;
@@ -96,6 +100,8 @@ public class HttpDispatcherProperties extends ConnectorProperties implements Des
         useProxyServer = props.isUseProxyServer();
         proxyAddress = props.getProxyAddress();
         proxyPort = props.getProxyPort();
+        overrideLocalBinding = props.isOverrideLocalBinding();
+        localAddress = props.getLocalAddress();
         method = props.getMethod();
 
         headers = new LinkedHashMap<String, List<String>>();
@@ -162,6 +168,22 @@ public class HttpDispatcherProperties extends ConnectorProperties implements Des
         this.proxyPort = proxyPort;
     }
 
+    public boolean isOverrideLocalBinding() {
+        return overrideLocalBinding;
+    }
+
+    public void setOverrideLocalBinding(boolean overrideLocalBinding) {
+        this.overrideLocalBinding = overrideLocalBinding;
+    }
+
+    public String getLocalAddress() {
+        return localAddress;
+    }
+
+    public void setLocalAddress(String localAddress) {
+        this.localAddress = localAddress;
+    }
+
     public String getMethod() {
         return method;
     }
@@ -173,7 +195,7 @@ public class HttpDispatcherProperties extends ConnectorProperties implements Des
     public Map<String, List<String>> getHeadersMap() {
         return headers;
     }
-    
+
     public boolean isUseHeadersVariable() {
         return useHeadersVariable;
     }
@@ -189,7 +211,7 @@ public class HttpDispatcherProperties extends ConnectorProperties implements Des
     public String getHeadersVariable() {
         return this.headersVariable;
     }
-    
+
     public void setHeadersVariable(String headerVariable) {
         this.headersVariable = headerVariable;
     }
@@ -209,11 +231,11 @@ public class HttpDispatcherProperties extends ConnectorProperties implements Des
     public void setUseParametersVariable(boolean useParametersVariable) {
         this.useParametersVariable = useParametersVariable;
     }
-    
+
     public String getParametersVariable() {
         return this.parametersVariable;
     }
-    
+
     public void setParametersVariable(String variableName) {
         this.parametersVariable = variableName;
     }
@@ -513,8 +535,8 @@ public class HttpDispatcherProperties extends ConnectorProperties implements Des
     @Override public void migrate3_6_0(DonkeyElement element) {}
     @Override public void migrate3_7_0(DonkeyElement element) {}
     @Override public void migrate3_9_0(DonkeyElement element) {}
-    @Override public void migrate3_11_0(DonkeyElement element) {} 
-    @Override public void migrate3_11_1(DonkeyElement element) {} 
+    @Override public void migrate3_11_0(DonkeyElement element) {}
+    @Override public void migrate3_11_1(DonkeyElement element) {}
     @Override public void migrate3_12_0(DonkeyElement element) {}// @formatter:on
 
     @Override

@@ -28,7 +28,6 @@ import javax.mail.internet.MimeMultipart;
 import javax.mail.util.ByteArrayDataSource;
 
 import com.mirth.connect.client.core.BrandingConstants;
-import com.mirth.connect.connectors.tcp.TcpDispatcherProperties;
 import com.mirth.connect.util.TcpUtil;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;

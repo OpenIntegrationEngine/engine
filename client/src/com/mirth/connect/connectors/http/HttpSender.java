@@ -217,10 +217,10 @@ public class HttpSender extends ConnectorSettingsPanel {
 
         if (props.isOverrideLocalBinding()) {
             overrideLocalBindingYesRadio.setSelected(true);
-            overrideLocalBindingYesRadioActionPerformed(null);
+            overrideLocalBindingYesRadioActionPerformed();
         } else {
             overrideLocalBindingNoRadio.setSelected(true);
-            overrideLocalBindingNoRadioActionPerformed(null);
+            overrideLocalBindingNoRadioActionPerformed();
         }
         localAddressField.setText(props.getLocalAddress());
 
@@ -1239,7 +1239,7 @@ public class HttpSender extends ConnectorSettingsPanel {
         overrideLocalBindingYesRadio.setMargin(new Insets(0, 0, 0, 0));
         overrideLocalBindingYesRadio.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
-                overrideLocalBindingYesRadioActionPerformed(evt);
+                overrideLocalBindingYesRadioActionPerformed();
             }
         });
 
@@ -1251,7 +1251,7 @@ public class HttpSender extends ConnectorSettingsPanel {
         overrideLocalBindingNoRadio.setMargin(new Insets(0, 0, 0, 0));
         overrideLocalBindingNoRadio.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
-                overrideLocalBindingNoRadioActionPerformed(evt);
+                overrideLocalBindingNoRadioActionPerformed();
             }
         });
     }
@@ -1547,12 +1547,12 @@ public class HttpSender extends ConnectorSettingsPanel {
         queryParametersDeleteButton.setEnabled(!useVariable && queryParametersTable.getSelectedRow() > -1);
     }
 
-    private void overrideLocalBindingYesRadioActionPerformed(ActionEvent evt) {
+    private void overrideLocalBindingYesRadioActionPerformed() {
         localAddressField.setEnabled(true);
         localAddressLabel.setEnabled(true);
     }
 
-    private void overrideLocalBindingNoRadioActionPerformed(ActionEvent evt) {
+    private void overrideLocalBindingNoRadioActionPerformed() {
         localAddressField.setEnabled(false);
         localAddressLabel.setEnabled(false);
     }

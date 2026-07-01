@@ -14,7 +14,6 @@ import com.mirth.connect.server.api.MirthServlet;
 import com.mirth.connect.server.util.ConnectorUtil;
 import com.mirth.connect.server.util.TemplateValueReplacer;
 import com.mirth.connect.util.ConnectionTestResponse;
-import org.apache.commons.lang3.Strings;
 
 public class HttpConnectorServlet extends MirthServlet implements HttpConnectorServletInterface {
 
@@ -33,7 +32,7 @@ public class HttpConnectorServlet extends MirthServlet implements HttpConnectorS
             final int port;
             if (url.getPort() != -1) {
                 port = url.getPort();
-            } else if (Strings.CI.equals(url.getProtocol(), "https")) {
+            } else if ("https".equalsIgnoreCase(url.getProtocol())) {
                 port = 443;
             } else {
                 port = 80;

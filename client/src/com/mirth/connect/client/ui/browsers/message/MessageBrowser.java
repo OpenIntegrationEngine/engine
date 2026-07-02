@@ -654,39 +654,52 @@ public class MessageBrowser extends javax.swing.JPanel {
         advancedSearchPopup.applySelectionsToFilter(messageFilter);
         selectedMetaDataIds = messageFilter.getIncludedMetaDataIds();
 
-        if (messageFilter.getMaxMessageId() == null) {
-            try {
-                Long maxMessageId = parent.mirthClient.getMaxMessageId(channelId);
-                messageFilter.setMaxMessageId(maxMessageId);
-            } catch (ClientException e) {
-                parent.alertThrowable(parent, e);
-                return false;
-            }
-        }
-
         return true;
     }
 
     protected void runSearch() {
-        if (generateMessageFilter()) {
-            updateFilterButtonFont(Font.PLAIN);
+        if (!generateMessageFilter()) {
+            return;
+        }
 
-            try {
-                configurePaginatedMessageList();
-            } catch (NumberFormatException e) {
-                parent.alertError(parent, "Invalid page size.");
-                return;
-            } catch (Exception e) {
-            	parent.alertError(parent, "Error configuring paginated message list: " + e.getMessage());
+        new SwingWorker<Long, Void>() {
+            @Override
+            protected Long doInBackground() throws Exception {
+                if (messageFilter.getMaxMessageId() == null) {
+                    return parent.mirthClient.getMaxMessageId(channelId);
+                }
+                return messageFilter.getMaxMessageId();
             }
 
-            countButton.setVisible(true);
-            clearCache();
-            loadPageNumber(1);
+            @Override
+            protected void done() {
+                try {
+                    messageFilter.setMaxMessageId(get());
+                } catch (Exception e) {
+                    parent.alertThrowable(parent, e);
+                    return;
+                }
 
-            updateSearchCriteriaPane();
-            auditSearch();
-        }
+                updateFilterButtonFont(Font.PLAIN);
+
+                try {
+                    configurePaginatedMessageList();
+                } catch (NumberFormatException e) {
+                    parent.alertError(parent, "Invalid page size.");
+                    return;
+                } catch (Exception e) {
+                    parent.alertError(parent, "Error configuring paginated message list: " + e.getMessage());
+                    return;
+                }
+
+                countButton.setVisible(true);
+                clearCache();
+                loadPageNumber(1);
+
+                updateSearchCriteriaPane();
+                auditSearch();
+            }
+        }.execute();
     }
     
     protected void configurePaginatedMessageList() throws Exception {

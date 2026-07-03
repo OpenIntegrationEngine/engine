@@ -15,8 +15,12 @@ import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -42,6 +46,9 @@ public class TagTreeCellRenderer extends JPanel implements TreeCellRenderer {
 
     private boolean renderTags = false;
     private boolean tagTextMode = false;
+
+    private Set<ChannelTag> tagIndexSnapshot;
+    private Map<String, List<ChannelTag>> tagsByChannelId = Collections.emptyMap();
 
     public TagTreeCellRenderer(boolean renderTags, boolean tagTextMode) {
         super(new MigLayout("insets 0, novisualpadding, hidemode 3, fill, gap " + GAP));
@@ -128,21 +135,22 @@ public class TagTreeCellRenderer extends JPanel implements TreeCellRenderer {
         label.setText(name);
         tagPanel.removeAll();
         if (renderTags && channel) {
-            List<ChannelTag> tags = new ArrayList<ChannelTag>();
-            for (ChannelTag tag : PlatformUI.MIRTH_FRAME.getCachedChannelTags()) {
-                if (tag.getChannelIds().contains(channelId)) {
-                    tags.add(tag);
+            Set<ChannelTag> currentTags = PlatformUI.MIRTH_FRAME.getCachedChannelTags();
+            if (currentTags != tagIndexSnapshot) {
+                Map<String, List<ChannelTag>> newIndex = new HashMap<>();
+                for (ChannelTag tag : currentTags) {
+                    for (String cid : tag.getChannelIds()) {
+                        newIndex.computeIfAbsent(cid, k -> new ArrayList<>()).add(tag);
+                    }
                 }
+                Comparator<ChannelTag> byName = (t1, t2) -> t1.getName().compareToIgnoreCase(t2.getName());
+                newIndex.values().forEach(list -> list.sort(byName));
+                tagsByChannelId = newIndex;
+                tagIndexSnapshot = currentTags;
             }
 
+            List<ChannelTag> tags = tagsByChannelId.getOrDefault(channelId, Collections.emptyList());
             if (CollectionUtils.isNotEmpty(tags)) {
-                tags.sort(new Comparator<ChannelTag>() {
-                    @Override
-                    public int compare(ChannelTag tag1, ChannelTag tag2) {
-                        return tag1.getName().compareToIgnoreCase(tag2.getName());
-                    }
-                });
-
                 String constraints = tagTextMode ? "h 16!, growx" : "";
                 for (ChannelTag tag : tags) {
                     tagPanel.add(ChannelTagLabelCache.getInstance().getLabel(tag, tagTextMode), constraints);

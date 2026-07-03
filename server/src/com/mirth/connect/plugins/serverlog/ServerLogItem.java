@@ -14,7 +14,10 @@ import java.io.Serializable;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.StringUtils;
 
 public class ServerLogItem implements Serializable {
@@ -30,14 +33,21 @@ public class ServerLogItem implements Serializable {
     private String lineNumber;
     private String message;
     private String throwableInformation;
+    private Map<String, String> attributes;
 
-    public ServerLogItem() {}
+    public ServerLogItem() {
+        this(null, null, null, null, null, null, null, null, null, new HashMap<>());
+    }
 
     public ServerLogItem(String message) {
-        this(null, null, null, null, null, null, null, message, null);
+        this(null, null, null, null, null, null, null, message, null, new HashMap<>());
     }
 
     public ServerLogItem(String serverId, Long id, String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation) {
+        this(serverId, id, level, date, threadName, category, lineNumber, message, throwableInformation, new HashMap<>());
+    }
+
+    public ServerLogItem(String serverId, Long id, String level, Date date, String threadName, String category, String lineNumber, String message, String throwableInformation, Map<String, String> attributes) {
         this.serverId = serverId;
         this.id = id;
         this.level = level;
@@ -47,6 +57,7 @@ public class ServerLogItem implements Serializable {
         this.lineNumber = lineNumber;
         this.message = message;
         this.throwableInformation = throwableInformation;
+        this.attributes = attributes;
     }
 
     public String getServerId() {
@@ -119,6 +130,38 @@ public class ServerLogItem implements Serializable {
 
     public void setThrowableInformation(String throwableInformation) {
         this.throwableInformation = throwableInformation;
+    }
+
+    public Map<String, String> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, String> attributes) {
+        if (attributes == null) {
+            this.attributes = new HashMap<String, String>();
+        } else {
+            this.attributes = attributes;
+        }
+    }
+
+    @JsonIgnore
+    public String getChannelId() {
+        return this.attributes.get("channelId");
+    }
+
+    @JsonIgnore
+    public void setChannelId(String channelId) {
+        this.attributes.put("channelId", channelId);
+    }
+
+    @JsonIgnore
+    public String getChannelName() {
+        return this.attributes.get("channelName");
+    }
+
+    @JsonIgnore
+    public void setChannelName(String channelName) {
+        this.attributes.put("channelName", channelName);
     }
 
     @Override

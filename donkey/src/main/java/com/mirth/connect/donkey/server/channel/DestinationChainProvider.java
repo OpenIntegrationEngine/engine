@@ -19,6 +19,7 @@ import com.mirth.connect.donkey.server.data.DonkeyDaoFactory;
 public class DestinationChainProvider {
     private Integer chainId;
     private String channelId;
+    private String channelName;
     private List<Integer> metaDataIds = new ArrayList<Integer>();
     private Map<Integer, DestinationConnector> destinationConnectors = new LinkedHashMap<Integer, DestinationConnector>();
     private DonkeyDaoFactory daoFactory;
@@ -38,6 +39,14 @@ public class DestinationChainProvider {
 
     public void setChannelId(String channelId) {
         this.channelId = channelId;
+    }
+
+    public String getChannelName() {
+        return channelName;
+    }
+
+    public void setChannelName(String channelName) {
+        this.channelName = channelName;
     }
 
     public void addDestination(int metaDataId, DestinationConnector connector) {

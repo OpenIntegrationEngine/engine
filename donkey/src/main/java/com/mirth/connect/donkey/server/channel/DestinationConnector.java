@@ -22,6 +22,7 @@ import java.util.concurrent.locks.Lock;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.logging.log4j.CloseableThreadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -613,285 +614,291 @@ public abstract class DestinationConnector extends Connector implements Runnable
 
     @Override
     public void run() {
-        DonkeyDao dao = null;
-        boolean commitSuccess = false;
-        Serializer serializer = channel.getSerializer();
-        ConnectorMessage connectorMessage = null;
-        int retryIntervalMillis = destinationConnectorProperties.getRetryIntervalMillis();
-        AtomicBoolean waitingRetryInterval = ((DestinationQueueThread) Thread.currentThread()).getWaitingRetryInterval();
-        Long lastMessageId = null;
-        boolean canAcquire = true;
-        Lock statusUpdateLock = null;
-        queue.registerThreadId();
+        // Add channel info to ThreadContext
+        try (CloseableThreadContext.Instance ctc = CloseableThreadContext
+                .put("channelId", getChannelId())
+                .put("channelName", channel.getName())
+        ) {
+            DonkeyDao dao = null;
+            boolean commitSuccess = false;
+            Serializer serializer = channel.getSerializer();
+            ConnectorMessage connectorMessage = null;
+            int retryIntervalMillis = destinationConnectorProperties.getRetryIntervalMillis();
+            AtomicBoolean waitingRetryInterval = ((DestinationQueueThread) Thread.currentThread()).getWaitingRetryInterval();
+            Long lastMessageId = null;
+            boolean canAcquire = true;
+            Lock statusUpdateLock = null;
+            queue.registerThreadId();
 
-        do {
-            try {
-                if (canAcquire) {
-                    connectorMessage = queue.acquire();
-                }
+            do {
+                try {
+                    if (canAcquire) {
+                        connectorMessage = queue.acquire();
+                    }
 
-                if (connectorMessage != null) {
-                    boolean exceptionCaught = false;
+                    if (connectorMessage != null) {
+                        boolean exceptionCaught = false;
 
-                    try {
-                        /*
-                         * If the last message id is equal to the current message id, then the
-                         * message was not successfully sent and is being retried, so wait the retry
-                         * interval.
-                         * 
-                         * If the last message id is greater than the current message id, then some
-                         * message was not successful, message rotation is on, and the queue is back
-                         * to the oldest message, so wait the retry interval.
-                         */
-                        if (connectorMessage.isAttemptedFirst() || lastMessageId != null && (lastMessageId == connectorMessage.getMessageId() || (queue.isRotate() && lastMessageId > connectorMessage.getMessageId() && queue.hasBeenRotated()))) {
-                            try {
-                                waitingRetryInterval.set(true);
-                                Thread.sleep(retryIntervalMillis);
-                            } finally {
-                                synchronized (waitingRetryInterval) {
-                                    waitingRetryInterval.set(false);
+                        try {
+                            /*
+                             * If the last message id is equal to the current message id, then the
+                             * message was not successfully sent and is being retried, so wait the retry
+                             * interval.
+                             *
+                             * If the last message id is greater than the current message id, then some
+                             * message was not successful, message rotation is on, and the queue is back
+                             * to the oldest message, so wait the retry interval.
+                             */
+                            if (connectorMessage.isAttemptedFirst() || lastMessageId != null && (lastMessageId == connectorMessage.getMessageId() || (queue.isRotate() && lastMessageId > connectorMessage.getMessageId() && queue.hasBeenRotated()))) {
+                                try {
+                                    waitingRetryInterval.set(true);
+                                    Thread.sleep(retryIntervalMillis);
+                                } finally {
+                                    synchronized (waitingRetryInterval) {
+                                        waitingRetryInterval.set(false);
+                                    }
                                 }
+
+                                connectorMessage.setAttemptedFirst(false);
                             }
 
-                            connectorMessage.setAttemptedFirst(false);
-                        }
+                            lastMessageId = connectorMessage.getMessageId();
 
-                        lastMessageId = connectorMessage.getMessageId();
+                            dao = daoFactory.getDao();
+                            Status previousStatus = connectorMessage.getStatus();
 
-                        dao = daoFactory.getDao();
-                        Status previousStatus = connectorMessage.getStatus();
+                            Class<?> connectorPropertiesClass = getConnectorProperties().getClass();
+                            Class<?> serializedPropertiesClass = null;
 
-                        Class<?> connectorPropertiesClass = getConnectorProperties().getClass();
-                        Class<?> serializedPropertiesClass = null;
-
-                        ConnectorProperties connectorProperties = null;
-
-                        /*
-                         * If we're not regenerating connector properties, use the serialized sent
-                         * content from the database. It's possible that the channel had Regenerate
-                         * Template and Include Filter/Transformer enabled at one point, and then
-                         * was disabled later, so we also have to make sure the sent content exists.
-                         */
-                        if (!destinationConnectorProperties.isRegenerateTemplate() && connectorMessage.getSent() != null) {
-                            // Attempt to get the sent properties from the in-memory cache. If it doesn't exist, deserialize from the actual sent content.
-                            connectorProperties = connectorMessage.getSentProperties();
-                            if (connectorProperties == null) {
-                                connectorProperties = serializer.deserialize(connectorMessage.getSent().getContent(), ConnectorProperties.class);
-                                connectorMessage.setSentProperties(connectorProperties);
-                            }
-
-                            serializedPropertiesClass = connectorProperties.getClass();
-                        } else {
-                            connectorProperties = ((DestinationConnectorPropertiesInterface) getConnectorProperties()).clone();
-                        }
-
-                        /*
-                         * Verify that the connector properties stored in the connector message
-                         * match the properties from the current connector. Otherwise the connector
-                         * type has changed and the message will be set to errored. If we're
-                         * regenerating the connector properties then it doesn't matter.
-                         */
-                        if (connectorMessage.getSent() == null || destinationConnectorProperties.isRegenerateTemplate() || serializedPropertiesClass == connectorPropertiesClass) {
-                            ThreadUtils.checkInterruptedStatus();
+                            ConnectorProperties connectorProperties = null;
 
                             /*
-                             * If a historical queued message has not yet been transformed and the
-                             * current queue settings do not include the filter/transformer, force
-                             * the message to ERROR.
+                             * If we're not regenerating connector properties, use the serialized sent
+                             * content from the database. It's possible that the channel had Regenerate
+                             * Template and Include Filter/Transformer enabled at one point, and then
+                             * was disabled later, so we also have to make sure the sent content exists.
                              */
-                            if (connectorMessage.getSent() == null && !includeFilterTransformerInQueue()) {
+                            if (!destinationConnectorProperties.isRegenerateTemplate() && connectorMessage.getSent() != null) {
+                                // Attempt to get the sent properties from the in-memory cache. If it doesn't exist, deserialize from the actual sent content.
+                                connectorProperties = connectorMessage.getSentProperties();
+                                if (connectorProperties == null) {
+                                    connectorProperties = serializer.deserialize(connectorMessage.getSent().getContent(), ConnectorProperties.class);
+                                    connectorMessage.setSentProperties(connectorProperties);
+                                }
+
+                                serializedPropertiesClass = connectorProperties.getClass();
+                            } else {
+                                connectorProperties = ((DestinationConnectorPropertiesInterface) getConnectorProperties()).clone();
+                            }
+
+                            /*
+                             * Verify that the connector properties stored in the connector message
+                             * match the properties from the current connector. Otherwise the connector
+                             * type has changed and the message will be set to errored. If we're
+                             * regenerating the connector properties then it doesn't matter.
+                             */
+                            if (connectorMessage.getSent() == null || destinationConnectorProperties.isRegenerateTemplate() || serializedPropertiesClass == connectorPropertiesClass) {
+                                ThreadUtils.checkInterruptedStatus();
+
+                                /*
+                                 * If a historical queued message has not yet been transformed and the
+                                 * current queue settings do not include the filter/transformer, force
+                                 * the message to ERROR.
+                                 */
+                                if (connectorMessage.getSent() == null && !includeFilterTransformerInQueue()) {
+                                    connectorMessage.setStatus(Status.ERROR);
+                                    connectorMessage.setProcessingError("Queued message has not yet been transformed, and Include Filter/Transformer is currently disabled.");
+
+                                    dao.updateStatus(connectorMessage, previousStatus);
+                                    dao.updateErrors(connectorMessage);
+                                } else {
+                                    if (includeFilterTransformerInQueue()) {
+                                        transform(dao, connectorMessage, previousStatus, connectorMessage.getSent() == null);
+                                    }
+
+                                    if (connectorMessage.getStatus() == Status.QUEUED) {
+                                        /*
+                                         * Replace the connector properties if necessary. Again for
+                                         * historical queue reasons, we need to check whether the sent
+                                         * content exists.
+                                         */
+                                        if (connectorMessage.getSent() == null || destinationConnectorProperties.isRegenerateTemplate()) {
+                                            replaceConnectorProperties(connectorProperties, connectorMessage);
+                                            MessageContent sentContent = getSentContent(connectorMessage, connectorProperties);
+                                            connectorMessage.setSent(sentContent);
+
+                                            if (sentContent != null && storageSettings.isStoreSent()) {
+                                                ThreadUtils.checkInterruptedStatus();
+                                                dao.storeMessageContent(sentContent);
+                                            }
+                                        }
+
+                                        Response response = handleSend(connectorProperties, connectorMessage);
+                                        connectorMessage.setSendAttempts(connectorMessage.getSendAttempts() + 1);
+
+                                        if (response == null) {
+                                            throw new RuntimeException("Received null response from destination " + destinationName + ".");
+                                        }
+                                        response.fixStatus(isQueueEnabled());
+
+                                        afterSend(dao, connectorMessage, response, previousStatus);
+                                    }
+                                }
+                            } else {
                                 connectorMessage.setStatus(Status.ERROR);
-                                connectorMessage.setProcessingError("Queued message has not yet been transformed, and Include Filter/Transformer is currently disabled.");
+                                connectorMessage.setProcessingError("Mismatched connector properties detected in queued message. The connector type may have changed since the message was queued.\nFOUND: " + serializedPropertiesClass.getSimpleName() + "\nEXPECTED: " + connectorPropertiesClass.getSimpleName());
 
                                 dao.updateStatus(connectorMessage, previousStatus);
                                 dao.updateErrors(connectorMessage);
-                            } else {
-                                if (includeFilterTransformerInQueue()) {
-                                    transform(dao, connectorMessage, previousStatus, connectorMessage.getSent() == null);
-                                }
-
-                                if (connectorMessage.getStatus() == Status.QUEUED) {
-                                    /*
-                                     * Replace the connector properties if necessary. Again for
-                                     * historical queue reasons, we need to check whether the sent
-                                     * content exists.
-                                     */
-                                    if (connectorMessage.getSent() == null || destinationConnectorProperties.isRegenerateTemplate()) {
-                                        replaceConnectorProperties(connectorProperties, connectorMessage);
-                                        MessageContent sentContent = getSentContent(connectorMessage, connectorProperties);
-                                        connectorMessage.setSent(sentContent);
-
-                                        if (sentContent != null && storageSettings.isStoreSent()) {
-                                            ThreadUtils.checkInterruptedStatus();
-                                            dao.storeMessageContent(sentContent);
-                                        }
-                                    }
-
-                                    Response response = handleSend(connectorProperties, connectorMessage);
-                                    connectorMessage.setSendAttempts(connectorMessage.getSendAttempts() + 1);
-
-                                    if (response == null) {
-                                        throw new RuntimeException("Received null response from destination " + destinationName + ".");
-                                    }
-                                    response.fixStatus(isQueueEnabled());
-
-                                    afterSend(dao, connectorMessage, response, previousStatus);
-                                }
                             }
-                        } else {
-                            connectorMessage.setStatus(Status.ERROR);
-                            connectorMessage.setProcessingError("Mismatched connector properties detected in queued message. The connector type may have changed since the message was queued.\nFOUND: " + serializedPropertiesClass.getSimpleName() + "\nEXPECTED: " + connectorPropertiesClass.getSimpleName());
 
-                            dao.updateStatus(connectorMessage, previousStatus);
-                            dao.updateErrors(connectorMessage);
-                        }
-
-                        /*
-                         * If we're about to commit a non-QUEUED status, we first need to obtain a
-                         * read lock from the queue. This is done so that if something else
-                         * invalidates the queue at the same time, we don't incorrectly decrement
-                         * the size during the release.
-                         */
-                        if (connectorMessage.getStatus() != Status.QUEUED) {
-                            Lock lock = queue.getStatusUpdateLock();
-                            lock.lock();
-                            statusUpdateLock = lock;
-                        }
-
-                        ThreadUtils.checkInterruptedStatus();
-                        dao.commit(storageSettings.isDurable());
-                        commitSuccess = true;
-
-                        // Only actually attempt to remove content if the status is SENT
-                        if (connectorMessage.getStatus().isCompleted()) {
-                            try {
-                                channel.removeContent(dao, null, lastMessageId, true, true);
-                            } catch (RuntimeException e) {
-                                /*
-                                 * The connector message itself processed successfully, only the
-                                 * remove content operation failed. In this case just give up and
-                                 * log an error.
-                                 */
-                                logger.error("Error removing content for message " + lastMessageId + " for channel " + channel.getName() + " (" + channel.getChannelId() + ") on destination " + destinationName + ". This error is expected if the message was manually removed from the queue.", e);
+                            /*
+                             * If we're about to commit a non-QUEUED status, we first need to obtain a
+                             * read lock from the queue. This is done so that if something else
+                             * invalidates the queue at the same time, we don't incorrectly decrement
+                             * the size during the release.
+                             */
+                            if (connectorMessage.getStatus() != Status.QUEUED) {
+                                Lock lock = queue.getStatusUpdateLock();
+                                lock.lock();
+                                statusUpdateLock = lock;
                             }
-                        }
-                    } catch (RuntimeException e) {
-                        logger.error("Error processing queued " + (connectorMessage != null ? connectorMessage.toString() : "message (null)") + " for channel " + channel.getName() + " (" + channel.getChannelId() + ") on destination " + destinationName + ". This error is expected if the message was manually removed from the queue.", e);
-                        /*
-                         * Invalidate the queue's buffer if any errors occurred. If the message
-                         * being processed by the queue was deleted, this will prevent the queue
-                         * from trying to process that message repeatedly. Since multiple
-                         * queues/threads may need to do this as well, we do not reset the queue's
-                         * maps of checked in or deleted messages.
-                         */
-                        exceptionCaught = true;
-                    } catch (InterruptedException e) {
-                        // Stop this thread if it was halted
-                        return;
-                    } catch (Throwable t) {
-                        // Send a different error message to the server log, but still invalidate the queue buffer
-                        logger.error("Error processing queued " + (connectorMessage != null ? connectorMessage.toString() : "message (null)") + " for channel " + channel.getName() + " (" + channel.getChannelId() + ") on destination " + destinationName + ".", t);
-                        getChannel().getEventDispatcher().dispatchEvent(new ErrorEvent(getChannelId(), getMetaDataId(), connectorMessage != null ? connectorMessage.getMessageId() : null, ErrorEventType.DESTINATION_CONNECTOR, getDestinationName(), getConnectorProperties().getName(), t.getMessage(), t));
-                        exceptionCaught = true;
-                    } finally {
-                        if (dao != null) {
-                            if (!commitSuccess) {
+
+                            ThreadUtils.checkInterruptedStatus();
+                            dao.commit(storageSettings.isDurable());
+                            commitSuccess = true;
+
+                            // Only actually attempt to remove content if the status is SENT
+                            if (connectorMessage.getStatus().isCompleted()) {
                                 try {
-                                    dao.rollback();
-                                } catch (Exception e) {}
-                            }
-                            dao.close();
-                        }
-
-                        /*
-                         * We always want to release the message if it's done (obviously).
-                         */
-                        if (exceptionCaught) {
-                            /*
-                             * If an runtime exception was caught, we can't guarantee whether that
-                             * message was deleted or is still in the database. When it is released,
-                             * the message will be removed from the in-memory queue. However we need
-                             * to invalidate the queue before allowing any other threads to be able
-                             * to access it in case the message is still in the database.
-                             */
-                            canAcquire = true;
-                            synchronized (queue) {
-                                queue.release(connectorMessage, true);
-
-                                // Release the read lock now before calling invalidate
-                                if (statusUpdateLock != null) {
-                                    statusUpdateLock.unlock();
-                                    statusUpdateLock = null;
+                                    channel.removeContent(dao, null, lastMessageId, true, true);
+                                } catch (RuntimeException e) {
+                                    /*
+                                     * The connector message itself processed successfully, only the
+                                     * remove content operation failed. In this case just give up and
+                                     * log an error.
+                                     */
+                                    logger.error("Error removing content for message " + lastMessageId + " for channel " + channel.getName() + " (" + channel.getChannelId() + ") on destination " + destinationName + ". This error is expected if the message was manually removed from the queue.", e);
                                 }
-
-                                queue.invalidate(true, false);
                             }
-                        } else if (connectorMessage.getStatus() != Status.QUEUED) {
-                            canAcquire = true;
-                            queue.release(connectorMessage, true);
-                        } else if (destinationConnectorProperties.isRotate()) {
-                            canAcquire = true;
-                            queue.release(connectorMessage, false);
-                        } else {
+                        } catch (RuntimeException e) {
+                            logger.error("Error processing queued " + (connectorMessage != null ? connectorMessage.toString() : "message (null)") + " for channel " + channel.getName() + " (" + channel.getChannelId() + ") on destination " + destinationName + ". This error is expected if the message was manually removed from the queue.", e);
                             /*
-                             * If the message is still queued, no exception occurred, and queue
-                             * rotation is disabled, we still want to force the queue to re-acquire
-                             * a message if it has been marked as deleted by another process.
+                             * Invalidate the queue's buffer if any errors occurred. If the message
+                             * being processed by the queue was deleted, this will prevent the queue
+                             * from trying to process that message repeatedly. Since multiple
+                             * queues/threads may need to do this as well, we do not reset the queue's
+                             * maps of checked in or deleted messages.
                              */
-                            canAcquire = queue.releaseIfDeleted(connectorMessage);
-                        }
+                            exceptionCaught = true;
+                        } catch (InterruptedException e) {
+                            // Stop this thread if it was halted
+                            return;
+                        } catch (Throwable t) {
+                            // Send a different error message to the server log, but still invalidate the queue buffer
+                            logger.error("Error processing queued " + (connectorMessage != null ? connectorMessage.toString() : "message (null)") + " for channel " + channel.getName() + " (" + channel.getChannelId() + ") on destination " + destinationName + ".", t);
+                            getChannel().getEventDispatcher().dispatchEvent(new ErrorEvent(getChannelId(), getMetaDataId(), connectorMessage != null ? connectorMessage.getMessageId() : null, ErrorEventType.DESTINATION_CONNECTOR, getDestinationName(), getConnectorProperties().getName(), t.getMessage(), t));
+                            exceptionCaught = true;
+                        } finally {
+                            if (dao != null) {
+                                if (!commitSuccess) {
+                                    try {
+                                        dao.rollback();
+                                    } catch (Exception e) {}
+                                }
+                                dao.close();
+                            }
 
-                        // Always release the read lock if we obtained it
-                        if (statusUpdateLock != null) {
-                            statusUpdateLock.unlock();
-                            statusUpdateLock = null;
+                            /*
+                             * We always want to release the message if it's done (obviously).
+                             */
+                            if (exceptionCaught) {
+                                /*
+                                 * If an runtime exception was caught, we can't guarantee whether that
+                                 * message was deleted or is still in the database. When it is released,
+                                 * the message will be removed from the in-memory queue. However we need
+                                 * to invalidate the queue before allowing any other threads to be able
+                                 * to access it in case the message is still in the database.
+                                 */
+                                canAcquire = true;
+                                synchronized (queue) {
+                                    queue.release(connectorMessage, true);
+
+                                    // Release the read lock now before calling invalidate
+                                    if (statusUpdateLock != null) {
+                                        statusUpdateLock.unlock();
+                                        statusUpdateLock = null;
+                                    }
+
+                                    queue.invalidate(true, false);
+                                }
+                            } else if (connectorMessage.getStatus() != Status.QUEUED) {
+                                canAcquire = true;
+                                queue.release(connectorMessage, true);
+                            } else if (destinationConnectorProperties.isRotate()) {
+                                canAcquire = true;
+                                queue.release(connectorMessage, false);
+                            } else {
+                                /*
+                                 * If the message is still queued, no exception occurred, and queue
+                                 * rotation is disabled, we still want to force the queue to re-acquire
+                                 * a message if it has been marked as deleted by another process.
+                                 */
+                                canAcquire = queue.releaseIfDeleted(connectorMessage);
+                            }
+
+                            // Always release the read lock if we obtained it
+                            if (statusUpdateLock != null) {
+                                statusUpdateLock.unlock();
+                                statusUpdateLock = null;
+                            }
                         }
+                    } else {
+                        /*
+                         * This is necessary because there is no blocking peek. If the queue is empty,
+                         * wait some time to free up the cpu.
+                         */
+                        Thread.sleep(queueEmptySleepTime);
                     }
-                } else {
-                    /*
-                     * This is necessary because there is no blocking peek. If the queue is empty,
-                     * wait some time to free up the cpu.
-                     */
-                    Thread.sleep(queueEmptySleepTime);
-                }
-            } catch (InterruptedException e) {
-                // Stop this thread if it was halted
-                return;
-            } catch (Throwable t) {
-                // Always release the read lock if we obtained it
-                if (statusUpdateLock != null) {
-                    statusUpdateLock.unlock();
-                    statusUpdateLock = null;
-                }
-
-                logger.error("Error in queue thread for channel " + channel.getName() + " (" + channel.getChannelId() + ") on destination " + destinationName + ".\n" + ExceptionUtils.getStackTrace(t));
-                getChannel().getEventDispatcher().dispatchEvent(new ErrorEvent(getChannelId(), getMetaDataId(), null, ErrorEventType.DESTINATION_CONNECTOR, getDestinationName(), getConnectorProperties().getName(), t.getMessage(), t));
-
-                try {
-                    waitingRetryInterval.set(true);
-                    Thread.sleep(retryIntervalMillis);
-
-                    /*
-                     * Since the thread already slept for the retry interval, set lastMessageId to
-                     * null to prevent sleeping again.
-                     */
-                    lastMessageId = null;
-                } catch (InterruptedException e1) {
+                } catch (InterruptedException e) {
                     // Stop this thread if it was halted
                     return;
+                } catch (Throwable t) {
+                    // Always release the read lock if we obtained it
+                    if (statusUpdateLock != null) {
+                        statusUpdateLock.unlock();
+                        statusUpdateLock = null;
+                    }
+
+                    logger.error("Error in queue thread for channel " + channel.getName() + " (" + channel.getChannelId() + ") on destination " + destinationName + ".\n" + ExceptionUtils.getStackTrace(t));
+                    getChannel().getEventDispatcher().dispatchEvent(new ErrorEvent(getChannelId(), getMetaDataId(), null, ErrorEventType.DESTINATION_CONNECTOR, getDestinationName(), getConnectorProperties().getName(), t.getMessage(), t));
+
+                    try {
+                        waitingRetryInterval.set(true);
+                        Thread.sleep(retryIntervalMillis);
+
+                        /*
+                         * Since the thread already slept for the retry interval, set lastMessageId to
+                         * null to prevent sleeping again.
+                         */
+                        lastMessageId = null;
+                    } catch (InterruptedException e1) {
+                        // Stop this thread if it was halted
+                        return;
+                    } finally {
+                        synchronized (waitingRetryInterval) {
+                            waitingRetryInterval.set(false);
+                        }
+                    }
                 } finally {
-                    synchronized (waitingRetryInterval) {
-                        waitingRetryInterval.set(false);
+                    // Always release the read lock if we obtained it
+                    if (statusUpdateLock != null) {
+                        statusUpdateLock.unlock();
+                        statusUpdateLock = null;
                     }
                 }
-            } finally {
-                // Always release the read lock if we obtained it
-                if (statusUpdateLock != null) {
-                    statusUpdateLock.unlock();
-                    statusUpdateLock = null;
-                }
-            }
-        } while ((getCurrentState() == DeployedState.STARTED || getCurrentState() == DeployedState.STARTING) && !stopQueue.get());
+            } while ((getCurrentState() == DeployedState.STARTED || getCurrentState() == DeployedState.STARTING) && !stopQueue.get());
+        }
     }
 
     private Response handleSend(ConnectorProperties connectorProperties, ConnectorMessage message) throws InterruptedException {

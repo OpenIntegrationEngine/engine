@@ -12,8 +12,10 @@ package com.mirth.connect.server.util.javascript;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.CloseableThreadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
@@ -28,6 +30,8 @@ public abstract class JavaScriptTask<T> implements Callable<T> {
     private Logger logger = LogManager.getLogger(JavaScriptTask.class);
     private MirthContextFactory contextFactory;
     private String threadName;
+    private String channelId;
+    private String channelName;
     private Context context;
     private boolean contextCreated = false;
 
@@ -74,6 +78,9 @@ public abstract class JavaScriptTask<T> implements Callable<T> {
     }
 
     private void init(String name, String channelId, String channelName, Integer metaDataId, String destinationName) {
+        this.channelId = channelId;
+        this.channelName = channelName;
+
         StringBuilder builder = new StringBuilder(name).append(" JavaScript Task");
         if (StringUtils.isNotEmpty(channelName)) {
             builder.append(" on ").append(channelName);
@@ -109,8 +116,12 @@ public abstract class JavaScriptTask<T> implements Callable<T> {
     @Override
     public final T call() throws Exception {
         String originalThreadName = Thread.currentThread().getName();
-        try {
+        try (CloseableThreadContext.Instance ctc = CloseableThreadContext
+                .put("channelId", channelId)
+                .put("channelName", channelName)
+        ) {
             Thread.currentThread().setName(threadName + " < " + originalThreadName);
+            
             return doCall();
         } finally {
             Thread.currentThread().setName(originalThreadName);

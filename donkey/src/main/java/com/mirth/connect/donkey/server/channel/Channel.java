@@ -38,6 +38,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.logging.log4j.CloseableThreadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -535,6 +536,7 @@ public class Channel implements Runnable {
             for (DestinationChainProvider chainProvider : destinationChainProviders) {
                 chainProvider.setDaoFactory(daoFactory);
                 chainProvider.setStorageSettings(storageSettings);
+                chainProvider.setChannelName(name);
 
                 for (Integer metaDataId : chainProvider.getMetaDataIds()) {
                     DestinationConnector destinationConnector = chainProvider.getDestinationConnectors().get(metaDataId);
@@ -1257,7 +1259,10 @@ public class Channel implements Runnable {
         boolean lockAcquired = false;
         Long persistedMessageId = null;
 
-        try {
+        try (CloseableThreadContext.Instance ctc = CloseableThreadContext
+                .put("channelId", channelId)
+                .put("channelName", name)
+        ) {
             synchronized (dispatchThreads) {
                 if (!shuttingDown) {
                     dispatchThreads.add(currentThread);
@@ -1933,7 +1938,10 @@ public class Channel implements Runnable {
 
     @Override
     public void run() {
-        try {
+        try (CloseableThreadContext.Instance ctc = CloseableThreadContext
+                .put("channelId", channelId)
+                .put("channelName", name)
+        ) {
             do {
                 processSourceQueue(Constants.SOURCE_QUEUE_POLL_TIMEOUT_MILLIS);
             } while (isActive() && !stopSourceQueue);

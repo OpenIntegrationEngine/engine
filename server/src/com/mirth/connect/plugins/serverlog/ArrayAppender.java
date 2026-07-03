@@ -61,6 +61,6 @@ public class ArrayAppender extends AbstractAppender {
             throwableInformation = logText.toString();
         }
 
-        serverLogProvider.newServerLogReceived(level, date, threadName, category, lineNumber, message, throwableInformation);
+        serverLogProvider.newServerLogReceived(level, date, threadName, category, lineNumber, message, throwableInformation, logEvent.getContextData().toMap());
     }
 }

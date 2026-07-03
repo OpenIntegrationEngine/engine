@@ -16,8 +16,10 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.CloseableThreadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
 import com.mirth.connect.donkey.model.message.ConnectorMessage;
 import com.mirth.connect.donkey.model.message.ContentType;
@@ -33,11 +35,15 @@ public class DestinationChain implements Callable<List<ConnectorMessage>> {
     private List<Integer> enabledMetaDataIds = new ArrayList<Integer>();
     private Logger logger = LogManager.getLogger(getClass());
     private String name;
+    private String channelId;
+    private String channelName;
 
     public DestinationChain(DestinationChainProvider chainProvider) {
         this.chainProvider = chainProvider;
         enabledMetaDataIds = new ArrayList<Integer>(chainProvider.getMetaDataIds());
-        name = "Destination Chain Thread on " + chainProvider.getChannelId();
+        channelId = chainProvider.getChannelId();
+        channelName = chainProvider.getChannelName();
+        name = "Destination Chain Thread on " + channelId;
     }
 
     public void setMessage(ConnectorMessage message) {
@@ -59,11 +65,17 @@ public class DestinationChain implements Callable<List<ConnectorMessage>> {
     @Override
     public List<ConnectorMessage> call() throws InterruptedException {
         String originalThreadName = Thread.currentThread().getName();
-        try {
-            Thread.currentThread().setName(name + " < " + originalThreadName);
-            return doCall();
-        } finally {
-            Thread.currentThread().setName(originalThreadName);
+
+        try (CloseableThreadContext.Instance ctc = CloseableThreadContext
+                .put("channelId", channelId)
+                .put("channelName", channelName)
+        ) {
+            try {
+                Thread.currentThread().setName(name + " < " + originalThreadName);
+                return doCall();
+            } finally {
+                Thread.currentThread().setName(originalThreadName);
+            }
         }
     }
 

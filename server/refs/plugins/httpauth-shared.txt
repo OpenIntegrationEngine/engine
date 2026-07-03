@@ -1,0 +1,2 @@
+com/mirth/connect/plugins/httpauth/HttpAuthConnectorPluginProperties.class
+com/mirth/connect/plugins/httpauth/HttpAuthConnectorPluginProperties$AuthType.class

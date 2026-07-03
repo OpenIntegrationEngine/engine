@@ -1,0 +1,4 @@
+com/mirth/connect/connectors/http/HttpDispatcherProperties.class
+com/mirth/connect/connectors/http/HttpReceiverProperties.class
+com/mirth/connect/connectors/http/HttpStaticResource.class
+com/mirth/connect/connectors/http/HttpStaticResource$ResourceType.class

@@ -1,0 +1,2 @@
+com/mirth/connect/connectors/tcp/TcpDispatcherProperties.class
+com/mirth/connect/connectors/tcp/TcpReceiverProperties.class

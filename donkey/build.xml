@@ -28,6 +28,7 @@
 
 	<target name="compile" depends="clean">
 		<mkdir dir="${classes}" />
+		<mkdir dir="${build.dir}/refs" />
 		
 		<javac srcdir="${src}" destdir="${classes}" debug="on" includeAntRuntime="false">
 			<classpath refid="classpath" />
@@ -50,6 +51,9 @@
 			<include name="com/mirth/connect/donkey/model/**" />
 			<include name="com/mirth/connect/donkey/util/**" />
 			<fileset dir="${dbconf}" />
+		</jar>
+		<jar destfile="${build.dir}/refs/${server.jar}" modificationTime="${archive.entry.date}">
+			<zipfileset src="${setup}/${server.jar}" includesfile="refs/donkey-server.txt" />
 		</jar>
 		<copy todir="${setup.lib}">
 			<fileset dir="${lib}" />

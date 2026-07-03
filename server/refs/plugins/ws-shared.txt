@@ -1,0 +1,4 @@
+com/mirth/connect/connectors/ws/DefinitionServiceMap.class
+com/mirth/connect/connectors/ws/DefinitionServiceMap$DefinitionPortMap.class
+com/mirth/connect/connectors/ws/DefinitionServiceMap$PortInformation.class
+com/mirth/connect/connectors/ws/WebServiceDispatcherProperties.class

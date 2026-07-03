@@ -1,0 +1,2 @@
+com/mirth/connect/connectors/ws/WebServiceListener.class
+com/mirth/connect/connectors/ws/WebServiceSender.class

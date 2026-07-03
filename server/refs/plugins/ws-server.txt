@@ -1,0 +1,6 @@
+com/mirth/connect/connectors/ws/DefaultWebServiceConfiguration.class
+com/mirth/connect/connectors/ws/SSLSocketFactoryWrapper.class
+com/mirth/connect/connectors/ws/WebServiceConfiguration.class
+com/mirth/connect/connectors/ws/WebServiceDispatcher.class
+com/mirth/connect/connectors/ws/WebServiceDispatcher$DispatchContainer.class
+com/mirth/connect/connectors/ws/WebServiceReceiver.class

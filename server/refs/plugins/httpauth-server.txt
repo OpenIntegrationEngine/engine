@@ -1,0 +1,7 @@
+com/mirth/connect/plugins/httpauth/AuthenticationResult.class
+com/mirth/connect/plugins/httpauth/AuthenticationResult$AuthStatus.class
+com/mirth/connect/plugins/httpauth/Authenticator.class
+com/mirth/connect/plugins/httpauth/AuthenticatorProvider.class
+com/mirth/connect/plugins/httpauth/AuthenticatorProviderFactory.class
+com/mirth/connect/plugins/httpauth/RequestInfo.class
+com/mirth/connect/plugins/httpauth/RequestInfo$EntityProvider.class

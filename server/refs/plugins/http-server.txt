@@ -1,0 +1,6 @@
+com/mirth/connect/connectors/http/BinaryContentTypeResolver.class
+com/mirth/connect/connectors/http/DefaultHttpConfiguration.class
+com/mirth/connect/connectors/http/HttpConfiguration.class
+com/mirth/connect/connectors/http/HttpDispatcher.class
+com/mirth/connect/connectors/http/HttpReceiver.class
+com/mirth/connect/connectors/http/HttpRequestMessage.class

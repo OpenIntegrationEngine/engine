@@ -115,6 +115,8 @@
 
 	<target name="build" depends="compile">
 		<mkdir dir="${dist}" />
+		<mkdir dir="${dist}/refs" />
+		<mkdir dir="${dist}/refs/plugins" />
 
 		<jar destfile="${dist}/${client.jar}" modificationTime="${archive.entry.date}">
 			<fileset dir="${classes}">
@@ -123,6 +125,9 @@
 			<fileset dir="${classes}">
 				<include name="com/mirth/connect/connectors/ConnectorClass.class" />
 			</fileset>
+		</jar>
+		<jar destfile="${dist}/refs/${client.jar}" modificationTime="${archive.entry.date}">
+			<zipfileset src="${dist}/${client.jar}" includesfile="refs/mirth-client.txt" />
 		</jar>
 
 		<!-- connectors -->
@@ -145,6 +150,9 @@
 		<jar destfile="${connectors.http}/http-client.jar" basedir="${classes}" modificationTime="${archive.entry.date}">
 			<include name="com/mirth/connect/connectors/http/**" />
 		</jar>
+		<jar destfile="${dist}/refs/plugins/http-client.jar" modificationTime="${archive.entry.date}">
+			<zipfileset src="${connectors.http}/http-client.jar" includesfile="${basedir}/refs/plugins/http-client.txt" />
+		</jar>
 
 		<mkdir dir="${connectors.doc}" />
 		<jar destfile="${connectors.doc}/doc-client.jar" basedir="${classes}" modificationTime="${archive.entry.date}">
@@ -160,6 +168,9 @@
 		<jar destfile="${connectors.tcp}/tcp-client.jar" basedir="${classes}" modificationTime="${archive.entry.date}">
 			<include name="com/mirth/connect/connectors/tcp/**" />
 		</jar>
+		<jar destfile="${dist}/refs/plugins/tcp-client.jar" modificationTime="${archive.entry.date}">
+			<zipfileset src="${connectors.tcp}/tcp-client.jar" includesfile="${basedir}/refs/plugins/tcp-client.txt" />
+		</jar>
 
 		<mkdir dir="${connectors.file}" />
 		<jar destfile="${connectors.file}/file-client.jar" basedir="${classes}" modificationTime="${archive.entry.date}">
@@ -174,6 +185,9 @@
 		<mkdir dir="${connectors.ws}" />
 		<jar destfile="${connectors.ws}/ws-client.jar" basedir="${classes}" modificationTime="${archive.entry.date}">
 			<include name="com/mirth/connect/connectors/ws/**" />
+		</jar>
+		<jar destfile="${dist}/refs/plugins/ws-client.jar" modificationTime="${archive.entry.date}">
+			<zipfileset src="${connectors.ws}/ws-client.jar" includesfile="${basedir}/refs/plugins/ws-client.txt" />
 		</jar>
 
 		<mkdir dir="${connectors.vm}" />

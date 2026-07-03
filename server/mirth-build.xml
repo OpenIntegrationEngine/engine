@@ -104,6 +104,12 @@
 		<ant antfile="${server}/build.xml" dir="${server}" target="create-setup">
 			<property name="version" value="${version}" />
 		</ant>
+
+		<copy todir="${server.setup}/refs">
+			<fileset dir="${client}/dist/refs" includes="*.jar,**/*.jar" />
+			<fileset dir="${donkey}/build/refs" includes="*.jar,**/*.jar" />
+			<fileset dir="${server.build}/refs" includes="*.jar,**/*.jar" />
+		</copy>
 		
 		<copy todir="${server.build}/extensions/">
 			<fileset dir="${server.setup}/extensions/" />

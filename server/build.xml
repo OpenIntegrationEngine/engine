@@ -124,6 +124,10 @@
 		<jar destfile="${setup.server.lib}/${crypto.jar}" basedir="${classes}" modificationTime="${archive.entry.date}">
 			<include name="com/mirth/commons/encryption/**" />
 		</jar>
+		<mkdir dir="${build.dir}/refs" />
+		<jar destfile="${build.dir}/refs/${crypto.jar}" modificationTime="${archive.entry.date}">
+			<zipfileset src="${setup.server.lib}/${crypto.jar}" includesfile="refs/mirth-crypto.txt" />
+		</jar>
 	</target>
 
 	<target name="create-client-core" depends="compile, create-crypto">
@@ -142,9 +146,13 @@
 
 			<include name="version.properties" />
 		</jar>
+		<jar destfile="${build.dir}/refs/${client-core.jar}" modificationTime="${archive.entry.date}">
+			<zipfileset src="${setup.server.lib}/${client-core.jar}" includesfile="../client/refs/mirth-client-core.txt" />
+		</jar>
 	</target>
 
 	<target name="create-connectors" depends="create-client-core">
+		<mkdir dir="${build.dir}/refs/plugins" />
 
 		<!-- connectors.dicom -->
 		<mkdir dir="${connectors.dicom}" />
@@ -250,6 +258,9 @@
 			<include name="com/mirth/connect/connectors/http/HttpStaticResource$ResourceType.class" />
 			<include name="com/mirth/connect/connectors/http/HttpConnectorServletInterface.class" />
 		</jar>
+		<jar destfile="${build.dir}/refs/plugins/http-shared.jar" modificationTime="${archive.entry.date}">
+			<zipfileset src="${connectors.http}/http-shared.jar" includesfile="refs/plugins/http-shared.txt" />
+		</jar>
 		<jar destfile="${connectors.http}/http-server.jar" modificationTime="${archive.entry.date}">
 			<fileset dir="${classes}">
 				<include name="com/mirth/connect/connectors/http/**" />
@@ -259,6 +270,9 @@
 				<exclude name="com/mirth/connect/connectors/http/HttpStaticResource$ResourceType.class" />
 				<exclude name="com/mirth/connect/connectors/http/HttpConnectorServletInterface.class" />
 			</fileset>
+		</jar>
+		<jar destfile="${build.dir}/refs/plugins/http-server.jar" modificationTime="${archive.entry.date}">
+			<zipfileset src="${connectors.http}/http-server.jar" includesfile="refs/plugins/http-server.txt" />
 		</jar>
 
 		<!-- connectors.jdbc -->
@@ -378,6 +392,9 @@
 			<include name="com/mirth/connect/connectors/tcp/TcpDispatcherProperties.class" />
 			<include name="com/mirth/connect/connectors/tcp/TcpConnectorServletInterface.class" />
 		</jar>
+		<jar destfile="${build.dir}/refs/plugins/tcp-shared.jar" modificationTime="${archive.entry.date}">
+			<zipfileset src="${connectors.tcp}/tcp-shared.jar" includesfile="refs/plugins/tcp-shared.txt" />
+		</jar>
 		<jar destfile="${connectors.tcp}/tcp-server.jar" modificationTime="${archive.entry.date}">
 			<fileset dir="${classes}">
 				<include name="com/mirth/connect/connectors/tcp/**" />
@@ -385,6 +402,9 @@
 				<exclude name="com/mirth/connect/connectors/tcp/TcpDispatcherProperties.class" />
 				<exclude name="com/mirth/connect/connectors/tcp/TcpConnectorServletInterface.class" />
 			</fileset>
+		</jar>
+		<jar destfile="${build.dir}/refs/plugins/tcp-server.jar" modificationTime="${archive.entry.date}">
+			<zipfileset src="${connectors.tcp}/tcp-server.jar" includesfile="refs/plugins/tcp-server.txt" />
 		</jar>
 
 		<!-- connectors.vm -->
@@ -428,6 +448,9 @@
 			<include name="com/mirth/connect/connectors/ws/DefinitionServiceMap$PortInformation.class" />
 			<include name="com/mirth/connect/connectors/ws/WebServiceConnectorServletInterface.class" />
 		</jar>
+		<jar destfile="${build.dir}/refs/plugins/ws-shared.jar" modificationTime="${archive.entry.date}">
+			<zipfileset src="${connectors.ws}/ws-shared.jar" includesfile="refs/plugins/ws-shared.txt" />
+		</jar>
 		<jar destfile="${connectors.ws}/ws-server.jar" modificationTime="${archive.entry.date}">
 			<fileset dir="${classes}">
 				<include name="com/mirth/connect/connectors/ws/**" />
@@ -439,6 +462,9 @@
 				<exclude name="com/mirth/connect/connectors/ws/DefinitionServiceMap$PortInformation.class" />
 				<exclude name="com/mirth/connect/connectors/ws/WebServiceConnectorServletInterface.class" />
 			</fileset>
+		</jar>
+		<jar destfile="${build.dir}/refs/plugins/ws-server.jar" modificationTime="${archive.entry.date}">
+			<zipfileset src="${connectors.ws}/ws-server.jar" includesfile="refs/plugins/ws-server.txt" />
 		</jar>
 
 		<!-- set the version on all connectors -->
@@ -729,6 +755,9 @@
 			<include name="com/mirth/connect/plugins/httpauth/oauth2/OAuth2HttpAuthProperties.class" />
 			<include name="com/mirth/connect/plugins/httpauth/oauth2/OAuth2HttpAuthProperties$TokenLocation.class" />
 		</jar>
+		<jar destfile="${build.dir}/refs/plugins/httpauth-shared.jar" modificationTime="${archive.entry.date}">
+			<zipfileset src="${plugins.httpauth}/httpauth-shared.jar" includesfile="refs/plugins/httpauth-shared.txt" />
+		</jar>
 		<jar destfile="${plugins.httpauth}/httpauth-server.jar" basedir="${classes}" modificationTime="${archive.entry.date}">
 			<include name="com/mirth/connect/plugins/httpauth/**" />
 			<exclude name="com/mirth/connect/plugins/httpauth/HttpAuthConnectorPluginProperties.class" />
@@ -742,6 +771,9 @@
 			<exclude name="com/mirth/connect/plugins/httpauth/javascript/JavaScriptHttpAuthProperties.class" />
 			<exclude name="com/mirth/connect/plugins/httpauth/oauth2/OAuth2HttpAuthProperties.class" />
 			<exclude name="com/mirth/connect/plugins/httpauth/oauth2/OAuth2HttpAuthProperties$TokenLocation.class" />
+		</jar>
+		<jar destfile="${build.dir}/refs/plugins/httpauth-server.jar" modificationTime="${archive.entry.date}">
+			<zipfileset src="${plugins.httpauth}/httpauth-server.jar" includesfile="refs/plugins/httpauth-server.txt" />
 		</jar>
 		<jar destfile="${plugins.httpauth}/src/httpauth-userutil-sources.jar" basedir="${src}" modificationTime="${archive.entry.date}">
 			<include name="com/mirth/connect/plugins/httpauth/userutil/**" />
@@ -961,6 +993,7 @@
 
 		<!-- create the setup directory -->
 		<mkdir dir="${setup}" />
+		<mkdir dir="${setup}/refs" />
 		<mkdir dir="${setup.conf}" />
 		<mkdir dir="${setup.extensions}" />
 		<mkdir dir="${setup.public_html}" />
@@ -1038,6 +1071,9 @@
 
 			<exclude name="com/mirth/connect/server/launcher/**" />
 			<exclude name="org/dcm4che2/**" />
+		</jar>
+		<jar destfile="${build.dir}/refs/${server.jar}" modificationTime="${archive.entry.date}">
+			<zipfileset src="${setup.server.lib}/${server.jar}" includesfile="refs/mirth-server.txt" />
 		</jar>
 
 		<!-- create the dbconf jar -->

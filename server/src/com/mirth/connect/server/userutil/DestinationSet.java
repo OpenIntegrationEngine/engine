@@ -1,19 +1,17 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: 2025 Richard Ogin
 
 package com.mirth.connect.server.userutil;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.mozilla.javascript.Context;
 
@@ -24,9 +22,9 @@ import com.mirth.connect.userutil.ImmutableConnectorMessage;
  * Utility class used in the preprocessor or source filter/transformer to prevent the message from
  * being sent to specific destinations.
  */
-public class DestinationSet {
+public class DestinationSet implements Set<Integer> {
 
-    private Map<String, Integer> destinationIdMap;
+    private Map<String, Integer> destinationIdMap = Collections.emptyMap();
     private Set<Integer> metaDataIds;
 
     /**
@@ -43,6 +41,7 @@ public class DestinationSet {
                 this.metaDataIds = (Set<Integer>) connectorMessage.getSourceMap().get(Constants.DESTINATION_SET_KEY);
             }
         } catch (Exception e) {
+            metaDataIds = new HashSet<>();
         }
     }
 
@@ -56,15 +55,7 @@ public class DestinationSet {
      *         from processing for this message.
      */
     public boolean remove(Object metaDataIdOrConnectorName) {
-        if (metaDataIds != null) {
-            Integer metaDataId = convertToMetaDataId(metaDataIdOrConnectorName);
-
-            if (metaDataId != null) {
-                return metaDataIds.remove(metaDataId);
-            }
-        }
-
-        return false;
+        return remove(Collections.singleton(metaDataIdOrConnectorName));
     }
 
     /**
@@ -77,15 +68,15 @@ public class DestinationSet {
      *         from processing for this message.
      */
     public boolean remove(Collection<Object> metaDataIdOrConnectorNames) {
-        boolean removed = false;
+        if(metaDataIdOrConnectorNames == null) { return false; }
 
-        for (Object metaDataIdOrConnectorName : metaDataIdOrConnectorNames) {
-            if (remove(metaDataIdOrConnectorName)) {
-                removed = true;
-            }
-        }
-
-        return removed;
+        return metaDataIdOrConnectorNames.stream()
+            .map(this::convertToMetaDataId)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(metaDataIds::remove)
+            .filter(Boolean::booleanValue)
+            .count() > 0;
     }
 
     /**
@@ -98,15 +89,7 @@ public class DestinationSet {
      *         from processing for this message.
      */
     public boolean removeAllExcept(Object metaDataIdOrConnectorName) {
-        if (metaDataIds != null) {
-            Integer metaDataId = convertToMetaDataId(metaDataIdOrConnectorName);
-
-            Set<Integer> set = (metaDataId != null) ? Collections.singleton(metaDataId) : Collections.emptySet();
-
-            return metaDataIds.retainAll(set);
-        }
-
-        return false;
+        return removeAllExcept(Collections.singleton(metaDataIdOrConnectorName));
     }
 
     /**
@@ -119,21 +102,15 @@ public class DestinationSet {
      *         from processing for this message.
      */
     public boolean removeAllExcept(Collection<Object> metaDataIdOrConnectorNames) {
-        if (metaDataIds != null) {
-            Set<Integer> set = new HashSet<Integer>();
+        if(metaDataIdOrConnectorNames == null) { return false; }
+        
+        Set<Integer> set = metaDataIdOrConnectorNames.stream()
+            .map(this::convertToMetaDataId)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toSet());
 
-            for (Object metaDataIdOrConnectorName : metaDataIdOrConnectorNames) {
-                Integer metaDataId = convertToMetaDataId(metaDataIdOrConnectorName);
-
-                if (metaDataId != null) {
-                    set.add(metaDataId);
-                }
-            }
-
-            return metaDataIds.retainAll(set);
-        }
-
-        return false;
+        return metaDataIds.retainAll(set);
     }
 
     /**
@@ -144,25 +121,102 @@ public class DestinationSet {
      *         from processing for this message.
      */
     public boolean removeAll() {
-        if (metaDataIds != null && metaDataIds.size() > 0) {
-            metaDataIds.clear();
-            return true;
-        }
-
-        return false;
+        int origSize = size();
+        clear();
+        return origSize > 0;
     }
 
-    private Integer convertToMetaDataId(Object metaDataIdOrConnectorName) {
+    private Optional<Integer> convertToMetaDataId(Object metaDataIdOrConnectorName) {
+        Integer result = null;
+
         if (metaDataIdOrConnectorName != null) {
             if (metaDataIdOrConnectorName instanceof Number) {
-                return ((Number) metaDataIdOrConnectorName).intValue();
+                result = Integer.valueOf(((Number) metaDataIdOrConnectorName).intValue());
             } else if (metaDataIdOrConnectorName.getClass().getName().equals("org.mozilla.javascript.NativeNumber")) {
-                return (Integer) Context.jsToJava(metaDataIdOrConnectorName, int.class);
-            } else if (destinationIdMap != null) {
-                return destinationIdMap.get(metaDataIdOrConnectorName.toString());
+                result = (Integer) Context.jsToJava(metaDataIdOrConnectorName, int.class);
+            } else {
+                result = destinationIdMap.get(metaDataIdOrConnectorName.toString());
             }
         }
 
-        return null;
+        return Optional.ofNullable(result);
+    }
+
+    @Override
+    public int size() {
+        return metaDataIds.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return metaDataIds.isEmpty();
+    }
+
+    @Override
+    public boolean contains(Object metaDataIdOrConnectorName) {
+        Optional<Integer> m = convertToMetaDataId(metaDataIdOrConnectorName);
+
+        return m.isPresent() && metaDataIds.contains(m.get());
+    }
+
+    @Override
+    public Iterator<Integer> iterator() {
+        return Collections.unmodifiableSet(metaDataIds).iterator();
+    }
+
+    @Override
+    public Object[] toArray() {
+        return metaDataIds.toArray();
+    }
+
+    @Override
+    public <T> T[] toArray(T[] a) {
+        return metaDataIds.toArray(a);
+    }
+
+    @Override
+    public boolean add(Integer metaDataId) {
+        return metaDataId != null && metaDataIds.add(metaDataId);
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> metaDataIdOrConnectorNames) {
+        if(metaDataIdOrConnectorNames == null) { return false; }
+
+        return metaDataIdOrConnectorNames.stream()
+        .map(this::contains)
+        .allMatch(Boolean::booleanValue);
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends Integer> metaDataIdOrConnectorNames) {
+        boolean changed = false;
+
+        if(metaDataIdOrConnectorNames != null) {
+            for(Object item : metaDataIdOrConnectorNames) {
+                Optional<Integer> m = convertToMetaDataId(item);
+
+                if(m.isPresent() && metaDataIds.add(m.get())) {
+                    changed = true;
+                }
+            }
+        }
+
+        return changed;
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> metaDataIdOrConnectorNames) {
+        return removeAllExcept((Collection<Object>)metaDataIdOrConnectorNames);
+    }
+
+    @Override
+    public boolean removeAll(Collection<?> metaDataIdOrConnectorNames) {
+        return remove((Collection<Object>)metaDataIdOrConnectorNames);
+    }
+
+    @Override
+    public void clear() {
+        metaDataIds.clear();
     }
 }

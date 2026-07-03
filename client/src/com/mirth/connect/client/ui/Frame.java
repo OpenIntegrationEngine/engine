@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: 2025-2026 Open Integration Engine Contributors
 
 package com.mirth.connect.client.ui;
 
@@ -57,6 +52,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -541,15 +537,13 @@ public class Frame extends JXFrame {
     /**
      * Called to set up this main window frame.
      */
-    public void setupFrame(Client mirthClient) throws ClientException {
-
-        LoginPanel login = LoginPanel.getInstance();
+    public void setupFrame(Client mirthClient, Consumer<String> statusCallback) throws ClientException {
 
         // Initialize the send message dialog
         editMessageDialog = new EditMessageDialog();
 
         this.mirthClient = mirthClient;
-        login.setStatus("Loading extensions...");
+        statusCallback.accept("Loading extensions...");
         try {
             loadExtensionMetaData();
         } catch (ClientException e) {
@@ -589,10 +583,10 @@ public class Frame extends JXFrame {
         }
 
         setInitialVisibleTasks();
-        login.setStatus("Loading preferences...");
+        statusCallback.accept("Loading preferences...");
         userPreferences = Preferences.userNodeForPackage(Mirth.class);
         userPreferences.put("defaultServer", PlatformUI.SERVER_URL);
-        login.setStatus("Loading GUI components...");
+        statusCallback.accept("Loading GUI components...");
         splitPane.setDividerSize(0);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
 
@@ -661,15 +655,15 @@ public class Frame extends JXFrame {
         }
 
         setCurrentTaskPaneContainer(taskPaneContainer);
-        login.setStatus("Loading dashboard...");
+        statusCallback.accept("Loading dashboard...");
         doShowDashboard();
-        login.setStatus("Loading channel editor...");
+        statusCallback.accept("Loading channel editor...");
         channelEditPanel = new ChannelSetup();
-        login.setStatus("Loading alert editor...");
+        statusCallback.accept("Loading alert editor...");
         if (alertEditPanel == null) {
             alertEditPanel = new DefaultAlertEditPanel();
         }
-        login.setStatus("Loading message browser...");
+        statusCallback.accept("Loading message browser...");
         messageBrowser = new MessageBrowser();
 
         // Refresh code templates after extensions have been loaded
@@ -1525,7 +1519,7 @@ public class Frame extends JXFrame {
                     }
                     mirthClient.close();
                     this.dispose();
-                    LoginPanel.getInstance().initialize(PlatformUI.SERVER_URL, PlatformUI.CLIENT_VERSION, "", "");
+                    Mirth.showLogin();
                     return;
                 } else if (t.getCause() != null && t.getCause() instanceof HttpHostConnectException && (StringUtils.contains(t.getCause().getMessage(), "Connection refused") || StringUtils.contains(t.getCause().getMessage(), "Host is down"))) {
                     connectionError = true;
@@ -1543,7 +1537,7 @@ public class Frame extends JXFrame {
                     }
                     mirthClient.close();
                     this.dispose();
-                    LoginPanel.getInstance().initialize(PlatformUI.SERVER_URL, PlatformUI.CLIENT_VERSION, "", "");
+                    Mirth.showLogin();
                     return;
                 }
             }
@@ -2293,7 +2287,7 @@ public class Frame extends JXFrame {
         this.dispose();
 
         if (!quit) {
-            LoginPanel.getInstance().initialize(PlatformUI.SERVER_URL, PlatformUI.CLIENT_VERSION, "", "");
+            Mirth.showLogin();
         }
 
         return true;

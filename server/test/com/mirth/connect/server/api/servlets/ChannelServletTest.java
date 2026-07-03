@@ -200,8 +200,8 @@ public class ChannelServletTest extends ServletTestBase {
         assertEquals(Integer.valueOf(7), exportData.getMetadata().getPruningSettings().getPruneContentDays());
 
         assertEquals(2, exportData.getChannelTags().size());
-        assertTrue(exportData.getChannelTags().contains(new ChannelTag("tag1", "Tag 1", new HashSet<>(Arrays.asList(new String[] { CHANNEL_ID_1, CHANNEL_ID_2 })))));
-        assertTrue(exportData.getChannelTags().contains(new ChannelTag("tag2", "Tag 2", new HashSet<>(Arrays.asList(new String[] { CHANNEL_ID_1, CHANNEL_ID_3 })))));
+        assertTrue(exportData.getChannelTags().contains(new ChannelTag("tag1", "Tag 1", new HashSet<>(Arrays.asList(new String[] { CHANNEL_ID_1 })))));
+        assertTrue(exportData.getChannelTags().contains(new ChannelTag("tag2", "Tag 2", new HashSet<>(Arrays.asList(new String[] { CHANNEL_ID_1 })))));
 
         assertEquals(1, exportData.getDependencyIds().size());
         assertTrue(exportData.getDependencyIds().contains(CHANNEL_ID_2));
@@ -234,3 +234,4 @@ public class ChannelServletTest extends ServletTestBase {
     }
 
 }
+

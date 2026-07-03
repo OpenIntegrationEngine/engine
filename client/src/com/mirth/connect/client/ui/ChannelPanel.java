@@ -1928,7 +1928,9 @@ public class ChannelPanel extends AbstractFramePanel {
         List<ChannelTag> channelTags = new ArrayList<ChannelTag>();
         for (ChannelTag channelTag : getCachedChannelTags()) {
             if (channelTag.getChannelIds().contains(channel.getId())) {
-                channelTags.add(channelTag);
+                ChannelTag exportTag = new ChannelTag(channelTag);
+                exportTag.setChannelIds(Collections.singleton(channel.getId()));
+                channelTags.add(exportTag);
             }
         }
 

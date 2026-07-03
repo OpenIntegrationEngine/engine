@@ -312,6 +312,11 @@ public class ChannelServlet extends MirthServlet implements ChannelServletInterf
             channel.getExportData().setChannelTags(channelTags
                     .stream()
                     .filter(tag -> tag.getChannelIds().contains(channel.getId()))
+                    .map(tag -> {
+                        ChannelTag exportTag = new ChannelTag(tag);
+                        exportTag.setChannelIds(Collections.singleton(channel.getId()));
+                        return exportTag;
+                    })
                     .collect(Collectors.toList()));
 
             channel.getExportData().setDependencyIds(channelDependencies

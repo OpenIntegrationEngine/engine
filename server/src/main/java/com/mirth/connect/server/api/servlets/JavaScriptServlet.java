@@ -34,20 +34,6 @@ public class JavaScriptServlet extends MirthServlet implements JavaScriptServlet
         return Response.ok(json).type(MediaType.APPLICATION_JSON).build();
     }
 
-    @Override
-    public Response prettyPrintScript(String script) {
-        String source = script == null ? "" : script;
-        String formatted;
-        try {
-            // Same Rhino-AST formatter Swing's Format Code uses (keeps E4X XML literals intact).
-            formatted = JavaScriptSharedUtil.prettyPrint(source);
-        } catch (Exception e) {
-            formatted = null;
-        }
-        return Response.ok(formatted == null ? source : formatted)
-                .type(MediaType.TEXT_PLAIN + "; charset=utf-8").build();
-    }
-
     // Minimal JSON string escaper (the response is a single {"error":"..."} object, so we build it
     // by hand rather than pull in a serializer).
     private static String jsonString(String s) {

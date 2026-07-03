@@ -25,10 +25,11 @@ import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
 
 /**
- * JavaScript utilities the script editors need — validation and formatting — exposed over REST
- * so a browser client can use the engine's own Rhino compiler/formatter (the same ones the Swing
- * client uses in-process) instead of shipping its own. Both take a raw script body, require only a
- * valid session, and are not audited (editor-support calls, hit frequently).
+ * JavaScript utilities the script editors need — script validation — exposed over REST so a
+ * browser client can use the engine's own Rhino compiler (the same one the Swing client uses
+ * in-process) instead of shipping its own. Takes a raw script body, requires only a valid
+ * session, and is not audited (editor-support calls, hit frequently). (Formatting is done
+ * client-side by the web admin with js-beautify, so there is no pretty-print endpoint.)
  */
 @Path("/javascript")
 @Tag(name = "JavaScript")
@@ -43,12 +44,4 @@ public interface JavaScriptServletInterface extends BaseServletInterface {
     @Operation(summary = "Validates a JavaScript script with the engine's Rhino compiler. Returns { \"error\": <message|null> }.")
     @MirthOperation(name = "validateScript", display = "Validate JavaScript", auditable = false)
     public Response validateScript(@Param("script") String script) throws ClientException;
-
-    @POST
-    @Path("/_prettyPrint")
-    @Consumes(MediaType.TEXT_PLAIN)
-    @Produces(MediaType.TEXT_PLAIN)
-    @Operation(summary = "Formats a JavaScript script with the engine's Rhino-AST pretty-printer (E4X-safe). Returns the formatted script.")
-    @MirthOperation(name = "prettyPrintScript", display = "Format JavaScript", auditable = false)
-    public Response prettyPrintScript(@Param("script") String script) throws ClientException;
 }

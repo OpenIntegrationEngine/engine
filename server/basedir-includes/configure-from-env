@@ -114,8 +114,10 @@ while read -r keyvalue; do
 			ACTUAL_KEY="${ACTUAL_KEY//_/.}"
 
 			# lower case
-			# example:  database.max-connections
-			ACTUAL_KEY="${ACTUAL_KEY,,}"
+			# example:  database.max-connections (but not _MP_user_pref_default_showTags)
+			if [[ ! ${ACTUAL_KEY} =~ [a-z] ]]; then
+				ACTUAL_KEY="${ACTUAL_KEY,,}"
+			fi
 
 			# if key does not exist in mirth.properties append it at bottom
 			LINE_COUNT=`grep "^${ACTUAL_KEY}" "$APP_DIR/conf/mirth.properties" | wc -l`

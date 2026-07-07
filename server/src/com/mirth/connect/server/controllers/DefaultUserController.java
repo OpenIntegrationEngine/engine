@@ -25,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.mirth.commons.encryption.Digester;
 import com.mirth.connect.client.core.ControllerException;
+import com.mirth.connect.model.AdminUserPreference;
 import com.mirth.connect.model.Credentials;
 import com.mirth.connect.model.LoginStatus;
 import com.mirth.connect.model.LoginStatus.Status;
@@ -560,11 +561,23 @@ public class DefaultUserController extends UserController {
         logger.debug("retrieving preferences: user id=" + userId);
         Properties properties = new Properties();
 
+        var policies = ControllerFactory.getFactory().createConfigurationController().getUserPreferenceProperties();
+        for (var entry : policies.entrySet()) {
+            if (CollectionUtils.isEmpty(names) || names.contains(entry.getKey())) {
+                properties.setProperty(entry.getKey(), StringUtils.defaultString(entry.getValue().value()));
+            }
+        }
+
         StatementLock.getInstance(VACUUM_LOCK_PREFERENCES_STATEMENT_ID).readLock();
         try {
             List<KeyValuePair> result = SqlConfig.getInstance().getReadOnlySqlSessionManager().selectList("User.selectPreferencesForUser", userId);
 
             for (KeyValuePair pair : result) {
+                var policy = policies.get(pair.getKey());
+                if (policy != null && policy.locked()) {
+                    continue;
+                }
+
                 if (CollectionUtils.isEmpty(names) || names.contains(pair.getKey())) {
                     properties.setProperty(pair.getKey(), StringUtils.defaultString(pair.getValue()));
                 }
@@ -582,6 +595,14 @@ public class DefaultUserController extends UserController {
     public String getUserPreference(Integer userId, String name) {
         logger.debug("retrieving preference: user id=" + userId + ", name=" + name);
 
+        var policy = ControllerFactory.getFactory().createConfigurationController().getUserPreferenceProperties().get(name);
+        policy = policy != null ? policy : new AdminUserPreference(null, false);
+
+        String value = policy.value();
+        if (policy.locked()) {
+            return value;
+        }
+        
         StatementLock.getInstance(VACUUM_LOCK_PREFERENCES_STATEMENT_ID).readLock();
         try {
             Map<String, Object> parameterMap = new HashMap<String, Object>();

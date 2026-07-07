@@ -21,6 +21,7 @@ import org.apache.commons.configuration2.PropertiesConfiguration;
 import com.mirth.commons.encryption.Digester;
 import com.mirth.commons.encryption.Encryptor;
 import com.mirth.connect.client.core.ControllerException;
+import com.mirth.connect.model.AdminUserPreference;
 import com.mirth.connect.model.ChannelDependency;
 import com.mirth.connect.model.ChannelMetadata;
 import com.mirth.connect.model.ChannelTag;
@@ -334,6 +335,9 @@ public abstract class ConfigurationController extends Controller {
     }
 
     public abstract Properties getPropertiesForGroup(String group, Set<String> propertyKeys);
+
+    /** Get administratively set user preferences */
+    public abstract Map<String, AdminUserPreference> getUserPreferenceProperties();
 
     public abstract void removePropertiesForGroup(String group);
 

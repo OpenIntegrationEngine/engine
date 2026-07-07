@@ -99,6 +99,7 @@ import com.mirth.connect.client.core.PropertiesConfigurationUtil;
 import com.mirth.connect.donkey.model.DatabaseConstants;
 import com.mirth.connect.donkey.server.data.DonkeyStatisticsUpdater;
 import com.mirth.connect.donkey.util.DonkeyElement;
+import com.mirth.connect.model.AdminUserPreference;
 import com.mirth.connect.model.Channel;
 import com.mirth.connect.model.ChannelDependency;
 import com.mirth.connect.model.ChannelMetadata;
@@ -144,6 +145,8 @@ public class DefaultConfigurationController extends ConfigurationController {
     public static final String PROPERTIES_CHANNEL_METADATA = "channelMetadata";
     public static final String PROPERTIES_CHANNEL_TAGS = "channelTags";
     public static final String PROPERTIES_DATABASE_DRIVERS = "databaseDrivers";
+    private static final String USER_PREFERENCE_DEFAULT_PREFIX = "user.pref.default.";
+    private static final String USER_PREFERENCE_LOCK_PREFIX = "user.pref.lock.";
     public static final String SECRET_KEY_ALIAS = "encryption";
     public static final String VACUUM_LOCK_STATEMENT_ID = "Configuration.vacuumConfigurationTable";
 
@@ -1000,6 +1003,26 @@ public class DefaultConfigurationController extends ConfigurationController {
         }
 
         return properties;
+    }
+
+    @Override
+    public Map<String, AdminUserPreference> getUserPreferenceProperties() {
+        Properties coreProperties = getPropertiesForGroup(PROPERTIES_CORE);
+        Map<String, AdminUserPreference> policies = new HashMap<String, AdminUserPreference>();
+
+        for (String key : coreProperties.stringPropertyNames()) {
+            if (!key.startsWith(USER_PREFERENCE_DEFAULT_PREFIX)) {
+                continue;
+            }
+
+            String preferenceName = key.substring(USER_PREFERENCE_DEFAULT_PREFIX.length());
+            String value = coreProperties.getProperty(key);
+            boolean locked = Boolean.parseBoolean(coreProperties.getProperty(USER_PREFERENCE_LOCK_PREFIX + preferenceName));
+
+            policies.put(preferenceName, new AdminUserPreference(value, locked));
+        }
+
+        return policies;
     }
 
     public void removePropertiesForGroup(String category) {

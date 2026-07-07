@@ -22,6 +22,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mirth.connect.client.core.api.MirthApiException;
 import com.mirth.connect.client.core.api.servlets.DataTypeServletInterface;
 import com.mirth.connect.donkey.model.message.SerializationType;
@@ -36,6 +38,8 @@ import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.server.controllers.ExtensionController;
 
 public class DataTypeServlet extends MirthServlet implements DataTypeServletInterface {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final ExtensionController extensionController = ControllerFactory.getFactory().createExtensionController();
 
@@ -72,14 +76,14 @@ public class DataTypeServlet extends MirthServlet implements DataTypeServletInte
             String[] tv = typeAndVersion(serializer, msg);
             MessageVocabulary vocab = safeVocab(plugin, tv[1], tv[0]);
             String root = buildRoot(tv[0], tv[1], vocab);
-            String descriptions = (!json && vocab != null) ? buildDescriptions(data, vocab) : "{}";
 
-            String out = "{"
-                    + "\"format\":" + jsonString(json ? "json" : "xml") + ","
-                    + "\"data\":" + jsonString(data) + ","
-                    + "\"meta\":{\"root\":" + jsonString(root) + ",\"descriptions\":" + descriptions + "}"
-                    + "}";
-            return Response.ok(out).type(MediaType.APPLICATION_JSON).build();
+            ObjectNode out = MAPPER.createObjectNode();
+            out.put("format", json ? "json" : "xml");
+            out.put("data", data);
+            ObjectNode meta = out.putObject("meta");
+            meta.put("root", root);
+            meta.set("descriptions", (!json && vocab != null) ? buildDescriptions(data, vocab) : MAPPER.createObjectNode());
+            return Response.ok(out.toString()).type(MediaType.APPLICATION_JSON).build();
         } catch (MirthApiException e) {
             throw e;
         } catch (Exception e) {
@@ -180,12 +184,12 @@ public class DataTypeServlet extends MirthServlet implements DataTypeServletInte
         }
     }
 
-    // Build a { "<nodeName>": "<description>" } JSON object from the serialized XML by walking each
+    // Build a { "<nodeName>": "<description>" } object from the serialized XML by walking each
     // distinct element and looking up its vocabulary description. Best-effort: any failure yields
-    // "{}" so the client falls back to bare node names.
-    private static String buildDescriptions(String xml, MessageVocabulary vocab) {
+    // an empty object so the client falls back to bare node names.
+    private static ObjectNode buildDescriptions(String xml, MessageVocabulary vocab) {
         if (StringUtils.isBlank(xml)) {
-            return "{}";
+            return MAPPER.createObjectNode();
         }
         try {
             DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
@@ -202,18 +206,13 @@ public class DataTypeServlet extends MirthServlet implements DataTypeServletInte
             Map<String, String> map = new LinkedHashMap<String, String>();
             walk(doc.getDocumentElement(), vocab, map, new HashSet<String>());
 
-            StringBuilder b = new StringBuilder("{");
-            boolean first = true;
+            ObjectNode descriptions = MAPPER.createObjectNode();
             for (Map.Entry<String, String> e : map.entrySet()) {
-                if (!first) {
-                    b.append(",");
-                }
-                b.append(jsonString(e.getKey())).append(":").append(jsonString(e.getValue()));
-                first = false;
+                descriptions.put(e.getKey(), e.getValue());
             }
-            return b.append("}").toString();
+            return descriptions;
         } catch (Exception e) {
-            return "{}";
+            return MAPPER.createObjectNode();
         }
     }
 
@@ -237,24 +236,4 @@ public class DataTypeServlet extends MirthServlet implements DataTypeServletInte
         }
     }
 
-    private static String jsonString(String s) {
-        StringBuilder b = new StringBuilder("\"");
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            switch (c) {
-                case '"':  b.append("\\\""); break;
-                case '\\': b.append("\\\\"); break;
-                case '\n': b.append("\\n"); break;
-                case '\r': b.append("\\r"); break;
-                case '\t': b.append("\\t"); break;
-                default:
-                    if (c < 0x20) {
-                        b.append(String.format("\\u%04x", (int) c));
-                    } else {
-                        b.append(c);
-                    }
-            }
-        }
-        return b.append('"').toString();
-    }
 }

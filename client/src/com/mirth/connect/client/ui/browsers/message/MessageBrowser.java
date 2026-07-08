@@ -12,6 +12,7 @@ package com.mirth.connect.client.ui.browsers.message;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.Component;
 import java.awt.Font;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -50,6 +51,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JRadioButton;
+import javax.swing.JComponent;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingWorker;
 import javax.swing.border.LineBorder;
@@ -113,6 +115,7 @@ import com.mirth.connect.plugins.AttachmentViewer;
 import com.mirth.connect.util.MirthJsonUtil;
 import com.mirth.connect.util.MirthXmlUtil;
 import com.mirth.connect.util.StringUtil;
+import com.mirth.connect.model.DashboardStatus;
 
 /**
  * The message browser panel.
@@ -1291,12 +1294,40 @@ public class MessageBrowser extends javax.swing.JPanel {
         mappingsTable.getColumnExt(SCOPE_COLUMN_NAME).setMinWidth(UIConstants.MIN_WIDTH);
         mappingsTable.getColumnExt(SCOPE_COLUMN_NAME).setMaxWidth(UIConstants.MAX_WIDTH);
 
-        // Disable HTML in a column.
-        DefaultTableCellRenderer noHTMLRenderer = new DefaultTableCellRenderer();
-        noHTMLRenderer.putClientProperty("html.disable", Boolean.TRUE);
-        mappingsTable.getColumnExt(VALUE_COLUMN_NAME).setCellRenderer(noHTMLRenderer);
+        // Disable HTML in the value column and set a custom renderer to add dynamic tooltips
+        ValueTooltipCellRenderer valueRenderer = new ValueTooltipCellRenderer();
+        valueRenderer.putClientProperty("html.disable", Boolean.TRUE);
+        mappingsTable.getColumnExt(VALUE_COLUMN_NAME).setCellRenderer(valueRenderer);
 
         mappingsPane.setViewportView(mappingsTable);
+    }
+
+    // Custom cell renderer class for mappings value column tooltips
+    private class ValueTooltipCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            if (column == 2 /* VALUE_COLUMN_NAME */) {
+                String key = String.valueOf(table.getModel().getValueAt(table.convertRowIndexToModel(row), 1));
+                String val = String.valueOf(value);
+                ((JComponent)c).setToolTipText(resolveMapValueTooltip(key, val));
+            }
+            return c;
+        }
+    }
+
+    // Resolve tooltip text for a mapping entry based on key/value
+    private String resolveMapValueTooltip(String key, String value) {
+        // Show channel name when key is sourceChannelId
+        if ("sourceChannelId".equals(key)) {
+            return parent.status.stream()
+                .filter(s -> value.equals(s.getChannelId()))
+                .findFirst()
+                .map(DashboardStatus::getName)
+                .orElse("<< channel ID not found >>");
+        }
+
+        return null;
     }
 
     public void updateMappingsTable(String[][] tableData, boolean cleared) {

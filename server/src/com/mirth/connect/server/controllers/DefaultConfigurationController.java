@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedMap;
@@ -75,7 +76,6 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
 import org.bouncycastle.asn1.x509.BasicConstraints;
@@ -1703,5 +1703,39 @@ public class DefaultConfigurationController extends ConfigurationController {
         } catch (EmailException e) {
             return new ConnectionTestResponse(ConnectionTestResponse.Type.FAILURE, e.getMessage());
         }
+    }
+
+    @Override
+    public void updateServerSettingsFromEnvironment() {
+        Optional<String> newServerName = getEnvironmentVariable("MC_SERVER_NAME");
+        Optional<String> newEnvName = getEnvironmentVariable("MC_ENV_NAME");
+
+        if (newServerName.isPresent() || newEnvName.isPresent()) {
+            try {
+                ServerSettings serverSettings = getServerSettings();
+
+                if (newServerName.isPresent()) {
+                    serverSettings.setServerName(newServerName.get());
+                }
+                if (newEnvName.isPresent()) {
+                    serverSettings.setEnvironmentName(newEnvName.get());
+                }
+
+                setServerSettings(serverSettings);
+            } catch (ControllerException e) {
+                logger.error("Failed to update server settings via environment variables", e);
+            }
+        }
+    }
+
+    /**
+     * Pull an environment variable. Values are trimmed, and only non-empty values are returned.
+     * 
+     * @param envName the environment variable name
+     * @return the property's value
+     */
+    private Optional<String> getEnvironmentVariable(String envName) {
+        String propValue = StringUtils.trimToEmpty(System.getenv(envName));
+        return StringUtils.isNotBlank(propValue) ? Optional.of(propValue) : Optional.empty();
     }
 }

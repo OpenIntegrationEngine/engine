@@ -19,7 +19,6 @@ import java.nio.charset.Charset;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -29,10 +28,10 @@ import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.filter.Filterable;
 import org.apache.velocity.runtime.RuntimeConstants;
@@ -345,9 +344,11 @@ public class Mirth extends Thread {
             ((org.apache.logging.log4j.core.Logger) velocityLogger).setLevel(Level.OFF);
         }
 
+        configurationController.updateServerSettingsFromEnvironment();
+
         eventController.dispatchEvent(new ServerEvent(configurationController.getServerId(), "Server startup"));
 
-        // Start web server before starting the engine in case there is a 
+        // Start web server before starting the engine in case there is a
         // problem starting the engine that causes it to hang
         startWebServer();
 

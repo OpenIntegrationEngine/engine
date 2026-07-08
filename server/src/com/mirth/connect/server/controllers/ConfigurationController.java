@@ -360,4 +360,9 @@ public abstract class ConfigurationController extends Controller {
     public abstract void setChannelTags(Set<ChannelTag> tags);
 
     public abstract Set<ChannelTag> getChannelTags();
+
+    /**
+     * Update server settings based on environment variables.
+     */
+    public abstract void updateServerSettingsFromEnvironment();
 }

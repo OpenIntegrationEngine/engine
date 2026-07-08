@@ -33,6 +33,7 @@ public class PlatformUI {
     public static String SERVER_DATABASE;
     public static String USER_NAME;
     public static String CLIENT_VERSION;
+    public static String PINNED_CLIENT_TRUST;
     public static String SERVER_VERSION;
     public static String BUILD_DATE;
     public static Color DEFAULT_BACKGROUND_COLOR = ServerSettings.DEFAULT_COLOR;

@@ -151,30 +151,43 @@ public class Client implements UserServletInterface, ConfigurationServletInterfa
      */
     public Client(String address) throws URISyntaxException {
         // Default timeout is infinite.
-        this(address, 0, MirthSSLUtil.DEFAULT_HTTPS_CLIENT_PROTOCOLS, MirthSSLUtil.DEFAULT_HTTPS_CIPHER_SUITES, null);
+        this(address, 0, MirthSSLUtil.DEFAULT_HTTPS_CLIENT_PROTOCOLS, MirthSSLUtil.DEFAULT_HTTPS_CIPHER_SUITES, null, null);
     }
 
     public Client(String address, String[] httpsProtocols, String[] httpsCipherSuites) throws URISyntaxException {
         // Default timeout is infinite.
-        this(address, 0, httpsProtocols, httpsCipherSuites, null);
+        this(address, httpsProtocols, httpsCipherSuites, (String) null);
+    }
+
+    public Client(String address, String[] httpsProtocols, String[] httpsCipherSuites, String pinnedClientTrust) throws URISyntaxException {
+        // Default timeout is infinite.
+        this(address, 0, httpsProtocols, httpsCipherSuites, pinnedClientTrust, null);
     }
 
     public Client(String address, String[] httpsProtocols, String[] httpsCipherSuites, String[] apiProviderClasses) throws URISyntaxException {
         // Default timeout is infinite.
-        this(address, 0, httpsProtocols, httpsCipherSuites, apiProviderClasses);
+        this(address, 0, httpsProtocols, httpsCipherSuites, null, apiProviderClasses);
     }
 
     public Client(String address, int timeout, String[] httpsProtocols, String[] httpsCipherSuites) throws URISyntaxException {
-        this(address, timeout, httpsProtocols, httpsCipherSuites, null);
+        this(address, timeout, httpsProtocols, httpsCipherSuites, null, null);
     }
 
     public Client(String address, int timeout, String[] httpsProtocols, String[] httpsCipherSuites, String[] apiProviderClasses) throws URISyntaxException {
+        this(address, timeout, httpsProtocols, httpsCipherSuites, null, apiProviderClasses);
+    }
+
+    public Client(String address, int timeout, String[] httpsProtocols, String[] httpsCipherSuites, String pinnedClientTrust) throws URISyntaxException {
+        this(address, timeout, httpsProtocols, httpsCipherSuites, pinnedClientTrust, null);
+    }
+
+    public Client(String address, int timeout, String[] httpsProtocols, String[] httpsCipherSuites, String pinnedClientTrust, String[] apiProviderClasses) throws URISyntaxException {
         if (!address.endsWith("/")) {
             address += "/";
         }
         URI addressURI = new URI(address);
 
-        serverConnection = new ServerConnection(timeout, httpsProtocols, httpsCipherSuites, StringUtils.equalsIgnoreCase(addressURI.getScheme(), "http"));
+        serverConnection = new ServerConnection(timeout, httpsProtocols, httpsCipherSuites, pinnedClientTrust, addressURI.getHost(), StringUtils.equalsIgnoreCase(addressURI.getScheme(), "http"));
 
         ClientConfig config = new ClientConfig().connectorProvider(new ConnectorProvider() {
             @Override

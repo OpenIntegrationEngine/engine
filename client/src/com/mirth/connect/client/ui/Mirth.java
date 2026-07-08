@@ -270,6 +270,7 @@ public class Mirth {
         if (StringUtils.isNotBlank(opts.getCipherSuites())) {
             PlatformUI.HTTPS_CIPHER_SUITES = StringUtils.split(opts.getCipherSuites(), ',');
         }
+        PlatformUI.PINNED_CLIENT_TRUST = opts.getPinnedClientTrust();
         PlatformUI.SERVER_URL = opts.getServer();
         PlatformUI.CLIENT_VERSION = opts.getVersion();
 

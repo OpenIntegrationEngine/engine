@@ -423,7 +423,7 @@ public class LoginPanel extends javax.swing.JFrame {
 
                 try {
                     String server = serverName.getText();
-                    client = new Client(server, PlatformUI.HTTPS_PROTOCOLS, PlatformUI.HTTPS_CIPHER_SUITES);
+                    client = new Client(server, PlatformUI.HTTPS_PROTOCOLS, PlatformUI.HTTPS_CIPHER_SUITES, PlatformUI.PINNED_CLIENT_TRUST);
                     PlatformUI.SERVER_URL = server;
 
                     // Attempt to login

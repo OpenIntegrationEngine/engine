@@ -20,6 +20,7 @@ public class CommandLineOptionsTest {
         assertEquals("secret", opts.getPassword());
         assertEquals("TLSv1.2,TLSv1.3", opts.getProtocols());
         assertEquals("TLS_RSA_WITH_AES_128_GCM_SHA256", opts.getCipherSuites());
+        assertEquals("", opts.getPinnedClientTrust());
     }
 
     @Test
@@ -33,6 +34,49 @@ public class CommandLineOptionsTest {
         assertEquals("pw", opts.getPassword());
         assertEquals("TLSv1.2", opts.getProtocols());
         assertEquals("CIPHER", opts.getCipherSuites());
+        assertEquals("", opts.getPinnedClientTrust());
+    }
+
+    @Test
+    public void testParseSslFormWithPinnedClientTrust() {
+        String[] args = new String[] { "https://example:8443", "1.0", "-ssl", "TLSv1.2,TLSv1.3", "TLS_RSA_WITH_AES_128_GCM_SHA256", "alice", "secret", "-trust", "abcdef1234,5489349" };
+        CommandLineOptions opts = new CommandLineOptions(args);
+
+        assertEquals("https://example:8443", opts.getServer());
+        assertEquals("1.0", opts.getVersion());
+        assertEquals("alice", opts.getUsername());
+        assertEquals("secret", opts.getPassword());
+        assertEquals("TLSv1.2,TLSv1.3", opts.getProtocols());
+        assertEquals("TLS_RSA_WITH_AES_128_GCM_SHA256", opts.getCipherSuites());
+        assertEquals("abcdef1234,5489349", opts.getPinnedClientTrust());
+    }
+
+    @Test
+    public void testParseUsernameFormWithPinnedClientTrust() {
+        String[] args = new String[] { "https://example:8443", "1.0", "bob", "pw", "-trust", "localhost,a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3" };
+        CommandLineOptions opts = new CommandLineOptions(args);
+
+        assertEquals("https://example:8443", opts.getServer());
+        assertEquals("1.0", opts.getVersion());
+        assertEquals("bob", opts.getUsername());
+        assertEquals("pw", opts.getPassword());
+        assertEquals("", opts.getProtocols());
+        assertEquals("", opts.getCipherSuites());
+        assertEquals("localhost,a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3", opts.getPinnedClientTrust());
+    }
+
+    @Test
+    public void testParsePinnedClientTrustAfterredentials() {
+        String[] args = new String[] { "https://example:8443", "1.0", "bob", "pw", "-trust", "localhost,a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3" };
+        CommandLineOptions opts = new CommandLineOptions(args);
+
+        assertEquals("https://example:8443", opts.getServer());
+        assertEquals("1.0", opts.getVersion());
+        assertEquals("bob", opts.getUsername());
+        assertEquals("pw", opts.getPassword());
+        assertEquals("", opts.getProtocols());
+        assertEquals("", opts.getCipherSuites());
+        assertEquals("localhost,a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3", opts.getPinnedClientTrust());
     }
 
     @Test
@@ -45,6 +89,7 @@ public class CommandLineOptionsTest {
         assertEquals("", opts.getPassword());
         assertEquals("", opts.getProtocols());
         assertEquals("", opts.getCipherSuites());
+        assertEquals("", opts.getPinnedClientTrust());
     }
 
     @Test
@@ -58,5 +103,6 @@ public class CommandLineOptionsTest {
         assertEquals("", opts.getPassword());
         assertEquals("", opts.getProtocols());
         assertEquals("", opts.getCipherSuites());
+        assertEquals("", opts.getPinnedClientTrust());
     }
 }

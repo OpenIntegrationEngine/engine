@@ -1517,7 +1517,7 @@ public class DefaultConfigurationController extends ConfigurationController {
      * 
      */
     private void generateDefaultCertificate(Provider provider, KeyStore keyStore, char[] keyPassword) throws Exception {
-        final String certificateAlias = "mirthconnect";
+        final String certificateAlias = "oiengine";
 
         if (!keyStore.containsAlias(certificateAlias)) {
             // Common CA and SSL cert attributes

@@ -51,12 +51,20 @@ public class ContextFactory {
     }
 
     /**
-     * Returns a classloader containing only the libraries contained in the custom resources, with
-     * no parent classloader. If no custom libraries are being used in the current JavaScript
-     * context, this will return null.
-     * 
-     * @return A classloader containing only the libraries contained in the custom resources, with
-     *         no parent classloader.
+     * Returns a classloader containing only the libraries in the custom resources assigned to the
+     * current context. This is used to load classes from those libraries in isolation (for example, a
+     * specific JDBC driver version) without interference from the versions shipped with the server.
+     * <p>
+     * Classes from the Java platform (e.g., those in the {@code java.sql} or {@code javax.xml} packages) 
+     * are visible through this classloader, but classes from the server or its plugins are not, as its 
+     * parent is {@link ClassLoader#getPlatformClassLoader()}. If a class exists in both a custom 
+     * resource and the Java platform, it resolves to the platform's copy. 
+     * <p>
+     * Note: The "Load Parent-First" option on a resource does not affect this classloader; 
+     * it applies only to the classloader returned by {@link #getClassLoader()}.
+     *
+     * @return An isolated classloader containing the custom resource libraries, or {@code null} if the current
+     *         context has no custom resources.
      */
     public ClassLoader getIsolatedClassLoader() {
         return delegate.getIsolatedClassLoader();

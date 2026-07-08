@@ -23,6 +23,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.model.SystemInfo;
@@ -30,8 +31,8 @@ import com.mirth.connect.model.SystemStats;
 
 @Path("/system")
 @Tag(name = "System Information and Statistics")
-@Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-@Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+@Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON})
+@Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON})
 public interface SystemServletInterface extends BaseServletInterface {
     @GET
     @Path("/info")
@@ -40,7 +41,8 @@ public interface SystemServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "systemInfo", ref = "../apiexamples/system_info_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "systemInfo", ref = "../apiexamples/system_info_json") }) })
+                    @ExampleObject(name = "systemInfo", ref = "../apiexamples/system_info_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getJVMInfo", display = "Get System Information", auditable = false)
     public SystemInfo getInfo() throws ClientException;
 
@@ -51,7 +53,8 @@ public interface SystemServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "systemStats", ref = "../apiexamples/system_stats_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "systemStats", ref = "../apiexamples/system_stats_json") }) })
+                    @ExampleObject(name = "systemStats", ref = "../apiexamples/system_stats_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getStats", display = "Get System Statistics", auditable = false)
     public SystemStats getStats() throws ClientException;
 }

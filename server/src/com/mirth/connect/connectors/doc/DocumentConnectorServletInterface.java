@@ -26,6 +26,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -33,8 +34,8 @@ import com.mirth.connect.util.ConnectionTestResponse;
 
 @Path("/connectors/doc")
 @Tag(name = "Connector Services")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface DocumentConnectorServletInterface extends BaseServletInterface {
 
     public static final String PLUGIN_POINT = "Document Connector Service";
@@ -43,10 +44,12 @@ public interface DocumentConnectorServletInterface extends BaseServletInterface 
     @Path("/_testWrite")
     @Consumes(MediaType.TEXT_PLAIN)
     @Operation(summary = "Tests whether a file can be written to the specified directory.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_json") }) })
+                    @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "testWrite", display = "Test Write", type = ExecuteType.ASYNC, auditable = false)
     public ConnectionTestResponse testWrite(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @QueryParam("channelId") String channelId,

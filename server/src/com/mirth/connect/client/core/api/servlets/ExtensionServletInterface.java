@@ -37,6 +37,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Permissions;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -46,8 +47,8 @@ import com.mirth.connect.model.PluginMetaData;
 
 @Path("/extensions")
 @Tag(name = "Extensions")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface ExtensionServletInterface extends BaseServletInterface {
 
     // These are statically declared because extensions can choose to include them in specific permission groups.
@@ -69,25 +70,30 @@ public interface ExtensionServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "extensionPath", value = "/path/to/extension") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "extensionPath", value = "/path/to/extension") }) }) String extensionPath) throws ClientException;
+                    @ExampleObject(name = "extensionPath", value = "/path/to/extension") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) String extensionPath) throws ClientException;
 
     @GET
     @Path("/{extensionName}")
     @Operation(summary = "Returns extension metadata by name.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "metadata", ref = "../apiexamples/connector_metadata_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "metadata", ref = "../apiexamples/connector_metadata_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "metadata", ref = "../apiexamples/connector_metadata_json") }) })
+                    @ExampleObject(name = "metadata", ref = "../apiexamples/connector_metadata_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getMetaDataByName", display = "Get extension metadata by name", auditable = false)
     public MetaData getExtensionMetaData(@Param("extensionName") @Parameter(description = "The name of the extension to retrieve.", required = true) @PathParam("extensionName") String extensionName) throws ClientException;
 
     @GET
     @Path("/connectors")
     @Operation(summary = "Returns all active connector metadata.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "connectorMetaDataMap", ref = "../apiexamples/connector_metadata_map_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "connectorMetaDataMap", ref = "../apiexamples/connector_metadata_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "connectorMetaDataMap", ref = "../apiexamples/connector_metadata_map_json") }) })
+                    @ExampleObject(name = "connectorMetaDataMap", ref = "../apiexamples/connector_metadata_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getConnectorMetaData", display = "Get connector metadata", auditable = false)
     public Map<String, ConnectorMetaData> getConnectorMetaData() throws ClientException;
 
@@ -95,19 +101,23 @@ public interface ExtensionServletInterface extends BaseServletInterface {
     @Path("/plugins")
     @Operation(summary = "Returns all active plugin metadata.")
     @MirthOperation(name = "getPluginMetaData", display = "Get plugin metadata", auditable = false)
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "pluginMetaData", ref = "../apiexamples/plugin_metadata_map_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "pluginMetaData", ref = "../apiexamples/plugin_metadata_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "pluginMetaData", ref = "../apiexamples/plugin_metadata_map_json") }) })
+                    @ExampleObject(name = "pluginMetaData", ref = "../apiexamples/plugin_metadata_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     public Map<String, PluginMetaData> getPluginMetaData() throws ClientException;
 
     @GET
     @Path("/{extensionName}/enabled")
     @Operation(summary = "Returns the enabled status of an extension.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "extensionEnabled", ref = "../apiexamples/boolean_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "extensionEnabled", ref = "../apiexamples/boolean_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "extensionEnabled", ref = "../apiexamples/boolean_json") }) })
+                    @ExampleObject(name = "extensionEnabled", ref = "../apiexamples/boolean_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "isExtensionEnabled", display = "Check if extension is enabled", auditable = false)
     public boolean isExtensionEnabled(@Param("extensionName") @Parameter(description = "The name of the extension to retrieve.", required = true) @PathParam("extensionName") String extensionName) throws ClientException;
 
@@ -133,10 +143,12 @@ public interface ExtensionServletInterface extends BaseServletInterface {
     @GET
     @Path("/{extensionName}/properties")
     @Operation(summary = "Returns filtered properties for a specified extension.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_json") }) })
+                    @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = OPERATION_PLUGIN_PROPERTIES_GET, display = "Get filtered plugin properties", auditable = false)
     public Properties getPluginProperties(// @formatter:off
         @Param("extensionName") @Parameter(description = "The name of the extension to retrieve.", required = true) @PathParam("extensionName") String extensionName,
@@ -151,5 +163,6 @@ public interface ExtensionServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, schema = @Schema(implementation = Properties.class), examples = {
                     @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = Properties.class), examples = {
-                    @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_json") }) }) Properties properties, @Param("mergeProperties") @Parameter(description = "Merge or replace properties. Defaults to replace.", required = false, schema = @Schema(defaultValue = "false")) @QueryParam("mergeProperties") boolean mergeProperties) throws ClientException;
+                    @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Properties properties, @Param("mergeProperties") @Parameter(description = "Merge or replace properties. Defaults to replace.", required = false, schema = @Schema(defaultValue = "false")) @QueryParam("mergeProperties") boolean mergeProperties) throws ClientException;
 }

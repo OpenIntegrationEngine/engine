@@ -30,14 +30,15 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
 
 @Path("/extensions/dashboardstatus")
 @Tag(name = "Extension Services")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface DashboardConnectorStatusServletInterface extends BaseServletInterface {
 
     public static final String PLUGIN_POINT = "Dashboard Connector Status Service";
@@ -46,10 +47,12 @@ public interface DashboardConnectorStatusServletInterface extends BaseServletInt
     @GET
     @Path("/connectorStates")
     @Operation(summary = "Retrieves all dashboard connector states.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "dashboardConnectorStateMap", ref = "../apiexamples/dashboard_connector_state_map_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "dashboardConnectorStateMap", ref = "../apiexamples/dashboard_connector_state_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "dashboardConnectorStateMap", ref = "../apiexamples/dashboard_connector_state_map_json") }) })
+                    @ExampleObject(name = "dashboardConnectorStateMap", ref = "../apiexamples/dashboard_connector_state_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getStates", display = "Get dashboard connector states", permission = PERMISSION_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public Map<String, Object[]> getConnectorStateMap(// @formatter:off
     		@Param("serverId") @Parameter(description = "The server ID to retrieve connector statuses for. Connector Statuses across all servers are retrieved is this parameter is not specified.") @QueryParam("serverId") String serverId
@@ -59,10 +62,12 @@ public interface DashboardConnectorStatusServletInterface extends BaseServletInt
     @GET
     @Path("/channelStates")
     @Operation(summary = "Retrieves all dashboard channel states.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "dashboardChannelStateMap", ref = "../apiexamples/dashboard_channel_state_map_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "dashboardChannelStateMap", ref = "../apiexamples/dashboard_channel_state_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "dashboardChannelStateMap", ref = "../apiexamples/dashboard_channel_state_map_json") }) })
+                    @ExampleObject(name = "dashboardChannelStateMap", ref = "../apiexamples/dashboard_channel_state_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getChannelStates", display = "Get dashboard channel states", permission = PERMISSION_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public Map<String, String> getChannelStates() throws ClientException;
 
@@ -76,10 +81,12 @@ public interface DashboardConnectorStatusServletInterface extends BaseServletInt
     @GET
     @Path("/connectionLogs")
     @Operation(summary = "Retrieves connection logs for all channels.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "connectionLogItemLinkedList", ref = "../apiexamples/connection_log_item_linked_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "connectionLogItemLinkedList", ref = "../apiexamples/connection_log_item_linked_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "connectionLogItemLinkedList", ref = "../apiexamples/connection_log_item_linked_list_json") }) })
+                    @ExampleObject(name = "connectionLogItemLinkedList", ref = "../apiexamples/connection_log_item_linked_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getConnectionInfoLogs", display = "Get channel connection logs", permission = PERMISSION_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public LinkedList<ConnectionLogItem> getAllChannelLogs(//@formatter:off
     		@Param("serverId") @Parameter(description = "The server ID to retrieve logs for. Logs for all servers are retrieved is this parameter is not specified.") @QueryParam("serverId") String serverId,
@@ -90,10 +97,12 @@ public interface DashboardConnectorStatusServletInterface extends BaseServletInt
     @GET
     @Path("/connectionLogs/{channelId}")
     @Operation(summary = "Retrieves connection logs for a specific channel.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "connectionLogItemLinkedList", ref = "../apiexamples/connection_log_item_linked_list_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "connectionLogItemLinkedList", ref = "../apiexamples/connection_log_item_linked_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "connectionLogItemLinkedList", ref = "../apiexamples/connection_log_item_linked_list_json") }) })
+                    @ExampleObject(name = "connectionLogItemLinkedList", ref = "../apiexamples/connection_log_item_linked_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getConnectionInfoLogs", display = "Get channel connection logs", permission = PERMISSION_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public LinkedList<ConnectionLogItem> getChannelLog(// @formatter:off
     		@Param("serverId") @Parameter(description = "The server ID to retrieve logs for. Logs for all servers are retrieved is this parameter is not specified.") @QueryParam("serverId") String serverId,

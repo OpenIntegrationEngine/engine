@@ -470,6 +470,8 @@ public class MirthWebServer extends Server {
         }
 
         ApiProviders apiProviders = getApiProviders(apiVersion);
+        apiProviders.providerClasses.add(com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider.class);
+        apiProviders.providerClasses.add(com.mirth.connect.client.core.api.providers.JacksonJsonObjectMapperConfig.class);
 
         // Add versioned Jersey API servlet
         ServletHolder jerseyVersionedServlet = apiServletContextHandler.addServlet(ServletContainer.class, "/*");

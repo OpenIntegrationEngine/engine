@@ -34,6 +34,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Permissions;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -41,17 +42,19 @@ import com.mirth.connect.model.ChannelStatistics;
 
 @Path("/channels")
 @Tag(name = "Channel Statistics")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface ChannelStatisticsServletInterface extends BaseServletInterface {
 
     @GET
     @Path("/statistics")
     @Operation(summary = "Returns the Statistics for all channels.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "channel_statistics_list", ref = "../apiexamples/channel_statistics_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "channel_statistics_list", ref = "../apiexamples/channel_statistics_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "channel_statistics_list", ref = "../apiexamples/channel_statistics_list_json") }) })
+                    @ExampleObject(name = "channel_statistics_list", ref = "../apiexamples/channel_statistics_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getAllStatistics", display = "Get all statistics", permission = Permissions.DASHBOARD_VIEW, auditable = false)
     public List<ChannelStatistics> getStatistics(//@formatter:off
             @Param("channelIds") @Parameter(description = "The IDs of the channels to retrieve. If absent, all channels will be retrieved.") @QueryParam("channelId") Set<String> channelIds,
@@ -65,10 +68,12 @@ public interface ChannelStatisticsServletInterface extends BaseServletInterface 
     @Path("/statistics/_getStatistics")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Operation(summary = "Returns the Statistics for all channels. This is a POST request alternative to GET /statistics that may be used when there are too many channel IDs to include in the query parameters.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "channel_statistics_list", ref = "../apiexamples/channel_statistics_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "channel_statistics_list", ref = "../apiexamples/channel_statistics_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "channel_statistics_list", ref = "../apiexamples/channel_statistics_list_json") }) })
+                    @ExampleObject(name = "channel_statistics_list", ref = "../apiexamples/channel_statistics_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getAllStatistics", display = "Get all statistics", permission = Permissions.DASHBOARD_VIEW, auditable = false)
     public List<ChannelStatistics> getStatisticsPost(//@formatter:off
             @Param("channelIds") @Parameter(description = "The IDs of the channels to retrieve. If absent, all channels will be retrieved.") @FormDataParam("channelIds") Set<String> channelIds,
@@ -81,10 +86,12 @@ public interface ChannelStatisticsServletInterface extends BaseServletInterface 
     @GET
     @Path("/{channelId}/statistics")
     @Operation(summary = "Returns the Statistics for the channel with the specified id.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "channel_statistics", ref = "../apiexamples/channel_statistics_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "channel_statistics", ref = "../apiexamples/channel_statistics_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "channel_statistics", ref = "../apiexamples/channel_statistics_json") }) })
+                    @ExampleObject(name = "channel_statistics", ref = "../apiexamples/channel_statistics_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getStatistics", display = "Get statistics", permission = Permissions.DASHBOARD_VIEW, auditable = false)
     public ChannelStatistics getStatistics(@Param("channelId") @Parameter(description = "The ID of the channel to retrieve statistics for.", required = true) @PathParam("channelId") String channelId) throws ClientException;
 
@@ -98,7 +105,8 @@ public interface ChannelStatisticsServletInterface extends BaseServletInterface 
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "connector_map", ref = "../apiexamples/connector_map_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "connector_map", ref = "../apiexamples/connector_map_json") }) })
+                            @ExampleObject(name = "connector_map", ref = "../apiexamples/connector_map_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             Map<String, List<Integer>> channelConnectorMap,
             
             @Param("received") @Parameter(description = "If true, received stats will be cleared.") @QueryParam("received") boolean received,

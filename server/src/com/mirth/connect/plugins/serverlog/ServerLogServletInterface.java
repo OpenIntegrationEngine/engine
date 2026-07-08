@@ -28,14 +28,15 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
 
 @Path("/extensions/serverlog")
 @Tag(name = "Extension Services")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface ServerLogServletInterface extends BaseServletInterface {
 
     public static final String PLUGIN_POINT = "Server Log";
@@ -44,10 +45,12 @@ public interface ServerLogServletInterface extends BaseServletInterface {
     @GET
     @Path("/")
     @Operation(summary = "Retrieves server log entries.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "serverLogList", ref = "../apiexamples/server_log_item_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "serverLogList", ref = "../apiexamples/server_log_item_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "serverLogList", ref = "../apiexamples/server_log_item_list_json") }) })
+                    @ExampleObject(name = "serverLogList", ref = "../apiexamples/server_log_item_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getMirthServerLogs", display = "View Server Log", permission = PERMISSION_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public List<ServerLogItem> getServerLogs(// @formatter:off
             @Param("fetchSize") @Parameter(description = "Specifies the maximum number of log items to return.", required = true, schema = @Schema(defaultValue = "100")) @QueryParam("fetchSize") int fetchSize,

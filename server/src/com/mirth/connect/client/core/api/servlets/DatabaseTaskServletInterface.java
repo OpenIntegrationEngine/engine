@@ -28,6 +28,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Permissions;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -35,27 +36,31 @@ import com.mirth.connect.model.DatabaseTask;
 
 @Path("/databaseTasks")
 @Tag(name = "Database Tasks")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface DatabaseTaskServletInterface extends BaseServletInterface {
 
     @GET
     @Path("/")
     @Operation(summary = "Retrieves all current database tasks.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "database_task_map", ref = "../apiexamples/database_task_map_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "database_task_map", ref = "../apiexamples/database_task_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "database_task_map", ref = "../apiexamples/database_task_map_json") }) })
+                    @ExampleObject(name = "database_task_map", ref = "../apiexamples/database_task_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getDatabaseTasks", display = "Get database tasks", permission = Permissions.DATABASE_TASKS_VIEW)
     public Map<String, DatabaseTask> getDatabaseTasks() throws ClientException;
 
     @GET
     @Path("/{databaseTaskId}")
     @Operation(summary = "Retrieves a single database task.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "database_task", ref = "../apiexamples/database_task_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "database_task", ref = "../apiexamples/database_task_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "database_task", ref = "../apiexamples/database_task_json") }) })
+                    @ExampleObject(name = "database_task", ref = "../apiexamples/database_task_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getDatabaseTask", display = "Get database task", permission = Permissions.DATABASE_TASKS_VIEW)
     public DatabaseTask getDatabaseTask(@Param("databaseTaskId") @Parameter(description = "The ID of the database task.", required = true) @PathParam("databaseTaskId") String databaseTaskId) throws ClientException;
 

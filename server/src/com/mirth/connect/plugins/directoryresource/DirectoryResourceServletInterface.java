@@ -27,14 +27,15 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
 
 @Path("/extensions/directoryresource")
 @Tag(name = "Extension Services")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface DirectoryResourceServletInterface extends BaseServletInterface {
 
     public static final String PLUGIN_POINT = DirectoryResourceProperties.PLUGIN_POINT;
@@ -42,10 +43,12 @@ public interface DirectoryResourceServletInterface extends BaseServletInterface 
     @GET
     @Path("/resources/{resourceId}/libraries")
     @Operation(summary = "Retrieves all library URLs for the given directory resource.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "libraryList", ref = "../apiexamples/library_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "libraryList", ref = "../apiexamples/library_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "libraryList", ref = "../apiexamples/library_list_json") }) })
+                    @ExampleObject(name = "libraryList", ref = "../apiexamples/library_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getLibraries", display = "Get libraries", type = ExecuteType.ASYNC)
     public List<String> getLibraries(@Param("resourceId") @Parameter(description = "The ID of the directory resource.", required = true) @PathParam("resourceId") String resourceId) throws ClientException;
 }

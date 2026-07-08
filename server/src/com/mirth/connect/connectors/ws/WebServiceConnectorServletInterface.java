@@ -28,6 +28,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -35,8 +36,8 @@ import com.mirth.connect.util.ConnectionTestResponse;
 
 @Path("/connectors/ws")
 @Tag(name = "Connector Services")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface WebServiceConnectorServletInterface extends BaseServletInterface {
 
     public static final String PLUGIN_POINT = "Web Service Connector Service";
@@ -44,10 +45,12 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
     @POST
     @Path("/_cacheWsdlFromUrl")
     @Operation(summary = "Downloads the WSDL at the specified URL and caches the web service definition tree.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "cache_wsdl_from_url", ref = "../apiexamples/null_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "cache_wsdl_from_url", ref = "../apiexamples/null_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "cache_wsdl_from_url", ref = "../apiexamples/null_json") }) })
+                    @ExampleObject(name = "cache_wsdl_from_url", ref = "../apiexamples/null_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "cacheWsdlFromUrl", display = "Download and cache WSDL", type = ExecuteType.ASYNC, auditable = false)
     public Object cacheWsdlFromUrl(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @QueryParam("channelId") String channelId,
@@ -57,7 +60,8 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "ws_dispatcher_properties", ref = "../apiexamples/ws_dispatcher_properties_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "ws_dispatcher_properties", ref = "../apiexamples/ws_dispatcher_properties_json") }) })
+                            @ExampleObject(name = "ws_dispatcher_properties", ref = "../apiexamples/ws_dispatcher_properties_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             WebServiceDispatcherProperties properties) throws ClientException;
     // @formatter:on
 
@@ -69,7 +73,8 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "is_wsdl_cached", ref = "../apiexamples/boolean_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "is_wsdl_cached", ref = "../apiexamples/boolean_json") }) })
+                    @ExampleObject(name = "is_wsdl_cached", ref = "../apiexamples/boolean_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "isWsdlCached", display = "Check if WSDL is cached", type = ExecuteType.ASYNC, auditable = false)
     public boolean isWsdlCached(// @formatter:off
             @Param("channelId") 
@@ -97,10 +102,12 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
     @Path("/_getDefinition")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Operation(summary = "Retrieves the definition service map corresponding to the specified WSDL.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "definition_service_map", ref = "../apiexamples/definition_service_map_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "definition_service_map", ref = "../apiexamples/definition_service_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "definition_service_map", ref = "../apiexamples/definition_service_map_json") }) })
+                    @ExampleObject(name = "definition_service_map", ref = "../apiexamples/definition_service_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getDefinition", display = "Get WSDL Definition", type = ExecuteType.ASYNC, auditable = false)
     public DefinitionServiceMap getDefinition(// @formatter:off
             @Param("channelId") 
@@ -216,10 +223,12 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
     @POST
     @Path("/_testConnection")
     @Operation(summary = "Tests whether a connection can be successfully established to the destination endpoint.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "connection_test_response_ws", ref = "../apiexamples/connection_test_response_ws_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "connection_test_response_ws", ref = "../apiexamples/connection_test_response_ws_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "connection_test_response_ws", ref = "../apiexamples/connection_test_response_ws_json") }) })
+                    @ExampleObject(name = "connection_test_response_ws", ref = "../apiexamples/connection_test_response_ws_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "testConnection", display = "Test Web Service Connection", type = ExecuteType.ASYNC, auditable = false)
     public ConnectionTestResponse testConnection(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @QueryParam("channelId") String channelId,
@@ -229,7 +238,8 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "ws_dispatcher_properties", ref = "../apiexamples/ws_dispatcher_properties_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "ws_dispatcher_properties", ref = "../apiexamples/ws_dispatcher_properties_json") }) })
+                            @ExampleObject(name = "ws_dispatcher_properties", ref = "../apiexamples/ws_dispatcher_properties_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             WebServiceDispatcherProperties properties) throws ClientException;
     // @formatter:on
 }

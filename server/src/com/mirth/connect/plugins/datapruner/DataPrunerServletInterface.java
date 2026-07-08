@@ -26,13 +26,14 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 
 @Path("/extensions/datapruner")
 @Tag(name = "Extension Services")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface DataPrunerServletInterface extends BaseServletInterface {
 
     public static final String PLUGIN_POINT = "Data Pruner";
@@ -47,10 +48,12 @@ public interface DataPrunerServletInterface extends BaseServletInterface {
     @GET
     @Path("/status")
     @Operation(summary = "Retrieves the current data pruner status.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "dataPrunerStatusMap", ref = "../apiexamples/data_pruner_status_map_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "dataPrunerStatusMap", ref = "../apiexamples/data_pruner_status_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "dataPrunerStatusMap", ref = "../apiexamples/data_pruner_status_map_json") }) })
+                    @ExampleObject(name = "dataPrunerStatusMap", ref = "../apiexamples/data_pruner_status_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getDataPrunerStatusMap", display = "Get status", permission = PERMISSION_VIEW)
     public Map<String, String> getStatusMap() throws ClientException;
 
@@ -61,7 +64,8 @@ public interface DataPrunerServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "calendar", ref = "../apiexamples/calendar_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "calendar", ref = "../apiexamples/calendar_json") }) })
+                    @ExampleObject(name = "calendar", ref = "../apiexamples/calendar_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "startDataPruner", display = "Start pruner", permission = PERMISSION_START_STOP)
     public Calendar start() throws ClientException;
 

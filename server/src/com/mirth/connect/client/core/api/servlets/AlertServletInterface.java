@@ -37,6 +37,7 @@ import com.mirth.connect.client.core.Operation.ExecuteType;
 import com.mirth.connect.client.core.Permissions;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.Param;
 import com.mirth.connect.model.ChannelHeader;
 import com.mirth.connect.model.alert.AlertInfo;
@@ -45,8 +46,8 @@ import com.mirth.connect.model.alert.AlertStatus;
 
 @Path("/alerts")
 @Tag(name = "Alerts")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface AlertServletInterface extends BaseServletInterface {
 	
 	@POST
@@ -58,7 +59,8 @@ public interface AlertServletInterface extends BaseServletInterface {
 					@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 							@ExampleObject(name = "alert", ref = "../apiexamples/alert_xml") }),
 					@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-							@ExampleObject(name = "alert", ref = "../apiexamples/alert_json") }) }) AlertModel alertModel)
+							@ExampleObject(name = "alert", ref = "../apiexamples/alert_json") }),
+					@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON) }) AlertModel alertModel)
 			throws ClientException;
 
 	@GET
@@ -68,7 +70,8 @@ public interface AlertServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "alert", ref = "../apiexamples/alert_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "alert", ref = "../apiexamples/alert_json") }), })
+					@ExampleObject(name = "alert", ref = "../apiexamples/alert_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getAlert", display = "Get alerts", permission = Permissions.ALERTS_VIEW)
 	public AlertModel getAlert(
 			@Param("alertId") @Parameter(description = "The ID of the alert.", required = true) @PathParam("alertId") String alertId)
@@ -81,7 +84,8 @@ public interface AlertServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "alert_list", ref = "../apiexamples/alert_list_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "alert_list", ref = "../apiexamples/alert_list_json") }), })
+					@ExampleObject(name = "alert_list", ref = "../apiexamples/alert_list_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getAlert", display = "Get alerts", permission = Permissions.ALERTS_VIEW)
 	public List<AlertModel> getAlerts(
 			@Param("alertIds") @Parameter(description = "The ID of the alert(s). If absent, all alerts will be returned.") @QueryParam("alertId") Set<String> alertIds)
@@ -94,14 +98,17 @@ public interface AlertServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "alert_list", ref = "../apiexamples/alert_list_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "alert_list", ref = "../apiexamples/alert_list_json") }) })
+					@ExampleObject(name = "alert_list", ref = "../apiexamples/alert_list_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getAlert", display = "Get alerts", permission = Permissions.ALERTS_VIEW)
 	public List<AlertModel> getAlertsPost(
 			@Param("alertIds") @RequestBody(description = "The ID of the alert(s). If absent, all alerts will be returned.", content = {
 					@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 							@ExampleObject(name = "alert_set", ref = "../apiexamples/guid_set_xml") }),
 					@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-							@ExampleObject(name = "alert_set", ref = "../apiexamples/guid_set_json") }) }) Set<String> alertIds)
+							@ExampleObject(name = "alert_set", ref = "../apiexamples/guid_set_json") }),
+					@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
+			Set<String> alertIds)
 			throws ClientException;
 
 	@GET
@@ -111,7 +118,8 @@ public interface AlertServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "alert_status_list", ref = "../apiexamples/alert_status_list_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "alert_status_list", ref = "../apiexamples/alert_status_list_json") }) })
+					@ExampleObject(name = "alert_status_list", ref = "../apiexamples/alert_status_list_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getAlertStatusList", display = "Get alert status list", permission = Permissions.ALERTS_VIEW, type = ExecuteType.ASYNC, auditable = false)
 	public List<AlertStatus> getAlertStatusList() throws ClientException;
 
@@ -122,7 +130,8 @@ public interface AlertServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "alert_info", ref = "../apiexamples/alert_info_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "alert_info", ref = "../apiexamples/alert_info_json") }) })
+					@ExampleObject(name = "alert_info", ref = "../apiexamples/alert_info_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getAlertInfo", display = "Get alert info", permission = Permissions.ALERTS_VIEW, auditable = false)
 	public AlertInfo getAlertInfo(// @formatter:off
 			@Param("alertId") @Parameter(description = "The ID of the alert.", required = true) @PathParam("alertId") String alertId,
@@ -130,7 +139,9 @@ public interface AlertServletInterface extends BaseServletInterface {
 					@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 							@ExampleObject(name = "channel_header_map", ref = "../apiexamples/channel_header_map_xml") }),
 					@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-							@ExampleObject(name = "channel_header_map", ref = "../apiexamples/channel_header_map_json") }) }) Map<String, ChannelHeader> cachedChannels)
+							@ExampleObject(name = "channel_header_map", ref = "../apiexamples/channel_header_map_json") }),
+					@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
+			Map<String, ChannelHeader> cachedChannels)
 			throws ClientException;
 	// @formatter:on
 
@@ -141,23 +152,28 @@ public interface AlertServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "alert_info", ref = "../apiexamples/alert_info_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "alert_info", ref = "../apiexamples/alert_info_json") }) })
+					@ExampleObject(name = "alert_info", ref = "../apiexamples/alert_info_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getAlertInfo", display = "Get alert info", permission = Permissions.ALERTS_VIEW)
 	public AlertInfo getAlertInfo(
 			@Param("cachedChannels") @RequestBody(description = "A map of ChannelHeader objects telling the server the state of the client-side channel cache.", required = true, content = {
 					@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 							@ExampleObject(name = "channel_header_map", ref = "../apiexamples/channel_header_map_xml") }),
 					@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-							@ExampleObject(name = "channel_header_map", ref = "../apiexamples/channel_header_map_json") }) }) Map<String, ChannelHeader> cachedChannels)
+							@ExampleObject(name = "channel_header_map", ref = "../apiexamples/channel_header_map_json") }),
+					@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
+			Map<String, ChannelHeader> cachedChannels)
 			throws ClientException;
 
 	@GET
 	@Path("/options")
 	@Operation(summary = "Returns all alert protocol options.")
-	@ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-			@ExampleObject(name = "alert_protocol_options", ref = "../apiexamples/alert_protocol_options_xml") }),
+	@ApiResponse(content = { 
+			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
+				@ExampleObject(name = "alert_protocol_options", ref = "../apiexamples/alert_protocol_options_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "alert_protocol_options", ref = "../apiexamples/alert_protocol_options_json") }) })
+					@ExampleObject(name = "alert_protocol_options", ref = "../apiexamples/alert_protocol_options_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getAlertProtocolOptions", display = "Get alert protocol options", permission = Permissions.ALERTS_VIEW, auditable = false)
 	public Map<String, Map<String, String>> getAlertProtocolOptions() throws ClientException;
 
@@ -171,7 +187,9 @@ public interface AlertServletInterface extends BaseServletInterface {
 					@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 							@ExampleObject(name = "alert", ref = "../apiexamples/alert_xml") }),
 					@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-							@ExampleObject(name = "alert", ref = "../apiexamples/alert_json") }) }) AlertModel alertModel)
+							@ExampleObject(name = "alert", ref = "../apiexamples/alert_json") }),
+					@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
+			AlertModel alertModel)
 			throws ClientException;
 	// @formatter:on
 

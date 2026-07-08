@@ -26,6 +26,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -33,8 +34,8 @@ import com.mirth.connect.util.ConnectionTestResponse;
 
 @Path("/connectors/tcp")
 @Tag(name = "Connector Services")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface TcpConnectorServletInterface extends BaseServletInterface {
 
     public static final String PLUGIN_POINT = "HTTP Connector Service";
@@ -42,10 +43,12 @@ public interface TcpConnectorServletInterface extends BaseServletInterface {
     @POST
     @Path("/_testConnection")
     @Operation(summary = "Tests whether a connection can be successfully established to the destination endpoint.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "connection_test_response_tcp", ref = "../apiexamples/connection_test_response_tcp_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "connection_test_response_tcp", ref = "../apiexamples/connection_test_response_tcp_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "connection_test_response_tcp", ref = "../apiexamples/connection_test_response_tcp_json") }) })
+                    @ExampleObject(name = "connection_test_response_tcp", ref = "../apiexamples/connection_test_response_tcp_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "testConnection", display = "Test TCP Connection", type = ExecuteType.ASYNC, auditable = false)
     public ConnectionTestResponse testConnection(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @QueryParam("channelId") String channelId,
@@ -55,7 +58,8 @@ public interface TcpConnectorServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "tcp_dispatcher_properties", ref = "../apiexamples/tcp_dispatcher_properties_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "tcp_dispatcher_properties", ref = "../apiexamples/tcp_dispatcher_properties_json") }) })
+                            @ExampleObject(name = "tcp_dispatcher_properties", ref = "../apiexamples/tcp_dispatcher_properties_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             TcpDispatcherProperties properties) throws ClientException;
     // @formatter:on
 }

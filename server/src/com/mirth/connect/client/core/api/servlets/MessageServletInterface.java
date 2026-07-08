@@ -38,6 +38,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
 import com.mirth.connect.client.core.Permissions;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -55,8 +56,8 @@ import com.mirth.connect.util.messagewriter.MessageWriterOptions;
 
 @Path("/channels")
 @Tag(name = "Messages")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface MessageServletInterface extends BaseServletInterface {
 
     @POST
@@ -67,7 +68,8 @@ public interface MessageServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "long", ref = "../apiexamples/long_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "long", ref = "../apiexamples/long_json") }) })
+                    @ExampleObject(name = "long", ref = "../apiexamples/long_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "processMessages", display = "Process messages", permission = Permissions.MESSAGES_PROCESS, type = ExecuteType.ASYNC)
     public Long processMessage(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
@@ -86,7 +88,8 @@ public interface MessageServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "long", ref = "../apiexamples/long_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "long", ref = "../apiexamples/long_json") }) })
+                    @ExampleObject(name = "long", ref = "../apiexamples/long_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "processMessages", display = "Process messages", permission = Permissions.MESSAGES_PROCESS, type = ExecuteType.ASYNC)
     public Long processMessage(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
@@ -94,7 +97,8 @@ public interface MessageServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "rawMessage", ref = "../apiexamples/raw_message_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "rawMessage", ref = "../apiexamples/raw_message_json") }) }) RawMessage rawMessage) throws ClientException;
+                            @ExampleObject(name = "rawMessage", ref = "../apiexamples/raw_message_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) RawMessage rawMessage) throws ClientException;
     // @formatter:on
 
     @GET
@@ -104,7 +108,8 @@ public interface MessageServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "message", ref = "../apiexamples/message_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "message", ref = "../apiexamples/message_json") }) })
+                    @ExampleObject(name = "message", ref = "../apiexamples/message_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getMessageContent", display = "Get message content", permission = Permissions.MESSAGES_VIEW, type = ExecuteType.ASYNC)
     public Message getMessageContent(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
@@ -115,10 +120,12 @@ public interface MessageServletInterface extends BaseServletInterface {
     @GET
     @Path("/{channelId}/messages/{messageId}/attachments")
     @Operation(summary = "Retrieve a list of attachments by message ID.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "attachmentList", ref = "../apiexamples/attachment_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "attachmentList", ref = "../apiexamples/attachment_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "attachmentList", ref = "../apiexamples/attachment_list_json") }) })
+                    @ExampleObject(name = "attachmentList", ref = "../apiexamples/attachment_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getAttachmentsByMessageId", display = "Get attachments by message ID", permission = Permissions.MESSAGES_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public List<Attachment> getAttachmentsByMessageId(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
@@ -133,7 +140,8 @@ public interface MessageServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "attachment", ref = "../apiexamples/attachment_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "attachment", ref = "../apiexamples/attachment_json") }) })
+                    @ExampleObject(name = "attachment", ref = "../apiexamples/attachment_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getAttachment", display = "Get attachment", permission = Permissions.MESSAGES_VIEW, type = ExecuteType.ASYNC)
     public Attachment getAttachment(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
@@ -153,7 +161,8 @@ public interface MessageServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "connectorMessage", ref = "../apiexamples/connector_message_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "connectorMessage", ref = "../apiexamples/connector_message_json") }) }) ConnectorMessage message) throws ClientException;
+                            @ExampleObject(name = "connectorMessage", ref = "../apiexamples/connector_message_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) ConnectorMessage message) throws ClientException;
     // @formatter:on
 
     @GET
@@ -163,7 +172,8 @@ public interface MessageServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "messageId", ref = "../apiexamples/long_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "messageId", ref = "../apiexamples/long_json") }) })
+                    @ExampleObject(name = "messageId", ref = "../apiexamples/long_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getMaxMessageId", display = "Get max messageId", permission = Permissions.MESSAGES_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public Long getMaxMessageId(@Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId) throws ClientException;
 
@@ -174,7 +184,8 @@ public interface MessageServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "messages", ref = "../apiexamples/message_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "messages", ref = "../apiexamples/message_list_json") }) })
+                    @ExampleObject(name = "messages", ref = "../apiexamples/message_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "searchMessages", display = "Get messages by page limit", permission = Permissions.MESSAGES_VIEW, abortable = true)
     public List<Message> getMessages(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId, 
@@ -182,7 +193,8 @@ public interface MessageServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_json") }) }) MessageFilter filter, 
+                            @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) MessageFilter filter, 
             @Param("includeContent") @Parameter(description = "If true, message content will be returned with the results.", schema = @Schema(defaultValue = "false")) @QueryParam("includeContent") Boolean includeContent, 
             @Param("offset") @Parameter(description = "Used for pagination, determines where to start in the search results.", schema = @Schema(defaultValue = "0")) @QueryParam("offset") Integer offset, 
             @Param("limit") @Parameter(description = "Used for pagination, determines the maximum number of results to return.", schema = @Schema(defaultValue = "20")) @QueryParam("limit") Integer limit) throws ClientException;
@@ -195,7 +207,8 @@ public interface MessageServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "messages", ref = "../apiexamples/message_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "messages", ref = "../apiexamples/message_list_json") }) })
+                    @ExampleObject(name = "messages", ref = "../apiexamples/message_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "searchMessages", display = "Get messages by page limit", permission = Permissions.MESSAGES_VIEW, abortable = true)
     public List<Message> getMessages(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
@@ -247,7 +260,8 @@ public interface MessageServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "messageCount", ref = "../apiexamples/long_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "messageCount", ref = "../apiexamples/long_json") }) })
+                    @ExampleObject(name = "messageCount", ref = "../apiexamples/long_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getSearchCount", display = "Get search results count", permission = Permissions.MESSAGES_VIEW, abortable = true)
     public Long getMessageCount(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
@@ -255,7 +269,8 @@ public interface MessageServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_json") }) }) MessageFilter filter) throws ClientException;
+                            @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) MessageFilter filter) throws ClientException;
     // @formatter:off
     
     @GET
@@ -265,7 +280,8 @@ public interface MessageServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "messageCount", ref = "../apiexamples/long_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "messageCount", ref = "../apiexamples/long_json") }) })
+                    @ExampleObject(name = "messageCount", ref = "../apiexamples/long_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getSearchCount", display = "Get search results count", permission = Permissions.MESSAGES_VIEW, abortable = true)
     public Long getMessageCount(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
@@ -317,7 +333,8 @@ public interface MessageServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_json") }) }) MessageFilter filter,
+                            @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) MessageFilter filter,
             @Param("replace") @Parameter(description = "If true, the message will overwrite the current one", schema = @Schema(defaultValue = "false")) @QueryParam("replace") boolean replace,
             @Param("filterDestinations") @Parameter(description = "If true, the metaDataId parameter will be used to determine which destinations to reprocess the message through.", schema = @Schema(defaultValue = "false")) @QueryParam("filterDestinations") boolean filterDestinations,
             @Param("reprocessMetaDataIds") @Parameter(description = "Indicates which destinations to send the message to.") @QueryParam("metaDataId") Set<Integer> reprocessMetaDataIds) throws ClientException;
@@ -393,7 +410,8 @@ public interface MessageServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_json") }) }) MessageFilter filter) throws ClientException;
+                            @ExampleObject(name = "filter", ref = "../apiexamples/message_filter_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) MessageFilter filter) throws ClientException;
     // @formatter:on
 
     @DELETE
@@ -481,7 +499,8 @@ public interface MessageServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "channelIds", ref = "../apiexamples/guid_set_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "channelIds", ref = "../apiexamples/guid_set_json") }) }) Set<String> channelIds,
+                            @ExampleObject(name = "channelIds", ref = "../apiexamples/guid_set_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Set<String> channelIds,
             @Param("restartRunningChannels") @Parameter(description = "If true, currently running channels will be stopped and restarted as part of the remove process. Otherwise, currently running channels will not be included.", schema = @Schema(defaultValue = "false")) @QueryParam("restartRunningChannels") boolean restartRunningChannels,
             @Param("clearStatistics") @Parameter(description = "If true, message statistics will also be cleared.", schema = @Schema(defaultValue = "true")) @QueryParam("clearStatistics") boolean clearStatistics) throws ClientException;
     // @formatter:on
@@ -496,7 +515,8 @@ public interface MessageServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "message", ref = "../apiexamples/message_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "message", ref = "../apiexamples/message_json") }) }) Message message) throws ClientException;
+                            @ExampleObject(name = "message", ref = "../apiexamples/message_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Message message) throws ClientException;
     // @formatter:on
 
     @POST
@@ -506,7 +526,8 @@ public interface MessageServletInterface extends BaseServletInterface {
     @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
             @ExampleObject(name = "messageImportResult", ref = "../apiexamples/message_import_result_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "messageImportResult", ref = "../apiexamples/message_import_result_json") }) })
+                    @ExampleObject(name = "messageImportResult", ref = "../apiexamples/message_import_result_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "importMessageServer", display = "Import messages on the server", permission = Permissions.MESSAGES_IMPORT, type = ExecuteType.ASYNC)
     public MessageImportResult importMessagesServer(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,

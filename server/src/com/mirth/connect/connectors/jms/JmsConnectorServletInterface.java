@@ -32,14 +32,15 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
 
 @Path("/connectors/jms")
 @Tag(name = "Connector Services")
-@Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-@Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+@Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON})
+@Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON})
 public interface JmsConnectorServletInterface extends BaseServletInterface {
 
     public static final String PLUGIN_POINT = "JMS Connector Service";
@@ -51,7 +52,8 @@ public interface JmsConnectorServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "jms_connector_properties_map", ref = "../apiexamples/jms_connector_properties_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "jms_connector_properties_map", ref = "../apiexamples/jms_connector_properties_map_json") }) })
+                    @ExampleObject(name = "jms_connector_properties_map", ref = "../apiexamples/jms_connector_properties_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getTemplates", display = "Get JMS Templates", type = ExecuteType.ASYNC, auditable = false)
     public LinkedHashMap<String, JmsConnectorProperties> getTemplates() throws ClientException;
 
@@ -62,7 +64,8 @@ public interface JmsConnectorServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "jms_connector_properties", ref = "../apiexamples/jms_connector_properties_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "jms_connector_properties", ref = "../apiexamples/jms_connector_properties_json") }) })
+                    @ExampleObject(name = "jms_connector_properties", ref = "../apiexamples/jms_connector_properties_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getTemplate", display = "Get JMS Template", type = ExecuteType.ASYNC, auditable = false)
     public JmsConnectorProperties getTemplate(@Param("templateName") @Parameter(description = "The name of the template.", required = true) @PathParam("templateName") String templateName) throws ClientException;
 
@@ -73,7 +76,8 @@ public interface JmsConnectorServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "jms_template_name_set", ref = "../apiexamples/jms_template_name_set_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "jms_template_name_set", ref = "../apiexamples/jms_template_name_set_json") }) })
+                    @ExampleObject(name = "jms_template_name_set", ref = "../apiexamples/jms_template_name_set_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "saveTemplate", display = "Save JMS Template", type = ExecuteType.ASYNC, auditable = false)
     public Set<String> saveTemplate(// @formatter:off
             @Param("templateName") @Parameter(description = "The name of the template.", required = true) @PathParam("templateName") String templateName,
@@ -82,7 +86,8 @@ public interface JmsConnectorServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "jms_connector_properties", ref = "../apiexamples/jms_connector_properties_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "jms_connector_properties", ref = "../apiexamples/jms_connector_properties_json") }) })
+                            @ExampleObject(name = "jms_connector_properties", ref = "../apiexamples/jms_connector_properties_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             JmsConnectorProperties properties) throws ClientException;
     // @formatter:on
 
@@ -93,7 +98,8 @@ public interface JmsConnectorServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "jms_template_name_set", ref = "../apiexamples/jms_template_name_set_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "jms_template_name_set", ref = "../apiexamples/jms_template_name_set_json") }) })
+                    @ExampleObject(name = "jms_template_name_set", ref = "../apiexamples/jms_template_name_set_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "saveTemplate", display = "Save JMS Template", type = ExecuteType.ASYNC, auditable = false)
     public Set<String> deleteTemplate(@Param("templateName") @Parameter(description = "The name of the template.", required = true) @PathParam("templateName") String templateName) throws ClientException;
 }

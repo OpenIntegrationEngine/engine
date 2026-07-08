@@ -33,6 +33,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Permissions;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -43,41 +44,46 @@ import com.mirth.connect.model.filters.EventFilter;
 
 @Path("/events")
 @Tag(name = "Events")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface EventServletInterface extends BaseServletInterface {
 
     @GET
     @Path("/maxEventId")
     @Operation(summary = "Returns the maximum event ID currently in the database.")
     @MirthOperation(name = "getMaxEventId", display = "Get max event ID", permission = Permissions.EVENTS_VIEW, auditable = false)
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN })
+    @Produces({ MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON, MediaType.TEXT_PLAIN })
     public Integer getMaxEventId() throws ClientException;
 
     @GET
     @Path("/{eventId}")
     @Operation(summary = "Retrieves an event by ID.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "serverEvent", ref = "../apiexamples/server_event_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "serverEvent", ref = "../apiexamples/server_event_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "serverEvent", ref = "../apiexamples/server_event_json") }) })
+                    @ExampleObject(name = "serverEvent", ref = "../apiexamples/server_event_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getEvent", display = "Get event by ID", permission = Permissions.EVENTS_VIEW, auditable = false, abortable = true)
     public ServerEvent getEvent(@Param("eventId") @Parameter(description = "The ID of the event.", required = true) @PathParam("eventId") Integer eventId) throws ClientException;
 
     @POST
     @Path("/_search")
     @Operation(summary = "Search for events by specific filter criteria.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "serverEventList", ref = "../apiexamples/server_event_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "serverEventList", ref = "../apiexamples/server_event_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "serverEventList", ref = "../apiexamples/server_event_list_json") }) })
+                    @ExampleObject(name = "serverEventList", ref = "../apiexamples/server_event_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getEvents", display = "Get events", permission = Permissions.EVENTS_VIEW, auditable = false, abortable = true)
     public List<ServerEvent> getEvents(// @formatter:off
             @Param("filter") @RequestBody(description = "The EventFilter object to use to query events by.", required = true, content = {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "filter", ref = "../apiexamples/event_filter_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "filter", ref = "../apiexamples/event_filter_json") }) }) EventFilter filter,
+                            @ExampleObject(name = "filter", ref = "../apiexamples/event_filter_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) EventFilter filter,
             @Param("offset") @Parameter(description = "Used for pagination, determines where to start in the search results.", schema = @Schema(defaultValue = "0")) @QueryParam("offset") Integer offset,
             @Param("limit") @Parameter(description = "Used for pagination, determines the maximum number of results to return.", schema = @Schema(defaultValue = "20")) @QueryParam("limit") Integer limit) throws ClientException;
     // @formatter:on
@@ -85,10 +91,12 @@ public interface EventServletInterface extends BaseServletInterface {
     @GET
     @Path("/")
     @Operation(summary = "Search for events by specific filter criteria.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "serverEventList", ref = "../apiexamples/server_event_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "serverEventList", ref = "../apiexamples/server_event_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "serverEventList", ref = "../apiexamples/server_event_list_json") }) })
+                    @ExampleObject(name = "serverEventList", ref = "../apiexamples/server_event_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getEvents", display = "Get events", permission = Permissions.EVENTS_VIEW, auditable = false, abortable = true)
     public List<ServerEvent> getEvents(// @formatter:off
             @Param("maxEventId") @Parameter(description = "The maximum event ID to query.") @QueryParam("maxEventId") Integer maxEventId,
@@ -110,18 +118,19 @@ public interface EventServletInterface extends BaseServletInterface {
     @Path("/count/_search")
     @Operation(summary = "Count number for events by specific filter criteria.")
     @MirthOperation(name = "getEventCount", display = "Get events results count", permission = Permissions.EVENTS_VIEW, auditable = false, abortable = true)
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN })
+    @Produces({ MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON, MediaType.TEXT_PLAIN })
     public Long getEventCount(@Param("filter") @RequestBody(description = "The EventFilter object to use to query events by.", required = true, content = {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "filter", ref = "../apiexamples/event_filter_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "filter", ref = "../apiexamples/event_filter_json") }) }) EventFilter filter) throws ClientException;
+                    @ExampleObject(name = "filter", ref = "../apiexamples/event_filter_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) EventFilter filter) throws ClientException;
 
     @GET
     @Path("/count")
     @Operation(summary = "Count number for events by specific filter criteria.")
     @MirthOperation(name = "getEventCount", display = "Get events results count", permission = Permissions.EVENTS_VIEW, auditable = false, abortable = true)
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN })
+    @Produces({ MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON, MediaType.TEXT_PLAIN })
     public Long getEventCount(// @formatter:off
             @Param("maxEventId") @Parameter(description = "The maximum event ID to query.") @QueryParam("maxEventId") Integer maxEventId,
             @Param("minEventId") @Parameter(description = "The minimum event ID to query.") @QueryParam("minEventId") Integer minEventId,

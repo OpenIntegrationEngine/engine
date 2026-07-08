@@ -37,6 +37,7 @@ import javax.ws.rs.core.MediaType;
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
 import com.mirth.connect.client.core.Permissions;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -59,8 +60,8 @@ import com.mirth.connect.util.ConnectionTestResponse;
 
 @Path("/server")
 @Tag(name = "Server Configuration")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface ConfigurationServletInterface extends BaseServletInterface {
 
     @GET
@@ -91,7 +92,8 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "status", ref = "../apiexamples/integer_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "status", ref = "../apiexamples/integer_json") }) })
+                    @ExampleObject(name = "status", ref = "../apiexamples/integer_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getStatus", display = "Get status")
     public int getStatus() throws ClientException;
 
@@ -109,7 +111,8 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "serverTime", ref = "../apiexamples/calendar_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "serverTime", ref = "../apiexamples/calendar_json") }) })
+                    @ExampleObject(name = "serverTime", ref = "../apiexamples/calendar_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getServerTime", display = "Get server time", auditable = false)
     public Calendar getServerTime() throws ClientException;
 
@@ -127,17 +130,20 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "aboutMap", ref = "../apiexamples/generic_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "aboutMap", ref = "../apiexamples/generic_map_json") }) })
+                    @ExampleObject(name = "aboutMap", ref = "../apiexamples/generic_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getAbout", display = "Get about information", auditable = false)
     public Map<String, Object> getAbout() throws ClientException;
 
     @GET
     @Path("/configuration")
     @Operation(summary = "Returns a ServerConfiguration object which contains all of the channels, alerts, configuration map, and properties stored on the server.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "serverConfiguration", ref = "../apiexamples/server_configuration_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "serverConfiguration", ref = "../apiexamples/server_configuration_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "serverConfiguration", ref = "../apiexamples/server_configuration_json") }) })
+                    @ExampleObject(name = "serverConfiguration", ref = "../apiexamples/server_configuration_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getServerConfiguration", display = "Get server configuration", permission = Permissions.SERVER_CONFIGURATION_BACKUP)
     public ServerConfiguration getServerConfiguration(// @formatter:off
             @Param("initialState") @Parameter(description = "The initial state to set all channels in the configuration to.", schema = @Schema(allowableValues = {"STARTED", "PAUSED", "STOPPED"}, type = "string")) @QueryParam("initialState") DeployedState initialState,
@@ -154,7 +160,8 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "serverConfiguration", ref = "../apiexamples/server_configuration_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "serverConfiguration", ref = "../apiexamples/server_configuration_json") }) }) ServerConfiguration serverConfiguration,
+                            @ExampleObject(name = "serverConfiguration", ref = "../apiexamples/server_configuration_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) ServerConfiguration serverConfiguration,
             @Param("deploy") @Parameter(description = "If true, all enabled channels will be deployed after the configuration is restored.", schema = @Schema(defaultValue = "false")) @QueryParam(value = "deploy") boolean deploy,
             @Param("overwriteConfigMap") @Parameter(description = "If true, overwrite the Configuration Map") @QueryParam(value = "overwriteConfigMap") boolean overwriteConfigMap) throws ClientException;
     // @formatter:on
@@ -162,20 +169,24 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
     @GET
     @Path("/charsets")
     @Operation(summary = "Returns a List of all of the charset encodings supported by the server.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "charsetEncodings", ref = "../apiexamples/charset_encoding_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "charsetEncodings", ref = "../apiexamples/charset_encoding_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "charsetEncodings", ref = "../apiexamples/charset_encoding_list_json") }) })
+                    @ExampleObject(name = "charsetEncodings", ref = "../apiexamples/charset_encoding_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getAvailableCharsetEncodings", display = "Get available charset encodings", auditable = false)
     public List<String> getAvailableCharsetEncodings() throws ClientException;
 
     @GET
     @Path("/settings")
     @Operation(summary = "Returns a ServerSettings object with all server settings.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "serverSettings", ref = "../apiexamples/server_settings_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "serverSettings", ref = "../apiexamples/server_settings_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "serverSettings", ref = "../apiexamples/server_settings_json") }) })
+                    @ExampleObject(name = "serverSettings", ref = "../apiexamples/server_settings_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getServerSettings", display = "Get server settings", permission = Permissions.SERVER_SETTINGS_VIEW, auditable = false)
     public ServerSettings getServerSettings() throws ClientException;
 
@@ -187,15 +198,18 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "serverSettings", ref = "../apiexamples/server_settings_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "serverSettings", ref = "../apiexamples/server_settings_json") }) }) ServerSettings settings) throws ClientException;
+                    @ExampleObject(name = "serverSettings", ref = "../apiexamples/server_settings_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) ServerSettings settings) throws ClientException;
     
     @GET
     @Path("/publicSettings")
     @Operation(summary = "Returns a PublicServerSettings object containing server settings available to all users.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "publicServerSettings", ref = "../apiexamples/public_server_settings_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "publicServerSettings", ref = "../apiexamples/public_server_settings_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "publicServerSettings", ref = "../apiexamples/public_server_settings_json") }) })
+                    @ExampleObject(name = "publicServerSettings", ref = "../apiexamples/public_server_settings_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getPublicServerSettings", display = "Get public server settings", auditable = false)
     public PublicServerSettings getPublicServerSettings() throws ClientException;
     
@@ -212,10 +226,12 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
     @GET
     @Path("/encryption")
     @Operation(summary = "Returns an EncryptionSettings object with all encryption settings.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "encryptionSettings", ref = "../apiexamples/encryption_settings_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "encryptionSettings", ref = "../apiexamples/encryption_settings_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "encryptionSettings", ref = "../apiexamples/encryption_settings_json") }) })
+                    @ExampleObject(name = "encryptionSettings", ref = "../apiexamples/encryption_settings_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getEncryptionSettings", display = "Get encryption settings")
     public EncryptionSettings getEncryptionSettings() throws ClientException;
 
@@ -227,15 +243,18 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, schema = @Schema(implementation = Properties.class), examples = {
                     @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = Properties.class), examples = {
-                    @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_json") }) }) Properties properties) throws ClientException;
+                    @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Properties properties) throws ClientException;
 
     @GET
     @Path("/updateSettings")
     @Operation(summary = "Returns an UpdateSettings object with all update settings.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "updateSettings", ref = "../apiexamples/update_settings_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "updateSettings", ref = "../apiexamples/update_settings_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "updateSettings", ref = "../apiexamples/update_settings_json") }) })
+                    @ExampleObject(name = "updateSettings", ref = "../apiexamples/update_settings_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getUpdateSettings", display = "Get update settings", auditable = false)
     public UpdateSettings getUpdateSettings() throws ClientException;
 
@@ -247,15 +266,18 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "updateSetings", ref = "../apiexamples/update_settings_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "updateSettings", ref = "../apiexamples/update_settings_json") }) }) UpdateSettings settings) throws ClientException;
+                    @ExampleObject(name = "updateSettings", ref = "../apiexamples/update_settings_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) UpdateSettings settings) throws ClientException;
 
     @GET
     @Path("/licenseInfo")
     @Operation(summary = "Returns a LicenseInfo object with the expiration date and other information.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "licenseInfo", ref = "../apiexamples/license_info_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "licenseInfo", ref = "../apiexamples/license_info_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "licenseInfo", ref = "../apiexamples/license_info_json") }) })
+                    @ExampleObject(name = "licenseInfo", ref = "../apiexamples/license_info_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getLicenseInfo", display = "Get license info", auditable = false)
     public LicenseInfo getLicenseInfo() throws ClientException;
 
@@ -269,10 +291,12 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
     @GET
     @Path("/globalScripts")
     @Operation(summary = "Returns a map containing all of the global scripts.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "globalScripts", ref = "../apiexamples/global_scripts_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "globalScripts", ref = "../apiexamples/global_scripts_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "globalScripts", ref = "../apiexamples/global_scripts_json") }) })
+                    @ExampleObject(name = "globalScripts", ref = "../apiexamples/global_scripts_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getGlobalScripts", display = "Get global scripts", permission = Permissions.GLOBAL_SCRIPTS_VIEW)
     public Map<String, String> getGlobalScripts() throws ClientException;
 
@@ -284,15 +308,18 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "globalScripts", ref = "../apiexamples/global_scripts_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "globalScripts", ref = "../apiexamples/global_scripts_json") }) }) Map<String, String> scripts) throws ClientException;
+                    @ExampleObject(name = "globalScripts", ref = "../apiexamples/global_scripts_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Map<String, String> scripts) throws ClientException;
 
     @GET
     @Path("/configurationMap")
     @Operation(summary = "Returns all entries in the configuration map.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "configurationMap", ref = "../apiexamples/configuration_map_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "configurationMap", ref = "../apiexamples/configuration_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "configurationMap", ref = "../apiexamples/configuration_map_json") }) })
+                    @ExampleObject(name = "configurationMap", ref = "../apiexamples/configuration_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getConfigurationMap", display = "Get configuration map", permission = Permissions.CONFIGURATION_MAP_VIEW)
     public Map<String, ConfigurationProperty> getConfigurationMap() throws ClientException;
 
@@ -304,15 +331,18 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "configurationMap", ref = "../apiexamples/configuration_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "configurationMap", ref = "../apiexamples/configuration_map_json") }) }) Map<String, ConfigurationProperty> map) throws ClientException;
+                    @ExampleObject(name = "configurationMap", ref = "../apiexamples/configuration_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Map<String, ConfigurationProperty> map) throws ClientException;
 
     @GET
     @Path("/databaseDrivers")
     @Operation(summary = "Returns the database driver list.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "driverInfoList", ref = "../apiexamples/driver_info_list_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "driverInfoList", ref = "../apiexamples/driver_info_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "driverInfoList", ref = "../apiexamples/driver_info_list_json") }) })
+                    @ExampleObject(name = "driverInfoList", ref = "../apiexamples/driver_info_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getDatabaseDrivers", display = "Get database drivers", auditable = false, type = ExecuteType.ASYNC)
     public List<DriverInfo> getDatabaseDrivers() throws ClientException;
 
@@ -324,25 +354,30 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "driverInfoList", ref = "../apiexamples/driver_info_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "driverInfoList", ref = "../apiexamples/driver_info_list_json") }) }) List<DriverInfo> drivers) throws ClientException;
+                    @ExampleObject(name = "driverInfoList", ref = "../apiexamples/driver_info_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) List<DriverInfo> drivers) throws ClientException;
 
     @GET
     @Path("/passwordRequirements")
     @Operation(summary = "Returns all password requirements for the server.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "passwordRequirements", ref = "../apiexamples/password_requirements_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "passwordRequirements", ref = "../apiexamples/password_requirements_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "passwordRequirements", ref = "../apiexamples/password_requirements_json") }) })
+                    @ExampleObject(name = "passwordRequirements", ref = "../apiexamples/password_requirements_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getPasswordRequirements", display = "Get password requirements")
     public PasswordRequirements getPasswordRequirements() throws ClientException;
 
     @GET
     @Path("/resources")
     @Operation(summary = "Returns all resources for the server.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "resources", ref = "../apiexamples/resource_properties_list_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "resources", ref = "../apiexamples/resource_properties_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "resources", ref = "../apiexamples/resource_properties_list_json") }) })
+                    @ExampleObject(name = "resources", ref = "../apiexamples/resource_properties_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getResources", display = "Get resources", permission = Permissions.RESOURCES_VIEW, type = ExecuteType.ASYNC)
     public List<ResourceProperties> getResources() throws ClientException;
 
@@ -354,7 +389,8 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "resources", ref = "../apiexamples/resource_properties_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "resources", ref = "../apiexamples/resource_properties_list_json") }) }) List<ResourceProperties> resources) throws ClientException;
+                    @ExampleObject(name = "resources", ref = "../apiexamples/resource_properties_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) List<ResourceProperties> resources) throws ClientException;
 
     @POST
     @Path("/resources/{resourceId}/_reload")
@@ -365,10 +401,12 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
     @GET
     @Path("/channelDependencies")
     @Operation(summary = "Returns all channel dependencies for the server.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "channelDependencies", ref = "../apiexamples/channel_dependency_set_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "channelDependencies", ref = "../apiexamples/channel_dependency_set_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "channelDependencies", ref = "../apiexamples/channel_dependency_set_json") }) })
+                    @ExampleObject(name = "channelDependencies", ref = "../apiexamples/channel_dependency_set_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getChannelDependencies", display = "Get channel dependencies", auditable = false)
     public Set<ChannelDependency> getChannelDependencies() throws ClientException;
 
@@ -380,15 +418,18 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "channelDependencies", ref = "../apiexamples/channel_dependency_set_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "channelDependencies", ref = "../apiexamples/channel_dependency_set_json") }) }) Set<ChannelDependency> dependencies) throws ClientException;
+                    @ExampleObject(name = "channelDependencies", ref = "../apiexamples/channel_dependency_set_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Set<ChannelDependency> dependencies) throws ClientException;
 
     @GET
     @Path("/channelMetadata")
     @Operation(summary = "Returns all channel metadata for the server.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "channelMetadata", ref = "../apiexamples/channel_metadata_map_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "channelMetadata", ref = "../apiexamples/channel_metadata_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "channelMetadata", ref = "../apiexamples/channel_metadata_map_json") }) })
+                    @ExampleObject(name = "channelMetadata", ref = "../apiexamples/channel_metadata_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getChannelMetadata", display = "Get channel metadata", auditable = false)
     public Map<String, ChannelMetadata> getChannelMetadata() throws ClientException;
 
@@ -400,25 +441,30 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "channelMetadata", ref = "../apiexamples/channel_metadata_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "channelMetadata", ref = "../apiexamples/channel_metadata_map_json") }) }) Map<String, ChannelMetadata> metadata) throws ClientException;
+                    @ExampleObject(name = "channelMetadata", ref = "../apiexamples/channel_metadata_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Map<String, ChannelMetadata> metadata) throws ClientException;
 
     @GET
     @Path("/protocolsAndCipherSuites")
     @Operation(summary = "Returns a map containing all supported and enabled TLS protocols and cipher suites.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "protocolsAndCipherSuites", ref = "../apiexamples/protocols_and_cipher_suites_map_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "protocolsAndCipherSuites", ref = "../apiexamples/protocols_and_cipher_suites_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "protocolsAndCipherSuites", ref = "../apiexamples/protocols_and_cipher_suites_map_json") }) })
+                    @ExampleObject(name = "protocolsAndCipherSuites", ref = "../apiexamples/protocols_and_cipher_suites_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getProtocolsAndCipherSuites", display = "Get protocols and cipher suites", type = ExecuteType.ASYNC, auditable = false)
     public Map<String, String[]> getProtocolsAndCipherSuites() throws ClientException;
 
     @GET
     @Path("/channelTags")
     @Operation(summary = "Returns a set containing all channel tags for the server.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "channelTags", ref = "../apiexamples/channel_tag_set_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "channelTags", ref = "../apiexamples/channel_tag_set_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "channelTags", ref = "../apiexamples/channel_tag_set_json") }) })
+                    @ExampleObject(name = "channelTags", ref = "../apiexamples/channel_tag_set_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getChannelTags", display = "Get channel tags", permission = Permissions.TAGS_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public Set<ChannelTag> getChannelTags() throws ClientException;
 
@@ -430,15 +476,18 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "channelTags", ref = "../apiexamples/channel_tag_set_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "channelTags", ref = "../apiexamples/channel_tag_set_json") }) }) Set<ChannelTag> channelTags) throws ClientException;
+                    @ExampleObject(name = "channelTags", ref = "../apiexamples/channel_tag_set_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Set<ChannelTag> channelTags) throws ClientException;
 
     @GET
     @Path("/rhinoLanguageVersion")
     @Operation(summary = "Returns the language version that the Rhino engine should use.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "rhinoLanguageVersion", ref = "../apiexamples/integer_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "rhinoLanguageVersion", ref = "../apiexamples/integer_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "rhinoLanguageVersion", ref = "../apiexamples/integer_json") }) })
+                    @ExampleObject(name = "rhinoLanguageVersion", ref = "../apiexamples/integer_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON),  })
     @MirthOperation(name = "getRhinoLanguageVersion", display = "Get rhino language version", type = ExecuteType.ASYNC, auditable = false)
     public int getRhinoLanguageVersion() throws ClientException;
 }

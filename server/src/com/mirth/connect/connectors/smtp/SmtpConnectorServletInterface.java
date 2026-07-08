@@ -26,6 +26,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -33,8 +34,8 @@ import com.mirth.connect.util.ConnectionTestResponse;
 
 @Path("/connectors/smtp")
 @Tag(name = "Connector Services")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface SmtpConnectorServletInterface extends BaseServletInterface {
 
     public static final String PLUGIN_POINT = "SMTP Connector Service";
@@ -42,10 +43,12 @@ public interface SmtpConnectorServletInterface extends BaseServletInterface {
     @POST
     @Path("/_sendTestEmail")
     @Operation(summary = "Sends a test e-mail, replacing any connector properties first.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "connection_test_response_smtp", ref = "../apiexamples/connection_test_response_smtp_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "connection_test_response_smtp", ref = "../apiexamples/connection_test_response_smtp_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "connection_test_response_smtp", ref = "../apiexamples/connection_test_response_smtp_json") }) })
+                    @ExampleObject(name = "connection_test_response_smtp", ref = "../apiexamples/connection_test_response_smtp_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "sendTestEmail", display = "Send Test Email", type = ExecuteType.ASYNC, auditable = false)
     public ConnectionTestResponse sendTestEmail(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @QueryParam("channelId") String channelId,
@@ -59,7 +62,8 @@ public interface SmtpConnectorServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                             @ExampleObject(name = "smtp_dispatcher_properties", ref = "../apiexamples/smtp_dispatcher_properties_json"),
                             @ExampleObject(name = "smtp_dispatcher_properties_ssl", ref = "../apiexamples/smtp_dispatcher_properties_ssl_json"),
-                            @ExampleObject(name = "smtp_dispatcher_properties_tls", ref = "../apiexamples/smtp_dispatcher_properties_tls_json") }) })
+                            @ExampleObject(name = "smtp_dispatcher_properties_tls", ref = "../apiexamples/smtp_dispatcher_properties_tls_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             SmtpDispatcherProperties properties) throws ClientException;
     // @formatter:on
 }

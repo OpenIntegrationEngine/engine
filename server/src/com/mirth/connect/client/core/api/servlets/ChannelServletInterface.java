@@ -38,6 +38,7 @@ import javax.ws.rs.core.MediaType;
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
 import com.mirth.connect.client.core.Permissions;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -50,33 +51,35 @@ import com.mirth.connect.model.ChannelSummary;
 
 @Path("/channels")
 @Tag(name = "Channels")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface ChannelServletInterface extends BaseServletInterface {
 
 	@POST
 	@Path("/")
 	@Operation(summary = "Creates a new channel.")
 	@MirthOperation(name = "createChannel", display = "Create channel", permission = Permissions.CHANNELS_MANAGE)
-	@Produces({ MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN })
+	@Produces({ MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON, MediaType.TEXT_PLAIN })
 	public boolean createChannel(
 			@Param("channel") @RequestBody(description = "The Channel object to create.", required = true, content = {
 					@Content(mediaType = MediaType.APPLICATION_XML, schema = @Schema(implementation = Channel.class), examples = {
 							@ExampleObject(name = "channel", ref = "../apiexamples/channel_xml") }),
 					@Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = Channel.class), examples = {
-							@ExampleObject(name = "channel", ref = "../apiexamples/channel_json") }) }) Channel channel)
+							@ExampleObject(name = "channel", ref = "../apiexamples/channel_json") }),
+					@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Channel channel)
 			throws ClientException;
 
 	@GET
 	@Path("/")
-	@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-	@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+	@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+	@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 	@Operation(summary = "Retrieve a list of all channels, or multiple channels by ID.")
 	@ApiResponse(content = {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "channelList", ref = "../apiexamples/channel_list_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "channelList", ref = "../apiexamples/channel_list_json") }) })
+					@ExampleObject(name = "channelList", ref = "../apiexamples/channel_list_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getChannels", display = "Get channels", permission = Permissions.CHANNELS_VIEW)
 	public List<Channel> getChannels(
 			@Param("channelIds") @Parameter(description = "The IDs of the channels to retrieve. If absent, all channels will be retrieved.") @QueryParam("channelId") Set<String> channelIds,
@@ -91,14 +94,16 @@ public interface ChannelServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "channel", ref = "../apiexamples/channel_list_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "channel", ref = "../apiexamples/channel_list_json") }) })
+					@ExampleObject(name = "channel", ref = "../apiexamples/channel_list_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getChannels", display = "Get channels", permission = Permissions.CHANNELS_VIEW)
 	public List<Channel> getChannelsPost(
 			@Param("channelIds") @RequestBody(description = "The IDs of the channels to retrieve. If absent, all channels will be retrieved.", content = {
 					@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 							@ExampleObject(name = "channelIds", ref = "../apiexamples/guid_set_xml") }),
 					@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-							@ExampleObject(name = "channelIds", ref = "../apiexamples/guid_set_json") }) }) Set<String> channelIds,
+							@ExampleObject(name = "channelIds", ref = "../apiexamples/guid_set_json") }),
+					@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Set<String> channelIds,
 			@Param("pollingOnly") @Parameter(description = "If true, only channels with polling source connectors will be returned.") @QueryParam("pollingOnly") boolean pollingOnly,
 			@Param("includeCodeTemplateLibraries") @Parameter(description = "If true, code template libraries will be included in the channel.") @QueryParam("includeCodeTemplateLibraries") boolean includeCodeTemplateLibraries)
 			throws ClientException;
@@ -110,7 +115,8 @@ public interface ChannelServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "channel", ref = "../apiexamples/channel_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "channel", ref = "../apiexamples/channel_json") }) })
+					@ExampleObject(name = "channel", ref = "../apiexamples/channel_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getChannel", display = "Get channel", permission = Permissions.CHANNELS_VIEW)
 	public Channel getChannel(
 			@Param("channelId") @Parameter(description = "The ID of the channel to retrieve.", required = true) @PathParam("channelId") String channelId,
@@ -124,7 +130,8 @@ public interface ChannelServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "connectorNameMap", ref = "../apiexamples/connector_name_map_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "connectorNameMap", ref = "../apiexamples/connector_name_map_json") }) })
+					@ExampleObject(name = "connectorNameMap", ref = "../apiexamples/connector_name_map_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getConnectorNames", display = "Get connector names", permission = Permissions.MESSAGES_VIEW, auditable = false)
 	public Map<Integer, String> getConnectorNames(
 			@Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId)
@@ -137,7 +144,8 @@ public interface ChannelServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "metadataColumnList", ref = "../apiexamples/metadatacolumn_list_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "metadataColumnList", ref = "../apiexamples/metadatacolumn_list_json") }) })
+					@ExampleObject(name = "metadataColumnList", ref = "../apiexamples/metadatacolumn_list_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getMetaDataColumns", display = "Get metadata columns", permission = Permissions.MESSAGES_VIEW, auditable = false)
 	public List<MetaDataColumn> getMetaDataColumns(
 			@Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId)
@@ -150,7 +158,8 @@ public interface ChannelServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "channelNameMap", ref = "../apiexamples/guid_to_name_map_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "channelNameMap", ref = "../apiexamples/guid_to_name_map_json") }) })
+					@ExampleObject(name = "channelNameMap", ref = "../apiexamples/guid_to_name_map_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getChannelIdsAndNames", display = "Get channel IDs and names", permission = Permissions.CHANNELS_VIEW, type = ExecuteType.ASYNC, auditable = false)
 	public Map<String, String> getChannelIdsAndNames() throws ClientException;
 
@@ -162,7 +171,8 @@ public interface ChannelServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "ports_used", ref = "../apiexamples/ports_used_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "ports_used", ref = "../apiexamples/ports_used_json") }) })
+                    @ExampleObject(name = "ports_used", ref = "../apiexamples/ports_used_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getChannelPortsInUse", display = "Get Ports In Use", permission = Permissions.CHANNELS_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public List<Ports> getChannelPortsInUse() throws ClientException;
 
@@ -174,14 +184,17 @@ public interface ChannelServletInterface extends BaseServletInterface {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "channelSummaryList", ref = "../apiexamples/channel_summary_list_xml") }),
 			@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-					@ExampleObject(name = "channelSummaryList", ref = "../apiexamples/channel_summary_list_json") }) })
+					@ExampleObject(name = "channelSummaryList", ref = "../apiexamples/channel_summary_list_json") }),
+			@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
 	@MirthOperation(name = "getChannelSummary", display = "Get channel summary", permission = Permissions.CHANNELS_VIEW, type = ExecuteType.ASYNC, auditable = false)
 	public List<ChannelSummary> getChannelSummary(// @formatter:off
 			@Param("cachedChannels") @RequestBody(description = "A map of ChannelHeader objects telling the server the state of the client-side channel cache.", required = true, content = {
 					@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 							@ExampleObject(name = "cachedChannels", ref = "../apiexamples/channel_header_map_xml") }),
 					@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-							@ExampleObject(name = "cachedChannels", ref = "../apiexamples/channel_header_map_json") }) }) Map<String, ChannelHeader> cachedChannels,
+							@ExampleObject(name = "cachedChannels", ref = "../apiexamples/channel_header_map_json") }),
+					@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
+			Map<String, ChannelHeader> cachedChannels,
 			@Param("ignoreNewChannels") @Parameter(description = "If true, summaries will only be returned for channels in the map's entry set.", required = true) @QueryParam("ignoreNewChannels") boolean ignoreNewChannels)
 			throws ClientException;
 	// @formatter: on
@@ -236,14 +249,15 @@ public interface ChannelServletInterface extends BaseServletInterface {
 	@Path("/{channelId}")
 	@Operation(summary = "Updates the specified channel.")
 	@MirthOperation(name = "updateChannel", display = "Update channel", permission = Permissions.CHANNELS_MANAGE)
-	@Produces({ MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN })
+	@Produces({ MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON, MediaType.TEXT_PLAIN })
 	public boolean updateChannel(// @formatter:off
 			@Param("channelId") @Parameter(description = "The ID of the channel to update.", required = true) @PathParam("channelId") String channelId,
 			@Param("channel") @RequestBody(description = "The Channel object to update with.", required = true, content = {
 					@Content(mediaType = MediaType.APPLICATION_XML, schema = @Schema(implementation = Channel.class), examples = {
 							@ExampleObject(name = "channel", ref = "../apiexamples/channel_xml") }),
 					@Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = Channel.class), examples = {
-							@ExampleObject(name = "channel", ref = "../apiexamples/channel_json") }) }) Channel channel,
+							@ExampleObject(name = "channel", ref = "../apiexamples/channel_json") }),
+					@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Channel channel,
 			@Param("override") @Parameter(description = "If true, the channel will be updated even if a different revision exists on the server.", schema = @Schema(defaultValue = "false")) @QueryParam("override") boolean override,
 			@Param("startEdit") @Parameter(description = "Date and time starting to edit this channel. Example: 1985-10-26T09:00:00.000-0700") @QueryParam("startEdit") String startEdit)
 			throws ClientException;
@@ -274,6 +288,7 @@ public interface ChannelServletInterface extends BaseServletInterface {
 					@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 							@ExampleObject(name = "channelIds", ref = "../apiexamples/guid_set_xml") }),
 					@Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-							@ExampleObject(name = "channelIds", ref = "../apiexamples/guid_set_json") }) }) Set<String> channelIds)
+							@ExampleObject(name = "channelIds", ref = "../apiexamples/guid_set_json") }),
+					@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Set<String> channelIds)
 			throws ClientException;
 }

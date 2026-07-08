@@ -37,6 +37,7 @@ import javax.ws.rs.core.MediaType;
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
 import com.mirth.connect.client.core.Permissions;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -45,8 +46,8 @@ import com.mirth.connect.model.User;
 
 @Path("/users")
 @Tag(name = "Users")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface UserServletInterface extends BaseServletInterface {
 
     public static final String LOGIN_SERVER_URL_HEADER = "X-Mirth-Server-Url";
@@ -56,10 +57,13 @@ public interface UserServletInterface extends BaseServletInterface {
     @Path("/_login")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Operation(summary = "Logs in to the server using the specified name and password.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+    @ApiResponse(content = { 
+        @Content(mediaType = MediaType.APPLICATION_XML, examples = {
             @ExampleObject(name = "loginStatus", ref = "../apiexamples/login_status_xml") }),
-            @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "loginStatus", ref = "../apiexamples/login_status_json") }) })
+        @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
+            @ExampleObject(name = "loginStatus", ref = "../apiexamples/login_status_json") }),
+        @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON)
+    })
     @MirthOperation(name = "login", display = "Login")
     public LoginStatus login(// @formatter:off
             @Param("username") @Parameter(description = "The username to login with.", required = true, schema = @Schema(defaultValue = "admin")) @FormParam("username") String username,
@@ -86,7 +90,8 @@ public interface UserServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "user", ref = "../apiexamples/new_user_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "user", ref = "../apiexamples/new_user_json") }) }) User user) throws ClientException;
+                    @ExampleObject(name = "user", ref = "../apiexamples/new_user_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) User user) throws ClientException;
 
     @GET
     @Path("/")
@@ -95,7 +100,8 @@ public interface UserServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "allUsers", ref = "../apiexamples/user_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "allUsers", ref = "../apiexamples/user_list_json") }) })
+                    @ExampleObject(name = "allUsers", ref = "../apiexamples/user_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getAllUsers", display = "Get all users", permission = Permissions.USERS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public List<User> getAllUsers() throws ClientException;
 
@@ -106,7 +112,8 @@ public interface UserServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "user", ref = "../apiexamples/user_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "user", ref = "../apiexamples/user_json") }) })
+                    @ExampleObject(name = "user", ref = "../apiexamples/user_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getUser", display = "Get user", permission = Permissions.USERS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public User getUser(@Param("userIdOrName") @Parameter(description = "The unique ID or username of the user to retrieve.", required = true) @PathParam("userIdOrName") String userIdOrName) throws ClientException;
 
@@ -117,7 +124,8 @@ public interface UserServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "user", ref = "../apiexamples/user_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "user", ref = "../apiexamples/user_json") }) })
+                    @ExampleObject(name = "user", ref = "../apiexamples/user_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getCurrentUser", display = "Get current user", auditable = false)
     public User getCurrentUser() throws ClientException;
 
@@ -131,7 +139,8 @@ public interface UserServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "user", ref = "../apiexamples/user_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "user", ref = "../apiexamples/user_json") }) }) User user) throws ClientException;
+                            @ExampleObject(name = "user", ref = "../apiexamples/user_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) User user) throws ClientException;
     // @formatter:on
 
     @POST
@@ -141,7 +150,8 @@ public interface UserServletInterface extends BaseServletInterface {
     @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
             @ExampleObject(name = "passwordRequirementList", ref = "../apiexamples/password_requirement_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "passwordRequirementList", ref = "../apiexamples/password_requirement_list_json") }) })
+                    @ExampleObject(name = "passwordRequirementList", ref = "../apiexamples/password_requirement_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "checkUserPassword", display = "Check a password against requirements.", permission = Permissions.USERS_MANAGE)
     public List<String> checkUserPassword(@Param(value = "plainPassword", excludeFromAudit = true) @Parameter(description = "The plaintext password to check.", required = true) String plainPassword) throws ClientException;
 
@@ -149,10 +159,12 @@ public interface UserServletInterface extends BaseServletInterface {
     @Path("/{userId}/password")
     @Consumes(MediaType.TEXT_PLAIN)
     @Operation(summary = "Updates a user's password.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "passwordRequirementList", ref = "../apiexamples/password_requirement_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "passwordRequirementList", ref = "../apiexamples/password_requirement_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "passwordRequirementList", ref = "../apiexamples/password_requirement_list_json") }) })
+                    @ExampleObject(name = "passwordRequirementList", ref = "../apiexamples/password_requirement_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "updateUserPassword", display = "Update a user's password", permission = Permissions.USERS_MANAGE)
     public List<String> updateUserPassword(// @formatter:off
             @Param("userId") @Parameter(description = "The unique ID of the user to update the password for.", required = true) @PathParam("userId") Integer userId,
@@ -172,7 +184,8 @@ public interface UserServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "loggedIn", ref = "../apiexamples/boolean_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "loggedIn", ref = "../apiexamples/boolean_json") }) })
+                    @ExampleObject(name = "loggedIn", ref = "../apiexamples/boolean_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "isUserLoggedIn", display = "Check if user is logged in", permission = Permissions.USERS_MANAGE)
     public boolean isUserLoggedIn(@Param("userId") @Parameter(description = "The unique ID of the user.", required = true) @PathParam("userId") Integer userId) throws ClientException;
     
@@ -184,7 +197,8 @@ public interface UserServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_XML, schema = @Schema(implementation = Properties.class), examples = {
                     @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = Properties.class), examples = {
-                    @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_json") }) })
+                    @ExampleObject(name = "propertiesObject", ref = "../apiexamples/properties_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     public Properties getUserPreferences(// @formatter:off
             @Param("userId") @Parameter(description = "The unique ID of the user.", required = true) @PathParam("userId") Integer userId,
             @Param("names") @Parameter(description = "An optional set of property names to filter by.") @QueryParam("name") Set<String> names) throws ClientException;
@@ -210,7 +224,8 @@ public interface UserServletInterface extends BaseServletInterface {
 					@Content(mediaType = MediaType.APPLICATION_XML, schema = @Schema(implementation = Properties.class), examples = {
 							@ExampleObject(name = "properties", ref = "../apiexamples/properties_xml") }),
 					@Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = Properties.class), examples = {
-							@ExampleObject(name = "properties", ref = "../apiexamples/properties_json") }) }) Properties properties)
+							@ExampleObject(name = "properties", ref = "../apiexamples/properties_json") }),
+					@Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Properties properties)
 			throws ClientException;
     // @formatter:on
     

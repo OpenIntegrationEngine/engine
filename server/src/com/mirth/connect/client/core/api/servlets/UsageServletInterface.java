@@ -26,28 +26,32 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
 
 @Path("/usageData")
 @Tag(name = "Usage Data")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface UsageServletInterface extends BaseServletInterface {
 
     @POST
     @Path("/_generate")
     @Produces(MediaType.TEXT_PLAIN)
     @Operation(summary = "Generates usage document using data from both the client and server.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "purgedDocument", ref = "../apiexamples/purged_document_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "purgedDocument", ref = "../apiexamples/purged_document_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "purgedDocument", ref = "../apiexamples/purged_document_json") }) })
+                    @ExampleObject(name = "purgedDocument", ref = "../apiexamples/purged_document_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getUsageData", display = "Get usage data", type = ExecuteType.ASYNC, auditable = false)
     public String getUsageData(@Param("clientStats") @RequestBody(description = "The map of client usage data to use.", required = true, content = {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "clientStats", ref = "../apiexamples/generic_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "clientStats", ref = "../apiexamples/generic_map_json") }) }) Map<String, Object> clientStats) throws ClientException;
+                    @ExampleObject(name = "clientStats", ref = "../apiexamples/generic_map_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), }) Map<String, Object> clientStats) throws ClientException;
 }

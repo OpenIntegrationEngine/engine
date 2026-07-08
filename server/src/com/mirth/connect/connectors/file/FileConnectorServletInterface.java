@@ -26,6 +26,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -33,8 +34,8 @@ import com.mirth.connect.util.ConnectionTestResponse;
 
 @Path("/connectors/file")
 @Tag(name = "Connector Services")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface FileConnectorServletInterface extends BaseServletInterface {
 
     public static final String PLUGIN_POINT = "File Connector Service";
@@ -42,10 +43,12 @@ public interface FileConnectorServletInterface extends BaseServletInterface {
     @POST
     @Path("/_testRead")
     @Operation(summary = "Tests whether a file can be read from the specified directory.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_xml") }),
+    @ApiResponse(content = {
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_json") }) })
+                    @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "testRead", display = "Test Read", type = ExecuteType.ASYNC, auditable = false)
     public ConnectionTestResponse testRead(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @QueryParam("channelId") String channelId,
@@ -55,17 +58,20 @@ public interface FileConnectorServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "file_receiver_properties", ref = "../apiexamples/file_receiver_properties_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "file_receiver_properties", ref = "../apiexamples/file_receiver_properties_json") }) })
+                            @ExampleObject(name = "file_receiver_properties", ref = "../apiexamples/file_receiver_properties_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             FileReceiverProperties properties) throws ClientException;
     // @formatter:on
 
     @POST
     @Path("/_testWrite")
     @Operation(summary = "Tests whether a file can be written to the specified directory.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_json") }) })
+                    @ExampleObject(name = "connection_test_response_file", ref = "../apiexamples/connection_test_response_file_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "testWrite", display = "Test Write", type = ExecuteType.ASYNC, auditable = false)
     public ConnectionTestResponse testWrite(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @QueryParam("channelId") String channelId,
@@ -75,7 +81,8 @@ public interface FileConnectorServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "file_dispatcher_properties", ref = "../apiexamples/file_dispatcher_properties_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "file_dispatcher_properties", ref = "../apiexamples/file_dispatcher_properties_json") }) })
+                            @ExampleObject(name = "file_dispatcher_properties", ref = "../apiexamples/file_dispatcher_properties_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             FileDispatcherProperties properties) throws ClientException;
     // @formatter:on
 }

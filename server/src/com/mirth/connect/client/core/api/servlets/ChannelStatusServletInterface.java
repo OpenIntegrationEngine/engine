@@ -35,6 +35,7 @@ import javax.ws.rs.core.MediaType;
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
 import com.mirth.connect.client.core.Permissions;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -43,27 +44,31 @@ import com.mirth.connect.model.DashboardStatus;
 
 @Path("/channels")
 @Tag(name = "Channel Status Operations")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface ChannelStatusServletInterface extends BaseServletInterface {
 
     @GET
     @Path("/{channelId}/status")
     @Operation(summary = "Returns the dashboard status for a single channel ID.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "dashboard_status", ref = "../apiexamples/dashboard_status_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "dashboard_status", ref = "../apiexamples/dashboard_status_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "dashboard_status", ref = "../apiexamples/dashboard_status_json") }) })
+                    @ExampleObject(name = "dashboard_status", ref = "../apiexamples/dashboard_status_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getChannelStatus", display = "Get status for single channel", permission = Permissions.DASHBOARD_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public DashboardStatus getChannelStatus(@Param("channelId") @Parameter(description = "The channel ID to return a dashboard status for.") @PathParam("channelId") String channelId) throws ClientException;
 
     @GET
     @Path("/statuses")
     @Operation(summary = "Returns all channel dashboard statuses, or multiple statuses by channel ID.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "dashboard_status_list", ref = "../apiexamples/dashboard_status_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "dashboard_status_list", ref = "../apiexamples/dashboard_status_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "dashboard_status_list", ref = "../apiexamples/dashboard_status_list_json") }) })
+                    @ExampleObject(name = "dashboard_status_list", ref = "../apiexamples/dashboard_status_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getChannelStatusList", display = "Get status list for specific channels", permission = Permissions.DASHBOARD_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public List<DashboardStatus> getChannelStatusList(// @formatter:off
             @Param("channelIds") @Parameter(description = "The channel IDs to return dashboard statuses for. If absent, all statuses will be returned.") @QueryParam("channelId") Set<String> channelIds,
@@ -74,10 +79,12 @@ public interface ChannelStatusServletInterface extends BaseServletInterface {
     @POST
     @Path("/statuses/_getChannelStatusList")
     @Operation(summary = "Returns all channel dashboard statuses, or multiple statuses by channel ID. This is a POST request alternative to GET /statuses that may be used when there are too many channel IDs to include in the query parameters.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "dashboard_status_list", ref = "../apiexamples/dashboard_status_list_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "dashboard_status_list", ref = "../apiexamples/dashboard_status_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "dashboard_status_list", ref = "../apiexamples/dashboard_status_list_json") }) })
+                    @ExampleObject(name = "dashboard_status_list", ref = "../apiexamples/dashboard_status_list_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getChannelStatusList", display = "Get status list for specific channels", permission = Permissions.DASHBOARD_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public List<DashboardStatus> getChannelStatusListPost(// @formatter:off
             @Param("channelIds") 
@@ -85,7 +92,8 @@ public interface ChannelStatusServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "channel_set", ref = "../apiexamples/guid_set_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "channel_set", ref = "../apiexamples/guid_set_json") }) })
+                            @ExampleObject(name = "channel_set", ref = "../apiexamples/guid_set_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             Set<String> channelIds,
             
             @Param("filter") @Parameter(description = "The filter string to limit dashboard statuses with.") @QueryParam("filter") String filter,
@@ -95,10 +103,12 @@ public interface ChannelStatusServletInterface extends BaseServletInterface {
     @GET
     @Path("/statuses/initial")
     @Operation(summary = "Returns a DashboardChannelInfo object containing a partial channel status list and a set of remaining channel IDs.")
-    @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
-            @ExampleObject(name = "dashboard_channel_info", ref = "../apiexamples/dashboard_channel_info_xml") }),
+    @ApiResponse(content = { 
+            @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                    @ExampleObject(name = "dashboard_channel_info", ref = "../apiexamples/dashboard_channel_info_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                    @ExampleObject(name = "dashboard_channel_info", ref = "../apiexamples/dashboard_channel_info_json") }) })
+                    @ExampleObject(name = "dashboard_channel_info", ref = "../apiexamples/dashboard_channel_info_json") }),
+            @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
     @MirthOperation(name = "getChannelStatusListInitial", display = "Get initial channel status list", permission = Permissions.DASHBOARD_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public DashboardChannelInfo getDashboardChannelInfo(// @formatter:off
             @Param("fetchSize") @Parameter(description = "Specifies the maximum number of statuses to return.", required = true, schema = @Schema(defaultValue = "100")) @QueryParam("fetchSize") int fetchSize,
@@ -220,7 +230,8 @@ public interface ChannelStatusServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "start_connector_map", ref = "../apiexamples/start_connector_map_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "start_connector_map", ref = "../apiexamples/start_connector_map_json") }) })
+                            @ExampleObject(name = "start_connector_map", ref = "../apiexamples/start_connector_map_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             Map<String, List<Integer>> connectorInfo,
             
             @Param("returnErrors") @Parameter(description = "If true, an error response code and the exception will be returned.") @QueryParam("returnErrors") boolean returnErrors) throws ClientException;
@@ -246,7 +257,8 @@ public interface ChannelStatusServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "start_connector_map", ref = "../apiexamples/start_connector_map_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "start_connector_map", ref = "../apiexamples/start_connector_map_json") }) })
+                            @ExampleObject(name = "start_connector_map", ref = "../apiexamples/start_connector_map_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             Map<String, List<Integer>> connectorInfo,
             
             @Param("returnErrors") @Parameter(description = "If true, an error response code and the exception will be returned.") @QueryParam("returnErrors") boolean returnErrors) throws ClientException;

@@ -22,6 +22,7 @@ import javax.ws.rs.core.MediaType;
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
 import com.mirth.connect.client.core.Permissions;
+import com.mirth.connect.client.core.api.ApiContentTypes;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -36,8 +37,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Path("/channels")
 @Tag(name = "Channel Deployment Operations")
-@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, ApiContentTypes.APPLICATION_MIRTHAPI_JSON })
 public interface EngineServletInterface extends BaseServletInterface {
 
     @POST
@@ -70,7 +71,8 @@ public interface EngineServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "channel_set", ref = "../apiexamples/guid_set_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "channel_set", ref = "../apiexamples/guid_set_json") }) })
+                            @ExampleObject(name = "channel_set", ref = "../apiexamples/guid_set_json") }),
+                    @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             Set<String> channelIds,
             @Param("returnErrors") @Parameter(description = "If true, an error response code and the exception will be returned.") @QueryParam("returnErrors") boolean returnErrors) throws ClientException;
     // @formatter:on
@@ -94,7 +96,8 @@ public interface EngineServletInterface extends BaseServletInterface {
                     @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                             @ExampleObject(name = "channel_set", ref = "../apiexamples/guid_set_xml") }),
                     @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
-                            @ExampleObject(name = "channel_set", ref = "../apiexamples/guid_set_json") }) })
+                            @ExampleObject(name = "channel_set", ref = "../apiexamples/guid_set_json") }),
+                   @Content(mediaType = ApiContentTypes.APPLICATION_MIRTHAPI_JSON), })
             Set<String> channelIds,
             @Param("returnErrors") @Parameter(description = "If true, an error response code and the exception will be returned.") @QueryParam("returnErrors") boolean returnErrors) throws ClientException;
     // @formatter:on

@@ -82,6 +82,10 @@ public class JavaScriptScopeUtil {
         return context;
     }
 
+    public Context doGetContext(ContextFactory contextFactory) {
+        return JavaScriptScopeUtil.getContext(contextFactory);
+    }
+
     protected static ScriptableObject createSealedSharedScope(ContextFactory contextFactory) {
         Context context = contextFactory.enterContext();
 
@@ -157,6 +161,14 @@ public class JavaScriptScopeUtil {
     // Router Builder
     private static void addRouter(Scriptable scope) {
         add("router", scope, new VMRouter());
+    }
+
+    private static void addRouterEnhancement(Scriptable scope, String channelId, Long messageId, Map<String, Object> sourceMap) {
+        if (sourceMap == null) {
+            sourceMap = Collections.emptyMap();
+        }
+
+        add("router", scope, new VMRouter(channelId, messageId, new SourceMap(Collections.unmodifiableMap(sourceMap))));
     }
 
     // Replacer
@@ -248,6 +260,9 @@ public class JavaScriptScopeUtil {
         add("sourceMap", scope, new SourceMap(Collections.unmodifiableMap(message.getSourceMap())));
         add("mirth_attachments", scope, attachments);
         add("binary", scope, isBinary);
+
+        addRouterEnhancement(scope, channelId, message.getOriginalMessageId(), message.getSourceMap());
+
         return scope;
     }
 
@@ -260,6 +275,8 @@ public class JavaScriptScopeUtil {
         addRawMessage(scope, message);
         addConnectorMessage(scope, connectorMessage);
 
+        addRouterEnhancement(scope, channelId, connectorMessage.getMessageId(), connectorMessage.getSourceMap());
+
         return scope;
     }
 
@@ -271,6 +288,9 @@ public class JavaScriptScopeUtil {
         Scriptable scope = getBasicScope(getContext(contextFactory), logger, channelId, message.getMergedConnectorMessage().getChannelName());
         addStatusValues(scope);
         addMessage(scope, message);
+
+        addRouterEnhancement(scope, channelId, message.getMessageId(), message.getMergedConnectorMessage().getSourceMap());
+
         return scope;
     }
 
@@ -283,6 +303,9 @@ public class JavaScriptScopeUtil {
         addMessage(scope, message);
         addStatusValues(scope);
         add("response", scope, response);
+
+        addRouterEnhancement(scope, channelId, message.getMessageId(), message.getMergedConnectorMessage().getSourceMap());
+
         return scope;
     }
 
@@ -295,6 +318,9 @@ public class JavaScriptScopeUtil {
         addConnectorMessage(scope, message);
         add("template", scope, template);
         add("phase", scope, phase);
+
+        addRouterEnhancement(scope, null, message.getMessageId(), message.getSourceMap());
+
         return scope;
     }
 
@@ -308,6 +334,9 @@ public class JavaScriptScopeUtil {
         addResponse(scope, response);
         addStatusValues(scope);
         add("template", scope, template);
+
+        addRouterEnhancement(scope, null, message.getMessageId(), message.getSourceMap());
+
         return scope;
     }
 
@@ -316,7 +345,11 @@ public class JavaScriptScopeUtil {
      * try-finally with Context.exit() in the finally block.
      */
     public static Scriptable getDeployScope(ContextFactory contextFactory, Object logger, String channelId, String channelName) {
-        return getBasicScope(getContext(contextFactory), logger, channelId, channelName);
+        Scriptable scope = getBasicScope(getContext(contextFactory), logger, channelId, channelName);
+
+        addRouterEnhancement(scope, channelId, null, null);
+
+        return scope;
     }
 
     /**
@@ -331,8 +364,13 @@ public class JavaScriptScopeUtil {
      * Since this method calls getContext(), anything calling it should wrap this method in a
      * try-finally with Context.exit() in the finally block.
      */
-    public static Scriptable getUndeployScope(ContextFactory contextFactory, Object logger, String channelId, String channelName) {
-        return getBasicScope(getContext(contextFactory), logger, channelId, channelName);
+    public static Scriptable getUndeployScope(ContextFactory contextFactory, Object logger, String channelId,
+            String channelName) {
+        Scriptable scope = getBasicScope(getContext(contextFactory), logger, channelId, channelName);
+
+        addRouterEnhancement(scope, channelId, null, null);
+
+        return scope;
     }
 
     /**
@@ -348,7 +386,11 @@ public class JavaScriptScopeUtil {
      * try-finally with Context.exit() in the finally block.
      */
     public static Scriptable getMessageReceiverScope(ContextFactory contextFactory, Object logger, String channelId, String channelName) {
-        return getBasicScope(getContext(contextFactory), logger, channelId, channelName);
+        Scriptable scope = getBasicScope(getContext(contextFactory), logger, channelId, channelName);
+
+        addRouterEnhancement(scope, channelId, null, null);
+
+        return scope;
     }
 
     /**
@@ -358,6 +400,9 @@ public class JavaScriptScopeUtil {
     public static Scriptable getMessageReceiverScope(ContextFactory contextFactory, Object logger, String channelId, ImmutableConnectorMessage message) {
         Scriptable scope = getBasicScope(getContext(contextFactory), logger, channelId, message.getChannelName());
         addConnectorMessage(scope, message);
+
+        addRouterEnhancement(scope, channelId, message.getMessageId(), message.getSourceMap());
+
         return scope;
     }
 
@@ -369,6 +414,9 @@ public class JavaScriptScopeUtil {
         Scriptable scope = getBasicScope(getContext(contextFactory), logger, channelId, message.getChannelName());
         addConnectorMessage(scope, message);
         addStatusValues(scope);
+
+        addRouterEnhancement(scope, channelId, message.getMessageId(), message.getSourceMap());
+
         return scope;
     }
 
@@ -386,6 +434,8 @@ public class JavaScriptScopeUtil {
         if (channelId != null) {
             addChannel(scope, channelId, channelName);
         }
+
+        addRouterEnhancement(scope, channelId, null, null);
 
         return scope;
     }

@@ -643,6 +643,10 @@ public class JmsConnectorPanel extends ConnectorSettingsPanel {
                 connectionFactoryNameField.setText(template.getJndiConnectionFactoryName());
                 connectionFactoryClassField.setText(template.getConnectionFactoryClass());
                 connectionPropertiesTable.setProperties(template.getConnectionProperties());
+                usernameField.setText(template.getUsername());
+                passwordField.setText(template.getPassword());
+                clientIdField.setText(template.getClientId());
+                destinationNameField.setText(template.getDestinationName());
             }
         }
     }//GEN-LAST:event_loadTemplateButtonActionPerformed

@@ -53,6 +53,17 @@ public class JmsTemplateListModel extends AbstractListModel {
         properties.setJndiConnectionFactoryName("java:/ConnectionFactory");
         templates.put("JBoss Messaging / MQ", properties);
 
+        properties = new JmsConnectorProperties();
+        properties.setUseJndi(false);        
+        properties.setConnectionFactoryClass("com.rabbitmq.jms.admin.RMQConnectionFactory");
+        properties.getConnectionProperties().put("brokerURL", "failover:(tcp://localhost:5672)?maxReconnectAttempts=0");
+        properties.getConnectionProperties().put("closeTimeout", "15000");
+        properties.getConnectionProperties().put("useCompression", "no");
+        properties.setUsername("guest");
+        properties.setPassword("guest");
+        properties.setDestinationName("myqueue");
+        templates.put("RabbitMQ", properties);
+
         templateNames.addAll(templates.keySet());
         readOnlyTemplateNames.addAll(templates.keySet());
     }

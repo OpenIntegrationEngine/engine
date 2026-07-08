@@ -52,11 +52,9 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.security.AccessController;
 import java.util.List;
 
 import org.apache.commons.lang3.math.NumberUtils;
-import org.glassfish.jersey.internal.util.ReflectionHelper;
 
 public class OSXAdapter implements InvocationHandler {
 
@@ -281,7 +279,7 @@ public class OSXAdapter implements InvocationHandler {
     @SuppressWarnings("removal")
     protected static void setHandler(InvocationHandler adapter, String interfaceName, String applicationSetter) throws Exception {
         Class<?> handlerInterface = Class.forName(interfaceName);
-        Object handlerImpl = Proxy.newProxyInstance(AccessController.doPrivileged(ReflectionHelper.getClassLoaderPA(handlerInterface)), new Class[] {
+        Object handlerImpl = Proxy.newProxyInstance(handlerInterface.getClassLoader(), new Class[] {
                 handlerInterface }, adapter);
         Object application = getApplication();
         application.getClass().getMethod(applicationSetter, handlerInterface).invoke(application, handlerImpl);

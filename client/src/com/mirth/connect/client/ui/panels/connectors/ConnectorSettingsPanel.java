@@ -13,7 +13,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.security.AccessController;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,8 +21,6 @@ import java.util.concurrent.ExecutionException;
 
 import javax.swing.JPanel;
 import javax.swing.SwingWorker;
-
-import org.glassfish.jersey.internal.util.ReflectionHelper;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.ui.ConnectorTypeDecoration;
@@ -199,7 +196,7 @@ public abstract class ConnectorSettingsPanel extends JPanel {
      */
     @SuppressWarnings({"removal", "unchecked"})
     public final <T> T getServlet(final Class<T> servletInterface, final String workerDisplayText, final String errorText, final ResponseHandler responseHandler, final String workerId) {
-        return (T) Proxy.newProxyInstance(AccessController.doPrivileged(ReflectionHelper.getClassLoaderPA(servletInterface)), new Class[] {
+        return (T) Proxy.newProxyInstance(servletInterface.getClassLoader(), new Class[] {
                 servletInterface }, new InvocationHandler() {
                     @Override
                     public Object invoke(final Object proxy, final Method method, final Object[] args) throws ClientException {

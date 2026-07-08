@@ -19,7 +19,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.AccessController;
 import java.security.Provider;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -51,7 +50,6 @@ import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.proxy.WebResourceFactory;
 import org.glassfish.jersey.client.spi.Connector;
 import org.glassfish.jersey.client.spi.ConnectorProvider;
-import org.glassfish.jersey.internal.util.ReflectionHelper;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.reflections.Reflections;
 
@@ -249,7 +247,7 @@ public class Client implements UserServletInterface, ConfigurationServletInterfa
 
     @SuppressWarnings({"removal", "unchecked"})
     public <T> T getServlet(final Class<T> servletInterface, final ExecuteType executeType, final Map<String, List<String>> customHeaders) {
-        return (T) Proxy.newProxyInstance(AccessController.doPrivileged(ReflectionHelper.getClassLoaderPA(servletInterface)), new Class[] {
+        return (T) Proxy.newProxyInstance(servletInterface.getClassLoader(), new Class[] {
                 servletInterface }, new InvocationHandler() {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws ClientException {

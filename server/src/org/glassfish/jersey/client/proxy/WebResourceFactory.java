@@ -50,7 +50,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
-import java.security.AccessController;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -82,7 +81,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
-import org.glassfish.jersey.internal.util.ReflectionHelper;
 import org.glassfish.jersey.media.multipart.Boundary;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.FormDataParam;
@@ -148,7 +146,7 @@ public final class WebResourceFactory implements InvocationHandler {
                                     final List<Cookie> cookies,
                                     final Form form) {
 
-        return (C) Proxy.newProxyInstance(AccessController.doPrivileged(ReflectionHelper.getClassLoaderPA(resourceInterface)),
+        return (C) Proxy.newProxyInstance(resourceInterface.getClassLoader(),
                 new Class[] {resourceInterface},
                 new WebResourceFactory(ignoreResourcePath ? target : addPathFromAnnotation(resourceInterface, target),
                         headers, cookies, form));

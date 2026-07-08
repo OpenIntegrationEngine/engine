@@ -36,6 +36,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -91,6 +92,8 @@ public class ServerConnection implements Connector {
     public static final String EXECUTE_TYPE_PROPERTY = "executeType";
     public static final String OPERATION_PROPERTY = "operation";
     public static final String CUSTOM_HEADERS_PROPERTY = "customHeaders";
+    private static final String PROXY_HOST_PROPERTY = "engine.http.proxyHost";
+    private static final String PROXY_PORT_PROPERTY = "engine.http.proxyPort";
 
     private static final int CONNECT_TIMEOUT = 10000;
     private static final int IDLE_TIMEOUT = 300000;
@@ -134,7 +137,21 @@ public class ServerConnection implements Connector {
 
         cookieStore = new BasicCookieStore();
         socketConfig = SocketConfig.custom().setSoTimeout(timeout).build();
-        requestConfig = RequestConfig.custom().setConnectTimeout(CONNECT_TIMEOUT).setSocketTimeout(timeout).build();
+
+        RequestConfig.Builder requestConfigBuilder = RequestConfig.custom()
+            .setConnectTimeout(CONNECT_TIMEOUT)
+            .setSocketTimeout(timeout);
+
+        // If HTTP Proxy is set, configure it
+        String httpProxyHost = System.getProperty(PROXY_HOST_PROPERTY);
+        if (allowHTTP && StringUtils.isNotBlank(httpProxyHost)) {
+            String httpProxyPort = System.getProperty(PROXY_PORT_PROPERTY);
+            int proxyPort = StringUtils.isNotBlank(httpProxyPort) ? Integer.parseInt(httpProxyPort) : 8888;
+            logger.info("Using API HTTP Proxy {}:{}", httpProxyHost, proxyPort);
+            requestConfigBuilder.setProxy(new HttpHost(httpProxyHost, proxyPort));
+        }
+
+        requestConfig = requestConfigBuilder.build();
         keepAliveStrategy = new CustomKeepAliveStrategy();
 
         createClient();

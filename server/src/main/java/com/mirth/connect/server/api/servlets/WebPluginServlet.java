@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
@@ -35,8 +36,11 @@ public class WebPluginServlet extends MirthServlet implements WebPluginServletIn
     // both discovery and asset serving against traversal via the extension name.
     private static final Pattern SAFE_SEGMENT = Pattern.compile("[A-Za-z0-9._-]+");
 
-    public WebPluginServlet(@Context HttpServletRequest request, @Context SecurityContext sc) {
+    private final ServletContext servletContext;
+
+    public WebPluginServlet(@Context HttpServletRequest request, @Context ServletContext servletContext, @Context SecurityContext sc) {
         super(request, sc);
+        this.servletContext = servletContext;
     }
 
     @Override
@@ -110,33 +114,26 @@ public class WebPluginServlet extends MirthServlet implements WebPluginServletIn
         }
     }
 
-    // Minimal extension -> MIME map for the file types a web plugin ships. ES modules
-    // MUST be a JavaScript type or the browser refuses to execute them; the rest keep
-    // images/fonts/styles rendering correctly. Unknown types fall back to octet-stream.
-    private static String contentType(String fileName) {
+    /**
+     * MIME type for a served asset. ES modules MUST be a JavaScript type with the right charset
+     * or the browser refuses to execute them, so .js/.mjs (and .json/.map, which some containers
+     * mislabel) are pinned here; everything else defers to the servlet container's own MIME
+     * table ({@link ServletContext#getMimeType}) rather than a hand-rolled extension map.
+     */
+    private String contentType(String fileName) {
         String lower = StringUtils.lowerCase(fileName);
+        if (lower == null) {
+            return "application/octet-stream";
+        }
         if (lower.endsWith(".js") || lower.endsWith(".mjs")) {
             return "text/javascript; charset=utf-8";
-        } else if (lower.endsWith(".css")) {
-            return "text/css; charset=utf-8";
-        } else if (lower.endsWith(".json") || lower.endsWith(".map")) {
+        }
+        if (lower.endsWith(".json") || lower.endsWith(".map")) {
             return "application/json; charset=utf-8";
-        } else if (lower.endsWith(".html")) {
-            return "text/html; charset=utf-8";
-        } else if (lower.endsWith(".svg")) {
-            return "image/svg+xml";
-        } else if (lower.endsWith(".png")) {
-            return "image/png";
-        } else if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
-            return "image/jpeg";
-        } else if (lower.endsWith(".gif")) {
-            return "image/gif";
-        } else if (lower.endsWith(".woff2")) {
-            return "font/woff2";
-        } else if (lower.endsWith(".woff")) {
-            return "font/woff";
-        } else if (lower.endsWith(".ttf")) {
-            return "font/ttf";
+        }
+        String mapped = servletContext == null ? null : servletContext.getMimeType(lower);
+        if (mapped != null) {
+            return mapped.startsWith("text/") ? mapped + "; charset=utf-8" : mapped;
         }
         return "application/octet-stream";
     }

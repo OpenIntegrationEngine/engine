@@ -22,3 +22,7 @@
 #
 # Any lines which do not match the special directives above will be passed through directly as
 # arguments to the java binary.
+
+# Use the Java version specified in .sdkmanrc (located in project root)
+# This ensures server runtime matches the build environment
+-java-cmd ${HOME}/.sdkman/candidates/java/17.0.17.fx-zulu/bin/java

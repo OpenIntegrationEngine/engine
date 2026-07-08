@@ -5,32 +5,32 @@
 #
 
 # =============================================================================
-# Open Integration Engine Server Launcher Script
+# Open Integration Engine Client Launcher Script
 #
 # Description:
-#   This script is the main launcher for the Open Integration Engine (OIE)
-#   server. It prepares the Java environment and executes the server launcher
-#   JAR file.
+#   This script is the launcher for the Open Integration Engine (OIE)
+#   Administrator client GUI. It prepares the Java environment and executes
+#   the client application.
 #
 #   The script automatically finds a compatible Java runtime (version 17+ by
 #   default) by searching for a valid executable in the following priority order:
 #     1. The OIE_JAVA_PATH environment variable.
-#     2. The -java-cmd directive in the oieserver.vmoptions file or included
+#     2. The -java-cmd directive in the oieclient.vmoptions file or included
 #        .vmoptions files. Must specify the path to the 'java' executable.
 #        This is the preferred way to declare the desired version for running
-#        the server and can be overridden by OIE_JAVA_PATH. Can be a relative
+#        the client and can be overridden by OIE_JAVA_PATH. Can be a relative
 #        path from the location of this script.
 #     3. The JAVA_HOME environment variable.
 #     4. The 'java' command available in the system's PATH.
 #
-#   It also parses the 'oieserver.vmoptions' file to configure JVM options,
+#   It also parses the 'oieclient.vmoptions' file to configure JVM options,
 #   system properties (-D...), and classpath modifications.
 #
 # Usage:
-#   ./oieserver.sh [app-arguments]
+#   ./oieclient [app-arguments]
 #
 #   All [app-arguments] are passed directly to the underlying Java application
-#   (com.mirth.connect.server.launcher.MirthLauncher).
+#   (com.mirth.connect.client.ui.Mirth).
 #
 # Configuration via Environment Variables:
 #   OIE_JAVA_PATH   - (Highest priority) Set the full path to the 'java'
@@ -46,13 +46,33 @@ MIN_JAVA_VERSION=17
 
 # Set OIE_HOME to the script directory
 OIE_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-# The engine expects it's working directory to be OIE_HOME
+# The client expects it's working directory to be OIE_HOME
 if ! cd "$OIE_HOME"; then
     echo "Error: Could not change to the OIE_HOME directory: $OIE_HOME" >&2
     exit 1
 fi
-LAUNCHER_JAR="$OIE_HOME/mirth-server-launcher.jar"
-CLASSPATH="$LAUNCHER_JAR"
+
+# Build the client classpath
+CLASSPATH="$OIE_HOME/client-lib/mirth-client.jar"
+
+# Add all client-lib JARs to classpath
+for jar in "$OIE_HOME/client-lib"/*.jar; do
+    if [[ -f "$jar" ]] && [[ "$jar" != *"mirth-client.jar" ]]; then
+        CLASSPATH="$CLASSPATH:$jar"
+    fi
+done
+
+# Add extension JARs to classpath
+for extension_dir in "$OIE_HOME/extensions"/*; do
+    if [[ -d "$extension_dir" ]]; then
+        for jar in "$extension_dir"/*.jar; do
+            if [[ -f "$jar" ]]; then
+                CLASSPATH="$CLASSPATH:$jar"
+            fi
+        done
+    fi
+done
+
 VMOPTIONS=()
 # This will hold the validated path to the Java executable. It is intentionally left empty for now.
 FINAL_JAVA_CMD=""
@@ -202,22 +222,12 @@ parse_vmoptions() {
 
 # --- Main Logic ---
 
-# 1. Recursively parse the VM options file to populate vmoptions variables.
-parse_vmoptions "$OIE_HOME/oieserver.vmoptions"
+# 1. Recursively parse the VM options file to populate vmoptions variables (if exists).
+if [[ -f "$OIE_HOME/oieclient.vmoptions" ]]; then
+    parse_vmoptions "$OIE_HOME/oieclient.vmoptions"
+fi
 
-# 2. Ensure the launcher JAR is always in the classpath.
-case "$CLASSPATH" in
-    *"$LAUNCHER_JAR"*)
-        # It's already there, do nothing.
-        ;;
-    *)
-        # Prepend the launcher JAR if a custom classpath was provided.
-        echo "Info: Prepending mirth-server-launcher.jar to the classpath."
-        CLASSPATH="$LAUNCHER_JAR:$CLASSPATH"
-        ;;
-esac
-
-# 3. Discover the Java executable using the documented priority order.
+# 2. Discover the Java executable using the documented priority order.
 
 # Check OIE_JAVA_PATH (fail-fast on invalid).
 if [[ -n "$OIE_JAVA_PATH" ]]; then
@@ -263,18 +273,24 @@ if [[ -z "$FINAL_JAVA_CMD" ]]; then
     fi
 fi
 
-# 4. Final check for a valid Java path before execution.
+# 3. Final check for a valid Java path before execution.
 if [[ -z "$FINAL_JAVA_CMD" ]]; then
     echo "Error: Could not find a Java ${MIN_JAVA_VERSION}+ installation." >&2
-    echo "Please configure -java-cmd in conf/custom.vmoptions, set OIE_JAVA_PATH, set JAVA_HOME, or ensure 'java' in your PATH is version ${MIN_JAVA_VERSION} or higher." >&2
+    echo "Please create oieclient.vmoptions with -java-cmd, set OIE_JAVA_PATH, set JAVA_HOME, or ensure 'java' in your PATH is version ${MIN_JAVA_VERSION} or higher." >&2
     exit 1
 fi
 
-JAVA_OPTS=("${VMOPTIONS[@]}" 
-           "-cp" "$CLASSPATH" 
-           "com.mirth.connect.server.launcher.MirthLauncher" 
-           "${APP_ARGS[@]}")
+# Build JVM options with necessary module exports for macOS and reflection access
+JAVA_OPTS=(
+    "--add-exports=java.desktop/com.apple.eawt=ALL-UNNAMED"
+    "--add-exports=java.desktop/com.apple.eio=ALL-UNNAMED"
+    "--add-opens=java.base/java.util=ALL-UNNAMED"
+    "${VMOPTIONS[@]}"
+    "-cp" "$CLASSPATH"
+    "com.mirth.connect.client.ui.Mirth"
+    "${APP_ARGS[@]}"
+)
 
-# Launch Open Integration Engine (as this PID with exec)
-echo "Starting Open Integration Engine..."
+# Launch Open Integration Engine Administrator Client
+echo "Starting Open Integration Engine Administrator Client..."
 exec "$FINAL_JAVA_CMD" "${JAVA_OPTS[@]}"

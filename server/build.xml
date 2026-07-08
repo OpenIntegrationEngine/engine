@@ -1018,8 +1018,9 @@
 			<fileset dir="${basedir_includes}" />
 		</copy>
 
-		<!-- make oieserver script executable on unix platforms -->
+		<!-- make oieserver and oieclient scripts executable on unix platforms -->
 		<chmod file="${setup}/oieserver" perm="755"/>
+		<chmod file="${setup}/oieclient" perm="755"/>
 
 		<!-- make scripts executable on unix platforms -->
 		<chmod file="${setup}/configure-from-env" perm="755"/>

@@ -13,6 +13,7 @@
 - [Why Open Integration Engine?](#why-open-integration-engine)
 - [Core Features](#core-features)
 - [Who It’s For](#who-its-for)
+- [Building from Source](#building-from-source)
 - [Project Values](#project-values)
 - [Community and Governance](#community-and-governance)
 - [History and Roadmap](#history-and-roadmap)
@@ -67,6 +68,19 @@ The **Open Integration Engine Project** is an open-source initiative committed t
 - **Health IT Teams** – Connecting EHRs, LIS, RIS, and other healthcare systems  
 - **EHR Vendors** – Enhancing interoperability within their products  
 - **Researchers** – Requiring reliable, standards-based integration tools
+
+---
+
+## Building from Source
+
+The build is driven by Gradle through the committed wrapper; the only prerequisite is JDK 17 (see [.sdkmanrc](.sdkmanrc)):
+
+```bash
+./gradlew build              # full build + tests; distribution lands in server/setup
+./gradlew clean build dist   # release form, plus extension zips in server/dist
+```
+
+On Windows use `gradlew.bat`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full command reference, the dependency policy, and how to run the server for development.
 
 ---
 

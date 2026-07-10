@@ -1,0 +1,54 @@
+// HL7 vocabulary generator tooling (mirrors generator/build.xml). Not part
+// of the main distribution build; run :generator:vocabJar manually to
+// regenerate the vocabulary jar from the reference definitions.
+
+dependencies {
+    implementation libs.bundles.generator.main
+}
+
+sourceSets.main.java {
+    exclude '**/test/**'
+}
+
+def generatorJar = tasks.register('generatorJar', Jar) {
+    archiveFileName = 'model-generator.jar'
+    destinationDirectory = file('dist')
+    from sourceSets.main.output.classesDirs
+}
+
+def generateVocabSource = tasks.register('generateVocabSource', JavaExec) {
+    description = 'Generates the HL7 vocabulary sources from the reference definitions.'
+    mainClass = 'com.mirth.connect.model.generator.HL7ModelGenerator'
+    workingDir = projectDir
+    classpath = sourceSets.main.runtimeClasspath
+    args 'reference', 'vocab/src', 'templates'
+    inputs.dir 'reference'
+    inputs.dir 'templates'
+    inputs.files sourceSets.main.output
+    outputs.dir 'vocab/src'
+    dependsOn compileJava
+}
+
+def compileVocab = tasks.register('compileVocab', JavaCompile) {
+    source = fileTree('vocab/src')
+    destinationDirectory = file('vocab/classes')
+    classpath = sourceSets.main.runtimeClasspath
+    options.encoding = 'UTF-8'
+    dependsOn generateVocabSource
+}
+
+tasks.register('vocabJar', Jar) {
+    description = 'Builds the mirth vocabulary jar from generated sources.'
+    archiveFileName = 'mirth-vocab-1.2.jar'
+    destinationDirectory = file('vocab/dist')
+    from compileVocab
+    from(sourceSets.main.output.classesDirs) {
+        include '**/hl7v2/**/*.class'
+    }
+}
+
+assemble.dependsOn generatorJar
+
+clean {
+    delete 'classes', 'dist', 'vocab'
+}

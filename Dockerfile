@@ -13,7 +13,7 @@ FROM ubuntu:noble-20251013 AS builder
 WORKDIR /app
 # sdkman requires bash
 SHELL ["/bin/bash", "-c"]
-ARG ANT_BUILD_ARGS="-DdisableSigning=true"
+ARG GRADLE_BUILD_ARGS="-PdisableSigning=true"
 
 # Stage 1a: Install dependencies
 # Install necessary tools
@@ -26,10 +26,12 @@ RUN apt-get update\
 
 # Stage 1b: Build the application
 # Copy the entire source tree (excluding .dockerignore files), and build
+# (file encoding is pinned to UTF-8 in gradle.properties)
 COPY . .
-WORKDIR /app/server
-RUN source "$HOME/.sdkman/bin/sdkman-init.sh" \
-    && ANT_OPTS="-Dfile.encoding=UTF8" ant -f mirth-build.xml ${ANT_BUILD_ARGS}
+RUN --mount=type=cache,target=/root/.gradle/caches,sharing=locked \
+    --mount=type=cache,target=/root/.gradle/wrapper,sharing=locked \
+    source "$HOME/.sdkman/bin/sdkman-init.sh" \
+    && ./gradlew --no-daemon build ${GRADLE_BUILD_ARGS}
 
 ##########################################
 #

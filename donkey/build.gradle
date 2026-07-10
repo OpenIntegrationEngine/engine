@@ -1,0 +1,51 @@
+// Donkey: the message engine. Produces donkey-model.jar and
+// donkey-server.jar in donkey/setup (mirrors donkey/build.xml).
+
+dependencies {
+    implementation libs.bundles.donkey.main
+    testImplementation libs.bundles.donkey.test
+}
+
+def donkeyModelJar = tasks.register('donkeyModelJar', Jar) {
+    archiveFileName = 'donkey-model.jar'
+    destinationDirectory = file('setup')
+    from(sourceSets.main.output.classesDirs) {
+        include 'com/mirth/connect/donkey/model/**'
+        include 'com/mirth/connect/donkey/util/**'
+    }
+}
+
+def donkeyServerJar = tasks.register('donkeyServerJar', Jar) {
+    archiveFileName = 'donkey-server.jar'
+    destinationDirectory = file('setup')
+    from(sourceSets.main.output.classesDirs) {
+        include 'com/mirth/connect/donkey/server/**'
+        include 'com/mirth/connect/donkey/model/**'
+        include 'com/mirth/connect/donkey/util/**'
+    }
+    from 'donkeydbconf'
+}
+
+// Assembles the historical lib layout: still-vendored jars from lib/
+// plus the resolved Maven Central artifacts placed at their original
+// paths (gradle/vendored-layout.json).
+def donkeyPlacements = rootProject.stagedArtifacts(configurations.runtimeClasspath, 'donkey')
+def copySetupLibs = tasks.register('copySetupLibs', Copy) {
+    from 'lib'
+    from(files({ donkeyPlacements().keySet() })) {
+        eachFile { it.path = donkeyPlacements()[it.file] }
+        includeEmptyDirs = false
+    }
+    into 'setup/lib'
+}
+
+def copySetupDocs = tasks.register('copySetupDocs', Copy) {
+    from 'docs'
+    into 'setup/docs'
+}
+
+assemble.dependsOn donkeyModelJar, donkeyServerJar, copySetupLibs, copySetupDocs
+
+clean {
+    delete 'classes', 'test_classes', 'setup'
+}

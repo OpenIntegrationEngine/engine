@@ -178,7 +178,7 @@ donkey/donkey-test
 # /client/src/com/mirth/connect/client/ui/panels/reference/
 
 # /client/src/com/mirth/connect/client/ui/util/
-/client/src/com/mirth/connect/client/ui/util/DocParser.java
+/client/src/main/java/com/mirth/connect/client/ui/util/DocParser.java
 
 # /client/src/com/mirth/connect/connectors/
 
@@ -205,7 +205,7 @@ donkey/donkey-test
 # /client/src/com/mirth/connect/connectors/ws/
 
 # /client/src/com/mirth/connect/plugins/
-/client/src/com/mirth/connect/plugins/sampledashboardcolumn
+/client/src/main/java/com/mirth/connect/plugins/sampledashboardcolumn
 
 # /client/src/com/mirth/connect/plugins/dashboardstatus/
 
@@ -554,14 +554,14 @@ donkey/donkey-test
 # /server/src/com/mirth/connect/model/util/
 
 # /server/src/com/mirth/connect/plugins/
-/server/src/com/mirth/connect/plugins/Graphical Mapper Transformer Step.xml
-/server/src/com/mirth/connect/plugins/consoleconnectorstatus
-/server/src/com/mirth/connect/plugins/Console Connector Status Monitor Plugin.xml
-/server/src/com/mirth/connect/plugins/extendedhl7vocab
-/server/src/com/mirth/connect/plugins/Extended HL7 Vocabulary.xml
-/server/src/com/mirth/connect/plugins/Sample Dashboard Column Plugin.xml
-/server/src/com/mirth/connect/plugins/ExtensionParser.xml
-/server/src/com/mirth/connect/plugins/ExtensionRepositoryParser.java
+/server/src/main/resources/com/mirth/connect/plugins/Graphical Mapper Transformer Step.xml
+/server/src/main/java/com/mirth/connect/plugins/consoleconnectorstatus
+/server/src/main/resources/com/mirth/connect/plugins/Console Connector Status Monitor Plugin.xml
+/server/src/main/java/com/mirth/connect/plugins/extendedhl7vocab
+/server/src/main/resources/com/mirth/connect/plugins/Extended HL7 Vocabulary.xml
+/server/src/main/resources/com/mirth/connect/plugins/Sample Dashboard Column Plugin.xml
+/server/src/main/resources/com/mirth/connect/plugins/ExtensionParser.xml
+/server/src/main/java/com/mirth/connect/plugins/ExtensionRepositoryParser.java
 
 # /server/src/com/mirth/connect/plugins/dashboardstatus/
 
@@ -612,7 +612,7 @@ donkey/donkey-test
 # /server/src/com/mirth/connect/server/
 
 # /server/src/com/mirth/connect/server/builders/
-/server/src/com/mirth/connect/server/builders/VocalEZParser.java
+/server/src/main/java/com/mirth/connect/server/builders/VocalEZParser.java
 
 # /server/src/com/mirth/connect/server/controllers/
 
@@ -635,7 +635,7 @@ donkey/donkey-test
 # /server/src/com/mirth/connect/server/util/javascript/
 
 # /server/src/com/mirth/connect/util/
-/server/src/com/mirth/connect/util/GenerateExtensionUpdate.java
+/server/src/main/java/com/mirth/connect/util/GenerateExtensionUpdate.java
 
 # /server/src/org/
 
@@ -650,3 +650,6 @@ donkey/donkey-test
 # /server/src/org/mozilla/javascript/
 
 # /server/src/org/mozilla/javascript/xmlimpl/
+server/setup.tar.gz
+dependency-check-report.html
+dependency-check-report.json

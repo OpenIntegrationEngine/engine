@@ -1,0 +1,81 @@
+// The CLI module. Produces mirth-cli.jar and mirth-cli-launcher.jar in
+// command/build, plus the conf and cli-lib staging directories
+// (mirrors command/build.xml).
+
+// The Ant classpath was lib/*.jar (flat, not recursive).
+dependencies {
+    implementation libs.bundles.command.main
+    implementation fileTree(dir: 'lib', include: '*.jar')
+    testImplementation libs.bundles.command.test
+}
+
+def prepareCliLibs = tasks.register('prepareCliLibs', Copy) {
+    description = 'Copies donkey/server jars into command/lib (mirrors mirth-build build-cli).'
+    from rootProject.file('donkey/setup/donkey-model.jar')
+    from rootProject.file('server/setup/server-lib/mirth-client-core.jar')
+    from rootProject.file('server/setup/server-lib/mirth-crypto.jar')
+    into 'lib'
+    dependsOn ':donkey:donkeyModelJar', ':server:clientCoreJar', ':server:cryptoJar'
+}
+
+compileJava.dependsOn prepareCliLibs
+
+def cliJar = tasks.register('cliJar', Jar) {
+    archiveFileName = 'mirth-cli.jar'
+    destinationDirectory = layout.buildDirectory
+    from(sourceSets.main.output.classesDirs) {
+        include 'com/mirth/connect/cli/**'
+        exclude 'com/mirth/connect/cli/launcher/**'
+    }
+}
+
+def cliLauncherJar = tasks.register('cliLauncherJar', Jar) {
+    archiveFileName = 'mirth-cli-launcher.jar'
+    destinationDirectory = layout.buildDirectory
+    from(sourceSets.main.output.classesDirs) {
+        include 'com/mirth/connect/cli/launcher/**'
+    }
+    manifest {
+        attributes('Main-Class': 'com.mirth.connect.cli.launcher.CommandLineLauncher')
+    }
+    // Generated from resolved versions; see the server launcher jar.
+    def launcherDeps = ['log4j-api', 'log4j-core', 'commons-io']
+    doFirst {
+        def byModule = [:]
+        configurations.runtimeClasspath.incoming.artifacts.each { a ->
+            def id = a.id.componentIdentifier
+            if (id instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier) {
+                byModule[id.module] = a.file.name
+            }
+        }
+        manifest.attributes['Class-Path'] = launcherDeps.collect { m ->
+            def jar = byModule[m]
+            if (jar == null) {
+                throw new GradleException("launcher Class-Path dependency '${m}' not resolved")
+            }
+            "cli-lib/${jar}"
+        }.join(' ') + ' conf/'
+    }
+}
+
+def copyBuildConf = tasks.register('copyBuildConf', Copy) {
+    from 'conf'
+    into layout.buildDirectory.dir('conf')
+}
+
+def commandPlacements = rootProject.stagedArtifacts(configurations.runtimeClasspath, 'command')
+def copyBuildCliLib = tasks.register('copyBuildCliLib', Copy) {
+    from 'lib'
+    from(files({ commandPlacements().keySet() })) {
+        eachFile { it.path = commandPlacements()[it.file] }
+        includeEmptyDirs = false
+    }
+    into layout.buildDirectory.dir('cli-lib')
+    dependsOn prepareCliLibs
+}
+
+assemble.dependsOn cliJar, cliLauncherJar, copyBuildConf, copyBuildCliLib
+
+clean {
+    delete 'classes', 'test_classes', 'dist'
+}

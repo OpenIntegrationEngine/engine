@@ -1,0 +1,343 @@
+/*
+ * Gradle build for the Open Integration Engine.
+ *
+ * Replaced the historical Ant build in June 2026 with verified output
+ * parity: server/setup is the assembled distribution, server/dist holds
+ * the extension zips, and every archive's entry contents were verified
+ * byte-identical against an Ant baseline (reproducible with the
+ * oie-build-parity tooling). The only
+ * differences are archive metadata: Gradle normalizes zip entry
+ * timestamps to its fixed epoch (the Ant build used archive.entry.date
+ * for the same purpose), orders entries deterministically, and does not
+ * write the Ant-Version manifest attribute.
+ *
+ * Dependencies resolve from Maven Central via gradle/libs.versions.toml;
+ * every coordinate was SHA-1 matched to the previously vendored jar,
+ * resolution is non-transitive so the artifact set stays exactly the
+ * audited set, and gradle/verification-metadata.xml enforces checksums
+ * on every resolution. The
+ * verifyVendoredParity task guards distribution placement
+ * (gradle/vendored-layout.json). Unmatched jars remain vendored in the
+ * module lib/ directories.
+ *
+ * Differences in full: no Ant-Version/Created-By manifest attributes,
+ * normalized entry timestamps and ordering, no timestamp comment in
+ * version.properties, one extra directory entry in mirth-client.jar
+ * and mirth-server.jar, and the empty package-info.class markers Ant's
+ * javac emitted for the three annotation-free package-info.java sources
+ * are not reproduced (inert, no runtime effect).
+ *
+ * Usage (build flags are Gradle project properties, -Pname=true):
+ *   ./gradlew build                          full build + tests
+ *   ./gradlew build -PdisableTests=true      skip tests
+ *   ./gradlew build -PdisableSigning=true    skip jar signing
+ *   ./gradlew test [-Pcoverage=true]         tests only (JaCoCo optional)
+ *   ./gradlew dist                           distribution extension zips
+ *   ./gradlew clean                          clean all modules
+ *
+ * For release artifacts run a clean build (./gradlew clean build dist):
+ * the staging into server/setup removes stale files where it owns the
+ * directory, but artifacts renamed or removed from intermediate build
+ * directories are only guaranteed gone after a clean.
+ */
+
+plugins {
+    // vulnerability scanning: ./gradlew dependencyCheckAggregate
+    // (replaces the old standalone dependency-check.xml Ant entry point)
+    id 'org.owasp.dependencycheck' version '12.2.2'
+}
+
+dependencyCheck {
+    // NVD downloads are heavily throttled without a key; get one at
+    // https://nvd.nist.gov/developers/request-an-api-key
+    nvd {
+        apiKey = System.getenv('NVD_API_KEY') ?: ''
+    }
+    // the distribution ships no .NET assemblies, and the analyzer
+    // hard-fails the whole scan on machines without a dotnet runtime
+    analyzers {
+        assemblyEnabled = false
+    }
+    // also scan the jars that remain vendored (no Maven coordinates)
+    scanSet = subprojects.collect { it.file('lib') }.findAll { it.directory }
+}
+
+// Build flags are passed as Gradle project properties: -Pname=true.
+def flag = { String name ->
+    providers.gradleProperty(name).getOrNull() == 'true'
+}
+
+ext {
+    disableTests = flag('disableTests')
+    disableSigning = flag('disableSigning')
+    coverageEnabled = flag('coverage')
+}
+
+allprojects {
+    group = 'org.openintegrationengine'
+    // default comes from gradle.properties; -Pversion=x.y.z overrides
+    version = providers.gradleProperty('version').getOrNull() ?: version
+}
+
+// Maps each Maven Central artifact ("group:artifact") to the directory
+// its vendored copy lived in, so the staged distribution layout matches
+// what the vendored build produced. Version-independent: bumping a
+// version in libs.versions.toml needs no layout change; only a NEW
+// distributed artifact needs a placement line (the build fails with a
+// clear message if one is missing).
+ext.vendoredLayout = file('gradle/vendored-layout.json').exists()
+        ? new groovy.json.JsonSlurper().parse(file('gradle/vendored-layout.json'))
+        : [:]
+
+// Maps a resolved-artifact inventory to {source File -> staged relative
+// path} using the placement map. fileTree(lib) leftovers and project
+// outputs are excluded naturally: they are not module components.
+ext.placementsFor = { List inventory, String section, Closure dirFilter = { true } ->
+    def placements = rootProject.vendoredLayout[section] ?: [:]
+    def out = [:]
+    inventory.each { art ->
+        def entry = placements["${art.group}:${art.module}".toString()]
+        if (entry == null) {
+            return
+        }
+        // entry is either a directory string, or [dir:, file:] when the
+        // vendored copy carried a non-canonical file name (a version bump
+        // of such an artifact must revisit the pinned file name)
+        def dir = entry instanceof Map ? entry.dir : entry
+        if (!dirFilter(dir)) {
+            return
+        }
+        def name = entry instanceof Map ? entry.file : art.fileName
+        out[file(art.path)] = (dir ? "${dir}/" : '') + name
+    }
+    out
+}
+
+// Lazily computes placements from a configuration RESOLVED IN THE CALLING
+// PROJECT'S OWN CONTEXT. Never pass another project's configuration here
+// (cross-project resolution is deprecated and fails in Gradle 9); consume
+// the other project's placement manifest instead.
+ext.stagedArtifacts = { configuration, String section, Closure dirFilter = { true } ->
+    def memo = null
+    return {
+        if (memo == null) {
+            def inventory = []
+            configuration.incoming.artifacts.each { a ->
+                def id = a.id.componentIdentifier
+                if (id instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier) {
+                    inventory << [group: id.group, module: id.module,
+                                  fileName: a.file.name, path: a.file.absolutePath]
+                }
+            }
+            memo = rootProject.placementsFor(inventory, section, dirFilter)
+        }
+        memo
+    }
+}
+
+// Reads the artifact inventory another project wrote with its own
+// writeArtifactInventory task (the Gradle-9-safe replacement for
+// resolving that project's configuration from here).
+ext.stagedFromInventory = { File inventoryFile, String section, Closure dirFilter = { true } ->
+    def memo = null
+    return {
+        if (memo == null) {
+            def inventory = new groovy.json.JsonSlurper().parse(inventoryFile)
+            memo = rootProject.placementsFor(inventory, section, dirFilter)
+        }
+        memo
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    repositories {
+        mavenCentral()
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+
+    // The dependency set must remain exactly the vendored jar set; the
+    // coordinates were derived from SHA-1 matches of the vendored jars,
+    // so transitive resolution would ADD artifacts the build never had.
+    // Revisit (enable transitivity, drop pins) as a deliberate follow-up.
+    ['compileClasspath', 'runtimeClasspath', 'testCompileClasspath', 'testRuntimeClasspath'].each { name ->
+        configurations.named(name) { transitive = false }
+    }
+
+    dependencies {
+        // jars without a byte-identical Maven Central artifact stay vendored
+        implementation fileTree(dir: 'lib', include: '**/*.jar')
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.debug = true
+    }
+    // Match Ant's javac invocation: -sourcepath defaults to srcdir, and
+    // annotation processors are discovered on the compile classpath
+    // (Gradle would otherwise pass -proc:none, which also changes the
+    // parameter-name metadata javac records for anonymous classes).
+    compileJava {
+        options.sourcepath = sourceSets.main.java.sourceDirectories
+        options.annotationProcessorPath = configurations.compileClasspath
+    }
+    compileTestJava {
+        options.sourcepath = sourceSets.test.java.sourceDirectories
+        options.annotationProcessorPath = configurations.testCompileClasspath
+    }
+
+    // The default java-plugin jar (build/libs/<name>.jar) is not an OIE
+    // artifact; every real jar is declared explicitly per module.
+    tasks.named('jar') { enabled = false }
+
+    tasks.withType(AbstractArchiveTask).configureEach {
+        preserveFileTimestamps = false
+        reproducibleFileOrder = true
+    }
+
+    // Gradle-9-safe cross-project artifact sharing: each project resolves
+    // its OWN runtime configuration and writes an inventory file; consumer
+    // projects read the file instead of resolving foreign configurations.
+    def inventoryFile = layout.buildDirectory.file('placement/artifacts.json')
+    tasks.register('writeArtifactInventory') {
+        description = 'Records this project\'s resolved runtime artifacts to build/placement/artifacts.json so ' +
+                ':server:stageSetup can place foreign-module jars without resolving their configurations cross-project (Gradle-9-safe).'
+        def cfg = configurations.runtimeClasspath
+        dependsOn cfg
+        outputs.file inventoryFile
+        outputs.upToDateWhen { false }
+        doLast {
+            def inventory = []
+            cfg.incoming.artifacts.each { a ->
+                def id = a.id.componentIdentifier
+                if (id instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier) {
+                    inventory << [group: id.group, module: id.module, version: id.version,
+                                  fileName: a.file.name, path: a.file.absolutePath]
+                }
+            }
+            def f = inventoryFile.get().asFile
+            f.parentFile.mkdirs()
+            f.text = groovy.json.JsonOutput.toJson(inventory)
+        }
+    }
+
+    tasks.register('verifyDistributionPlacement') {
+        description = 'Fails if any resolved runtime artifact lacks a distribution placement.'
+        def cfg = configurations.runtimeClasspath
+        dependsOn cfg
+        doLast {
+            def layoutMap = rootProject.vendoredLayout
+            def sections = (project.name in ['server', 'client']) ? [project.name, 'server-extensions'] : [project.name]
+            def missing = []
+            int checked = 0
+            cfg.incoming.artifacts.each { a ->
+                def id = a.id.componentIdentifier
+                if (!(id instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier)) {
+                    return
+                }
+                def ga = "${id.group}:${id.module}".toString()
+                if (sections.any { (layoutMap[it] ?: [:]).containsKey(ga) }) {
+                    checked++
+                } else {
+                    missing << "${ga}:${id.version} (${a.file.name})"
+                }
+            }
+            logger.lifecycle "${project.name}: distribution placement verified for ${checked} artifacts"
+            if (!missing.isEmpty()) {
+                throw new GradleException('Resolved runtime artifacts with no entry in ' +
+                        'gradle/vendored-layout.json (they would be dropped from the staged ' +
+                        'distribution):\n  ' + missing.unique().join('\n  '))
+            }
+        }
+    }
+
+    tasks.withType(Test).configureEach {
+        onlyIf { !rootProject.disableTests }
+        useJUnit()
+        minHeapSize = '128m'
+        maxHeapSize = '2048m'
+        jvmArgs '-Xshare:off'
+        include '**/*Test.class'
+    }
+
+    if (rootProject.coverageEnabled) {
+        apply plugin: 'jacoco'
+        jacoco { toolVersion = '0.8.8' }
+        tasks.withType(Test).configureEach { finalizedBy tasks.named('jacocoTestReport') }
+        tasks.named('jacocoTestReport') {
+            reports.xml.required = true
+            reports.html.required = true
+        }
+    }
+}
+
+// ---------------------------------------------------------------------
+// Top-level lifecycle, mirroring server/mirth-build.xml
+// ---------------------------------------------------------------------
+
+// After the setup tree is assembled (and possibly signed), the Ant build
+// copied the final extensions and client-lib back into server/build for
+// downstream packaging (installers, CI artifacts). Untracked because the
+// destinations overlap the extension build outputs.
+def copyFinalArtifactsBack = tasks.register('copyFinalArtifactsBack') {
+    description = 'Copies the final (possibly signed) extensions and client-lib back into server/build.'
+    dependsOn ':server:createSetup'
+    outputs.upToDateWhen { false }
+    doLast {
+        sync { s ->
+            s.from 'server/setup/extensions'
+            s.into 'server/build/extensions'
+        }
+        sync { s ->
+            s.from 'server/setup/client-lib'
+            s.into 'server/build/client-lib'
+        }
+    }
+}
+
+tasks.register('build') {
+    group = 'build'
+    description = 'Builds donkey, the server and its extensions, the client, and the CLI, then assembles server/setup.'
+    dependsOn ':donkey:assemble', ':command:assemble', ':server:createSetup',
+            copyFinalArtifactsBack, 'verifyVendoredParity'
+    if (!rootProject.disableTests) {
+        dependsOn ':donkey:test', ':server:test', ':client:test', ':command:test'
+    }
+}
+
+tasks.register('dist') {
+    group = 'build'
+    description = 'Builds everything and creates the distribution extension zips in server/dist.'
+    dependsOn ':server:createExtensionZips'
+}
+
+tasks.register('test') {
+    group = 'verification'
+    description = 'Runs the unit tests of every module (pass -Pcoverage=true for JaCoCo).'
+    dependsOn ':donkey:test', ':server:test', ':client:test', ':command:test'
+}
+
+tasks.register('clean') {
+    group = 'build'
+    description = 'Cleans every module.'
+    dependsOn ':donkey:clean', ':server:clean', ':client:clean', ':command:clean', ':generator:clean'
+}
+
+// Aggregate: the per-project checks resolve each configuration in its
+// OWNING project's context (Gradle-9-safe; no cross-project resolution).
+tasks.register('verifyVendoredParity') {
+    group = 'verification'
+    description = 'Verifies every resolved runtime artifact has a distribution placement ' +
+            '(checksums are enforced separately by gradle/verification-metadata.xml).'
+    dependsOn subprojects.collect { ":${it.name}:verifyDistributionPlacement" }
+}
+
+// Note: the Ant build's append-license target was already broken at the
+// time of the migration (no jar in the repository contains
+// com.mirth.tools.header.HeaderTask), so it was not ported.

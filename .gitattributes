@@ -1,0 +1,13 @@
+# Line-ending rules for files where endings are functional.
+# (Pattern follows PR #214 by NicoPiel.)
+
+# Unix start scripts must stay LF
+/gradlew        text eol=lf
+oieserver       text eol=lf
+configure-from-env text eol=lf
+
+# Windows scripts must stay CRLF
+*.bat           text eol=crlf
+
+# Binary files are left untouched
+*.jar           binary

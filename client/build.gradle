@@ -1,0 +1,149 @@
+// The Swing administrator client. Produces dist/mirth-client.jar and the
+// per-extension client jars in dist/extensions (mirrors client/ant-build.xml).
+
+dependencies {
+    implementation libs.bundles.client.main
+    // Extension libs from the server tree may carry client-side deps.
+    implementation libs.bundles.server.extensions
+    implementation fileTree(dir: rootProject.file('server/lib/extensions'), include: '**/*.jar')
+    testImplementation libs.bundles.server.test
+}
+
+def prepareClientLibs = tasks.register('prepareClientLibs', Copy) {
+    description = 'Copies upstream jars into client/lib (mirrors mirth-build build-server-extensions/build-client).'
+    from rootProject.file('donkey/setup/donkey-model.jar')
+    from rootProject.file('server/setup/server-lib/mirth-client-core.jar')
+    from rootProject.file('server/setup/server-lib/mirth-crypto.jar')
+    from rootProject.file('server/lib/mirth-vocab.jar')
+    from(rootProject.file('server/build/extensions')) {
+        include '**/*-shared.jar'
+        eachFile { it.path = it.name }
+        includeEmptyDirs = false
+    }
+    into 'lib'
+    dependsOn ':donkey:donkeyModelJar', ':server:clientCoreJar', ':server:cryptoJar',
+              ':server:createServerExtensions'
+}
+
+compileJava.dependsOn prepareClientLibs
+
+def clientJar = tasks.register('clientJar', Jar) {
+    archiveFileName = 'mirth-client.jar'
+    destinationDirectory = file('dist')
+    from(sourceSets.main.output.classesDirs) {
+        exclude 'com/mirth/connect/connectors/**'
+    }
+    from(sourceSets.main.output.classesDirs) {
+        include 'com/mirth/connect/connectors/ConnectorClass.class'
+    }
+    // Resources the Ant build copied into the classes dir before jarring.
+    from 'src/main/resources/log4j2.properties'
+    from('src/main/resources/com/mirth/connect/client/ui/images') {
+        into 'com/mirth/connect/client/ui/images'
+    }
+    from('src/main/resources/com/mirth/connect/client/ui/components/rsta') {
+        include '*.properties'
+        into 'com/mirth/connect/client/ui/components/rsta'
+    }
+    from('src/main/resources/com/mirth/connect/client/ui/components/tag') {
+        include '*.html'
+        include '*.css'
+        include '*.js'
+        into 'com/mirth/connect/client/ui/components/tag'
+    }
+}
+
+// extension name -> package directory under the classes tree
+def clientExtensions = [
+    'dicom'               : 'com/mirth/connect/connectors/dimse',
+    'jdbc'                : 'com/mirth/connect/connectors/jdbc',
+    'jms'                 : 'com/mirth/connect/connectors/jms',
+    'http'                : 'com/mirth/connect/connectors/http',
+    'doc'                 : 'com/mirth/connect/connectors/doc',
+    'smtp'                : 'com/mirth/connect/connectors/smtp',
+    'tcp'                 : 'com/mirth/connect/connectors/tcp',
+    'file'                : 'com/mirth/connect/connectors/file',
+    'js'                  : 'com/mirth/connect/connectors/js',
+    'ws'                  : 'com/mirth/connect/connectors/ws',
+    'vm'                  : 'com/mirth/connect/connectors/vm',
+    'datatype-delimited'  : 'com/mirth/connect/plugins/datatypes/delimited',
+    'datatype-dicom'      : 'com/mirth/connect/plugins/datatypes/dicom',
+    'datatype-edi'        : 'com/mirth/connect/plugins/datatypes/edi',
+    'datatype-hl7v2'      : 'com/mirth/connect/plugins/datatypes/hl7v2',
+    'datatype-hl7v3'      : 'com/mirth/connect/plugins/datatypes/hl7v3',
+    'datatype-ncpdp'      : 'com/mirth/connect/plugins/datatypes/ncpdp',
+    'datatype-xml'        : 'com/mirth/connect/plugins/datatypes/xml',
+    'datatype-raw'        : 'com/mirth/connect/plugins/datatypes/raw',
+    'datatype-json'       : 'com/mirth/connect/plugins/datatypes/json',
+    'directoryresource'   : 'com/mirth/connect/plugins/directoryresource',
+    'dashboardstatus'     : 'com/mirth/connect/plugins/dashboardstatus',
+    'destinationsetfilter': 'com/mirth/connect/plugins/destinationsetfilter',
+    'dicomviewer'         : 'com/mirth/connect/plugins/dicomviewer',
+    'globalmapviewer'     : 'com/mirth/connect/plugins/globalmapviewer',
+    'httpauth'            : 'com/mirth/connect/plugins/httpauth',
+    'imageviewer'         : 'com/mirth/connect/plugins/imageviewer',
+    'javascriptrule'      : 'com/mirth/connect/plugins/javascriptrule',
+    'javascriptstep'      : 'com/mirth/connect/plugins/javascriptstep',
+    'mapper'              : 'com/mirth/connect/plugins/mapper',
+    'messagebuilder'      : 'com/mirth/connect/plugins/messagebuilder',
+    'datapruner'          : 'com/mirth/connect/plugins/datapruner',
+    'mllpmode'            : 'com/mirth/connect/plugins/mllpmode',
+    'pdfviewer'           : 'com/mirth/connect/plugins/pdfviewer',
+    'textviewer'          : 'com/mirth/connect/plugins/textviewer',
+    'rulebuilder'         : 'com/mirth/connect/plugins/rulebuilder',
+    'serverlog'           : 'com/mirth/connect/plugins/serverlog',
+    'scriptfilerule'      : 'com/mirth/connect/plugins/scriptfilerule',
+    'scriptfilestep'      : 'com/mirth/connect/plugins/scriptfilestep',
+    'xsltstep'            : 'com/mirth/connect/plugins/xsltstep',
+]
+
+def clientExtensionJars = clientExtensions.collect { name, pkg ->
+    tasks.register("ext_${name.replace('-', '_')}_clientJar", Jar) {
+        archiveFileName = "${name}-client.jar"
+        destinationDirectory = file("dist/extensions/${name}")
+        from(sourceSets.main.output.classesDirs) {
+            include "${pkg}/**"
+        }
+    }
+}
+
+assemble.dependsOn clientJar
+assemble.dependsOn clientExtensionJars
+
+// Runs the Swing administrator client against a local server (flags
+// preserved from the retired Eclipse launch configuration).
+tasks.register('devClient', JavaExec) {
+    description = 'Runs the administrator client against https://localhost:8443 (admin/admin).'
+    mainClass = 'com.mirth.connect.client.ui.Mirth'
+    workingDir = projectDir
+    classpath = sourceSets.main.runtimeClasspath
+    args 'https://localhost:8443', '0.0.0', 'admin', 'admin'
+    jvmArgs '-Dcom.sun.webkit.useHTTP2Loader=false',
+            '--add-modules=java.sql.rowset,javafx.controls,javafx.fxml',
+            '--add-exports=java.base/com.sun.crypto.provider=ALL-UNNAMED',
+            '--add-exports=java.base/sun.security.provider=ALL-UNNAMED',
+            '--add-opens=java.base/java.lang=ALL-UNNAMED',
+            '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+            '--add-opens=java.base/java.math=ALL-UNNAMED',
+            '--add-opens=java.base/java.net=ALL-UNNAMED',
+            '--add-opens=java.base/java.io=ALL-UNNAMED',
+            '--add-opens=java.base/java.security=ALL-UNNAMED',
+            '--add-opens=java.base/java.security.cert=ALL-UNNAMED',
+            '--add-opens=java.base/java.text=ALL-UNNAMED',
+            '--add-opens=java.base/java.util=ALL-UNNAMED',
+            '--add-opens=java.base/java.util.concurrent=ALL-UNNAMED',
+            '--add-opens=java.base/sun.security.pkcs=ALL-UNNAMED',
+            '--add-opens=java.base/sun.security.rsa=ALL-UNNAMED',
+            '--add-opens=java.base/sun.security.x509=ALL-UNNAMED',
+            '--add-opens=java.desktop/com.apple.eawt=ALL-UNNAMED',
+            '--add-opens=java.desktop/com.apple.eio=ALL-UNNAMED',
+            '--add-opens=java.desktop/java.awt=ALL-UNNAMED',
+            '--add-opens=java.desktop/java.awt.color=ALL-UNNAMED',
+            '--add-opens=java.desktop/java.awt.font=ALL-UNNAMED',
+            '--add-opens=java.desktop/javax.swing=ALL-UNNAMED',
+            '--add-opens=java.xml/com.sun.org.apache.xalan.internal.xsltc.trax=ALL-UNNAMED'
+}
+
+clean {
+    delete 'classes', 'test_classes', 'dist', 'setup', 'logs'
+}

@@ -1,0 +1,961 @@
+// The OIE server. Compiles the server source, builds the core jars
+// (mirth-crypto, mirth-client-core, mirth-server, launcher, dbconf),
+// builds every connector/plugin extension into build/extensions,
+// assembles the distribution in setup/, and zips extensions into dist/
+// (mirrors server/build.xml).
+
+import java.text.SimpleDateFormat
+
+dependencies {
+    implementation libs.bundles.server.main
+    implementation libs.bundles.server.extensions
+    // classified artifact; version catalogs cannot express classifiers
+    implementation 'io.netty:netty-transport-native-epoll:4.1.119.Final:linux-x86_64'
+    testImplementation libs.bundles.server.test
+}
+
+// ---------------------------------------------------------------------
+// Compilation
+// ---------------------------------------------------------------------
+
+// build-donkey in mirth-build.xml: refresh lib/donkey from the donkey
+// module. Sources donkey's staged setup/lib, which reassembles the full
+// historical lib layout from vendored leftovers + resolved artifacts.
+def syncDonkeyLibs = tasks.register('syncDonkeyLibs', Sync) {
+    description = 'Copies donkey jars and libs into server/lib/donkey.'
+    into 'lib/donkey'
+    from rootProject.file('donkey/setup/donkey-model.jar')
+    from rootProject.file('donkey/setup/donkey-server.jar')
+    from(rootProject.file('donkey/setup/lib')) {
+        exclude 'log4j-1.2.16.jar'
+        exclude 'HikariCP-java6-2.0.1.jar'
+        exclude 'javassist-3.19.0-GA.jar'
+        exclude 'xstream/**'
+        exclude 'commons/**'
+        exclude 'database/**'
+    }
+    dependsOn ':donkey:donkeyModelJar', ':donkey:donkeyServerJar', ':donkey:copySetupLibs'
+}
+
+compileJava.dependsOn syncDonkeyLibs
+
+compileTestJava {
+    options.compilerArgs += [
+        '--add-modules=java.sql.rowset',
+        '--add-exports=java.sql.rowset/com.sun.rowset=ALL-UNNAMED',
+        '--add-exports=java.base/com.sun.crypto.provider=ALL-UNNAMED',
+        '--add-exports=java.base/sun.security.provider=ALL-UNNAMED',
+    ]
+}
+
+
+def generateVersionProperties = tasks.register('generateVersionProperties') {
+    description = 'Generates version.properties (embedded in mirth-client-core.jar).'
+    def outFile = file('version.properties')
+    inputs.property 'version', version
+    // the date must be computed at execution time, not when the daemon
+    // happened to configure the project
+    inputs.property 'date', project.providers.provider {
+        new SimpleDateFormat('MMMM d, yyyy', Locale.US).format(new Date())
+    }
+    outputs.file outFile
+    doLast {
+        def buildDate = new SimpleDateFormat('MMMM d, yyyy', Locale.US).format(new Date())
+        outFile.text = "mirth.version=${version}\nmirth.date=${buildDate}\n"
+    }
+}
+
+// ---------------------------------------------------------------------
+// Core jars
+// ---------------------------------------------------------------------
+
+def cryptoJar = tasks.register('cryptoJar', Jar) {
+    archiveFileName = 'mirth-crypto.jar'
+    destinationDirectory = file('setup/server-lib')
+    from(sourceSets.main.output.classesDirs) {
+        include 'com/mirth/commons/encryption/**'
+    }
+}
+
+def clientCoreJar = tasks.register('clientCoreJar', Jar) {
+    archiveFileName = 'mirth-client-core.jar'
+    destinationDirectory = file('setup/server-lib')
+    from(sourceSets.main.output.classesDirs) {
+        include 'com/mirth/connect/client/core/**'
+        include 'com/mirth/connect/model/**'
+        include 'org/openintegrationengine/engine/plugins/datatypes/AbstractXMLReader.class'
+        include 'com/mirth/connect/userutil/**'
+        include 'com/mirth/connect/util/**'
+        include 'com/mirth/connect/server/util/ResourceUtil.class'
+        include 'com/mirth/connect/server/util/DebuggerUtil.class'
+        include 'org/mozilla/**'
+        include 'org/glassfish/jersey/**'
+        include 'de/**'
+        include 'net/lingala/zip4j/unzip/**'
+    }
+    from generateVersionProperties
+    from('src/main/resources/com/mirth/connect/util') {
+        include '*.js'
+        include '*.txt'
+        into 'com/mirth/connect/util'
+    }
+}
+
+// ---------------------------------------------------------------------
+// Extensions (connectors, datatypes, plugins) -> build/extensions
+// ---------------------------------------------------------------------
+
+// Faithful transcription of the include/exclude lists in server/build.xml.
+// shared/server == null means that extension ships no such jar.
+def serverExtensions = [
+    [name: 'dicom', pkg: 'com/mirth/connect/connectors/dimse', lib: 'dimse',
+     shared: [includes: ['com/mirth/connect/connectors/dimse/DICOMReceiverProperties.class',
+                         'com/mirth/connect/connectors/dimse/DICOMDispatcherProperties.class']],
+     server: [includes: ['com/mirth/connect/connectors/dimse/**', 'org/dcm4che2/**'],
+              excludes: ['com/mirth/connect/connectors/dimse/DICOMReceiverProperties.class',
+                         'com/mirth/connect/connectors/dimse/DICOMDispatcherProperties.class']]],
+
+    [name: 'doc', pkg: 'com/mirth/connect/connectors/doc', lib: 'doc',
+     shared: [includes: ['com/mirth/connect/connectors/doc/DocumentDispatcherProperties.class',
+                         'com/mirth/connect/connectors/doc/DocumentConnectorServletInterface.class',
+                         'com/mirth/connect/connectors/doc/PageSize.class',
+                         'com/mirth/connect/connectors/doc/Unit.class']],
+     server: [includes: ['com/mirth/connect/connectors/doc/**'],
+              excludes: ['com/mirth/connect/connectors/doc/DocumentDispatcherProperties.class',
+                         'com/mirth/connect/connectors/doc/DocumentConnectorServletInterface.class',
+                         'com/mirth/connect/connectors/doc/PageSize.class',
+                         'com/mirth/connect/connectors/doc/Unit.class']]],
+
+    [name: 'file', pkg: 'com/mirth/connect/connectors/file', lib: 'file',
+     shared: [includes: ['com/mirth/connect/connectors/file/SchemeProperties.class',
+                         'com/mirth/connect/connectors/file/FTPSchemeProperties.class',
+                         'com/mirth/connect/connectors/file/SmbDialectVersion.class',
+                         'com/mirth/connect/connectors/file/SmbSchemeProperties.class',
+                         'com/mirth/connect/connectors/file/SftpSchemeProperties.class',
+                         'com/mirth/connect/connectors/file/S3SchemeProperties.class',
+                         'com/mirth/connect/connectors/file/FileReceiverProperties.class',
+                         'com/mirth/connect/connectors/file/FileDispatcherProperties.class',
+                         'com/mirth/connect/connectors/file/FileScheme.class',
+                         'com/mirth/connect/connectors/file/FileAction.class',
+                         'com/mirth/connect/connectors/file/FileConnectorServletInterface.class']],
+     // Note: the Ant build does not exclude the Smb* classes from the
+     // server jar, so they appear in both jars. Kept as-is.
+     server: [includes: ['com/mirth/connect/connectors/file/**'],
+              excludes: ['com/mirth/connect/connectors/file/SchemeProperties.class',
+                         'com/mirth/connect/connectors/file/FTPSchemeProperties.class',
+                         'com/mirth/connect/connectors/file/SftpSchemeProperties.class',
+                         'com/mirth/connect/connectors/file/S3SchemeProperties.class',
+                         'com/mirth/connect/connectors/file/FileReceiverProperties.class',
+                         'com/mirth/connect/connectors/file/FileDispatcherProperties.class',
+                         'com/mirth/connect/connectors/file/FileScheme.class',
+                         'com/mirth/connect/connectors/file/FileAction.class',
+                         'com/mirth/connect/connectors/file/FileConnectorServletInterface.class']]],
+
+    [name: 'http', pkg: 'com/mirth/connect/connectors/http', lib: 'http',
+     shared: [includes: ['com/mirth/connect/connectors/http/HttpReceiverProperties.class',
+                         'com/mirth/connect/connectors/http/HttpDispatcherProperties.class',
+                         'com/mirth/connect/connectors/http/HttpStaticResource.class',
+                         'com/mirth/connect/connectors/http/HttpStaticResource$ResourceType.class',
+                         'com/mirth/connect/connectors/http/HttpConnectorServletInterface.class']],
+     server: [includes: ['com/mirth/connect/connectors/http/**'],
+              excludes: ['com/mirth/connect/connectors/http/HttpReceiverProperties.class',
+                         'com/mirth/connect/connectors/http/HttpDispatcherProperties.class',
+                         'com/mirth/connect/connectors/http/HttpStaticResource.class',
+                         'com/mirth/connect/connectors/http/HttpStaticResource$ResourceType.class',
+                         'com/mirth/connect/connectors/http/HttpConnectorServletInterface.class']]],
+
+    [name: 'jdbc', pkg: 'com/mirth/connect/connectors/jdbc', lib: 'jdbc',
+     shared: [includes: ['com/mirth/connect/connectors/jdbc/DatabaseReceiverProperties.class',
+                         'com/mirth/connect/connectors/jdbc/DatabaseDispatcherProperties.class',
+                         'com/mirth/connect/connectors/jdbc/DatabaseConnectionInfo.class',
+                         'com/mirth/connect/connectors/jdbc/Table.class',
+                         'com/mirth/connect/connectors/jdbc/Column.class',
+                         'com/mirth/connect/connectors/jdbc/DatabaseConnectorServletInterface.class']],
+     server: [includes: ['com/mirth/connect/connectors/jdbc/**'],
+              excludes: ['com/mirth/connect/connectors/jdbc/DatabaseReceiverProperties.class',
+                         'com/mirth/connect/connectors/jdbc/DatabaseDispatcherProperties.class',
+                         'com/mirth/connect/connectors/jdbc/DatabaseConnectionInfo.class',
+                         'com/mirth/connect/connectors/jdbc/Table.class',
+                         'com/mirth/connect/connectors/jdbc/Column.class',
+                         'com/mirth/connect/connectors/jdbc/DatabaseConnectorServletInterface.class']]],
+
+    [name: 'jms', pkg: 'com/mirth/connect/connectors/jms', lib: 'jms',
+     shared: [includes: ['com/mirth/connect/connectors/jms/JmsConnectorProperties.class',
+                         'com/mirth/connect/connectors/jms/JmsReceiverProperties.class',
+                         'com/mirth/connect/connectors/jms/JmsDispatcherProperties.class',
+                         'com/mirth/connect/connectors/jms/JmsConnectorServletInterface.class']],
+     server: [includes: ['com/mirth/connect/connectors/jms/**'],
+              excludes: ['com/mirth/connect/connectors/jms/JmsConnectorProperties.class',
+                         'com/mirth/connect/connectors/jms/JmsReceiverProperties.class',
+                         'com/mirth/connect/connectors/jms/JmsDispatcherProperties.class',
+                         'com/mirth/connect/connectors/jms/JmsConnectorServletInterface.class']]],
+
+    [name: 'js', pkg: 'com/mirth/connect/connectors/js', lib: 'js',
+     shared: [includes: ['com/mirth/connect/connectors/js/JavaScriptReceiverProperties.class',
+                         'com/mirth/connect/connectors/js/JavaScriptDispatcherProperties.class']],
+     server: [includes: ['com/mirth/connect/connectors/js/**'],
+              excludes: ['com/mirth/connect/connectors/js/JavaScriptReceiverProperties.class',
+                         'com/mirth/connect/connectors/js/JavaScriptDispatcherProperties.class']]],
+
+    [name: 'smtp', pkg: 'com/mirth/connect/connectors/smtp', lib: 'smtp',
+     shared: [includes: ['com/mirth/connect/connectors/smtp/SmtpDispatcherProperties.class',
+                         'com/mirth/connect/connectors/smtp/SmtpConnectorServletInterface.class',
+                         'com/mirth/connect/connectors/smtp/Attachment.class']],
+     server: [includes: ['com/mirth/connect/connectors/smtp/**'],
+              excludes: ['com/mirth/connect/connectors/smtp/SmtpDispatcherProperties.class',
+                         'com/mirth/connect/connectors/smtp/SmtpConnectorServletInterface.class',
+                         'com/mirth/connect/connectors/smtp/Attachment.class']]],
+
+    [name: 'tcp', pkg: 'com/mirth/connect/connectors/tcp', lib: 'tcp',
+     shared: [includes: ['com/mirth/connect/connectors/tcp/TcpReceiverProperties.class',
+                         'com/mirth/connect/connectors/tcp/TcpDispatcherProperties.class',
+                         'com/mirth/connect/connectors/tcp/TcpConnectorServletInterface.class']],
+     server: [includes: ['com/mirth/connect/connectors/tcp/**'],
+              excludes: ['com/mirth/connect/connectors/tcp/TcpReceiverProperties.class',
+                         'com/mirth/connect/connectors/tcp/TcpDispatcherProperties.class',
+                         'com/mirth/connect/connectors/tcp/TcpConnectorServletInterface.class']]],
+
+    [name: 'vm', pkg: 'com/mirth/connect/connectors/vm', lib: 'vm',
+     shared: [includes: ['com/mirth/connect/connectors/vm/VmReceiverProperties.class',
+                         'com/mirth/connect/connectors/vm/VmDispatcherProperties.class']],
+     server: [includes: ['com/mirth/connect/connectors/vm/**'],
+              excludes: ['com/mirth/connect/connectors/vm/VmReceiverProperties.class',
+                         'com/mirth/connect/connectors/vm/VmDispatcherProperties.class']]],
+
+    [name: 'ws', pkg: 'com/mirth/connect/connectors/ws', lib: 'ws',
+     shared: [includes: ['com/mirth/connect/connectors/ws/Binding.class',
+                         'com/mirth/connect/connectors/ws/WebServiceReceiverProperties.class',
+                         'com/mirth/connect/connectors/ws/WebServiceDispatcherProperties.class',
+                         'com/mirth/connect/connectors/ws/DefinitionServiceMap.class',
+                         'com/mirth/connect/connectors/ws/DefinitionServiceMap$DefinitionPortMap.class',
+                         'com/mirth/connect/connectors/ws/DefinitionServiceMap$PortInformation.class',
+                         'com/mirth/connect/connectors/ws/WebServiceConnectorServletInterface.class']],
+     server: [includes: ['com/mirth/connect/connectors/ws/**'],
+              excludes: ['com/mirth/connect/connectors/ws/Binding.class',
+                         'com/mirth/connect/connectors/ws/WebServiceReceiverProperties.class',
+                         'com/mirth/connect/connectors/ws/WebServiceDispatcherProperties.class',
+                         'com/mirth/connect/connectors/ws/DefinitionServiceMap.class',
+                         'com/mirth/connect/connectors/ws/DefinitionServiceMap$DefinitionPortMap.class',
+                         'com/mirth/connect/connectors/ws/DefinitionServiceMap$PortInformation.class',
+                         'com/mirth/connect/connectors/ws/WebServiceConnectorServletInterface.class']]],
+
+    // datatypes: shared = the package minus the server-side classes
+    [name: 'datatype-delimited', pkg: 'com/mirth/connect/plugins/datatypes/delimited', lib: 'datatypes/delimited',
+     shared: [includes: ['com/mirth/connect/plugins/datatypes/delimited/**'],
+              excludes: ['com/mirth/connect/plugins/datatypes/delimited/DelimitedDataTypeServerPlugin.class',
+                         'com/mirth/connect/plugins/datatypes/delimited/DelimitedBatchAdaptor.class',
+                         'com/mirth/connect/plugins/datatypes/delimited/DelimitedBatchReader.class']],
+     server: [includes: ['com/mirth/connect/plugins/datatypes/delimited/DelimitedDataTypeServerPlugin.class',
+                         'com/mirth/connect/plugins/datatypes/delimited/DelimitedBatchAdaptor.class',
+                         'com/mirth/connect/plugins/datatypes/delimited/DelimitedBatchReader.class']]],
+
+    [name: 'datatype-dicom', pkg: 'com/mirth/connect/plugins/datatypes/dicom', lib: 'datatypes/dicom',
+     shared: [includes: ['com/mirth/connect/plugins/datatypes/dicom/**'],
+              excludes: ['com/mirth/connect/plugins/datatypes/dicom/DICOMDataTypeServerPlugin.class']],
+     server: [includes: ['com/mirth/connect/plugins/datatypes/dicom/DICOMDataTypeServerPlugin.class']]],
+
+    [name: 'datatype-edi', pkg: 'com/mirth/connect/plugins/datatypes/edi', lib: 'datatypes/edi',
+     shared: [includes: ['com/mirth/connect/plugins/datatypes/edi/**'],
+              excludes: ['com/mirth/connect/plugins/datatypes/edi/EDIDataTypeServerPlugin.class']],
+     server: [includes: ['com/mirth/connect/plugins/datatypes/edi/EDIDataTypeServerPlugin.class']]],
+
+    [name: 'datatype-hl7v2', pkg: 'com/mirth/connect/plugins/datatypes/hl7v2', lib: 'datatypes/hl7v2',
+     shared: [includes: ['com/mirth/connect/plugins/datatypes/hl7v2/**'],
+              excludes: ['com/mirth/connect/plugins/datatypes/hl7v2/HL7v2DataTypeServerPlugin.class',
+                         'com/mirth/connect/plugins/datatypes/hl7v2/HL7v2BatchAdaptor.class']],
+     server: [includes: ['com/mirth/connect/plugins/datatypes/hl7v2/HL7v2DataTypeServerPlugin.class',
+                         'com/mirth/connect/plugins/datatypes/hl7v2/HL7v2BatchAdaptor.class']]],
+
+    [name: 'datatype-hl7v3', pkg: 'com/mirth/connect/plugins/datatypes/hl7v3', lib: 'datatypes/hl7v3',
+     shared: [includes: ['com/mirth/connect/plugins/datatypes/hl7v3/**'],
+              excludes: ['com/mirth/connect/plugins/datatypes/hl7v3/HL7V3DataTypeServerPlugin.class']],
+     server: [includes: ['com/mirth/connect/plugins/datatypes/hl7v3/HL7V3DataTypeServerPlugin.class']]],
+
+    [name: 'datatype-ncpdp', pkg: 'com/mirth/connect/plugins/datatypes/ncpdp', lib: 'datatypes/ncpdp',
+     shared: [includes: ['com/mirth/connect/plugins/datatypes/ncpdp/**'],
+              excludes: ['com/mirth/connect/plugins/datatypes/ncpdp/NCPDPDataTypeServerPlugin.class']],
+     server: [includes: ['com/mirth/connect/plugins/datatypes/ncpdp/NCPDPDataTypeServerPlugin.class']]],
+
+    [name: 'datatype-xml', pkg: 'com/mirth/connect/plugins/datatypes/xml', lib: 'datatypes/xml',
+     shared: [includes: ['com/mirth/connect/plugins/datatypes/xml/**'],
+              excludes: ['com/mirth/connect/plugins/datatypes/xml/XMLDataTypeServerPlugin.class']],
+     server: [includes: ['com/mirth/connect/plugins/datatypes/xml/XMLDataTypeServerPlugin.class']]],
+
+    [name: 'datatype-raw', pkg: 'com/mirth/connect/plugins/datatypes/raw', lib: 'datatypes/raw',
+     shared: [includes: ['com/mirth/connect/plugins/datatypes/raw/**'],
+              excludes: ['com/mirth/connect/plugins/datatypes/raw/RawDataTypeServerPlugin.class']],
+     server: [includes: ['com/mirth/connect/plugins/datatypes/raw/RawDataTypeServerPlugin.class']]],
+
+    [name: 'datatype-json', pkg: 'com/mirth/connect/plugins/datatypes/json', lib: 'datatypes/json',
+     shared: [includes: ['com/mirth/connect/plugins/datatypes/json/**'],
+              excludes: ['com/mirth/connect/plugins/datatypes/json/JSONDataTypeServerPlugin.class']],
+     server: [includes: ['com/mirth/connect/plugins/datatypes/json/JSONDataTypeServerPlugin.class']]],
+
+    // plugins
+    [name: 'directoryresource', pkg: 'com/mirth/connect/plugins/directoryresource', lib: 'directoryresource',
+     shared: [includes: ['com/mirth/connect/plugins/directoryresource/DirectoryResourceProperties.class',
+                         'com/mirth/connect/plugins/directoryresource/DirectoryResourceServletInterface.class']],
+     server: [includes: ['com/mirth/connect/plugins/directoryresource/**'],
+              excludes: ['com/mirth/connect/plugins/directoryresource/DirectoryResourceProperties.class',
+                         'com/mirth/connect/plugins/directoryresource/DirectoryResourceServletInterface.class']]],
+
+    [name: 'dashboardstatus', pkg: 'com/mirth/connect/plugins/dashboardstatus', lib: 'dashboardstatus',
+     shared: [includes: ['com/mirth/connect/plugins/dashboardstatus/ConnectionLogItem.class',
+                         'com/mirth/connect/plugins/dashboardstatus/DashboardConnectorStatusServletInterface.class']],
+     server: [includes: ['com/mirth/connect/plugins/dashboardstatus/**'],
+              excludes: ['com/mirth/connect/plugins/dashboardstatus/ConnectionLogItem.class',
+                         'com/mirth/connect/plugins/dashboardstatus/DashboardConnectorStatusServletInterface.class']]],
+
+    [name: 'destinationsetfilter', pkg: 'com/mirth/connect/plugins/destinationsetfilter', lib: 'destinationsetfilter',
+     shared: [includes: ['com/mirth/connect/plugins/destinationsetfilter/DestinationSetFilterStep.class',
+                         'com/mirth/connect/plugins/destinationsetfilter/DestinationSetFilterStep$Behavior.class',
+                         'com/mirth/connect/plugins/destinationsetfilter/DestinationSetFilterStep$Condition.class']],
+     server: null],
+
+    [name: 'dicomviewer', pkg: 'com/mirth/connect/plugins/dicomviewer', lib: 'dicomviewer',
+     shared: null, server: null],
+
+    [name: 'globalmapviewer', pkg: 'com/mirth/connect/plugins/globalmapviewer', lib: 'globalmapviewer',
+     shared: [includes: ['com/mirth/connect/plugins/globalmapviewer/GlobalMapServletInterface.class']],
+     server: [includes: ['com/mirth/connect/plugins/globalmapviewer/**'],
+              excludes: ['com/mirth/connect/plugins/globalmapviewer/GlobalMapServletInterface.class']]],
+
+    [name: 'httpauth', pkg: 'com/mirth/connect/plugins/httpauth', lib: 'httpauth',
+     shared: [includes: ['com/mirth/connect/plugins/httpauth/HttpAuthConnectorPluginProperties.class',
+                         'com/mirth/connect/plugins/httpauth/HttpAuthConnectorPluginProperties$AuthType.class',
+                         'com/mirth/connect/plugins/httpauth/NoneHttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/basic/BasicHttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/digest/DigestHttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/digest/DigestHttpAuthProperties$Algorithm.class',
+                         'com/mirth/connect/plugins/httpauth/digest/DigestHttpAuthProperties$QOPMode.class',
+                         'com/mirth/connect/plugins/httpauth/custom/CustomHttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/javascript/JavaScriptHttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/oauth2/OAuth2HttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/oauth2/OAuth2HttpAuthProperties$TokenLocation.class']],
+     server: [includes: ['com/mirth/connect/plugins/httpauth/**'],
+              excludes: ['com/mirth/connect/plugins/httpauth/HttpAuthConnectorPluginProperties.class',
+                         'com/mirth/connect/plugins/httpauth/HttpAuthConnectorPluginProperties$AuthType.class',
+                         'com/mirth/connect/plugins/httpauth/NoneHttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/basic/BasicHttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/digest/DigestHttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/digest/DigestHttpAuthProperties$Algorithm.class',
+                         'com/mirth/connect/plugins/httpauth/digest/DigestHttpAuthProperties$QOPMode.class',
+                         'com/mirth/connect/plugins/httpauth/custom/CustomHttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/javascript/JavaScriptHttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/oauth2/OAuth2HttpAuthProperties.class',
+                         'com/mirth/connect/plugins/httpauth/oauth2/OAuth2HttpAuthProperties$TokenLocation.class']]],
+
+    [name: 'imageviewer', pkg: 'com/mirth/connect/plugins/imageviewer', lib: 'imageviewer',
+     shared: null, server: null],
+
+    [name: 'javascriptrule', pkg: 'com/mirth/connect/plugins/javascriptrule', lib: 'javascriptrule',
+     shared: [includes: ['com/mirth/connect/plugins/javascriptrule/JavaScriptRule.class']],
+     server: null],
+
+    [name: 'javascriptstep', pkg: 'com/mirth/connect/plugins/javascriptstep', lib: 'javascriptstep',
+     shared: [includes: ['com/mirth/connect/plugins/javascriptstep/JavaScriptStep.class']],
+     server: null],
+
+    [name: 'mapper', pkg: 'com/mirth/connect/plugins/mapper', lib: 'mapper',
+     shared: [includes: ['com/mirth/connect/plugins/mapper/MapperStep.class',
+                         'com/mirth/connect/plugins/mapper/MapperStep$Scope.class']],
+     server: null],
+
+    [name: 'messagebuilder', pkg: 'com/mirth/connect/plugins/messagebuilder', lib: 'messagebuilder',
+     shared: [includes: ['com/mirth/connect/plugins/messagebuilder/MessageBuilderStep.class']],
+     server: null],
+
+    [name: 'datapruner', pkg: 'com/mirth/connect/plugins/datapruner', lib: 'datapruner',
+     shared: [includes: ['com/mirth/connect/plugins/datapruner/DataPrunerServletInterface.class']],
+     server: [includes: ['com/mirth/connect/plugins/datapruner/**'],
+              excludes: ['com/mirth/connect/plugins/datapruner/DataPrunerServletInterface.class']]],
+
+    [name: 'mllpmode', pkg: 'com/mirth/connect/plugins/mllpmode', lib: 'mllpmode',
+     shared: [includes: ['com/mirth/connect/plugins/mllpmode/MLLPModeProperties.class']],
+     server: [includes: ['com/mirth/connect/plugins/mllpmode/**'],
+              excludes: ['com/mirth/connect/plugins/mllpmode/MLLPModeProperties.class']]],
+
+    [name: 'pdfviewer', pkg: 'com/mirth/connect/plugins/pdfviewer', lib: 'pdfviewer',
+     shared: null, server: null],
+
+    [name: 'textviewer', pkg: 'com/mirth/connect/plugins/textviewer', lib: 'textviewer',
+     shared: null, server: null],
+
+    [name: 'rulebuilder', pkg: 'com/mirth/connect/plugins/rulebuilder', lib: 'rulebuilder',
+     shared: [includes: ['com/mirth/connect/plugins/rulebuilder/RuleBuilderRule.class',
+                         'com/mirth/connect/plugins/rulebuilder/RuleBuilderRule$Condition.class']],
+     server: null],
+
+    [name: 'serverlog', pkg: 'com/mirth/connect/plugins/serverlog', lib: 'serverlog',
+     shared: [includes: ['com/mirth/connect/plugins/serverlog/ServerLogItem.class',
+                         'com/mirth/connect/plugins/serverlog/ServerLogServletInterface.class']],
+     server: [includes: ['com/mirth/connect/plugins/serverlog/**'],
+              excludes: ['com/mirth/connect/plugins/serverlog/ServerLogItem.class',
+                         'com/mirth/connect/plugins/serverlog/ServerLogServletInterface.class']]],
+
+    [name: 'scriptfilerule', pkg: 'com/mirth/connect/plugins/scriptfilerule', lib: 'scriptfilerule',
+     shared: [includes: ['com/mirth/connect/plugins/scriptfilerule/ExternalScriptRule.class']],
+     server: null],
+
+    [name: 'scriptfilestep', pkg: 'com/mirth/connect/plugins/scriptfilestep', lib: 'scriptfilestep',
+     shared: [includes: ['com/mirth/connect/plugins/scriptfilestep/ExternalScriptStep.class']],
+     server: null],
+
+    [name: 'xsltstep', pkg: 'com/mirth/connect/plugins/xsltstep', lib: 'xsltstep',
+     shared: [includes: ['com/mirth/connect/plugins/xsltstep/XsltStep.class']],
+     server: null],
+]
+
+def extensionTasks = []
+def projectVersion = version
+
+serverExtensions.each { extension ->
+    def name = extension.name
+    def safe = name.replace('-', '_')
+    def extensionDir = "build/extensions/${name}"
+
+    extensionTasks << tasks.register("ext_${safe}_xml", Copy) {
+        // The replaced version is part of the output; without this input a
+        // version bump would leave stale @mirthversion XML on disk.
+        inputs.property 'version', projectVersion
+        from("src/main/resources/${extension.pkg}") { include '*.xml' }
+        into extensionDir
+        // In-place token replace after copying, like the Ant <replace>
+        // task; a content filter would normalize line endings.
+        doLast {
+            ant.replace(dir: extensionDir, includes: '*.xml',
+                    token: '@mirthversion', value: projectVersion)
+        }
+    }
+
+    def libPrefix = "extensions/${extension.lib}"
+    def extPlacements = rootProject.stagedArtifacts(configurations.runtimeClasspath, 'server-extensions',
+            { dir -> dir == libPrefix || dir.startsWith(libPrefix + '/') })
+    extensionTasks << tasks.register("ext_${safe}_lib", Copy) {
+        from "lib/extensions/${extension.lib}"
+        from(files({ extPlacements().keySet() })) {
+            eachFile { it.path = extPlacements()[it.file].substring(libPrefix.length() + 1) }
+            includeEmptyDirs = false
+        }
+        into "${extensionDir}/lib"
+    }
+
+    if (extension.shared != null) {
+        extensionTasks << tasks.register("ext_${safe}_sharedJar", Jar) {
+            archiveFileName = "${name}-shared.jar"
+            destinationDirectory = file(extensionDir)
+            from(sourceSets.main.output.classesDirs) {
+                include(extension.shared.includes as String[])
+                exclude((extension.shared.excludes ?: []) as String[])
+            }
+        }
+    }
+
+    if (extension.server != null) {
+        extensionTasks << tasks.register("ext_${safe}_serverJar", Jar) {
+            archiveFileName = "${name}-server.jar"
+            destinationDirectory = file(extensionDir)
+            from(sourceSets.main.output.classesDirs) {
+                include(extension.server.includes as String[])
+                exclude((extension.server.excludes ?: []) as String[])
+            }
+        }
+    }
+}
+
+// The edi xml definitions ship inside the shared jar.
+tasks.named('ext_datatype_edi_sharedJar', Jar) {
+    from('src/main/resources/com/mirth/connect/plugins/datatypes/edi/xml') {
+        into 'com/mirth/connect/plugins/datatypes/edi/xml'
+    }
+}
+
+// httpauth additionally ships its userutil sources.
+def httpauthUserutilSourcesJar = tasks.register('httpauthUserutilSourcesJar', Jar) {
+    archiveFileName = 'httpauth-userutil-sources.jar'
+    destinationDirectory = file('build/extensions/httpauth/src')
+    from('src/main/java') { include 'com/mirth/connect/plugins/httpauth/userutil/**' }
+}
+extensionTasks << httpauthUserutilSourcesJar
+
+def createServerExtensions = tasks.register('createServerExtensions') {
+    description = 'Builds all connector/plugin extensions into build/extensions.'
+    dependsOn extensionTasks
+}
+
+// ---------------------------------------------------------------------
+// Javadocs (user API), part of the distributed docs
+// ---------------------------------------------------------------------
+
+// Invokes the javadoc tool directly: the multiline -bottom argument
+// (whitespace from the old build.xml CDATA block) cannot pass through
+// Gradle's javadoc options file, and the generated HTML should be
+// identical to the Ant build's.
+def userApiJavadoc = tasks.register('userApiJavadoc') {
+    description = 'Generates the user API javadocs into docs/javadocs/user-api.'
+    def outDir = file('docs/javadocs/user-api')
+    inputs.files(fileTree('src/main/java') {
+        include 'com/mirth/connect/server/userutil/**'
+        include 'com/mirth/connect/userutil/**'
+        include 'com/mirth/connect/plugins/httpauth/userutil/**'
+    })
+    outputs.dir outDir
+    dependsOn syncDonkeyLibs
+    doLast {
+        outDir.mkdirs()
+        def cmd = [new File(System.getProperty('java.home'), 'bin/javadoc').absolutePath,
+                   '-d', outDir.absolutePath,
+                   '-notimestamp',
+                   '-classpath', (configurations.compileClasspath + fileTree(dir: 'lib', include: '**/*.jar')).asPath,
+                   '-sourcepath', file('src/main/java').absolutePath,
+                   '-link', 'https://docs.oracle.com/en/java/javase/17/docs/api/',
+                   '-bottom', '\n\t\t\t\tLicensed under the <a href="https://www.mozilla.org/MPL/2.0/">Mozilla Public License 2.0</a>.\n\t\t\t',
+                   '--add-modules=java.sql.rowset',
+                   '--add-exports=java.sql.rowset/com.sun.rowset=ALL-UNNAMED',
+                   'com.mirth.connect.server.userutil',
+                   'com.mirth.connect.userutil',
+                   'com.mirth.connect.plugins.httpauth.userutil']
+        def proc = new ProcessBuilder(cmd).redirectErrorStream(true).start()
+        def out = proc.inputStream.text
+        if (proc.waitFor() != 0) {
+            throw new GradleException("javadoc failed:\n${out}")
+        }
+    }
+}
+
+// ---------------------------------------------------------------------
+// Setup assembly (the distribution tree in setup/)
+// ---------------------------------------------------------------------
+
+// Many sources merge into the shared setup/ tree, the way the Ant
+// create-setup target assembled it. A single untracked staging task does
+// those copies; the jars below keep precise tracked outputs.
+def stageSetup = tasks.register('stageSetup') {
+    description = 'Stages libs, conf, html, extensions, docs, and module artifacts into server/setup.'
+    dependsOn syncDonkeyLibs, createServerExtensions, userApiJavadoc,
+              ':client:assemble', ':client:prepareClientLibs', ':client:writeArtifactInventory',
+              ':command:cliJar', ':command:cliLauncherJar', ':command:prepareCliLibs',
+              ':command:writeArtifactInventory'
+    outputs.upToDateWhen { false }
+    doLast {
+        ['conf', 'extensions', 'public_html', 'public_api_html', 'server-lib', 'client-lib',
+         'cli-lib', 'logs', 'docs', 'server-launcher-lib'].each { file("setup/${it}").mkdirs() }
+
+        // sync (not copy) so files that disappear from the sources also
+        // disappear from setup/ on incremental builds; the Ant build got the
+        // same effect by always cleaning first. preserve{} protects the jars
+        // that other tasks produce directly into these directories.
+        def serverPlacements = rootProject.stagedArtifacts(configurations.runtimeClasspath, 'server')
+        sync { s ->
+            s.from('lib') {
+                exclude 'ant/**'
+                exclude 'extensions/**'
+            }
+            s.from(files({ serverPlacements().keySet() })) {
+                eachFile { it.path = serverPlacements()[it.file] }
+                includeEmptyDirs = false
+            }
+            s.into 'setup/server-lib'
+            s.preserve { p ->
+                p.include 'mirth-crypto.jar'
+                p.include 'mirth-client-core.jar'
+                p.include 'mirth-server.jar'
+                p.include 'mirth-dbconf.jar'
+            }
+        }
+        sync { s ->
+            s.into 'setup/conf'
+            s.from 'conf'
+            s.from(rootProject.file('command/conf')) {
+                include 'mirth-cli-config.properties'
+                include 'log4j2-cli.properties'
+            }
+        }
+        sync { s ->
+            s.from('public_html') { exclude 'Thumbs.db' }
+            s.into 'setup/public_html'
+        }
+        ant.replace(dir: 'setup/public_html', includes: '*.html',
+                token: '@mirthversion', value: projectVersion)
+        sync { s ->
+            s.from('public_api_html') { exclude 'Thumbs.db' }
+            s.into 'setup/public_api_html'
+        }
+        sync { s ->
+            // build/extensions may still hold client jars from a previous
+            // build's final copy-back; the fresh client output wins.
+            s.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            s.from 'build/extensions'
+            s.from rootProject.file('client/dist/extensions')
+            s.into 'setup/extensions'
+        }
+        sync { s ->
+            s.from 'docs'
+            s.into 'setup/docs'
+        }
+        // setup root holds files from several producers; plain copies here.
+        copy {
+            into 'setup'
+            from('basedir-includes') {
+                exclude 'oieserver'
+                exclude 'configure-from-env'
+            }
+            from('basedir-includes') {
+                include 'oieserver'
+                include 'configure-from-env'
+                filePermissions { unix('0755') }
+            }
+        }
+
+        // mirth-build.xml build-client / build-cli: client and CLI artifacts
+        def clientPlacements = rootProject.stagedFromInventory(
+                rootProject.file('client/build/placement/artifacts.json'), 'client')
+        sync { s ->
+            s.into 'setup/client-lib'
+            s.from rootProject.file('client/dist/mirth-client.jar')
+            s.from(rootProject.file('client/lib')) {
+                exclude '*-shared.jar'
+                exclude 'extensions'
+            }
+            s.from(files({ clientPlacements().keySet() })) {
+                eachFile { it.path = clientPlacements()[it.file] }
+                includeEmptyDirs = false
+            }
+            s.preserve { p ->
+                p.include 'userutil-sources.jar'
+            }
+        }
+        def cliPlacements = rootProject.stagedFromInventory(
+                rootProject.file('command/build/placement/artifacts.json'), 'command')
+        sync { s ->
+            s.into 'setup/cli-lib'
+            s.from rootProject.file('command/build/mirth-cli.jar')
+            s.from(rootProject.file('command/lib')) {
+                exclude 'mirth-client.jar'
+            }
+            s.from(files({ cliPlacements().keySet() })) {
+                eachFile { it.path = cliPlacements()[it.file] }
+                includeEmptyDirs = false
+            }
+        }
+        copy {
+            from rootProject.file('command/build/mirth-cli-launcher.jar')
+            into 'setup'
+        }
+    }
+}
+
+def serverJar = tasks.register('serverJar', Jar) {
+    archiveFileName = 'mirth-server.jar'
+    destinationDirectory = file('setup/server-lib')
+    from(sourceSets.main.output.classesDirs) {
+        include 'com/mirth/connect/server/**'
+        include 'com/mirth/connect/model/**'
+        include 'com/mirth/connect/util/**'
+        include 'com/mirth/connect/plugins/*.class'
+        include 'com/mirth/connect/connectors/*.class'
+        include 'org/**'
+        include 'net/sourceforge/jtds/ssl/**'
+        exclude 'com/mirth/connect/server/launcher/**'
+        exclude 'org/dcm4che2/**'
+    }
+    from 'mirth-client.jnlp'
+    from('src/main/resources/com/mirth/connect/util') {
+        include '*.js'
+        include '*.txt'
+        into 'com/mirth/connect/util'
+    }
+}
+
+def dbconfJar = tasks.register('dbconfJar', Jar) {
+    archiveFileName = 'mirth-dbconf.jar'
+    destinationDirectory = file('setup/server-lib')
+    from 'dbconf'
+}
+
+def launcherJar = tasks.register('launcherJar', Jar) {
+    archiveFileName = 'mirth-server-launcher.jar'
+    destinationDirectory = file('setup')
+    from(sourceSets.main.output.classesDirs) {
+        include 'com/mirth/connect/server/launcher/**'
+        include 'com/mirth/connect/server/extprops/**'
+    }
+    manifest {
+        attributes('Main-Class': 'com.mirth.connect.server.launcher.MirthLauncher')
+    }
+    // The Class-Path entries are generated from the resolved dependency
+    // versions so a catalog bump cannot leave the manifest stale (the
+    // Ant build hardcoded these and required a manual edit per bump).
+    def launcherDeps = ['commons-io', 'commons-configuration2', 'commons-lang3',
+                        'commons-logging', 'commons-beanutils', 'commons-text',
+                        'commons-collections']
+    doFirst {
+        def byModule = [:]
+        configurations.runtimeClasspath.incoming.artifacts.each { a ->
+            def id = a.id.componentIdentifier
+            if (id instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier) {
+                byModule[id.module] = a.file.name
+            }
+        }
+        manifest.attributes['Class-Path'] = launcherDeps.collect { m ->
+            def jar = byModule[m]
+            if (jar == null) {
+                throw new GradleException("launcher Class-Path dependency '${m}' not resolved")
+            }
+            "server-lib/commons/${jar}"
+        }.join(' ') + ' conf/'
+    }
+}
+
+def userutilSourcesJar = tasks.register('userutilSourcesJar', Jar) {
+    archiveFileName = 'userutil-sources.jar'
+    destinationDirectory = file('setup/client-lib')
+    from('src/main/java') {
+        include 'com/mirth/connect/userutil/**.java'
+        include 'com/mirth/connect/server/userutil/**.java'
+        exclude '**/package-info.java'
+    }
+}
+
+def setupContent = [stageSetup, serverJar, dbconfJar, launcherJar,
+                    userutilSourcesJar, cryptoJar, clientCoreJar]
+
+// ---------------------------------------------------------------------
+// Jar signing (Java Web Start). Same signing inputs and manifest
+// mutation as the Ant create-setup target; differences: sequential
+// rather than 4-thread signing, the -certchain argument for the CA
+// path, and a fail-fast retry that protects hardware tokens.
+// ---------------------------------------------------------------------
+
+def signSetupJars = tasks.register('signSetupJars') {
+    description = 'Adds JWS manifest attributes and signs the client-lib and extension jars.'
+    dependsOn setupContent
+    onlyIf { !rootProject.disableSigning }
+    outputs.upToDateWhen { false }
+    doLast {
+        def manifestJars = fileTree('setup/client-lib') {
+            include '**/*.jar'
+            exclude 'bcp*.jar'
+            exclude 'bcutil*.jar'
+        } + fileTree('setup/extensions') { include '**/*.jar' }
+
+        logger.lifecycle 'Modifying jar manifests to add JWS permission attributes'
+        def manifestPath = file('custom_manifest.mf').absolutePath
+        manifestJars.each { jarFile ->
+            // ProcessBuilder rather than exec(Closure): the latter is
+            // removed in Gradle 9
+            def proc = new ProcessBuilder('jar', 'umf', manifestPath, jarFile.absolutePath)
+                    .redirectErrorStream(true).start()
+            def out = proc.inputStream.text
+            if (proc.waitFor() != 0) {
+                throw new GradleException("jar umf failed for ${jarFile.name}: ${out}")
+            }
+        }
+
+        def keystoreFile = providers.gradleProperty('keystore_property_file').getOrNull()
+                ?: 'keystore.properties'
+        def keystoreProps = new Properties()
+        file(keystoreFile).withInputStream { keystoreProps.load(it) }
+        // Property precedence: a -P project property on the command line wins
+        // over (or supplies a missing) value from the properties file. The
+        // YubiKey workflow relies on this for the PIN (-Pkey.storepass=...).
+        def signingProp = { String name ->
+            providers.gradleProperty(name).getOrNull() ?: keystoreProps.getProperty(name)
+        }
+        def tsa = signingProp('signingTsa') ?: 'http://timestamp.digicert.com'
+
+        if (!signingProp('key.storepass')) {
+            throw new GradleException("key.storepass is not set; add it to ${keystoreFile} " +
+                    'or pass it on the command line as -Pkey.storepass=...')
+        }
+
+        def signJars = fileTree('setup/client-lib') { include '**/*.jar' } +
+                       fileTree('setup/extensions') { include '**/*.jar' }
+
+        // Retries exist for transient TSA failures (Ant used retrycount=5,
+        // i.e. up to 6 attempts). A failure on the very first jar means a bad
+        // PIN/passphrase/config, and retrying a wrong PIN against a hardware
+        // token can permanently block it, so fail fast until one jar has
+        // signed successfully.
+        boolean configProven = false
+        def withRetry = { Closure work ->
+            int attempts = 0
+            while (true) {
+                try {
+                    work()
+                    configProven = true
+                    return
+                } catch (Exception e) {
+                    attempts++
+                    if (!configProven || attempts > 5) {
+                        throw e
+                    }
+                    logger.warn "signjar failed (attempt ${attempts}), retrying: ${e.message}"
+                    Thread.sleep(1000)
+                }
+            }
+        }
+
+        if (signingProp('cert') == 'ca') {
+            logger.lifecycle 'Signing with CA certificate'
+            signJars.each { jarFile ->
+                withRetry {
+                    ant.signjar(jar: jarFile.absolutePath,
+                            alias: signingProp('key.alias'),
+                            storepass: signingProp('key.storepass'),
+                            storetype: signingProp('key.storetype'),
+                            providerclass: signingProp('key.providerclass'),
+                            providerarg: signingProp('key.providerarg'),
+                            tsaurl: tsa) {
+                        arg(value: '-certchain')
+                        arg(value: signingProp('key.certchain'))
+                        sysproperty(key: 'jsse.enableSNIExtension', value: 'false')
+                        sysproperty(key: 'https.protocols', value: 'TLSv1.2,TLSv1.1')
+                    }
+                }
+            }
+        } else {
+            logger.lifecycle 'Signing with self-signed certificate'
+            signJars.each { jarFile ->
+                withRetry {
+                    ant.signjar(jar: jarFile.absolutePath,
+                            alias: signingProp('key.alias'),
+                            keystore: signingProp('key.keystore'),
+                            storepass: signingProp('key.storepass'),
+                            keypass: signingProp('key.keypass'),
+                            storetype: signingProp('key.storetype'),
+                            tsaurl: tsa,
+                            digestalg: 'SHA-256') {
+                        sysproperty(key: 'jsse.enableSNIExtension', value: 'false')
+                        sysproperty(key: 'https.protocols', value: 'TLSv1.2,TLSv1.1')
+                    }
+                }
+            }
+        }
+    }
+}
+
+def createSetup = tasks.register('createSetup') {
+    group = 'build'
+    description = 'Assembles the full distribution tree in server/setup.'
+    dependsOn setupContent, signSetupJars, ':verifyVendoredParity'
+}
+
+assemble.dependsOn createSetup
+
+// ---------------------------------------------------------------------
+// Distribution extension zips (create-extension-zips)
+// ---------------------------------------------------------------------
+
+// Exactly the zip list from server/build.xml (mllpmode, scriptfilerule,
+// and xsltstep have no zips there either).
+def zippedExtensions = ['jms', 'jdbc', 'dicom', 'http', 'doc', 'smtp', 'tcp', 'file', 'js',
+                        'ws', 'vm', 'datatype-delimited', 'datatype-dicom', 'datatype-edi',
+                        'datatype-hl7v2', 'datatype-hl7v3', 'datatype-ncpdp', 'datatype-xml',
+                        'datatype-raw', 'datatype-json', 'directoryresource', 'dashboardstatus',
+                        'destinationsetfilter', 'serverlog', 'datapruner', 'javascriptstep',
+                        'mapper', 'messagebuilder', 'scriptfilestep', 'rulebuilder',
+                        'javascriptrule', 'dicomviewer', 'pdfviewer', 'textviewer', 'httpauth',
+                        'imageviewer', 'globalmapviewer']
+
+// The zip names carry the version, so clear the directory first the way
+// Ant did; otherwise zips from previous versions accumulate.
+def cleanExtensionZips = tasks.register('cleanExtensionZips', Delete) {
+    delete 'dist/extensions'
+}
+
+def extensionZipTasks = zippedExtensions.collect { name ->
+    tasks.register("zip_${name.replace('-', '_')}", Zip) {
+        archiveFileName = "${name}-${version}.zip"
+        destinationDirectory = file('dist/extensions')
+        // Zip the final (possibly signed) extension content.
+        from('setup/extensions') { include "${name}/**" }
+        dependsOn createSetup, cleanExtensionZips
+    }
+}
+
+tasks.register('createExtensionZips') {
+    group = 'build'
+    description = 'Creates the per-extension distribution zips in server/dist/extensions.'
+    dependsOn extensionZipTasks
+}
+
+// ---------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------
+
+def testsJar = tasks.register('testsJar', Jar) {
+    archiveFileName = 'mirth-server-tests.jar'
+    destinationDirectory = file('testdist')
+    from sourceSets.test.output
+}
+
+test {
+    dependsOn testsJar
+    jvmArgs '--add-exports=java.base/com.sun.crypto.provider=ALL-UNNAMED',
+            '--add-opens=java.base/java.util=ALL-UNNAMED',
+            '--add-opens=java.base/java.lang=ALL-UNNAMED',
+            '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+            '--add-opens=java.base/java.text=ALL-UNNAMED',
+            '--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED',
+            '--add-opens=java.desktop/java.awt=ALL-UNNAMED',
+            '--add-opens=java.desktop/java.awt.font=ALL-UNNAMED',
+            '--add-opens=java.sql/java.sql=ALL-UNNAMED',
+            '--add-opens=java.sql.rowset/com.sun.rowset=ALL-UNNAMED',
+            '--add-opens=java.sql.rowset/com.sun.rowset.internal=ALL-UNNAMED',
+            '--add-opens=java.sql.rowset/com.sun.rowset.providers=ALL-UNNAMED',
+            '--add-opens=java.sql.rowset/javax.sql.rowset=ALL-UNNAMED',
+            '--add-opens=java.xml/com.sun.org.apache.xalan.internal.xsltc.trax=ALL-UNNAMED'
+}
+
+// ---------------------------------------------------------------------
+// Development helpers (dev-run, dev-launcher, create-derby-db)
+// ---------------------------------------------------------------------
+
+tasks.register('createDerbyDb', JavaExec) {
+    description = 'Recreates the embedded Derby database (mirrors create-derby-db).'
+    mainClass = 'com.mirth.connect.server.tools.ScriptRunner'
+    workingDir = projectDir
+    // staged server-lib reproduces the historical lib layout
+    classpath = files('setup/server-lib/mirth-server.jar', sourceSets.main.output, 'setup/conf') +
+            fileTree('setup/server-lib') {
+                include 'log4j/log4j-api-*.jar'
+                include 'log4j/log4j-core-*.jar'
+                include 'database/derby-1*.jar'
+                include 'database/derbytools-*.jar'
+                include 'commons/commons-io-*.jar'
+            }
+    args 'dbconf/derby/derby-database.sql'
+    dependsOn serverJar, stageSetup
+    doFirst { delete 'mirthdb' }
+}
+
+// JDK module flags for running the server come from the same file the
+// production launcher uses, one source of truth.
+def serverModuleFlags = {
+    file('conf/default_modules.vmoptions').readLines()
+            .collect { it.trim() }
+            .findAll { it.startsWith('-') }
+}
+
+tasks.register('devLauncher', JavaExec) {
+    description = 'Runs OIE using the setup launcher (mirrors dev-launcher).'
+    mainClass = 'com.mirth.connect.server.launcher.MirthLauncher'
+    workingDir = file('setup')
+    classpath = files('setup/mirth-server-launcher.jar')
+    dependsOn 'createSetup'
+    doFirst { jvmArgs serverModuleFlags() }
+}
+
+tasks.register('devRun', JavaExec) {
+    description = 'Runs the OIE server from the development tree (mirrors dev-run).'
+    mainClass = 'com.mirth.connect.server.Mirth'
+    workingDir = projectDir
+    classpath = files('conf') + sourceSets.main.runtimeClasspath
+    doFirst { jvmArgs serverModuleFlags() }
+}
+
+clean {
+    delete 'classes', 'test_classes', 'setup', 'dist', 'testdist', 'docs/javadocs', 'logs'
+    doLast { file('logs').mkdirs() }
+}

@@ -1,12 +1,12 @@
-# CLAUDE_USER_EXAMPLE.md — starter for your OIE channel & template code
+# AGENTS_USER_EXAMPLE.md — starter for your OIE channel & template code
 
-**This is a template, not a rule for this repo.** It is a starter `CLAUDE.md` for a *separate* repository —
+**This is a template, not a rule for this repo.** It is a starter `AGENTS.md` for a *separate* repository —
 **yours** — that holds the JavaScript you deploy into **Open Integration Engine** channels: source/
 destination transformers, filters, response transformers, attachment handlers, and Global / Code Template
-scripts. Copy it to *your* repo's root as `CLAUDE.md` and fill in the `TODO` sections.
+scripts. Copy it to *your* repo's root as `AGENTS.md` and fill in the `TODO` sections.
 
 > Working on the **OIE engine itself** (the Java in this repository)? That's a different job — see this
-> repo's [`CLAUDE.md`](./CLAUDE.md), not this file.
+> repo's [`AGENTS.md`](./AGENTS.md), not this file.
 
 OIE executes channel/template JavaScript on the **Rhino** engine (bundled with the Java 17 runtime), so the
 constraints below are about Rhino's partial ES6 support and Java interop — not about Node.js. Real, working
@@ -50,6 +50,11 @@ filters, response transformers, attachment handlers, and Global/Code Template sc
 
 > Files that run in a normal Node.js context (build tooling, tests, non-OIE utilities) are **not** subject
 > to these rules — scope this section to the directory that gets deployed to OIE (commonly `src/`).
+
+> **Why the "supported" list works:** OIE ships `rhino.languageversion = es6` by default
+> (`server/conf/mirth.properties`), which puts the bundled Rhino (1.7.13) in ES6 mode — that's what enables
+> arrow functions, `let`/`const`, and destructuring below. If your server overrides that setting to an older
+> version, re-verify the borderline features.
 
 ### Supported ES6 features (safe to use)
 - `const` and `let` — prefer over `var`. `const` by default, `let` when reassignment is needed (but see the

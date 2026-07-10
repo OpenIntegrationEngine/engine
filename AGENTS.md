@@ -1,13 +1,12 @@
-# CLAUDE.md — Open Integration Engine (engine)
+# AGENTS.md — Open Integration Engine (engine)
 
-Guidance for Claude Code (and any AI coding assistant) working on **this repository — the OIE engine
-itself**. OIE is an open-source fork of Mirth Connect: a **production-critical, healthcare** integration
-engine (HL7 / FHIR / DICOM) that runs in hospitals and labs, on a mature codebase with ~15 years of
-history. Licensed **MPL-2.0**.
+Guidance for AI coding agents working on **this repository — the OIE engine itself**. OIE is an open-source
+fork of Mirth Connect: a **production-critical, healthcare** integration engine (HL7 / FHIR / DICOM) that
+runs in hospitals and labs, on a mature codebase with ~15 years of history. Licensed **MPL-2.0**.
 
 > **Writing channel/template JavaScript that runs *on* the engine (transformers, filters, code
 > templates)?** That's a different context with its own Rhino/ES5 rules — start from
-> **[`CLAUDE_USER_EXAMPLE.md`](./CLAUDE_USER_EXAMPLE.md)**, not this file.
+> **[`AGENTS_USER_EXAMPLE.md`](./AGENTS_USER_EXAMPLE.md)**, not this file.
 
 ## Prime directive: be a careful guest, not a rewriter
 Optimize for the reviewer's trust and the project's long-term health — **never for volume of change.** A
@@ -78,9 +77,10 @@ thinks *"I know how to fix this"* is exactly when a cleaner, safer, more idiomat
 ## Build & test (Java 17 + Ant)
 - Toolchain is pinned in [`.sdkmanrc`](./.sdkmanrc) — install [SDKMAN](https://sdkman.io/) and run
   `sdk env install` in the repo root (the JavaFX-bundled JDK is required; the `client` GUI imports JavaFX).
-- **Build + test** (what CI runs off `main`): `cd server && ant -f mirth-build.xml -DdisableSigning=true -Dcoverage=true`
-  (the signed build drops the flags and runs on `main`). JUnit results land under
-  `*/build/test-results/**/*.xml`. **A red build is not reviewable — never open a PR on one.**
+- **Build + test** (run this locally; it's also the CI build on pull requests):
+  `cd server && ant -f mirth-build.xml -DdisableSigning=true -Dcoverage=true`. CI runs this unsigned +
+  coverage build on PRs; on `main` it runs the **signed** build (same target, without those flags). JUnit
+  results land under `*/build/test-results/**/*.xml`. **A red build is not reviewable — never open a PR on one.**
 
 ## Module map (change the narrowest one that solves the issue)
 | Module | What it is | Care level |

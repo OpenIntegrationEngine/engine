@@ -74,13 +74,21 @@ thinks *"I know how to fix this"* is exactly when a cleaner, safer, more idiomat
 9. **No slop tells.** No emoji; no "as an AI"; no comments that restate the code or narrate the change; no
    speculative abstractions or "future-proofing" (YAGNI); no dead code; no reflowing of existing comments.
 
-## Build & test (Java 17 + Ant)
+## Build & test (Java 17 + Gradle)
 - Toolchain is pinned in [`.sdkmanrc`](./.sdkmanrc) — install [SDKMAN](https://sdkman.io/) and run
   `sdk env install` in the repo root (the JavaFX-bundled JDK is required; the `client` GUI imports JavaFX).
-- **Build + test** (run this locally; it's also the CI build on pull requests):
-  `cd server && ant -f mirth-build.xml -DdisableSigning=true -Dcoverage=true`. CI runs this unsigned +
-  coverage build on PRs; on `main` it runs the **signed** build (same target, without those flags). JUnit
-  results land under `*/build/test-results/**/*.xml`. **A red build is not reviewable — never open a PR on one.**
+  The build runs through the Gradle **wrapper**; no separate Gradle install.
+- **Build + test** (run this from the repo root; it's also the CI build on pull requests):
+  `./gradlew build -PdisableSigning=true -Pcoverage=true` (`gradlew.bat` on Windows). CI runs this unsigned +
+  coverage build on PRs; on `main` it runs the **signed** build (`./gradlew build`). JUnit results land under
+  `*/build/test-results/**/*.xml`. **A red build is not reviewable — never open a PR on one.**
+- Two traps that make CI fail in ways the diff doesn't explain — see [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+  before you touch either (and note rule 3: neither is yours to do unprompted):
+  - **Bumping a dependency** means regenerating the checksum-verification metadata **with a cold cache**
+    (`gradle/libs.versions.toml` → `--write-verification-metadata`); a warm cache silently omits parent POMs
+    and only CI fails.
+  - **Changing build logic** is guarded by *output parity*, not unit tests: build `server/setup` before and
+    after and diff the trees — only your intended change may appear.
 
 ## Module map (change the narrowest one that solves the issue)
 | Module | What it is | Care level |

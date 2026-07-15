@@ -1,12 +1,12 @@
 <jnlp>
 	<information>
-		<title>Mirth Connect Administrator</title>
-		<vendor>NextGen Healthcare</vendor>
-		<homepage href="http://www.nextgen.com"/>
+		<title>Open Integration Engine</title>
+		<vendor>Open Integration Engine</vendor>
+		<homepage href="https://openintegrationengine.org/"/>
 		<description>Open Source Healthcare Integration Engine</description>
 		
-		<icon href="images/NG_MC_Icon_128x128.png"/>
-		<icon href="images/MirthConnect_Logo_WordMark_Big.png" kind="splash"/> 
+		<icon href="images/oie_logo_only_white_background_48x48.png"/>
+		<icon href="images/oie_logo_only_white_background_48x48.png" kind="splash"/> 
 		
 		<offline-allowed/>
 
@@ -14,7 +14,7 @@
             <!-- put a shortcut on the desktop -->
             <desktop/>
             <!-- put shortcut in start menu too -->
-            <menu submenu="Mirth Connect"/>
+            <menu submenu="Open Integration Engine"/>
     	</shortcut>
     	
 	</information>

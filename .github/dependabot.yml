@@ -4,9 +4,6 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
-    # Wait 2 days after a release before opening a PR, to skip yanked/broken versions.
-    cooldown:
-      default-days: 2
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -63,8 +60,6 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
-    cooldown:
-      default-days: 2
     open-pull-requests-limit: 5
     labels:
       - "dependencies"

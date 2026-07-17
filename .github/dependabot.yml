@@ -4,3 +4,74 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    # Wait 2 days after a release before opening a PR, to skip yanked/broken versions.
+    cooldown:
+      default-days: 2
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "java"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    # Groups are keyed at the coherent-project level. Note e.g. org.apache.* is NOT a
+    # single project — org.apache.commons, org.apache.logging.log4j, org.apache.pdfbox,
+    # etc. are unrelated and must not be bundled together, so patterns go three levels deep.
+    groups:
+      aws-sdk:
+        patterns:
+          - "software.amazon.awssdk:*"
+          - "software.amazon.eventstream:*"
+      jetty:
+        patterns:
+          - "org.eclipse.jetty*"
+      jersey:
+        patterns:
+          - "org.glassfish.jersey*"
+          - "org.glassfish.hk2*"
+      jackson:
+        patterns:
+          - "com.fasterxml.jackson*"
+      netty:
+        patterns:
+          - "io.netty*"
+          - "com.typesafe.netty*"
+      log4j:
+        patterns:
+          - "org.apache.logging.log4j*"
+      apache-commons:
+        patterns:
+          - "org.apache.commons:*"
+          - "commons-*:*"
+      test-tooling:
+        patterns:
+          - "org.mockito*"
+          - "net.bytebuddy*"
+          - "org.objenesis:*"
+          - "org.hamcrest:*"
+          - "junit:*"
+      # Everything else: bundle only minor/patch so major bumps still arrive as
+      # individual PRs that get reviewed on their own.
+      all-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 2
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"
+    groups:
+      docker-base-images:
+        patterns:
+          - "*"

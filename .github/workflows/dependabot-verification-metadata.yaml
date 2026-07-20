@@ -1,0 +1,60 @@
+name: Dependabot Verification Metadata
+
+# Dependabot cannot update gradle/verification-metadata.xml (dependabot/dependabot-core#1996),
+# so every Gradle bump it pushes would otherwise fail CI on stale checksums. This job
+# regenerates the metadata with a cold cache (per CONTRIBUTING.md) on Dependabot's Gradle
+# branches, validates the build in the same run, and commits the refreshed file back to the PR.
+#
+# Triggering on `push` (not `pull_request`) runs in the base-repo context with a writable
+# token; Dependabot's pull_request runs get a read-only token and cannot push.
+
+on:
+  push:
+    branches:
+      - "dependabot/gradle/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dependabot-metadata-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          java-package: 'jdk+fx'
+          distribution: 'zulu'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+        with:
+          validate-wrappers: true
+
+      # Cold cache: a warm cache skips re-resolving already-cached parent POMs so they
+      # never get recorded, and the build then fails verification only later in CI.
+      # This step both regenerates the metadata and runs the same build CI runs, so a
+      # green run here proves the bumped artifacts verify and build.
+      - name: Regenerate verification metadata (cold cache)
+        run: |
+          GRADLE_USER_HOME="$(mktemp -d)" ./gradlew --write-verification-metadata sha256 \
+            build dist -PdisableSigning=true -Pcoverage=true
+
+      - name: Commit refreshed metadata
+        run: |
+          if git diff --quiet -- gradle/verification-metadata.xml; then
+            echo "No verification metadata changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Regenerate Gradle dependency verification metadata" \
+            -- gradle/verification-metadata.xml
+          git push origin "HEAD:${GITHUB_REF_NAME}"

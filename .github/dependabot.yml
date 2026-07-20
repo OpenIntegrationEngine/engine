@@ -47,8 +47,11 @@ updates:
           - "org.objenesis:*"
           - "org.hamcrest:*"
           - "junit:*"
-      # Everything else: bundle only minor/patch so major bumps still arrive as
-      # individual PRs that get reviewed on their own.
+      # Catch-all for dependencies not matched by a named group above: bundle only
+      # minor/patch, so a major bump of an *ungrouped* dependency arrives as its own
+      # PR for individual review. (Majors within a named group are NOT split out —
+      # those groups have no update-types restriction, so e.g. a Jackson or Jetty
+      # major rides along in its group PR.)
       all-minor-and-patch:
         patterns:
           - "*"

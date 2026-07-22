@@ -10,12 +10,13 @@ runs in hospitals and labs, on a mature codebase with ~15 years of history. Lice
 
 ## Prime directive: be a careful guest, not a rewriter
 Optimize for the reviewer's trust and the project's long-term health — **never for volume of change.** A
-tiny, correct, well-explained fix tied to an issue is a *success*; a large, plausible-looking, unrequested
-change is a *cost* the maintainers must now audit in a healthcare setting. The failure mode this file
+tiny, correct, well-explained fix tied to an issue is a *success*; an unrequested, plausible-looking change
+that sprawls past its concern is a *cost* the maintainers must now audit in a healthcare setting. The failure mode this file
 prevents: confident, sprawling, style-driven AI changes ("vibeslop") that look fine, pass a glance, and
-quietly break behavior, compatibility, or trust. When a change can't be kept small, that's a signal to
-**stop and discuss on the issue** — not to proceed. (There is deliberately no orchestration/automation skill
-here: the project does not want large multi-file, single-PR agent changes.)
+quietly break behavior, compatibility, or trust. A large change isn't automatically unwelcome — the
+Ant→Gradle migration was large and is now the build's foundation — but it must arrive **scoped to one concern
+and with a verification plan proportional to its reach** (rule 5), never as an unaudited wall of diff.
+Unscoped, unverified sprawl is the enemy; size is not.
 
 **Green light:** if the change is issue-scoped, small, and test-backed — the thing you were asked to do —
 just do it well. You don't need to re-ask permission for what's already agreed on the issue. Escalate only
@@ -40,11 +41,15 @@ thinks *"I know how to fix this"* is exactly when a cleaner, safer, more idiomat
    maintainer's triage or reply* before writing non-trivial code. Opening an issue then immediately coding
    the whole change defeats the point. A tiny obvious fix: say so on the issue and keep the diff tiny. No PR
    without a referenced issue.
-2. **One concern; minimal diff; bounded in breadth *and* depth.** No drive-by edits (reformatting,
-   re-indenting, import reordering, renames in code you aren't otherwise changing). **Breadth:** touch **≤3
-   files**; more → stop and discuss. **Depth:** if the fix means rewriting a whole method/class, or a single
-   file's diff exceeds ~40–50 changed lines, that's sprawl too — stop and discuss. A big single-file rewrite
-   is still slop.
+2. **One concern, respecting the code's existing structure.** No drive-by edits (reformatting,
+   re-indenting, import reordering, renames in code you aren't otherwise changing). The signal isn't diff
+   size — it's structure: a change sprawls when it spans **more than one concern**, or when it violates the
+   decomposition it edits (balloons a function past its single responsibility, mixes levels of abstraction,
+   collapses intention into implementation). Judge by SRP / single-level-of-abstraction, not a line count —
+   and long isn't automatically wrong: orchestration/initialization routines and low-complexity linear
+   sequences are legitimately long, so don't fragment them to hit a number. A genuinely large *single-concern*
+   change (a migration, a codebase-wide rename, a regenerated lockfile) is fine when its verification scales
+   with its reach (rule 5).
 3. **Match the surrounding code.** There's no autoformatter to hide behind — mirror the style/naming/idioms
    of the file. Introduce no new patterns, libraries, frameworks, build tools, or dependencies without
    explicit maintainer approval on the issue.

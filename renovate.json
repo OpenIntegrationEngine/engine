@@ -6,8 +6,14 @@
   "schedule": [
     "before 6am on the first day of the month"
   ],
+  "timezone": "America/New_York",
   "minimumReleaseAge": "2 days",
   "prConcurrentLimit": 10,
+  "prHourlyLimit": 2,
+  "automerge": false,
+  "major": {
+    "dependencyDashboardApproval": true
+  },
   "dependencyDashboard": true,
   "semanticCommits": "enabled",
   "labels": [

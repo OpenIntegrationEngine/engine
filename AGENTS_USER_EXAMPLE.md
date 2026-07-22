@@ -55,6 +55,11 @@ filters, response transformers, attachment handlers, and Global/Code Template sc
 > (`server/conf/mirth.properties`), which puts the bundled Rhino (1.7.13) in ES6 mode — that's what enables
 > arrow functions, `let`/`const`, and destructuring below. If your server overrides that setting to an older
 > version, re-verify the borderline features.
+>
+> **The runtime behaviors below were verified against Rhino 1.7.13** (what current OIE ships). Some are
+> long-standing Ecma-incompatibility bugs that are safe as hard rules; others are version-scoped and will
+> **flip when the engine bumps Rhino** (called out inline). Treat anything marked version-dependent as "verify
+> on your server."
 
 ### Supported ES6 features (safe to use)
 - `const` and `let` — prefer over `var`. `const` by default, `let` when reassignment is needed (but see the
@@ -63,20 +68,31 @@ filters, response transformers, attachment handlers, and Global/Code Template sc
 - Object/array destructuring — `const { a, b } = options`
 - `Object.keys()`, `Object.values()`, `Object.entries()`, `Object.assign()`
 - Array methods: `.map()`, `.filter()`, `.reduce()`, `.forEach()`, `.find()`, `.some()`, `.every()`
+- `for...of` — runs correctly on Rhino 1.7.13, but **prefer `.forEach()` or an indexed `for`**. It relies on
+  the iterator protocol (extra overhead at channel throughput, and Rhino's support across non-array iterables
+  is uneven), so avoiding it keeps channel code predictable across Rhino versions. Style preference, not a
+  correctness rule.
 
-### Prohibited ES6+ features (will break at runtime in OIE)
-- **Template literals** — NEVER use backtick strings. `` `Hello ${name}` `` fails at runtime. Use string
-  concatenation or `Array.join()` (see "String building").
-- **Optional chaining `?.`** — not supported; use a try/catch helper (see "Safe property access").
-- **Nullish coalescing `??`** — use `||` or an explicit ternary.
+### Prohibited ES6+ features (will break in OIE)
+Unless noted, each of these is a **parse error** — the script fails to compile.
+- **Template literals** — NEVER use backtick strings, but note the failure is **silent, not an error**: on
+  Rhino 1.7.13 `` `Hello ${name}` `` evaluates without throwing and skips interpolation, yielding the literal
+  text `Hello ${name}`. Nothing errors, the channel stays green, and e.g. a File Writer keyed on such a value
+  writes every message to one literally-named file. (Version-dependent: interpolation was implemented in Rhino
+  1.7.14, so this flips if the engine bumps Rhino.) Use string concatenation or `Array.join()` (see "String
+  building").
+- **Optional chaining `?.`** — parse error; use a try/catch helper (see "Safe property access").
+- **Nullish coalescing `??`** — parse error; use `||` or an explicit ternary.
 - **`async`/`await`** — not supported. Transformers are synchronous; use callbacks/retries.
-- **`Promise`** — not available in the runtime.
-- **ES6 classes (`class`/`extends`)** — use constructor functions with `.prototype` methods.
+- **`Promise`** — not available in the runtime (`Promise` is `undefined`).
+- **ES6 classes (`class`/`extends`)** — parse error; use constructor functions with `.prototype` methods.
 - **ES6 modules (`import`/`export`)** — share code via Code Templates plus `/* global */` and
   `/* exported */` comments (see "Module/export pattern").
-- **Spread syntax `...args`** — minimal/unreliable support; avoid, especially in parameter lists.
-- **`for...of` loops** — use `.forEach()` or a traditional indexed `for` loop.
-- **Default parameters** — use `param = param || defaultValue` instead.
+- **Spread syntax `...args`** — a **hard parse error** in both call and array-literal position; the script
+  won't compile.
+- **Default parameters** — parse error; use `param = param || defaultValue` instead.
+> `for...of` is **not** prohibited — it works on 1.7.13. See the supported list (prefer `forEach`/indexed
+> `for` as a style choice).
 
 > **Version-dependent — verify on your server.** `Symbol`, `Map`, and `Set` exist on current OIE/Rhino
 > builds but were missing on older Mirth ones. Different releases ship different Rhino versions (and some
@@ -104,6 +120,22 @@ while ((result = regex.exec(str)) !== null) {
 ```
 Applies to `for`, `for...in`, `while`, and `do/while` bodies. Declarations **outside** the loop are
 unaffected — `const` is still preferred at function scope.
+
+**Second, related defect — never capture a loop variable in a closure created inside the loop.** On Rhino
+1.7.13, closures made inside `for (let i = ...)` or `for (let k in obj)` all capture the **same** binding, so
+they every see the *final* value (spec says each gets its own):
+```javascript
+// WRONG — on Rhino 1.7.13 all three functions return 3 (spec: 0, 1, 2)
+var fns = [];
+for (let i = 0; i < 3; i++) { fns.push(function () { return i; }); }
+
+// CORRECT — copy the control variable to a fresh body-level `let` first, then capture that
+for (let i = 0; i < 3; i++) {
+  let n = i;
+  fns.push(function () { return n; });
+}
+```
+(This is why the `toJsArray` example above copies `src[i]` into a body-level `let` before use.)
 
 ### Java interop returns Java objects, not JS values
 OIE APIs and `java.*` / `Packages.*` calls return **Java** objects, which don't behave like their JS
@@ -140,9 +172,15 @@ code is shared via Code Templates. Commonly available:
 - **Message data:** `msg`, `tmp` (transformers), `message`, `connectorMessage`
 - **Maps:** `channelMap`, `connectorMap`, `responseMap`, `globalMap`, `globalChannelMap`,
   `configurationMap`, `sourceMap`
-- **Map accessor shorthands** (built-in): `$c(k[, v])` → `channelMap`, `$gc(k[, v])` → `globalChannelMap`,
-  `$g(k[, v])` → `globalMap`, `$s(k[, v])` → `sourceMap`, `$cfg(k)` → `configurationMap`. One arg gets, two
-  args sets.
+- **Map accessor shorthands** (built-in — there are **seven**): `$co(k[, v])` → `connectorMap`,
+  `$c(k[, v])` → `channelMap`, `$s(k[, v])` → `sourceMap`, `$gc(k[, v])` → `globalChannelMap`,
+  `$g(k[, v])` → `globalMap`, `$cfg(k[, v])` → `configurationMap`, `$r(k[, v])` → `responseMap`. One arg
+  gets, two args put — with two caveats: treat **`$s` as get-only** (`sourceMap` is read-oriented; a two-arg
+  write is rejected in batch scripts and shouldn't be relied on elsewhere), and a two-arg **`$cfg` put
+  succeeds but does not persist** (runtime-only; it won't survive a restart).
+- **`$('key')`** (single string arg) searches every map in order — response → connector → channel → source →
+  globalChannel → global → configuration — and returns **`''`** (empty string, *not* `null`/`undefined`) on a
+  total miss. So `$('x') == null` never fires; test with `!$('x')` or `$('x') === ''`.
 - **Channel context:** `channelId`, `channelName`, `messageId`, `logger`, `router`, `destinationSet`,
   `response`, `replacer`
 - **Batch scripts:** `reader` (and `writer` where applicable)
@@ -165,9 +203,9 @@ project conventions, not OIE built-ins.**
 
 | Helper        | Wraps / does                                                       |
 |---------------|--------------------------------------------------------------------|
-| `$t(fn)`      | run `fn` in try/catch, return `undefined` on throw                 |
+| `$t(fn)`      | run `fn` in try/catch, return `undefined` on throw (optional-chaining-like; see caveat) |
 | `$retry(...)` | run an operation with retry/backoff (no `Promise`/`async` in OIE)  |
-| `$sleep(ms)`  | block for `ms` (Java `Thread.sleep`) when a delay is unavoidable   |
+| `$sleep(ms)`  | block for `ms` (Java `Thread.sleep`) — **blocks the channel thread**; at full throughput it stalls the queue, so use sparingly |
 
 > **TODO:** List the helpers your project defines (and where) so the assistant uses them instead of
 > hand-rolling. Delete this section if you don't use any.
@@ -189,9 +227,30 @@ function myFunction(param) { /* ... */ }
 // NEVER: `Patient ${name} has id ${id}`
 const label = 'Patient ' + name + ' has id ' + id;
 
-// Array join — preferred for SQL and multi-part strings:
-const sql = ['SELECT * FROM orders WHERE id = ', id, ' AND status = ', status].join('');
+// Array join — for multi-part NON-SQL strings (paths, log lines, delimited output):
+const path = ['/data/', channelId, '/', messageId, '.hl7'].join('');
 ```
+
+### SQL — parameterize, never build query strings
+**Never** concatenate or `join()` a value into SQL. Bind parameters so a value can't alter the query — this
+engine carries PHI, so injection here is a breach, not a bug:
+```javascript
+// NEVER — string-built SQL, even via join(), is injectable:
+// var sql = ['SELECT id FROM orders WHERE id = ', id].join('');
+
+// CORRECT — parameterized query; ? placeholders + a bound-parameter list:
+var conn = DatabaseConnectionFactory.createDatabaseConnection('org.postgresql.Driver', url, user, pass);
+try {
+  var rs = conn.executeCachedQuery(
+    'SELECT id, status FROM orders WHERE id = ? AND status = ?',
+    java.util.Arrays.asList(id, status));   // values are bound, never interpolated
+  // ... read rs ...
+} finally {
+  conn.close();
+}
+```
+Name the columns you need instead of `SELECT *`. `executeUpdate(sql, params)` takes the same bound-parameter
+list for writes.
 
 ### Safe property access (replaces `?.`)
 Define a tiny try/catch helper once in a Code Template, then wrap deep access so a missing intermediate
@@ -204,10 +263,20 @@ if (typeof $t === 'undefined') {
 /* exported $t */
 ```
 ```javascript
-// $t(() => a.b.c) === a?.b?.c
+// Two intended uses:
+// 1. Optional-chaining-like navigation — a missing intermediate returns undefined instead of throwing,
+//    so $t(() => a.b.c) stands in for a?.b?.c:
 const value = $t(() => obj.deep.nested.property) || defaultValue;
 const field = $t(() => msg.get('OBR.3.1')) || '';
+// 2. Deliberate try/default around a risky call:
+const parsed = $t(() => JSON.parse(raw)) || {};
 ```
+> **Caveat (by design, but know it):** `$t` swallows **every** exception, which is *broader* than real `?.`
+> — optional chaining only short-circuits on `null`/`undefined` and still propagates a thrown error, whereas
+> `$t` turns any throw into a silent `undefined`. That's intentional (it's what makes the `$t(...) || default`
+> idiom work), but never wrap a call whose failure you need to surface — a failed DB write or ACK send inside
+> `$t` becomes a silent `undefined`, the exact failure mode this doc exists to prevent. Use it for navigation
+> and best-effort reads, not for operations with side effects that must succeed.
 
 ### Prototype-based "classes" (no ES6 `class`)
 ```javascript

@@ -60,9 +60,14 @@ thinks *"I know how to fix this"* is exactly when a cleaner, safer, more idiomat
    order, connection-pool defaults, XStream alias maps. For any change under `donkey/` or in a
    serialize/parse path, include a **before/after golden-output test** proving behavior is unchanged (or the
    change is the point and is signed off).
-5. **Tests are load-bearing and must bite.** Add/adjust tests for any behavior change; a regression test must
-   **fail against the pre-fix code and pass after** — state that you verified this (line coverage is not
-   proof). **Never delete, skip, or weaken a test to go green.** The build (below) must pass before a PR.
+5. **Tests are load-bearing, and the PR must show how to start the car.** Add/adjust tests for any behavior
+   change; a regression test must **fail against the pre-fix code and pass after** — state that you verified
+   this (line coverage is not proof). **Never delete, skip, or weaken a test to go green.** The build (below)
+   must pass. **And every fix's PR must include a `How to verify` section**: the concrete before/after a
+   *reviewer* can reproduce — the failing input and wrong output before, the correct output after — not merely
+   "tests pass." Green CI is the dashboard light going off; it is not turning the key. *(Replacing the battery
+   isn't the job — starting the car is.)* For behavior a unit test can't capture — wire output, a deployed
+   channel, a REST path — give the exact steps and the observable result.
 6. **Security — this engine carries PHI.**
    - **Never log message content, payloads, headers, or anything that could be PHI**; add no new logging of
      message bodies or connector I/O; serialize no new fields into audit/event tables without sign-off.

@@ -56,12 +56,14 @@ import com.mirth.connect.server.api.CheckAuthorizedChannelId;
 import com.mirth.connect.server.api.DontCheckAuthorized;
 import com.mirth.connect.server.api.MirthServlet;
 import com.mirth.connect.server.api.providers.ResponseCodeFilter;
+import com.mirth.connect.server.controllers.ChannelController;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.server.controllers.EngineController;
 import com.mirth.connect.server.controllers.EventController;
 import com.mirth.connect.server.controllers.MessageController;
 import com.mirth.connect.server.util.DICOMMessageUtil;
+import com.mirth.connect.server.util.MetaDataColumnValidator;
 import com.mirth.connect.util.MessageImporter.MessageImportException;
 import com.mirth.connect.util.messagewriter.EncryptionType;
 import com.mirth.connect.util.messagewriter.MessageWriterOptions;
@@ -73,6 +75,7 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
     private static EngineController engineController;
     private static ConfigurationController configurationController;
     private static EventController eventController;
+    private static ChannelController channelController;
 
     public MessageServlet(@Context HttpServletRequest request, @Context ContainerRequestContext containerRequestContext, @Context SecurityContext sc) {
         super(request, containerRequestContext, sc);
@@ -89,6 +92,7 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
         engineController = controllerFactory.createEngineController();
         configurationController = controllerFactory.createConfigurationController();
         eventController = controllerFactory.createEventController();
+        channelController = controllerFactory.createChannelController();
     }
 
     @Override
@@ -169,6 +173,7 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
     @Override
     @CheckAuthorizedChannelId
     public List<Message> getMessages(String channelId, MessageFilter filter, Boolean includeContent, Integer offset, Integer limit) {
+        validateMetaDataColumns(channelId, filter);
         return messageController.getMessages(filter, channelId, includeContent, offset, limit);
     }
 
@@ -176,12 +181,14 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
     @CheckAuthorizedChannelId
     public List<Message> getMessages(String channelId, Long minMessageId, Long maxMessageId, Long minOriginalId, Long maxOriginalId, Long minImportId, Long maxImportId, Calendar startDate, Calendar endDate, String textSearch, Boolean textSearchRegex, Set<Status> statuses, Set<Integer> includedMetaDataIds, Set<Integer> excludedMetaDataIds, String serverId, Set<String> rawContentSearches, Set<String> processedRawContentSearches, Set<String> transformedContentSearches, Set<String> encodedContentSearches, Set<String> sentContentSearches, Set<String> responseContentSearches, Set<String> responseTransformedContentSearches, Set<String> processedResponseContentSearches, Set<String> connectorMapContentSearches, Set<String> channelMapContentSearches, Set<String> sourceMapContentSearches, Set<String> responseMapContentSearches, Set<String> processingErrorContentSearches, Set<String> postprocessorErrorContentSearches, Set<String> responseErrorContentSearches, Set<MetaDataSearch> metaDataSearches, Set<MetaDataSearch> metaDataCaseInsensitiveSearches, Set<String> textSearchMetaDataColumns, Integer minSendAttempts, Integer maxSendAttempts, Boolean attachment, Boolean error, Boolean includeContent, Integer offset, Integer limit) {
         MessageFilter filter = getMessageFilter(minMessageId, maxMessageId, minOriginalId, maxOriginalId, minImportId, maxImportId, startDate, endDate, textSearch, textSearchRegex, statuses, includedMetaDataIds, excludedMetaDataIds, serverId, rawContentSearches, processedRawContentSearches, transformedContentSearches, encodedContentSearches, sentContentSearches, responseContentSearches, responseTransformedContentSearches, processedResponseContentSearches, connectorMapContentSearches, channelMapContentSearches, sourceMapContentSearches, responseMapContentSearches, processingErrorContentSearches, postprocessorErrorContentSearches, responseErrorContentSearches, metaDataSearches, metaDataCaseInsensitiveSearches, textSearchMetaDataColumns, minSendAttempts, maxSendAttempts, attachment, error);
+        validateMetaDataColumns(channelId, filter);
         return messageController.getMessages(filter, channelId, includeContent, offset, limit);
     }
 
     @Override
     @CheckAuthorizedChannelId
     public Long getMessageCount(String channelId, MessageFilter filter) {
+        validateMetaDataColumns(channelId, filter);
         return messageController.getMessageCount(filter, channelId);
     }
 
@@ -189,12 +196,14 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
     @CheckAuthorizedChannelId
     public Long getMessageCount(String channelId, Long minMessageId, Long maxMessageId, Long minOriginalId, Long maxOriginalId, Long minImportId, Long maxImportId, Calendar startDate, Calendar endDate, String textSearch, Boolean textSearchRegex, Set<Status> statuses, Set<Integer> includedMetaDataIds, Set<Integer> excludedMetaDataIds, String serverId, Set<String> rawContentSearches, Set<String> processedRawContentSearches, Set<String> transformedContentSearches, Set<String> encodedContentSearches, Set<String> sentContentSearches, Set<String> responseContentSearches, Set<String> responseTransformedContentSearches, Set<String> processedResponseContentSearches, Set<String> connectorMapContentSearches, Set<String> channelMapContentSearches, Set<String> sourceMapContentSearches, Set<String> responseMapContentSearches, Set<String> processingErrorContentSearches, Set<String> postprocessorErrorContentSearches, Set<String> responseErrorContentSearches, Set<MetaDataSearch> metaDataSearches, Set<MetaDataSearch> metaDataCaseInsensitiveSearches, Set<String> textSearchMetaDataColumns, Integer minSendAttempts, Integer maxSendAttempts, Boolean attachment, Boolean error) {
         MessageFilter filter = getMessageFilter(minMessageId, maxMessageId, minOriginalId, maxOriginalId, minImportId, maxImportId, startDate, endDate, textSearch, textSearchRegex, statuses, includedMetaDataIds, excludedMetaDataIds, serverId, rawContentSearches, processedRawContentSearches, transformedContentSearches, encodedContentSearches, sentContentSearches, responseContentSearches, responseTransformedContentSearches, processedResponseContentSearches, connectorMapContentSearches, channelMapContentSearches, sourceMapContentSearches, responseMapContentSearches, processingErrorContentSearches, postprocessorErrorContentSearches, responseErrorContentSearches, metaDataSearches, metaDataCaseInsensitiveSearches, textSearchMetaDataColumns, minSendAttempts, maxSendAttempts, attachment, error);
+        validateMetaDataColumns(channelId, filter);
         return messageController.getMessageCount(filter, channelId);
     }
 
     @Override
     @CheckAuthorizedChannelId
     public void reprocessMessages(String channelId, MessageFilter filter, boolean replace, boolean filterDestinations, Set<Integer> reprocessMetaDataIds) {
+        validateMetaDataColumns(channelId, filter);
         doReprocessMessages(channelId, filter, replace, filterDestinations, reprocessMetaDataIds);
     }
 
@@ -202,6 +211,7 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
     @CheckAuthorizedChannelId
     public void reprocessMessages(String channelId, Long minMessageId, Long maxMessageId, Long minOriginalId, Long maxOriginalId, Long minImportId, Long maxImportId, Calendar startDate, Calendar endDate, String textSearch, Boolean textSearchRegex, Set<Status> statuses, Set<Integer> includedMetaDataIds, Set<Integer> excludedMetaDataIds, String serverId, Set<String> rawContentSearches, Set<String> processedRawContentSearches, Set<String> transformedContentSearches, Set<String> encodedContentSearches, Set<String> sentContentSearches, Set<String> responseContentSearches, Set<String> responseTransformedContentSearches, Set<String> processedResponseContentSearches, Set<String> connectorMapContentSearches, Set<String> channelMapContentSearches, Set<String> sourceMapContentSearches, Set<String> responseMapContentSearches, Set<String> processingErrorContentSearches, Set<String> postprocessorErrorContentSearches, Set<String> responseErrorContentSearches, Set<MetaDataSearch> metaDataSearches, Set<MetaDataSearch> metaDataCaseInsensitiveSearches, Set<String> textSearchMetaDataColumns, Integer minSendAttempts, Integer maxSendAttempts, Boolean attachment, Boolean error, boolean replace, boolean filterDestinations, Set<Integer> reprocessMetaDataIds) {
         final MessageFilter filter = getMessageFilter(minMessageId, maxMessageId, minOriginalId, maxOriginalId, minImportId, maxImportId, startDate, endDate, textSearch, textSearchRegex, statuses, includedMetaDataIds, excludedMetaDataIds, serverId, rawContentSearches, processedRawContentSearches, transformedContentSearches, encodedContentSearches, sentContentSearches, responseContentSearches, responseTransformedContentSearches, processedResponseContentSearches, connectorMapContentSearches, channelMapContentSearches, sourceMapContentSearches, responseMapContentSearches, processingErrorContentSearches, postprocessorErrorContentSearches, responseErrorContentSearches, metaDataSearches, metaDataCaseInsensitiveSearches, textSearchMetaDataColumns, minSendAttempts, maxSendAttempts, attachment, error);
+        validateMetaDataColumns(channelId, filter);
         doReprocessMessages(channelId, filter, replace, filterDestinations, reprocessMetaDataIds);
     }
 
@@ -235,6 +245,7 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
     @Override
     @CheckAuthorizedChannelId
     public void removeMessages(String channelId, MessageFilter filter) {
+        validateMetaDataColumns(channelId, filter);
         messageController.removeMessages(channelId, filter);
     }
 
@@ -242,6 +253,7 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
     @CheckAuthorizedChannelId
     public void removeMessages(String channelId, Long minMessageId, Long maxMessageId, Long minOriginalId, Long maxOriginalId, Long minImportId, Long maxImportId, Calendar startDate, Calendar endDate, String textSearch, Boolean textSearchRegex, Set<Status> statuses, Set<Integer> includedMetaDataIds, Set<Integer> excludedMetaDataIds, String serverId, Set<String> rawContentSearches, Set<String> processedRawContentSearches, Set<String> transformedContentSearches, Set<String> encodedContentSearches, Set<String> sentContentSearches, Set<String> responseContentSearches, Set<String> responseTransformedContentSearches, Set<String> processedResponseContentSearches, Set<String> connectorMapContentSearches, Set<String> channelMapContentSearches, Set<String> sourceMapContentSearches, Set<String> responseMapContentSearches, Set<String> processingErrorContentSearches, Set<String> postprocessorErrorContentSearches, Set<String> responseErrorContentSearches, Set<MetaDataSearch> metaDataSearches, Set<MetaDataSearch> metaDataCaseInsensitiveSearches, Set<String> textSearchMetaDataColumns, Integer minSendAttempts, Integer maxSendAttempts, Boolean attachment, Boolean error) {
         MessageFilter filter = getMessageFilter(minMessageId, maxMessageId, minOriginalId, maxOriginalId, minImportId, maxImportId, startDate, endDate, textSearch, textSearchRegex, statuses, includedMetaDataIds, excludedMetaDataIds, serverId, rawContentSearches, processedRawContentSearches, transformedContentSearches, encodedContentSearches, sentContentSearches, responseContentSearches, responseTransformedContentSearches, processedResponseContentSearches, connectorMapContentSearches, channelMapContentSearches, sourceMapContentSearches, responseMapContentSearches, processingErrorContentSearches, postprocessorErrorContentSearches, responseErrorContentSearches, metaDataSearches, metaDataCaseInsensitiveSearches, textSearchMetaDataColumns, minSendAttempts, maxSendAttempts, attachment, error);
+        validateMetaDataColumns(channelId, filter);
         messageController.removeMessages(channelId, filter);
     }
 
@@ -316,6 +328,7 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
     @Override
     @CheckAuthorizedChannelId
     public int exportMessagesServer(String channelId, MessageFilter filter, int pageSize, MessageWriterOptions writerOptions) {
+        validateMetaDataColumns(channelId, filter);
         try {
             return messageController.exportMessages(channelId, filter, pageSize, writerOptions);
         } catch (Exception e) {
@@ -328,6 +341,7 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
     public int exportMessagesServer(String channelId, Long minMessageId, Long maxMessageId, Long minOriginalId, Long maxOriginalId, Long minImportId, Long maxImportId, Calendar startDate, Calendar endDate, String textSearch, Boolean textSearchRegex, Set<Status> statuses, Set<Integer> includedMetaDataIds, Set<Integer> excludedMetaDataIds, String serverId, Set<String> rawContentSearches, Set<String> processedRawContentSearches, Set<String> transformedContentSearches, Set<String> encodedContentSearches, Set<String> sentContentSearches, Set<String> responseContentSearches, Set<String> responseTransformedContentSearches, Set<String> processedResponseContentSearches, Set<String> connectorMapContentSearches, Set<String> channelMapContentSearches, Set<String> sourceMapContentSearches, Set<String> responseMapContentSearches, Set<String> processingErrorContentSearches, Set<String> postprocessorErrorContentSearches, Set<String> responseErrorContentSearches, Set<MetaDataSearch> metaDataSearches, Set<MetaDataSearch> metaDataCaseInsensitiveSearches, Set<String> textSearchMetaDataColumns, Integer minSendAttempts, Integer maxSendAttempts, Boolean attachment, Boolean error, int pageSize, ContentType contentType, boolean destinationContent, boolean encrypt, boolean includeAttachments, String baseFolder, String rootFolder, String filePattern, String archiveFileName, String archiveFormat, String compressFormat, String password, EncryptionType encryptionType) {
         MessageFilter filter = getMessageFilter(minMessageId, maxMessageId, minOriginalId, maxOriginalId, minImportId, maxImportId, startDate, endDate, textSearch, textSearchRegex, statuses, includedMetaDataIds, excludedMetaDataIds, serverId, rawContentSearches, processedRawContentSearches, transformedContentSearches, encodedContentSearches, sentContentSearches, responseContentSearches, responseTransformedContentSearches, processedResponseContentSearches, connectorMapContentSearches, channelMapContentSearches, sourceMapContentSearches, responseMapContentSearches, processingErrorContentSearches, postprocessorErrorContentSearches, responseErrorContentSearches, metaDataSearches, metaDataCaseInsensitiveSearches, textSearchMetaDataColumns, minSendAttempts, maxSendAttempts, attachment, error);
         MessageWriterOptions writerOptions = getMessageWriterOptions(contentType, destinationContent, encrypt, includeAttachments, baseFolder, rootFolder, filePattern, archiveFileName, archiveFormat, compressFormat, password, encryptionType);
+        validateMetaDataColumns(channelId, filter);
         try {
             return messageController.exportMessages(channelId, filter, pageSize, writerOptions);
         } catch (Exception e) {
@@ -387,7 +401,30 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
 
         eventController.dispatchEvent(event);
     }
-    
+
+    /**
+     * Validates that every custom metadata column referenced by the filter matches a column actually
+     * defined on the channel. The message search mappers splice these column names directly into the
+     * SQL as identifiers (MyBatis ${} substitution), so an unvalidated name is a SQL injection vector.
+     * Rejecting anything not in the channel's own column set closes that hole; the search value and
+     * operator are already safe (bound parameter and enum-constrained, respectively).
+     *
+     * This runs at the servlet (API) boundary because both the parameter-based and MessageFilter-based
+     * endpoints for each operation accept these column names from the client.
+     */
+    private void validateMetaDataColumns(String channelId, MessageFilter filter) {
+        // Primary check at the REST boundary: reject any custom metadata column the filter references
+        // that is not defined on the channel. Column names are matched exactly against the channel's
+        // (upper-cased) columns, which come from the in-memory channel cache (no database hit) and are
+        // only looked up when the filter actually references a custom column. Callers that reach
+        // DonkeyMessageController directly (e.g. a plugin) are covered by a last-resort backstop there.
+        String unknownColumn = MetaDataColumnValidator.findUnknownColumn(filter, () -> channelController.getMetaDataColumns(channelId));
+        if (unknownColumn != null) {
+            logger.warn("Rejected message search for channel " + channelId + " referencing unknown metadata column: " + unknownColumn);
+            throw new MirthApiException(Response.Status.BAD_REQUEST);
+        }
+    }
+
     private MessageFilter getMessageFilter(Long minMessageId, Long maxMessageId, Long minOriginalId, Long maxOriginalId, Long minImportId, Long maxImportId, Calendar startDate, Calendar endDate, String textSearch, Boolean textSearchRegex, Set<Status> statuses, Set<Integer> includedMetaDataIds, Set<Integer> excludedMetaDataIds, String serverId, Set<String> rawContentSearches, Set<String> processedRawContentSearches, Set<String> transformedContentSearches, Set<String> encodedContentSearches, Set<String> sentContentSearches, Set<String> responseContentSearches, Set<String> responseTransformedContentSearches, Set<String> processedResponseContentSearches, Set<String> connectorMapContentSearches, Set<String> channelMapContentSearches, Set<String> sourceMapContentSearches, Set<String> responseMapContentSearches, Set<String> processingErrorContentSearches, Set<String> postprocessorErrorContentSearches, Set<String> responseErrorContentSearches, Set<MetaDataSearch> metaDataSearches, Set<MetaDataSearch> metaDataCaseInsensitiveSearches, Set<String> textSearchMetaDataColumns, Integer minSendAttempts, Integer maxSendAttempts, Boolean attachment, Boolean error) {
         MessageFilter filter = new MessageFilter();
         filter.setMinMessageId(minMessageId);

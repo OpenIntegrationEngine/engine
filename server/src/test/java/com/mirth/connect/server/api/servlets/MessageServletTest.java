@@ -11,6 +11,7 @@ package com.mirth.connect.server.api.servlets;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -24,6 +25,8 @@ import static org.mockito.Mockito.when;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -51,16 +54,22 @@ import org.mockito.invocation.InvocationOnMock;
 
 import com.mirth.connect.client.core.Operation;
 import com.mirth.connect.client.core.api.MirthApiException;
+import com.mirth.connect.donkey.model.channel.MetaDataColumn;
+import com.mirth.connect.donkey.model.channel.MetaDataColumnType;
 import com.mirth.connect.donkey.server.channel.ChannelException;
 import com.mirth.connect.donkey.server.channel.DispatchResult;
 import com.mirth.connect.donkey.server.message.batch.BatchMessageException;
 import com.mirth.connect.model.LoginStatus;
 import com.mirth.connect.model.LoginStatus.Status;
 import com.mirth.connect.model.User;
+import com.mirth.connect.model.filters.MessageFilter;
+import com.mirth.connect.model.filters.elements.MetaDataSearchElement;
 import com.mirth.connect.server.api.providers.ResponseCodeFilter;
 import com.mirth.connect.server.controllers.AuthorizationController;
+import com.mirth.connect.server.controllers.ChannelController;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.server.controllers.EngineController;
+import com.mirth.connect.server.controllers.MessageController;
 import com.mirth.connect.server.controllers.UserController;
 
 public class MessageServletTest {
@@ -69,6 +78,8 @@ public class MessageServletTest {
 
     static ControllerFactory controllerFactory;
     static EngineController engineController;
+    static MessageController messageController;
+    static ChannelController channelController;
     static HttpSession session;
     static HttpServletRequest request;
     static ContainerRequestContext context;
@@ -87,6 +98,12 @@ public class MessageServletTest {
         when(engineController.dispatchRawMessage(eq("channelException"), any(), anyBoolean(), anyBoolean())).thenThrow(new ChannelException(false));
         when(engineController.dispatchRawMessage(eq("batchMessageException"), any(), anyBoolean(), anyBoolean())).thenThrow(new BatchMessageException());
         when(controllerFactory.createEngineController()).thenReturn(engineController);
+
+        messageController = mock(MessageController.class);
+        when(controllerFactory.createMessageController()).thenReturn(messageController);
+
+        channelController = mock(ChannelController.class);
+        when(controllerFactory.createChannelController()).thenReturn(channelController);
 
         UserController userController = mock(UserController.class);
         when(userController.authorizeUser(anyString(), anyString(), anyString())).thenReturn(new LoginStatus(Status.SUCCESS, ""));
@@ -201,6 +218,96 @@ public class MessageServletTest {
         servlet.removeAllMessages(channelIds, true, false);
 
         verify(engineController, times(2)).removeAllMessages(any(), anyBoolean(), anyBoolean(), any());
+    }
+
+    @Test
+    public void testMetaDataSearchRejectsUnknownColumn() {
+        when(channelController.getMetaDataColumns("channel1")).thenReturn(definedColumns("STATUS"));
+        MessageServlet servlet = new MessageServlet(request, context, sc, controllerFactory);
+
+        MessageFilter filter = new MessageFilter();
+        filter.setMetaDataSearch(Arrays.asList(new MetaDataSearchElement("STATUS\" = '' OR '1'='1' --", "EQUAL", "x", false)));
+
+        try {
+            servlet.getMessageCount("channel1", filter);
+            fail("Expected MirthApiException for an unknown metadata column");
+        } catch (MirthApiException e) {
+            assertEquals(400, e.getResponse().getStatus());
+        }
+        verify(messageController, times(0)).getMessageCount(any(), anyString());
+    }
+
+    @Test
+    public void testTextSearchRejectsUnknownColumn() {
+        when(channelController.getMetaDataColumns("channel1")).thenReturn(definedColumns("STATUS"));
+        MessageServlet servlet = new MessageServlet(request, context, sc, controllerFactory);
+
+        MessageFilter filter = new MessageFilter();
+        filter.setTextSearchMetaDataColumns(new ArrayList<String>(Arrays.asList("BOGUS")));
+
+        try {
+            servlet.getMessageCount("channel1", filter);
+            fail("Expected MirthApiException for an unknown text-search metadata column");
+        } catch (MirthApiException e) {
+            assertEquals(400, e.getResponse().getStatus());
+        }
+        verify(messageController, times(0)).getMessageCount(any(), anyString());
+    }
+
+    @Test
+    public void testMetaDataSearchAllowsDefinedColumn() {
+        when(channelController.getMetaDataColumns("channel1")).thenReturn(definedColumns("STATUS"));
+        MessageServlet servlet = new MessageServlet(request, context, sc, controllerFactory);
+
+        MessageFilter filter = new MessageFilter();
+        filter.setMetaDataSearch(Arrays.asList(new MetaDataSearchElement("STATUS", "EQUAL", "x", false)));
+
+        servlet.getMessageCount("channel1", filter);
+        verify(messageController, times(1)).getMessageCount(filter, "channel1");
+    }
+
+    @Test
+    public void testMetaDataSearchRejectsNonUpperCaseColumn() {
+        when(channelController.getMetaDataColumns("channel1")).thenReturn(definedColumns("STATUS"));
+        MessageServlet servlet = new MessageServlet(request, context, sc, controllerFactory);
+
+        MessageFilter filter = new MessageFilter();
+        // Column names are matched exactly; a non-upper-case name would not match the actual DB
+        // column either, so it is rejected rather than silently returning nothing.
+        filter.setMetaDataSearch(Arrays.asList(new MetaDataSearchElement("status", "EQUAL", "x", false)));
+
+        try {
+            servlet.getMessageCount("channel1", filter);
+            fail("Expected MirthApiException for a non-upper-case metadata column");
+        } catch (MirthApiException e) {
+            assertEquals(400, e.getResponse().getStatus());
+        }
+        verify(messageController, times(0)).getMessageCount(any(), anyString());
+    }
+
+    @Test
+    public void testRejectsSearchWhenChannelHasNoColumns() {
+        when(channelController.getMetaDataColumns("channel1")).thenReturn(null);
+        MessageServlet servlet = new MessageServlet(request, context, sc, controllerFactory);
+
+        MessageFilter filter = new MessageFilter();
+        filter.setMetaDataSearch(Arrays.asList(new MetaDataSearchElement("STATUS", "EQUAL", "x", false)));
+
+        try {
+            servlet.getMessageCount("channel1", filter);
+            fail("Expected MirthApiException when the channel has no defined metadata columns");
+        } catch (MirthApiException e) {
+            assertEquals(400, e.getResponse().getStatus());
+        }
+        verify(messageController, times(0)).getMessageCount(any(), anyString());
+    }
+
+    private static List<MetaDataColumn> definedColumns(String... names) {
+        List<MetaDataColumn> columns = new ArrayList<MetaDataColumn>();
+        for (String name : names) {
+            columns.add(new MetaDataColumn(name, MetaDataColumnType.STRING, null));
+        }
+        return columns;
     }
 
     private static void setupSessionAndRequest(int userId) {

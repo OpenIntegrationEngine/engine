@@ -39,14 +39,6 @@
       ]
     },
     {
-      "description": "Catch-all: bundle minor/patch of ungrouped deps; majors stay individual. Listed BEFORE the named groups so a family's own minor/patch is overridden back into its family group (Renovate merges rules, last match wins for groupName).",
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
-      "groupName": "all-minor-and-patch"
-    },
-    {
       "groupName": "aws-sdk",
       "matchPackageNames": [
         "software.amazon.awssdk:*",
@@ -56,33 +48,51 @@
     {
       "groupName": "jetty",
       "matchPackageNames": [
-        "org.eclipse.jetty*"
+        "org.eclipse.jetty:*"
+      ]
+    },
+    {
+      "groupName": "bouncycastle",
+      "matchPackageNames": [
+        "org.bouncycastle:*"
       ]
     },
     {
       "groupName": "jersey",
       "matchPackageNames": [
-        "org.glassfish.jersey*",
-        "org.glassfish.hk2*"
+        "org.glassfish.jersey:*",
+        "org.glassfish.hk2:*"
+      ]
+    },
+    {
+      "groupName": "pdfbox",
+      "matchPackageNames": [
+        "*pdfbox*"
+      ]
+    },
+    {
+      "groupName": "sun-xml",
+      "matchPackageNames": [
+        "com.sun.xml:*"
       ]
     },
     {
       "groupName": "jackson",
       "matchPackageNames": [
-        "com.fasterxml.jackson*"
+        "com.fasterxml.jackson:*"
       ]
     },
     {
       "groupName": "netty",
       "matchPackageNames": [
-        "io.netty*",
-        "com.typesafe.netty*"
+        "io.netty:*",
+        "com.typesafe.netty:*"
       ]
     },
     {
       "groupName": "log4j",
       "matchPackageNames": [
-        "org.apache.logging.log4j*"
+        "org.apache.logging.log4j:*"
       ]
     },
     {
@@ -95,8 +105,8 @@
     {
       "groupName": "test-tooling",
       "matchPackageNames": [
-        "org.mockito*",
-        "net.bytebuddy*",
+        "org.mockito:*",
+        "net.bytebuddy:*",
         "org.objenesis:*",
         "org.hamcrest:*",
         "junit:*"

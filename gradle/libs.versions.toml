@@ -154,7 +154,7 @@ miglayout-swing = { module = "com.miglayout:miglayout-swing", version = "4.2" }
 mimepull = { module = "org.jvnet.mimepull:mimepull", version = "1.9.7" }
 mockito-core = { module = "org.mockito:mockito-core", version = "5.1.1" }
 mockito-inline = { module = "org.mockito:mockito-inline", version = "5.1.1" }
-mssql-jdbc = { module = "com.microsoft.sqlserver:mssql-jdbc", version = "8.4.1.jre8" }
+mssql-jdbc = { module = "com.microsoft.sqlserver:mssql-jdbc", version = "10.2.4.jre11" }
 mybatis = { module = "org.mybatis:mybatis", version = "3.1.1" }
 mysql-connector-j = { module = "com.mysql:mysql-connector-j", version = "8.4.0" }
 netty-buffer = { module = "io.netty:netty-buffer", version = "4.1.119.Final" }

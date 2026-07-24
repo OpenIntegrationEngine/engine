@@ -144,7 +144,7 @@ junit-v4-13-1 = { module = "junit:junit", version = "4.13.1" }
 kms = { module = "software.amazon.awssdk:kms", version = "2.15.28" }
 libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version = "8.12.50" }
 listenablefuture = { module = "com.google.guava:listenablefuture", version = "9999.0-empty-to-avoid-conflict-with-guava" }
-log4j-1-2-api = { module = "org.apache.logging.log4j:log4j-1.2-api", version = "2.25.3" }
+log4j-1-2-api = { module = "org.apache.logging.log4j:log4j-1.2-api", version = "2.25.4" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version = "2.25.3" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version = "2.25.3" }
 management-api = { module = "org.glassfish.external:management-api", version = "3.2.1-b001" }

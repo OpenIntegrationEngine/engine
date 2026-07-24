@@ -215,7 +215,7 @@ xmpbox = { module = "org.apache.pdfbox:xmpbox", version = "2.0.24" }
 xpp3 = { module = "xpp3:xpp3", version = "1.1.4c" }
 xstream = { module = "com.thoughtworks.xstream:xstream", version = "1.4.20" }
 jsch = { module = "com.github.mwiede:jsch", version = "2.27.7" }
-postgresql = { module = "org.postgresql:postgresql", version = "42.7.8" }
+postgresql = { module = "org.postgresql:postgresql", version = "42.7.12" }
 snakeyaml = { module = "org.yaml:snakeyaml", version = "2.5" }
 
 [bundles]

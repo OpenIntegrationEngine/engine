@@ -55,7 +55,7 @@ public final class MetaDataColumnValidator {
         Set<String> allowedColumns = new HashSet<String>();
         if (definedColumns != null) {
             for (MetaDataColumn column : definedColumns) {
-                if (column.getName() != null) {
+                if (column != null && column.getName() != null) {
                     allowedColumns.add(column.getName());
                 }
             }
@@ -63,6 +63,9 @@ public final class MetaDataColumnValidator {
 
         if (hasMetaDataSearch) {
             for (MetaDataSearchElement element : filter.getMetaDataSearch()) {
+                if (element == null) {
+                    return "null";
+                }
                 if (element.getColumnName() == null || !allowedColumns.contains(element.getColumnName())) {
                     return String.valueOf(element.getColumnName());
                 }

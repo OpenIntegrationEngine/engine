@@ -63,6 +63,7 @@ import com.mirth.connect.server.mybatis.MessageTextResult;
 import com.mirth.connect.server.util.DICOMMessageUtil;
 import com.mirth.connect.server.util.ListRangeIterator;
 import com.mirth.connect.server.util.ListRangeIterator.ListRangeItem;
+import com.mirth.connect.server.util.MetaDataColumnException;
 import com.mirth.connect.server.util.MetaDataColumnValidator;
 import com.mirth.connect.server.util.SqlConfig;
 import com.mirth.connect.util.AttachmentUtil;
@@ -148,7 +149,6 @@ public class DonkeyMessageController extends MessageController {
 
     @Override
     public Long getMessageCount(MessageFilter filter, String channelId) {
-        validateMetaDataColumns(channelId, filter);
         if (filter.getIncludedMetaDataIds() != null && filter.getIncludedMetaDataIds().isEmpty() && filter.getExcludedMetaDataIds() == null) {
             return 0L;
         }
@@ -192,7 +192,6 @@ public class DonkeyMessageController extends MessageController {
 
     @Override
     public List<Message> getMessages(MessageFilter filter, String channelId, Boolean includeContent, Integer offset, Integer limit) {
-        validateMetaDataColumns(channelId, filter);
         // Provide a default value if any of the below 3 parameters are null.
         includeContent = includeContent == null ? false : includeContent;
         offset = offset == null ? 0 : offset;
@@ -298,7 +297,6 @@ public class DonkeyMessageController extends MessageController {
 
     @Override
     public void removeMessages(String channelId, MessageFilter filter) {
-        validateMetaDataColumns(channelId, filter);
         EngineController engineController = ControllerFactory.getFactory().createEngineController();
 
         FilterOptions filterOptions = new FilterOptions(filter, channelId, false);
@@ -345,7 +343,6 @@ public class DonkeyMessageController extends MessageController {
     }
 
     public void reprocessMessages(String channelId, MessageFilter filter, boolean replace, Collection<Integer> reprocessMetaDataIds) throws ControllerException {
-        validateMetaDataColumns(channelId, filter);
         EngineController engineController = ControllerFactory.getFactory().createEngineController();
         Channel deployedChannel = engineController.getDeployedChannel(channelId);
         if (deployedChannel == null) {
@@ -682,17 +679,20 @@ public class DonkeyMessageController extends MessageController {
     }
 
     /**
-     * Last-resort backstop against SQL injection through custom metadata column names. The primary
-     * check runs at the REST boundary (MessageServlet), but a caller that reaches this controller
-     * directly - notably an external plugin using MessageController.getInstance() - bypasses it. The
-     * search mappers interpolate these column names into SQL as identifiers, so an undefined column
-     * must never reach them. This throws (rather than returning a 400) because reaching it means a
-     * caller skipped the proper gate, which is a programming error.
+     * Validation gate against SQL injection through custom metadata column names, which the search
+     * mappers interpolate into SQL as identifiers (MyBatis ${} substitution). It is called from the
+     * FilterOptions constructor, which every message search path (get, count, remove, reprocess;
+     * export runs through get) builds exactly once, before its batch loop. That is the single choke
+     * point through which a search must pass, so a new search entry point cannot bypass the check.
+     * Throws MetaDataColumnException, a plain domain exception left to bubble up: on the synchronous
+     * API paths the engine turns it into a 500 like any other uncaught controller exception, and the
+     * asynchronous reprocess path catches it to log and abort the run. The injection is blocked
+     * regardless of the resulting status, because the throw happens before any query runs.
      */
     private void validateMetaDataColumns(String channelId, MessageFilter filter) {
         String unknownColumn = MetaDataColumnValidator.findUnknownColumn(filter, () -> ControllerFactory.getFactory().createChannelController().getMetaDataColumns(channelId));
         if (unknownColumn != null) {
-            throw new IllegalArgumentException("Message search referenced a metadata column that is not defined on channel " + channelId + ": " + unknownColumn);
+            throw new MetaDataColumnException(channelId, unknownColumn);
         }
     }
 
@@ -1168,6 +1168,8 @@ public class DonkeyMessageController extends MessageController {
         private boolean searchText;
 
         public FilterOptions(MessageFilter filter, String channelId, boolean readOnly) {
+            validateMetaDataColumns(channelId, filter);
+
             if (filter.getMinMessageId() != null && filter.getMaxMessageId() != null && filter.getMinMessageId() > filter.getMaxMessageId()) {
                 /*
                  * If the min message id is greater than the max, use them directly so they fail at

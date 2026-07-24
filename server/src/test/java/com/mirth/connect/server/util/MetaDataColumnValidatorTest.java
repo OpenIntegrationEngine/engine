@@ -109,4 +109,28 @@ public class MetaDataColumnValidatorTest {
 
         assertEquals("STATUS", MetaDataColumnValidator.findUnknownColumn(filter, () -> null));
     }
+
+    @Test
+    public void nullSearchElementIsRejectedNotThrown() {
+        MessageFilter filter = new MessageFilter();
+        List<MetaDataSearchElement> elements = new ArrayList<MetaDataSearchElement>();
+        elements.add(null);
+        filter.setMetaDataSearch(elements);
+
+        // A null element in the list must be treated as unknown (returned), never an NPE.
+        assertEquals("null", MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
+    }
+
+    @Test
+    public void nullDefinedColumnEntryIsIgnoredNotThrown() {
+        MessageFilter filter = new MessageFilter();
+        filter.setMetaDataSearch(Arrays.asList(new MetaDataSearchElement("STATUS", "EQUAL", "x", false)));
+
+        List<MetaDataColumn> columns = new ArrayList<MetaDataColumn>();
+        columns.add(null);
+        columns.add(new MetaDataColumn("STATUS", MetaDataColumnType.STRING, null));
+
+        // A null entry in the channel's columns must be skipped, not cause an NPE; STATUS still validates.
+        assertNull(MetaDataColumnValidator.findUnknownColumn(filter, () -> columns));
+    }
 }

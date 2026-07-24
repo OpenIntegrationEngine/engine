@@ -32,7 +32,7 @@ commons-codec = { module = "commons-codec:commons-codec", version = "1.21.0" }
 commons-collections = { module = "commons-collections:commons-collections", version = "3.2.2" }
 commons-collections4 = { module = "org.apache.commons:commons-collections4", version = "4.4" }
 commons-compress = { module = "org.apache.commons:commons-compress", version = "1.28.0" }
-commons-configuration2 = { module = "org.apache.commons:commons-configuration2", version = "2.13.0" }
+commons-configuration2 = { module = "org.apache.commons:commons-configuration2", version = "2.15.0" }
 commons-dbcp2 = { module = "org.apache.commons:commons-dbcp2", version = "2.0.1" }
 commons-dbutils = { module = "commons-dbutils:commons-dbutils", version = "1.7" }
 commons-digester3 = { module = "org.apache.commons:commons-digester3", version = "3.2" }

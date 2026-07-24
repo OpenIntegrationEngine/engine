@@ -158,7 +158,7 @@ mssql-jdbc = { module = "com.microsoft.sqlserver:mssql-jdbc", version = "10.2.4.
 mybatis = { module = "org.mybatis:mybatis", version = "3.1.1" }
 mysql-connector-j = { module = "com.mysql:mysql-connector-j", version = "8.4.0" }
 netty-buffer = { module = "io.netty:netty-buffer", version = "4.1.119.Final" }
-netty-codec = { module = "io.netty:netty-codec", version = "4.1.119.Final" }
+netty-codec = { module = "io.netty:netty-codec", version = "4.1.136.Final" }
 netty-codec-http = { module = "io.netty:netty-codec-http", version = "4.1.119.Final" }
 netty-codec-http2 = { module = "io.netty:netty-codec-http2", version = "4.1.119.Final" }
 netty-common = { module = "io.netty:netty-common", version = "4.1.119.Final" }

@@ -1,0 +1,106 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "schedule": [
+    "before 6am on the first day of the month"
+  ],
+  "timezone": "America/New_York",
+  "minimumReleaseAge": "2 days",
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 2,
+  "automerge": false,
+  "major": {
+    "dependencyDashboardApproval": true
+  },
+  "dependencyDashboard": true,
+  "semanticCommits": "enabled",
+  "labels": [
+    "dependencies"
+  ],
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "description": "Ecosystem labels",
+      "matchManagers": [
+        "gradle"
+      ],
+      "addLabels": [
+        "java"
+      ]
+    },
+    {
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "addLabels": [
+        "docker"
+      ]
+    },
+    {
+      "description": "Catch-all: bundle minor/patch of ungrouped deps; majors stay individual. Listed BEFORE the named groups so a family's own minor/patch is overridden back into its family group (Renovate merges rules, last match wins for groupName).",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "all-minor-and-patch"
+    },
+    {
+      "groupName": "aws-sdk",
+      "matchPackageNames": [
+        "software.amazon.awssdk:*",
+        "software.amazon.eventstream:*"
+      ]
+    },
+    {
+      "groupName": "jetty",
+      "matchPackageNames": [
+        "org.eclipse.jetty*"
+      ]
+    },
+    {
+      "groupName": "jersey",
+      "matchPackageNames": [
+        "org.glassfish.jersey*",
+        "org.glassfish.hk2*"
+      ]
+    },
+    {
+      "groupName": "jackson",
+      "matchPackageNames": [
+        "com.fasterxml.jackson*"
+      ]
+    },
+    {
+      "groupName": "netty",
+      "matchPackageNames": [
+        "io.netty*",
+        "com.typesafe.netty*"
+      ]
+    },
+    {
+      "groupName": "log4j",
+      "matchPackageNames": [
+        "org.apache.logging.log4j*"
+      ]
+    },
+    {
+      "groupName": "apache-commons",
+      "matchPackageNames": [
+        "org.apache.commons:*",
+        "commons-*"
+      ]
+    },
+    {
+      "groupName": "test-tooling",
+      "matchPackageNames": [
+        "org.mockito*",
+        "net.bytebuddy*",
+        "org.objenesis:*",
+        "org.hamcrest:*",
+        "junit:*"
+      ]
+    }
+  ]
+}

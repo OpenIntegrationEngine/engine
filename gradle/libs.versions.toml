@@ -185,7 +185,7 @@ quartz = { module = "org.quartz-scheduler:quartz", version = "2.3.2" }
 reactive-streams = { module = "org.reactivestreams:reactive-streams", version = "1.0.3" }
 reflections = { module = "org.reflections:reflections", version = "0.9.10" }
 regions = { module = "software.amazon.awssdk:regions", version = "2.15.28" }
-rhino = { module = "org.mozilla:rhino", version = "1.7.13" }
+rhino = { module = "org.mozilla:rhino", version = "1.7.14.1" }
 s3 = { module = "software.amazon.awssdk:s3", version = "2.15.28" }
 saaj-impl = { module = "com.sun.xml.messaging.saaj:saaj-impl", version = "1.4.0" }
 sdk-core = { module = "software.amazon.awssdk:sdk-core", version = "2.15.28" }

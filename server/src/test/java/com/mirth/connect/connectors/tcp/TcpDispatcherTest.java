@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
@@ -52,6 +53,9 @@ public class TcpDispatcherTest {
 	private static final String CONNECTOR_MAP_SUCCESSFUL_SENDS_KEY = "successfulSends";
 	private static final String CONNECTOR_MAP_ALL_RESPONSES_KEY = "allResponses";
 	private static final boolean PRINT_DEBUG_MESSAGES = false;
+	private static final long SOCKET_CONNECT_TIMEOUT_SECONDS = 5;
+	private static final int RESPONSE_TIMEOUT_MILLIS = 100;
+	private static final int LATE_RESPONSE_DELAY_MILLIS = 200;
 	
 	private static AtomicInteger incrementingPort = new AtomicInteger(9000);
 	private static AtomicInteger incrementingSocketListenerId = new AtomicInteger(0);
@@ -96,7 +100,6 @@ public class TcpDispatcherTest {
 			dispatcher.stop();
 			log("Undeploying TCP Dispatcher...");
 			dispatcher.onUndeploy();
-			Thread.sleep(3000);
 		}
 	}
 	
@@ -120,7 +123,18 @@ public class TcpDispatcherTest {
 		dispatcher.onDeploy();
 		log("Starting TCP Dispatcher...");
 		dispatcher.start();
-		Thread.sleep(1000);
+	}
+
+	private void startSocketListener(SocketThread socketListenerThread) throws InterruptedException {
+		socketListenerThread.start();
+	}
+
+	private void awaitServerConnections(int expectedConnections) throws InterruptedException {
+		long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(SOCKET_CONNECT_TIMEOUT_SECONDS);
+		while (((TestTcpDispatcher) dispatcher).getServerModeSocketCount() != expectedConnections && System.nanoTime() < deadline) {
+			Thread.sleep(10);
+		}
+		assertEquals(expectedConnections, ((TestTcpDispatcher) dispatcher).getServerModeSocketCount());
 	}
 	
 	private TcpDispatcherProperties createTcpDispatcherProperties() throws IOException {
@@ -168,9 +182,8 @@ public class TcpDispatcherTest {
 		Map<String, String> socketResult = new ConcurrentHashMap<>();
 
 		int socketListenerId = getNextSocketListenerId();
-		createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0).start();
-		
-		Thread.sleep(1000);
+		startSocketListener(createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0));
+		awaitServerConnections(1);
 		log("Sending message...");
         dispatcher.send(dispatcherProps, new ConnectorMessage(TEST_CHANNEL_ID, TEST_CHANNEL_NAME, 1L, 1, TEST_SERVER_ID, Calendar.getInstance(), Status.PENDING));
         
@@ -192,9 +205,8 @@ public class TcpDispatcherTest {
 		Map<String, String> socketResult = new ConcurrentHashMap<>();
 
 		int socketListenerId = getNextSocketListenerId();
-		createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0).start();
-		
-		Thread.sleep(1000);
+		startSocketListener(createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0));
+		awaitServerConnections(1);
 		log("Sending message...");
         dispatcher.send(dispatcherProps, new ConnectorMessage(TEST_CHANNEL_ID, TEST_CHANNEL_NAME, 1L, 1, TEST_SERVER_ID, Calendar.getInstance(), Status.PENDING));
         
@@ -219,9 +231,9 @@ public class TcpDispatcherTest {
 		for (int i = 0; i < 3; i++) {
 			int socketListenerId = getNextSocketListenerId();
 			socketListenerIds.add(socketListenerId);
-			createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0).start();
+			startSocketListener(createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0));
 		}
-		Thread.sleep(1000);
+		awaitServerConnections(3);
 		
 		log("Sending message...");
         dispatcher.send(dispatcherProps, new ConnectorMessage(TEST_CHANNEL_ID, TEST_CHANNEL_NAME, 1L, 1, TEST_SERVER_ID, Calendar.getInstance(), Status.PENDING));
@@ -249,9 +261,9 @@ public class TcpDispatcherTest {
 		for (int i = 0; i < 3; i++) {
 			int socketListenerId = getNextSocketListenerId();
 			socketListenerIds.add(socketListenerId);
-			createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0).start();
+			startSocketListener(createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0));
 		}
-		Thread.sleep(1000);
+		awaitServerConnections(3);
 		
 		log("Sending message...");
         dispatcher.send(dispatcherProps, new ConnectorMessage(TEST_CHANNEL_ID, TEST_CHANNEL_NAME, 1L, 1, TEST_SERVER_ID, Calendar.getInstance(), Status.PENDING));
@@ -283,9 +295,9 @@ public class TcpDispatcherTest {
 			int socketListenerId = getNextSocketListenerId();
 			SocketThread socketListenerThread = createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0);
 			socketListeners.put(socketListenerId, socketListenerThread);
-			socketListenerThread.start();
+			startSocketListener(socketListenerThread);
 		}
-		Thread.sleep(1000);
+		awaitServerConnections(3);
 		
 		Iterator<Entry<Integer, SocketThread>> iter = socketListeners.entrySet().iterator();
 		SocketThread socketListenerThread = iter.next().getValue();
@@ -330,9 +342,9 @@ public class TcpDispatcherTest {
 			int socketListenerId = getNextSocketListenerId();
 			SocketThread socketListenerThread = createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0);
 			socketListeners.put(socketListenerId, socketListenerThread);
-			socketListenerThread.start();
+			startSocketListener(socketListenerThread);
 		}
-		Thread.sleep(1000);
+		awaitServerConnections(3);
 		
 		Iterator<Entry<Integer, SocketThread>> iter = socketListeners.entrySet().iterator();
 		SocketThread socketListenerThread = iter.next().getValue();
@@ -380,9 +392,9 @@ public class TcpDispatcherTest {
 			int socketListenerId = getNextSocketListenerId();
 			SocketThread socketListenerThread = createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0);
 			socketListeners.put(socketListenerId, socketListenerThread);
-			socketListenerThread.start();
+			startSocketListener(socketListenerThread);
 		}
-		Thread.sleep(1000);
+		awaitServerConnections(1);
 		
 		log("Sending message...");
 		ConnectorMessage message = new ConnectorMessage(TEST_CHANNEL_ID, TEST_CHANNEL_NAME, 1L, 1, TEST_SERVER_ID, Calendar.getInstance(), Status.PENDING);
@@ -440,9 +452,9 @@ public class TcpDispatcherTest {
 			int socketListenerId = getNextSocketListenerId();
 			SocketThread socketListenerThread = createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0);
 			socketListeners.put(socketListenerId, socketListenerThread);
-			socketListenerThread.start();
+			startSocketListener(socketListenerThread);
 		}
-		Thread.sleep(1000);
+		awaitServerConnections(3);
 		
 		for (SocketThread thread : socketListeners.values()) {
 			thread.closeSocket();
@@ -484,9 +496,9 @@ public class TcpDispatcherTest {
 			int socketListenerId = getNextSocketListenerId();
 			SocketThread socketListenerThread = createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0);
 			socketListeners.put(socketListenerId, socketListenerThread);
-			socketListenerThread.start();
+			startSocketListener(socketListenerThread);
 		}
-		Thread.sleep(1000);
+		awaitServerConnections(3);
 		
 		for (SocketThread thread : socketListeners.values()) {
 			thread.closeSocket();
@@ -522,14 +534,13 @@ public class TcpDispatcherTest {
 	public void testQueueOnResponseTimeout() throws Exception {
 		TcpDispatcherProperties props = createTcpDispatcherProperties();
 		props.setQueueOnResponseTimeout(true);
-		props.setResponseTimeout("1000");
+		props.setResponseTimeout(String.valueOf(RESPONSE_TIMEOUT_MILLIS));
 		setupDispatcher(props);
 		Map<String, String> socketResult = new ConcurrentHashMap<>();
 
 		int socketListenerId = getNextSocketListenerId();
-		createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, false, 2000).start();
-		
-		Thread.sleep(1000);
+		startSocketListener(createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, false, LATE_RESPONSE_DELAY_MILLIS));
+		awaitServerConnections(1);
 		log("Sending message...");
 		ConnectorMessage message = new ConnectorMessage(TEST_CHANNEL_ID, TEST_CHANNEL_NAME, 1L, 1, TEST_SERVER_ID, Calendar.getInstance(), Status.PENDING);
         Response response = dispatcher.send(dispatcherProps, message);
@@ -554,14 +565,13 @@ public class TcpDispatcherTest {
 	public void testQueueOnResponseTimeoutIsFalse() throws Exception {
 		TcpDispatcherProperties props = createTcpDispatcherProperties();
 		props.setQueueOnResponseTimeout(false);
-		props.setResponseTimeout("1000");
+		props.setResponseTimeout(String.valueOf(RESPONSE_TIMEOUT_MILLIS));
 		setupDispatcher(props);
 		Map<String, String> socketResult = new ConcurrentHashMap<>();
 
 		int socketListenerId = getNextSocketListenerId();
-		createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, false, 2000).start();
-		
-		Thread.sleep(1000);
+		startSocketListener(createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, false, LATE_RESPONSE_DELAY_MILLIS));
+		awaitServerConnections(1);
 		log("Sending message...");
 		ConnectorMessage message = new ConnectorMessage(TEST_CHANNEL_ID, TEST_CHANNEL_NAME, 1L, 1, TEST_SERVER_ID, Calendar.getInstance(), Status.PENDING);
         Response response = dispatcher.send(dispatcherProps, message);
@@ -589,7 +599,7 @@ public class TcpDispatcherTest {
 	public void testWhenSendToOneOfMultipleClientsErrors() throws Exception {
 		TcpDispatcherProperties props = createTcpDispatcherProperties();
 		props.setQueueOnResponseTimeout(false);
-		props.setResponseTimeout("1000");
+		props.setResponseTimeout(String.valueOf(RESPONSE_TIMEOUT_MILLIS));
 		setupDispatcher(props);
 		Map<String, String> socketResult = new ConcurrentHashMap<>();
 		
@@ -599,15 +609,15 @@ public class TcpDispatcherTest {
 			int socketListenerId = getNextSocketListenerId();
 			SocketThread socketListenerThread = createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 0);
 			socketListeners.put(socketListenerId, socketListenerThread);
-			socketListenerThread.start();
+			startSocketListener(socketListenerThread);
 		}
 		
 		// Create a socket that will cause a timeout before it sends a response
 		int socketListenerId = getNextSocketListenerId();
-		SocketThread socketListenerThread = createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, 2000);
+		SocketThread socketListenerThread = createSocketListenerThread(socketListenerId, socketResult, dispatcherProps, true, LATE_RESPONSE_DELAY_MILLIS);
 		socketListeners.put(socketListenerId, socketListenerThread);
-		socketListenerThread.start();
-		Thread.sleep(1000);
+		startSocketListener(socketListenerThread);
+		awaitServerConnections(3);
 		
 		log("Sending message...");
 		ConnectorMessage message = new ConnectorMessage(TEST_CHANNEL_ID, TEST_CHANNEL_NAME, 1L, 1, TEST_SERVER_ID, Calendar.getInstance(), Status.PENDING);
@@ -660,7 +670,7 @@ public class TcpDispatcherTest {
 	@Test
 	public void testServerSocketUnknownHost(){
 		TcpDispatcherProperties props = new TcpDispatcherProperties();
-		props.setLocalAddress("111.1.1.1");
+		props.setLocalAddress("256.256.256.256");
 		props.setLocalPort("6666");
 		props.setServerMode(true);
 		
@@ -743,13 +753,14 @@ public class TcpDispatcherTest {
 				logError("Error closing socket: " + e.getMessage());
 			}
 		}
-		
+
 		@Override
 		public void run() {
 			try {
 				socket = SocketUtil.createSocket(new DefaultTcpConfiguration());
 				socket.setKeepAlive(false);
 				socket.setSoLinger(false, 0);
+				socket.setTcpNoDelay(true);
 				SocketUtil.connectSocket(socket, "127.0.0.1", Integer.parseInt(dispatcherProps.getLocalPort()), 0);
 				log("Client socket created with remote port: " + socket.getPort() + " and local port: " + socket.getLocalPort());
 				

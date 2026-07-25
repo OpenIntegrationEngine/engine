@@ -538,6 +538,7 @@ def stageSetup = tasks.register('stageSetup') {
               ':command:writeArtifactInventory'
     outputs.upToDateWhen { false }
     doLast {
+        project.delete('setup/appdata')
         ['conf', 'extensions', 'public_html', 'public_api_html', 'server-lib', 'client-lib',
          'cli-lib', 'logs', 'docs', 'server-launcher-lib'].each { file("setup/${it}").mkdirs() }
 

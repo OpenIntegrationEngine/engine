@@ -28,6 +28,16 @@ import org.apache.commons.configuration2.reloading.PeriodicReloadingTrigger;
 
 public class PropertiesConfigurationUtil {
 
+    /**
+     * How long the reloading detector waits before it will stat the file again. This matches the
+     * default used by FileHandlerReloadingDetector.
+     */
+    private static final long DEFAULT_RELOADING_REFRESH_DELAY_MILLIS = 5000;
+
+    /** How often the periodic trigger asks the reloading controller to check for changes. */
+    private static final long DEFAULT_RELOAD_TRIGGER_PERIOD = 1;
+    private static final TimeUnit DEFAULT_RELOAD_TRIGGER_PERIOD_UNIT = TimeUnit.SECONDS;
+
     public static FileBasedConfigurationBuilder<PropertiesConfiguration> createBuilder() {
         return new Configurations().propertiesBuilder(getDefaultParameters());
     }
@@ -66,7 +76,11 @@ public class PropertiesConfigurationUtil {
     }
     
     public static ReloadingFileBasedConfigurationBuilder<PropertiesConfiguration> createReloadingBuilder(File file, boolean commaDelimited) {
-    	PropertiesBuilderParameters params = getDefaultParameters().setFile(file);
+        return createReloadingBuilder(file, commaDelimited, DEFAULT_RELOADING_REFRESH_DELAY_MILLIS);
+    }
+
+    public static ReloadingFileBasedConfigurationBuilder<PropertiesConfiguration> createReloadingBuilder(File file, boolean commaDelimited, long reloadingRefreshDelayMillis) {
+    	PropertiesBuilderParameters params = getDefaultParameters().setFile(file).setReloadingRefreshDelay(reloadingRefreshDelayMillis);
     	if (commaDelimited) {
     		params.setListDelimiterHandler(new DefaultListDelimiterHandler(','));
     	}
@@ -74,7 +88,11 @@ public class PropertiesConfigurationUtil {
     }
 
     public static PeriodicReloadingTrigger createReloadTrigger(ReloadingFileBasedConfigurationBuilder<PropertiesConfiguration> builder) {
-        return new PeriodicReloadingTrigger(builder.getReloadingController(), null, 1, TimeUnit.SECONDS);
+        return createReloadTrigger(builder, DEFAULT_RELOAD_TRIGGER_PERIOD, DEFAULT_RELOAD_TRIGGER_PERIOD_UNIT);
+    }
+
+    public static PeriodicReloadingTrigger createReloadTrigger(ReloadingFileBasedConfigurationBuilder<PropertiesConfiguration> builder, long period, TimeUnit unit) {
+        return new PeriodicReloadingTrigger(builder.getReloadingController(), null, period, unit);
     }
 
     public static void saveTo(PropertiesConfiguration config, File file) throws ConfigurationException {

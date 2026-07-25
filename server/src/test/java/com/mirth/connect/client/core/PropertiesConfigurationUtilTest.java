@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
@@ -28,6 +29,16 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 public class PropertiesConfigurationUtilTest {
+
+    /*
+     * The production reload path is deliberately slow: a one second trigger period on top of the
+     * five second refresh delay that FileHandlerReloadingDetector defaults to. Driving both down to
+     * milliseconds keeps the reload behavior under test while removing seven seconds of sleeping.
+     */
+    private static final long RELOAD_REFRESH_DELAY_MILLIS = 10;
+    private static final long RELOAD_TRIGGER_PERIOD_MILLIS = 10;
+    private static final long RELOAD_TIMEOUT_MILLIS = 10000;
+    private static final long QUIET_PERIOD_MILLIS = 200;
 
     @Test
     public void testCreateBuilder1() throws Exception {
@@ -110,31 +121,49 @@ public class PropertiesConfigurationUtilTest {
         File file = new File(UUID.randomUUID().toString());
         file.createNewFile();
 
-        ReloadingFileBasedConfigurationBuilder<PropertiesConfiguration> builder = PropertiesConfigurationUtil.createReloadingBuilder(file);
+        ReloadingFileBasedConfigurationBuilder<PropertiesConfiguration> builder = PropertiesConfigurationUtil.createReloadingBuilder(file, false, RELOAD_REFRESH_DELAY_MILLIS);
 
         PropertiesConfiguration config = builder.getConfiguration();
         assertTrue(config.getListDelimiterHandler() == DisabledListDelimiterHandler.INSTANCE);
         assertFalse(config.getKeys().hasNext());
 
-        PeriodicReloadingTrigger trigger = PropertiesConfigurationUtil.createReloadTrigger(builder);
+        PeriodicReloadingTrigger trigger = PropertiesConfigurationUtil.createReloadTrigger(builder, RELOAD_TRIGGER_PERIOD_MILLIS, TimeUnit.MILLISECONDS);
         trigger.start();
 
-        Thread.sleep(2000);
-        config = builder.getConfiguration();
-        assertFalse(config.getKeys().hasNext());
+        try {
+            // The file is still empty, so many trigger cycles must not invent any content.
+            Thread.sleep(QUIET_PERIOD_MILLIS);
+            assertFalse(builder.getConfiguration().getKeys().hasNext());
 
-        FileUtils.writeStringToFile(file, getTestFile(), "UTF-8");
-        PropertiesConfiguration config2 = PropertiesConfigurationUtil.create(file);
-        verifyTestProperties(config2);
+            FileUtils.writeStringToFile(file, getTestFile(), "UTF-8");
+            PropertiesConfiguration config2 = PropertiesConfigurationUtil.create(file);
+            verifyTestProperties(config2);
 
-        Thread.sleep(5000);
-        config = builder.getConfiguration();
-        verifyTestProperties(config);
-
-        trigger.shutdown();
-        file.delete();
+            verifyTestProperties(awaitReloadedConfiguration(builder));
+        } finally {
+            trigger.shutdown();
+            file.delete();
+        }
     }
-    
+
+    /**
+     * Polls the builder until the trigger has picked up the changed file. The reload normally lands
+     * within a few trigger periods; the timeout only exists so a genuine failure reports as a failed
+     * assertion instead of hanging.
+     */
+    private static PropertiesConfiguration awaitReloadedConfiguration(ReloadingFileBasedConfigurationBuilder<PropertiesConfiguration> builder) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(RELOAD_TIMEOUT_MILLIS);
+        PropertiesConfiguration config = builder.getConfiguration();
+
+        while (!config.getKeys().hasNext() && System.nanoTime() < deadline) {
+            Thread.sleep(RELOAD_TRIGGER_PERIOD_MILLIS);
+            config = builder.getConfiguration();
+        }
+
+        assertTrue("Configuration was not reloaded after the file changed", config.getKeys().hasNext());
+        return config;
+    }
+
     @Test
     public void testCreateReloadingBuilderCommaDelimited() throws Exception {
         File file = new File(UUID.randomUUID().toString());

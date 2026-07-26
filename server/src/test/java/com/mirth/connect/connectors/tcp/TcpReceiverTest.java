@@ -113,40 +113,40 @@ public class TcpReceiverTest {
 	public void testServerSocketLocalHost1() throws Exception {
 		TcpReceiverProperties props = new TcpReceiverProperties();
 		props.getListenerConnectorProperties().setHost("127.0.0.1");
-		props.getListenerConnectorProperties().setPort("6666");
+		props.getListenerConnectorProperties().setPort("6667");
 		setupReceiver(props);
 		
 		assertEquals("127.0.0.1", receiver.getServerSocket().getInetAddress().getHostAddress());
-		assertEquals(6666, receiver.getServerSocket().getLocalPort());
+		assertEquals(6667, receiver.getServerSocket().getLocalPort());
 	}
 	
 	@Test
 	public void testServerSocketLocalHost2() throws Exception {
 		TcpReceiverProperties props = new TcpReceiverProperties();
 		props.getListenerConnectorProperties().setHost("localhost");
-		props.getListenerConnectorProperties().setPort("6666");
+		props.getListenerConnectorProperties().setPort("6667");
 		setupReceiver(props);
 		
 		assertEquals("localhost", receiver.getServerSocket().getInetAddress().getHostName());
-		assertEquals(6666, receiver.getServerSocket().getLocalPort());
+		assertEquals(6667, receiver.getServerSocket().getLocalPort());
 	}
 	
 	@Test
 	public void testServerSocketAllInterfaces() throws Exception {
 		TcpReceiverProperties props = new TcpReceiverProperties();
 		props.getListenerConnectorProperties().setHost("0.0.0.0");
-		props.getListenerConnectorProperties().setPort("6666");
+		props.getListenerConnectorProperties().setPort("6667");
 		setupReceiver(props);
 		
 		assertEquals("0.0.0.0", receiver.getServerSocket().getInetAddress().getHostAddress());
-		assertEquals(6666, receiver.getServerSocket().getLocalPort());
+		assertEquals(6667, receiver.getServerSocket().getLocalPort());
 	}
 	
 	@Test
 	public void testServerSocketUnknownHost(){
 		TcpReceiverProperties props = new TcpReceiverProperties();
 		props.getListenerConnectorProperties().setHost("111.1.1.1");
-		props.getListenerConnectorProperties().setPort("6666");
+		props.getListenerConnectorProperties().setPort("6667");
 		
 		boolean exceptionThrown = false;
 		try {

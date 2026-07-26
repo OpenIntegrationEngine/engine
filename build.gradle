@@ -264,6 +264,11 @@ subprojects {
         maxHeapSize = '2048m'
         jvmArgs '-Xshare:off'
         include '**/*Test.class'
+        /*
+         * Past ~4 forks the per-fork JVM startup cost (inflated by -Xshare:off above) outweighs the
+         * gain, since only a handful of classes take more than a second. Override with -PtestForks=N.
+         */
+        maxParallelForks = (project.findProperty('testForks') ?: Math.max(1, Math.min(4, Runtime.runtime.availableProcessors().intdiv(2)))) as int
     }
 
     if (rootProject.coverageEnabled) {

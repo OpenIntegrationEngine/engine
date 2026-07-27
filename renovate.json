@@ -11,6 +11,7 @@
   "prConcurrentLimit": 10,
   "prHourlyLimit": 2,
   "automerge": false,
+  "rebaseWhen": "conflicted",
   "major": {
     "dependencyDashboardApproval": true
   },

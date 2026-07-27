@@ -5,12 +5,12 @@ package com.mirth.connect.server.util;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -40,7 +40,7 @@ public class MetaDataColumnValidatorTest {
 
     @Test
     public void nullFilterReturnsNull() {
-        assertNull(MetaDataColumnValidator.findUnknownColumn(null, () -> definedColumns("STATUS")));
+        assertEquals(Optional.empty(), MetaDataColumnValidator.findUnknownColumn(null, () -> definedColumns("STATUS")));
     }
 
     @Test
@@ -48,7 +48,7 @@ public class MetaDataColumnValidatorTest {
         AtomicBoolean invoked = new AtomicBoolean(false);
         MessageFilter filter = new MessageFilter();
 
-        assertNull(MetaDataColumnValidator.findUnknownColumn(filter, supplier(definedColumns("STATUS"), invoked)));
+        assertEquals(Optional.empty(), MetaDataColumnValidator.findUnknownColumn(filter, supplier(definedColumns("STATUS"), invoked)));
         assertFalse("Channel columns must not be looked up when the filter references none", invoked.get());
     }
 
@@ -58,7 +58,7 @@ public class MetaDataColumnValidatorTest {
         MessageFilter filter = new MessageFilter();
         filter.setMetaDataSearch(Arrays.asList(new MetaDataSearchElement("STATUS", "EQUAL", "x", false)));
 
-        assertNull(MetaDataColumnValidator.findUnknownColumn(filter, supplier(definedColumns("STATUS"), invoked)));
+        assertEquals(Optional.empty(), MetaDataColumnValidator.findUnknownColumn(filter, supplier(definedColumns("STATUS"), invoked)));
         assertTrue("A referenced column must trigger the lookup", invoked.get());
     }
 
@@ -67,7 +67,7 @@ public class MetaDataColumnValidatorTest {
         MessageFilter filter = new MessageFilter();
         filter.setMetaDataSearch(Arrays.asList(new MetaDataSearchElement("EVIL\" OR '1'='1", "EQUAL", "x", false)));
 
-        assertEquals("EVIL\" OR '1'='1", MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
+        assertEquals(Optional.of("EVIL\" OR '1'='1"), MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
     }
 
     @Test
@@ -75,7 +75,7 @@ public class MetaDataColumnValidatorTest {
         MessageFilter filter = new MessageFilter();
         filter.setMetaDataSearch(Arrays.asList(new MetaDataSearchElement("status", "EQUAL", "x", false)));
 
-        assertEquals("status", MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
+        assertEquals(Optional.of("status"), MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
     }
 
     @Test
@@ -83,7 +83,7 @@ public class MetaDataColumnValidatorTest {
         MessageFilter filter = new MessageFilter();
         filter.setMetaDataSearch(Arrays.asList(new MetaDataSearchElement(null, "EQUAL", "x", false)));
 
-        assertEquals("null", MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
+        assertEquals(Optional.of("null"), MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
     }
 
     @Test
@@ -91,7 +91,7 @@ public class MetaDataColumnValidatorTest {
         MessageFilter filter = new MessageFilter();
         filter.setTextSearchMetaDataColumns(new ArrayList<String>(Arrays.asList("STATUS")));
 
-        assertNull(MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
+        assertEquals(Optional.empty(), MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
     }
 
     @Test
@@ -99,7 +99,7 @@ public class MetaDataColumnValidatorTest {
         MessageFilter filter = new MessageFilter();
         filter.setTextSearchMetaDataColumns(new ArrayList<String>(Arrays.asList("BOGUS")));
 
-        assertEquals("BOGUS", MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
+        assertEquals(Optional.of("BOGUS"), MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
     }
 
     @Test
@@ -107,7 +107,7 @@ public class MetaDataColumnValidatorTest {
         MessageFilter filter = new MessageFilter();
         filter.setMetaDataSearch(Arrays.asList(new MetaDataSearchElement("STATUS", "EQUAL", "x", false)));
 
-        assertEquals("STATUS", MetaDataColumnValidator.findUnknownColumn(filter, () -> null));
+        assertEquals(Optional.of("STATUS"), MetaDataColumnValidator.findUnknownColumn(filter, () -> null));
     }
 
     @Test
@@ -118,7 +118,7 @@ public class MetaDataColumnValidatorTest {
         filter.setMetaDataSearch(elements);
 
         // A null element in the list must be treated as unknown (returned), never an NPE.
-        assertEquals("null", MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
+        assertEquals(Optional.of("null"), MetaDataColumnValidator.findUnknownColumn(filter, () -> definedColumns("STATUS")));
     }
 
     @Test
@@ -131,6 +131,6 @@ public class MetaDataColumnValidatorTest {
         columns.add(new MetaDataColumn("STATUS", MetaDataColumnType.STRING, null));
 
         // A null entry in the channel's columns must be skipped, not cause an NPE; STATUS still validates.
-        assertNull(MetaDataColumnValidator.findUnknownColumn(filter, () -> columns));
+        assertEquals(Optional.empty(), MetaDataColumnValidator.findUnknownColumn(filter, () -> columns));
     }
 }

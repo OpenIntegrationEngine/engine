@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -690,9 +691,9 @@ public class DonkeyMessageController extends MessageController {
      * regardless of the resulting status, because the throw happens before any query runs.
      */
     private void validateMetaDataColumns(String channelId, MessageFilter filter) {
-        String unknownColumn = MetaDataColumnValidator.findUnknownColumn(filter, () -> ControllerFactory.getFactory().createChannelController().getMetaDataColumns(channelId));
-        if (unknownColumn != null) {
-            throw new MetaDataColumnException(channelId, unknownColumn);
+        Optional<String> unknownColumn = MetaDataColumnValidator.findUnknownColumn(filter, () -> ControllerFactory.getFactory().createChannelController().getMetaDataColumns(channelId));
+        if (unknownColumn.isPresent()) {
+            throw new MetaDataColumnException(channelId, unknownColumn.get());
         }
     }
 

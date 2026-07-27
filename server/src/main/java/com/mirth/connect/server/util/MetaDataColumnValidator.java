@@ -5,6 +5,7 @@ package com.mirth.connect.server.util;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -21,8 +22,8 @@ import com.mirth.connect.model.filters.elements.MetaDataSearchElement;
  *
  * <p>
  * This is a pure check: it never throws and never looks anything up. Callers pass in the channel's
- * defined columns and decide what to do with an unknown column - the REST layer returns 400, the
- * controller layer throws as a last-resort backstop for callers that bypass the REST layer.
+ * defined columns and decide what to do with an unknown column - the controller rejects the search
+ * by throwing a MetaDataColumnException before any query runs.
  * </p>
  */
 public final class MetaDataColumnValidator {
@@ -30,25 +31,32 @@ public final class MetaDataColumnValidator {
     private MetaDataColumnValidator() {}
 
     /**
-     * Returns the first metadata column name referenced by the filter that is not defined on the
-     * channel, or {@code null} if every referenced column is valid. Column names are matched exactly
-     * against the channel's (upper-cased) column names; a {@code null} referenced name is treated as
-     * unknown and returned as the string {@code "null"} so the result stays unambiguous.
+     * Finds the first metadata column name referenced by the filter that is not defined on the
+     * channel. Column names are matched exactly against the channel's (upper-cased) column names; a
+     * {@code null} referenced name is treated as unknown and reported as the string {@code "null"}.
      *
      * <p>
      * The defined columns are supplied lazily and are only requested when the filter actually
      * references a custom column, so a search that uses none costs no channel lookup.
      * </p>
+     *
+     * @param filter the message search filter to check; may be {@code null}, which validates
+     *            trivially
+     * @param definedColumnsSupplier supplies the channel's defined metadata columns; only invoked
+     *            when the filter references a custom column, and may return {@code null} for a
+     *            channel with no columns
+     * @return the first unknown column name referenced by the filter, or {@link Optional#empty()}
+     *         if every referenced column is defined on the channel
      */
-    public static String findUnknownColumn(MessageFilter filter, Supplier<List<MetaDataColumn>> definedColumnsSupplier) {
+    public static Optional<String> findUnknownColumn(MessageFilter filter, Supplier<List<MetaDataColumn>> definedColumnsSupplier) {
         if (filter == null) {
-            return null;
+            return Optional.empty();
         }
 
         boolean hasMetaDataSearch = CollectionUtils.isNotEmpty(filter.getMetaDataSearch());
         boolean hasTextSearchColumns = CollectionUtils.isNotEmpty(filter.getTextSearchMetaDataColumns());
         if (!hasMetaDataSearch && !hasTextSearchColumns) {
-            return null;
+            return Optional.empty();
         }
 
         List<MetaDataColumn> definedColumns = definedColumnsSupplier.get();
@@ -64,10 +72,10 @@ public final class MetaDataColumnValidator {
         if (hasMetaDataSearch) {
             for (MetaDataSearchElement element : filter.getMetaDataSearch()) {
                 if (element == null) {
-                    return "null";
+                    return Optional.of("null");
                 }
                 if (element.getColumnName() == null || !allowedColumns.contains(element.getColumnName())) {
-                    return String.valueOf(element.getColumnName());
+                    return Optional.of(String.valueOf(element.getColumnName()));
                 }
             }
         }
@@ -75,11 +83,11 @@ public final class MetaDataColumnValidator {
         if (hasTextSearchColumns) {
             for (String columnName : filter.getTextSearchMetaDataColumns()) {
                 if (columnName == null || !allowedColumns.contains(columnName)) {
-                    return String.valueOf(columnName);
+                    return Optional.of(String.valueOf(columnName));
                 }
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 }

@@ -7,7 +7,7 @@
     "before 6am on the first day of the month"
   ],
   "timezone": "America/New_York",
-  "minimumReleaseAge": "2 days",
+  "minimumReleaseAge": "14 days",
   "prConcurrentLimit": 10,
   "prHourlyLimit": 2,
   "automerge": false,

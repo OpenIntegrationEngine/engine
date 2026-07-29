@@ -104,7 +104,7 @@
     {
       "groupName": "test-tooling",
       "matchPackageNames": [
-        "org.mockito:",
+        "org.mockito*",
         "net.bytebuddy*",
         "org.objenesis:*",
         "org.hamcrest:*",

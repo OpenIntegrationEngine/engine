@@ -240,42 +240,42 @@ public class DefaultExtensionController extends ExtensionController {
                          */
                         servicePlugin.init(currentProperties);
                         servicePlugins.put(servicePlugin.getPluginPointName(), servicePlugin);
-                        serverPlugins.add(servicePlugin);
+                        addServerPlugin(servicePlugin);
                         logger.debug("sucessfully loaded server plugin: " + serverPlugin.getPluginPointName());
                     }
 
                     if (serverPlugin instanceof ChannelPlugin) {
                         ChannelPlugin channelPlugin = (ChannelPlugin) serverPlugin;
                         channelPlugins.put(channelPlugin.getPluginPointName(), channelPlugin);
-                        serverPlugins.add(channelPlugin);
+                        addServerPlugin(channelPlugin);
                         logger.debug("sucessfully loaded server channel plugin: " + serverPlugin.getPluginPointName());
                     }
 
                     if (serverPlugin instanceof CodeTemplateServerPlugin) {
                         CodeTemplateServerPlugin codeTemplateServerPlugin = (CodeTemplateServerPlugin) serverPlugin;
                         codeTemplateServerPlugins.put(codeTemplateServerPlugin.getPluginPointName(), codeTemplateServerPlugin);
-                        serverPlugins.add(codeTemplateServerPlugin);
+                        addServerPlugin(codeTemplateServerPlugin);
                         logger.debug("sucessfully loaded server code template plugin: " + serverPlugin.getPluginPointName());
                     }
 
                     if (serverPlugin instanceof DataTypeServerPlugin) {
                         DataTypeServerPlugin dataTypePlugin = (DataTypeServerPlugin) serverPlugin;
                         dataTypePlugins.put(dataTypePlugin.getPluginPointName(), dataTypePlugin);
-                        serverPlugins.add(dataTypePlugin);
+                        addServerPlugin(dataTypePlugin);
                         logger.debug("sucessfully loaded server data type plugin: " + serverPlugin.getPluginPointName());
                     }
 
                     if (serverPlugin instanceof ResourcePlugin) {
                         ResourcePlugin resourcePlugin = (ResourcePlugin) serverPlugin;
                         resourcePlugins.put(resourcePlugin.getPluginPointName(), resourcePlugin);
-                        serverPlugins.add(resourcePlugin);
+                        addServerPlugin(resourcePlugin);
                         logger.debug("Successfully loaded resource plugin: " + resourcePlugin.getPluginPointName());
                     }
 
                     if (serverPlugin instanceof TransmissionModeProvider) {
                         TransmissionModeProvider transmissionModeProvider = (TransmissionModeProvider) serverPlugin;
                         transmissionModeProviders.put(transmissionModeProvider.getPluginPointName(), transmissionModeProvider);
-                        serverPlugins.add(transmissionModeProvider);
+                        addServerPlugin(transmissionModeProvider);
                         logger.debug("Successfully loaded transmission mode provider plugin: " + transmissionModeProvider.getPluginPointName());
                     }
 
@@ -287,7 +287,7 @@ public class DefaultExtensionController extends ExtensionController {
                         }
 
                         this.authorizationPlugin = authorizationPlugin;
-                        serverPlugins.add(authorizationPlugin);
+                        addServerPlugin(authorizationPlugin);
                         logger.debug("sucessfully loaded server authorization plugin: " + serverPlugin.getPluginPointName());
                     }
 
@@ -299,7 +299,7 @@ public class DefaultExtensionController extends ExtensionController {
                         }
 
                         this.multiFactorAuthenticationPlugin = multiFactorAuthenticationPlugin;
-                        serverPlugins.add(multiFactorAuthenticationPlugin);
+                        addServerPlugin(multiFactorAuthenticationPlugin);
                         logger.debug("sucessfully loaded server multi-factor authentication plugin: " + serverPlugin.getPluginPointName());
                     }
                 } catch (Exception e) {
@@ -307,6 +307,32 @@ public class DefaultExtensionController extends ExtensionController {
                 }
             }
         }
+    }
+
+    /**
+     * Registers a plugin in the list used to start and stop all server plugins.
+     * <p>
+     * A single plugin class may implement more than one of the plugin type interfaces (for example
+     * both {@link ServicePlugin} and {@link ChannelPlugin}). Such a plugin is registered against
+     * each type it implements, so this method guards against adding the same instance more than
+     * once. Without the guard, {@link #startPlugins()} and {@link #stopPlugins()} would invoke
+     * {@link ServerPlugin#start()} and {@link ServerPlugin#stop()} once per implemented interface
+     * rather than once per plugin.
+     * <p>
+     * Instances are compared by identity on purpose. Two distinct plugin instances must both be
+     * registered even if the plugin class considers them equal.
+     * <p>
+     * Package private so it can be exercised directly by unit tests without going through the full
+     * extension loading process.
+     */
+    void addServerPlugin(ServerPlugin serverPlugin) {
+        for (ServerPlugin registeredPlugin : serverPlugins) {
+            if (registeredPlugin == serverPlugin) {
+                return;
+            }
+        }
+
+        serverPlugins.add(serverPlugin);
     }
 
     /* These are the maps for the different types of plugins */

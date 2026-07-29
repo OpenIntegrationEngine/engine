@@ -47,20 +47,20 @@
     {
       "groupName": "jetty",
       "matchPackageNames": [
-        "org.eclipse.jetty:*"
+        "org.eclipse.jetty*"
       ]
     },
     {
       "groupName": "bouncycastle",
       "matchPackageNames": [
-        "org.bouncycastle:*"
+        "org.bouncycastle*"
       ]
     },
     {
       "groupName": "jersey",
       "matchPackageNames": [
-        "org.glassfish.jersey:*",
-        "org.glassfish.hk2:*"
+        "org.glassfish.jersey*",
+        "org.glassfish.hk2*"
       ]
     },
     {
@@ -72,26 +72,26 @@
     {
       "groupName": "sun-xml",
       "matchPackageNames": [
-        "com.sun.xml:*"
+        "com.sun.xml*"
       ]
     },
     {
       "groupName": "jackson",
       "matchPackageNames": [
-        "com.fasterxml.jackson:*"
+        "com.fasterxml.jackson*"
       ]
     },
     {
       "groupName": "netty",
       "matchPackageNames": [
-        "io.netty:*",
-        "com.typesafe.netty:*"
+        "io.netty*",
+        "com.typesafe.netty*"
       ]
     },
     {
       "groupName": "log4j",
       "matchPackageNames": [
-        "org.apache.logging.log4j:*"
+        "org.apache.logging.log4j*"
       ]
     },
     {
@@ -104,8 +104,8 @@
     {
       "groupName": "test-tooling",
       "matchPackageNames": [
-        "org.mockito:*",
-        "net.bytebuddy:*",
+        "org.mockito:",
+        "net.bytebuddy*",
         "org.objenesis:*",
         "org.hamcrest:*",
         "junit:*"

@@ -25,6 +25,13 @@ import com.mirth.connect.donkey.util.DonkeyElement;
 import com.mirth.connect.donkey.util.purge.PurgeUtil;
 
 public class HttpReceiverProperties extends ConnectorProperties implements ListenerConnectorPropertiesInterface, SourceConnectorPropertiesInterface {
+    /**
+     * Jetty's own default for HttpConfiguration.setRequestHeaderSize. Channels saved before this
+     * property existed have no requestHeaderSize element, so the getter falls back to this and
+     * their behavior is unchanged.
+     */
+    public static final int DEFAULT_REQUEST_HEADER_SIZE = 8192;
+
     private ListenerConnectorProperties listenerConnectorProperties;
     private SourceConnectorProperties sourceConnectorProperties;
 
@@ -42,6 +49,7 @@ public class HttpReceiverProperties extends ConnectorProperties implements Liste
     private String charset;
     private String contextPath;
     private String timeout;
+    private String requestHeaderSize;
     private List<HttpStaticResource> staticResources;
 
     public HttpReceiverProperties() {
@@ -60,6 +68,7 @@ public class HttpReceiverProperties extends ConnectorProperties implements Liste
         this.charset = "UTF-8";
         this.contextPath = "";
         this.timeout = "30000";
+        this.requestHeaderSize = String.valueOf(DEFAULT_REQUEST_HEADER_SIZE);
         this.staticResources = new ArrayList<HttpStaticResource>();
         this.responseHeadersVariable = "";
         this.useResponseHeadersVariable = false;
@@ -177,6 +186,14 @@ public class HttpReceiverProperties extends ConnectorProperties implements Liste
         this.timeout = timeout;
     }
 
+    public String getRequestHeaderSize() {
+        return requestHeaderSize == null ? String.valueOf(DEFAULT_REQUEST_HEADER_SIZE) : requestHeaderSize;
+    }
+
+    public void setRequestHeaderSize(String requestHeaderSize) {
+        this.requestHeaderSize = requestHeaderSize;
+    }
+
     public List<HttpStaticResource> getStaticResources() {
         return staticResources;
     }
@@ -287,6 +304,7 @@ public class HttpReceiverProperties extends ConnectorProperties implements Liste
         purgedProperties.put("responseHeaderChars", responseHeaders.size());
         purgedProperties.put("charset", charset);
         purgedProperties.put("timeout", PurgeUtil.getNumericValue(timeout));
+        purgedProperties.put("requestHeaderSize", PurgeUtil.getNumericValue(getRequestHeaderSize()));
         return purgedProperties;
     }
 }

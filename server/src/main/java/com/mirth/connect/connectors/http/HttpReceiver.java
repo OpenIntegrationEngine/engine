@@ -130,6 +130,7 @@ public class HttpReceiver extends SourceConnector implements BinaryContentTypeRe
     private String host;
     private int port;
     private int timeout;
+    private int requestHeaderSize;
     private String[] binaryMimeTypesArray;
     private Pattern binaryMimeTypesRegex;
     private HttpAuthConnectorPluginProperties authProps;
@@ -201,6 +202,16 @@ public class HttpReceiver extends SourceConnector implements BinaryContentTypeRe
         host = replacer.replaceValues(getConnectorProperties().getListenerConnectorProperties().getHost(), channelId, channelName);
         port = NumberUtils.toInt(replacer.replaceValues(getConnectorProperties().getListenerConnectorProperties().getPort(), channelId, channelName));
         timeout = NumberUtils.toInt(replacer.replaceValues(getConnectorProperties().getTimeout(), channelId, channelName), 0);
+        requestHeaderSize = NumberUtils.toInt(replacer.replaceValues(getConnectorProperties().getRequestHeaderSize(), channelId, channelName), HttpReceiverProperties.DEFAULT_REQUEST_HEADER_SIZE);
+
+        /*
+         * Jetty treats a non-positive request header size as no limit at all, so a channel deployed
+         * with one would silently lose the header cap. The connector panel rejects those values, but
+         * a channel imported or pushed through the API never runs that check.
+         */
+        if (requestHeaderSize <= 0) {
+            requestHeaderSize = HttpReceiverProperties.DEFAULT_REQUEST_HEADER_SIZE;
+        }
 
         // Initialize contextPath to "" or its value after replacements
         String contextPath = (getConnectorProperties().getContextPath() == null ? "" : replacer.replaceValues(getConnectorProperties().getContextPath(), channelId, channelName)).trim();
@@ -837,6 +848,10 @@ public class HttpReceiver extends SourceConnector implements BinaryContentTypeRe
 
     public int getTimeout() {
         return timeout;
+    }
+
+    public int getRequestHeaderSize() {
+        return requestHeaderSize;
     }
 
     protected Map<String, List<String>> extractParameters(Request request) {

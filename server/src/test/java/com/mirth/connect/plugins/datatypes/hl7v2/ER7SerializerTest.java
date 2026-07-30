@@ -18,6 +18,8 @@ import com.mirth.connect.model.datatype.SerializerProperties;
 
 public class ER7SerializerTest {
 	private static final String XML_DECL = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+	private static final String MSH_ER7 = "MSH|^~\\&|A\r";
+	private static final String MSH_XML = "<MSH><MSH.1>|</MSH.1><MSH.2>^~\\&amp;</MSH.2><MSH.3><MSH.3.1>A</MSH.3.1></MSH.3></MSH>";
 
 	private static ER7Serializer serializer;
 
@@ -102,5 +104,42 @@ public class ER7SerializerTest {
 			assertTrue(e.getCause() instanceof SAXException);
 			assertEquals("Unable to parse message. It is NULL or too short. MSH", e.getCause().getMessage());
 		}
+	}
+
+	@Test
+	public void testToXMLWithConsecutiveRepetitionSeparators() throws Exception {
+		assertEquals(XML_DECL + "<HL7Message>" + MSH_XML + "<PID>"
+				+ "<PID.1><PID.1.1>a</PID.1.1></PID.1>"
+				+ "<PID.1></PID.1>"
+				+ "<PID.1><PID.1.1>b</PID.1.1></PID.1>"
+				+ "</PID></HL7Message>",
+				serializer.toXML(MSH_ER7 + "PID|a~~b"));
+	}
+
+	@Test
+	public void testToXMLWithTrailingRepetitionSeparator() throws Exception {
+		assertEquals(XML_DECL + "<HL7Message>" + MSH_XML + "<PID>"
+				+ "<PID.1><PID.1.1>a</PID.1.1></PID.1>"
+				+ "<PID.1></PID.1>"
+				+ "</PID></HL7Message>",
+				serializer.toXML(MSH_ER7 + "PID|a~"));
+	}
+
+	@Test
+	public void testToXMLWithTrailingEmptyFields() throws Exception {
+		assertEquals(XML_DECL + "<HL7Message>" + MSH_XML + "<PID>"
+				+ "<PID.1><PID.1.1>a</PID.1.1></PID.1>"
+				+ "<PID.2></PID.2>"
+				+ "<PID.3></PID.3>"
+				+ "</PID></HL7Message>",
+				serializer.toXML(MSH_ER7 + "PID|a||"));
+	}
+
+	@Test
+	public void testToXMLSkipsEmptySegments() throws Exception {
+		// StringUtils.split drops empty tokens, so a blank line between segments simply vanishes.
+		assertEquals(XML_DECL + "<HL7Message>" + MSH_XML
+				+ "<PID><PID.1><PID.1.1>1</PID.1.1></PID.1></PID></HL7Message>",
+				serializer.toXML("MSH|^~\\&|A\r\rPID|1"));
 	}
 }

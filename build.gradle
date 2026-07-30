@@ -45,7 +45,6 @@ plugins {
     // vulnerability scanning: ./gradlew dependencyCheckAggregate
     // (replaces the old standalone dependency-check.xml Ant entry point)
     id 'org.owasp.dependencycheck' version '12.2.2'
-    id "org.sonarqube" version "7.3.1.8318"
 }
 
 dependencyCheck {

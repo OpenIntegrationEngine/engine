@@ -1,21 +1,26 @@
 package com.mirth.connect.plugins.datatypes.hl7v2;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import com.mirth.connect.donkey.model.message.MessageSerializerException;
 import com.mirth.connect.model.datatype.SerializerProperties;
 
 public class ER7SerializerTest {
+	private static final String XML_DECL = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+
 	private static ER7Serializer serializer;
-	
+
 	@BeforeClass
 	public static void setupClass() throws Exception {
 		SerializerProperties serializerProperties = new SerializerProperties(new HL7v2SerializationProperties(), new HL7v2DeserializationProperties(), null);
@@ -52,5 +57,50 @@ public class ER7SerializerTest {
 		}
 		
 		assertFalse(exceptionThrown);
+	}
+
+	@Test
+	public void testToXMLWithCustomEncodingCharacters() throws Exception {
+		String er7 = "MSH#@%\\$#App1#Fac1\rPID#1#Smith@John";
+
+		assertEquals(XML_DECL + "<HL7Message><MSH><MSH.1>#</MSH.1><MSH.2>@%\\$</MSH.2>"
+				+ "<MSH.3><MSH.3.1>App1</MSH.3.1></MSH.3>"
+				+ "<MSH.4><MSH.4.1>Fac1</MSH.4.1></MSH.4></MSH>"
+				+ "<PID><PID.1><PID.1.1>1</PID.1.1></PID.1>"
+				+ "<PID.2><PID.2.1>Smith</PID.2.1><PID.2.2>John</PID.2.2></PID.2></PID></HL7Message>",
+				serializer.toXML(er7));
+	}
+
+	@Test
+	public void testToXMLWithHeaderOnlyAndNoTrailingFieldSeparator() throws Exception {
+		// Covers ER7Reader's nextDelimiter == -1 branch: MSH-2 runs to end of message.
+		assertEquals(XML_DECL + "<HL7Message><MSH><MSH.1>|</MSH.1><MSH.2>^~\\&amp;</MSH.2></MSH></HL7Message>",
+				serializer.toXML("MSH|^~\\&"));
+	}
+
+	@Test
+	public void testToXMLAppliesMirth1544FixupToNonHeaderFirstSegment() throws Exception {
+		/*
+		 * Characterization of ER7Reader's MIRTH-1544 fixup. The "^~&|" check is a positional
+		 * substring test that does not require a header segment, so it also fires on a Z-segment,
+		 * installing '&' as the subcomponent separator. Recorded as current behavior, not endorsed.
+		 */
+		assertEquals(XML_DECL + "<HL7Message><ZZZ>"
+				+ "<ZZZ.1><ZZZ.1.1></ZZZ.1.1><ZZZ.1.2></ZZZ.1.2></ZZZ.1>"
+				+ "<ZZZ.1><ZZZ.1.1><ZZZ.1.1.1></ZZZ.1.1.1><ZZZ.1.1.2></ZZZ.1.1.2></ZZZ.1.1></ZZZ.1>"
+				+ "<ZZZ.2><ZZZ.2.1><ZZZ.2.1.1>a</ZZZ.2.1.1><ZZZ.2.1.2>b</ZZZ.2.1.2></ZZZ.2.1></ZZZ.2>"
+				+ "</ZZZ></HL7Message>",
+				serializer.toXML("ZZZ|^~&|a&b"));
+	}
+
+	@Test
+	public void testToXMLRejectsMessageShorterThanSixCharacters() throws Exception {
+		try {
+			serializer.toXML("MSH");
+			fail("expected MessageSerializerException");
+		} catch (MessageSerializerException e) {
+			assertTrue(e.getCause() instanceof SAXException);
+			assertEquals("Unable to parse message. It is NULL or too short. MSH", e.getCause().getMessage());
+		}
 	}
 }

@@ -2,6 +2,7 @@ package com.mirth.connect.plugins.datatypes.hl7v2;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -29,6 +30,50 @@ public class ER7SerializerTest {
 		serializer = new ER7Serializer(serializerProperties);
 	}
 	
+	private static ER7Serializer serializerWith(boolean convertLineBreaks, String deserializationSegmentDelimiter) {
+		HL7v2SerializationProperties serializationProperties = new HL7v2SerializationProperties();
+		serializationProperties.setConvertLineBreaks(convertLineBreaks);
+
+		HL7v2DeserializationProperties deserializationProperties = new HL7v2DeserializationProperties();
+		deserializationProperties.setSegmentDelimiter(deserializationSegmentDelimiter);
+
+		return new ER7Serializer(new SerializerProperties(serializationProperties, deserializationProperties, null));
+	}
+
+	@Test
+	public void testTransformWithoutSerializingConvertsToOutboundDelimiter() throws Exception {
+		ER7Serializer inbound = serializerWith(true, "\\r");
+		ER7Serializer outbound = serializerWith(true, "\\n");
+
+		assertEquals("MSH|^~\\&|A\nPID|1", inbound.transformWithoutSerializing("MSH|^~\\&|A\rPID|1", outbound));
+	}
+
+	@Test
+	public void testTransformWithoutSerializingNormalizesMixedLineBreaks() throws Exception {
+		ER7Serializer serializer = serializerWith(true, "\\r");
+
+		assertEquals("MSH|^~\\&|A\rPID|1", serializer.transformWithoutSerializing("MSH|^~\\&|A\r\nPID|1", serializer));
+	}
+
+	@Test
+	public void testTransformWithoutSerializingStillConvertsWhenDelimitersMatch() throws Exception {
+		/*
+		 * convertLineBreaks is on, so the message goes through conversion and is returned even
+		 * though it is unchanged. Only the convertLineBreaks-off case short-circuits to null.
+		 */
+		ER7Serializer serializer = serializerWith(true, "\\r");
+
+		assertEquals("MSH|^~\\&|A\rPID|1", serializer.transformWithoutSerializing("MSH|^~\\&|A\rPID|1", serializer));
+	}
+
+	@Test
+	public void testTransformWithoutSerializingReturnsNullWhenNothingToDo() throws Exception {
+		ER7Serializer inbound = serializerWith(false, "\\r");
+		ER7Serializer outbound = serializerWith(true, "\\r");
+
+		assertNull(inbound.transformWithoutSerializing("MSH|^~\\&|A\rPID|1", outbound));
+	}
+
 	@Test
 	public void testFromXMLWithExternalDTD() throws Exception {
 		String xml = FileUtils.readFileToString(new File("tests/test-xxe-hl7-example.xml"), "UTF-8");

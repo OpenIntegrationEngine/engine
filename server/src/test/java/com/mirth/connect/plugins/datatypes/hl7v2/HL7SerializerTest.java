@@ -160,4 +160,18 @@ public class HL7SerializerTest {
         ER7Serializer serializer = new ER7Serializer(defaultProperties.getSerializerProperties());
         Assert.assertEquals(output, TestUtil.convertCRToCRLF(serializer.fromXML(input)));
     }
+
+    @Test
+    public void testRoundTripAllEr7Fixtures() throws Exception {
+        String[] fixtures = { "tests/test-hl7-input.txt", "tests/test-hl7-whitespace-input.txt",
+                "tests/test-hl7-subcomponents-input.txt", "tests/test-hl7-repetitions-input.txt",
+                "tests/test-hl7-batch-input.txt" };
+
+        for (String fixture : fixtures) {
+            String er7 = FileUtils.readFileToString(new File(fixture));
+            ER7Serializer serializer = new ER7Serializer(defaultProperties.getSerializerProperties());
+
+            Assert.assertEquals(fixture, TestUtil.normalizeLineEndings(er7), TestUtil.normalizeLineEndings(serializer.fromXML(serializer.toXML(er7))));
+        }
+    }
 }

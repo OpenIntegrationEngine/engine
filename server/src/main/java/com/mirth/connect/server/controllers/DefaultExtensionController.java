@@ -84,7 +84,14 @@ public class DefaultExtensionController extends ExtensionController {
 
     // these are plugins for specific extension points, keyed by plugin name
     // (not path)
-    private List<ServerPlugin> serverPlugins = new ArrayList<ServerPlugin>();
+    /*
+     * A plugin class may implement several of the plugin type interfaces, in which case it is
+     * registered once for each interface it implements. A Set holds a single entry per plugin,
+     * so start() and stop() are invoked once per plugin rather than once per interface.
+     * LinkedHashSet because initPlugins loads plugins in a deliberate order (by plugin weight)
+     * and that order is preserved when they are started and stopped.
+     */
+    private Set<ServerPlugin> serverPlugins = new LinkedHashSet<ServerPlugin>();
     private Map<String, ServicePlugin> servicePlugins = new LinkedHashMap<String, ServicePlugin>();
     private Map<String, ChannelPlugin> channelPlugins = new LinkedHashMap<String, ChannelPlugin>();
     private Map<String, CodeTemplateServerPlugin> codeTemplateServerPlugins = new LinkedHashMap<String, CodeTemplateServerPlugin>();
@@ -240,42 +247,42 @@ public class DefaultExtensionController extends ExtensionController {
                          */
                         servicePlugin.init(currentProperties);
                         servicePlugins.put(servicePlugin.getPluginPointName(), servicePlugin);
-                        addServerPlugin(servicePlugin);
+                        serverPlugins.add(servicePlugin);
                         logger.debug("sucessfully loaded server plugin: " + serverPlugin.getPluginPointName());
                     }
 
                     if (serverPlugin instanceof ChannelPlugin) {
                         ChannelPlugin channelPlugin = (ChannelPlugin) serverPlugin;
                         channelPlugins.put(channelPlugin.getPluginPointName(), channelPlugin);
-                        addServerPlugin(channelPlugin);
+                        serverPlugins.add(channelPlugin);
                         logger.debug("sucessfully loaded server channel plugin: " + serverPlugin.getPluginPointName());
                     }
 
                     if (serverPlugin instanceof CodeTemplateServerPlugin) {
                         CodeTemplateServerPlugin codeTemplateServerPlugin = (CodeTemplateServerPlugin) serverPlugin;
                         codeTemplateServerPlugins.put(codeTemplateServerPlugin.getPluginPointName(), codeTemplateServerPlugin);
-                        addServerPlugin(codeTemplateServerPlugin);
+                        serverPlugins.add(codeTemplateServerPlugin);
                         logger.debug("sucessfully loaded server code template plugin: " + serverPlugin.getPluginPointName());
                     }
 
                     if (serverPlugin instanceof DataTypeServerPlugin) {
                         DataTypeServerPlugin dataTypePlugin = (DataTypeServerPlugin) serverPlugin;
                         dataTypePlugins.put(dataTypePlugin.getPluginPointName(), dataTypePlugin);
-                        addServerPlugin(dataTypePlugin);
+                        serverPlugins.add(dataTypePlugin);
                         logger.debug("sucessfully loaded server data type plugin: " + serverPlugin.getPluginPointName());
                     }
 
                     if (serverPlugin instanceof ResourcePlugin) {
                         ResourcePlugin resourcePlugin = (ResourcePlugin) serverPlugin;
                         resourcePlugins.put(resourcePlugin.getPluginPointName(), resourcePlugin);
-                        addServerPlugin(resourcePlugin);
+                        serverPlugins.add(resourcePlugin);
                         logger.debug("Successfully loaded resource plugin: " + resourcePlugin.getPluginPointName());
                     }
 
                     if (serverPlugin instanceof TransmissionModeProvider) {
                         TransmissionModeProvider transmissionModeProvider = (TransmissionModeProvider) serverPlugin;
                         transmissionModeProviders.put(transmissionModeProvider.getPluginPointName(), transmissionModeProvider);
-                        addServerPlugin(transmissionModeProvider);
+                        serverPlugins.add(transmissionModeProvider);
                         logger.debug("Successfully loaded transmission mode provider plugin: " + transmissionModeProvider.getPluginPointName());
                     }
 
@@ -287,7 +294,7 @@ public class DefaultExtensionController extends ExtensionController {
                         }
 
                         this.authorizationPlugin = authorizationPlugin;
-                        addServerPlugin(authorizationPlugin);
+                        serverPlugins.add(authorizationPlugin);
                         logger.debug("sucessfully loaded server authorization plugin: " + serverPlugin.getPluginPointName());
                     }
 
@@ -299,7 +306,7 @@ public class DefaultExtensionController extends ExtensionController {
                         }
 
                         this.multiFactorAuthenticationPlugin = multiFactorAuthenticationPlugin;
-                        addServerPlugin(multiFactorAuthenticationPlugin);
+                        serverPlugins.add(multiFactorAuthenticationPlugin);
                         logger.debug("sucessfully loaded server multi-factor authentication plugin: " + serverPlugin.getPluginPointName());
                     }
                 } catch (Exception e) {
@@ -307,32 +314,6 @@ public class DefaultExtensionController extends ExtensionController {
                 }
             }
         }
-    }
-
-    /**
-     * Registers a plugin in the list used to start and stop all server plugins.
-     * <p>
-     * A single plugin class may implement more than one of the plugin type interfaces (for example
-     * both {@link ServicePlugin} and {@link ChannelPlugin}). Such a plugin is registered against
-     * each type it implements, so this method guards against adding the same instance more than
-     * once. Without the guard, {@link #startPlugins()} and {@link #stopPlugins()} would invoke
-     * {@link ServerPlugin#start()} and {@link ServerPlugin#stop()} once per implemented interface
-     * rather than once per plugin.
-     * <p>
-     * Instances are compared by identity on purpose. Two distinct plugin instances must both be
-     * registered even if the plugin class considers them equal.
-     * <p>
-     * Package private so it can be exercised directly by unit tests without going through the full
-     * extension loading process.
-     */
-    void addServerPlugin(ServerPlugin serverPlugin) {
-        for (ServerPlugin registeredPlugin : serverPlugins) {
-            if (registeredPlugin == serverPlugin) {
-                return;
-            }
-        }
-
-        serverPlugins.add(serverPlugin);
     }
 
     /* These are the maps for the different types of plugins */
@@ -742,7 +723,8 @@ public class DefaultExtensionController extends ExtensionController {
     }
 
     public List<ServerPlugin> getServerPlugins() {
-        return serverPlugins;
+        // Copied into a List so the ExtensionController signature stays unchanged for extensions.
+        return new ArrayList<ServerPlugin>(serverPlugins);
     }
 
     void extractZipEntry(ZipEntry entry, File installTempDir, ZipFile zipFile) throws IOException {

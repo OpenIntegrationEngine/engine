@@ -167,9 +167,10 @@ public class HL7SerializerTest {
                 "tests/test-hl7-subcomponents-input.txt", "tests/test-hl7-repetitions-input.txt",
                 "tests/test-hl7-batch-input.txt" };
 
+        ER7Serializer serializer = new ER7Serializer(defaultProperties.getSerializerProperties());
+
         for (String fixture : fixtures) {
             String er7 = FileUtils.readFileToString(new File(fixture));
-            ER7Serializer serializer = new ER7Serializer(defaultProperties.getSerializerProperties());
 
             Assert.assertEquals(fixture, TestUtil.normalizeLineEndings(er7), TestUtil.normalizeLineEndings(serializer.fromXML(serializer.toXML(er7))));
         }

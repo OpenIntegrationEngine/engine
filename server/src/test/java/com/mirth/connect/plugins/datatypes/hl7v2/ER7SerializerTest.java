@@ -31,13 +31,8 @@ public class ER7SerializerTest {
 	}
 	
 	private static ER7Serializer serializerWith(boolean convertLineBreaks, String deserializationSegmentDelimiter) {
-		return serializerWith(convertLineBreaks, "\\r", deserializationSegmentDelimiter);
-	}
-
-	private static ER7Serializer serializerWith(boolean convertLineBreaks, String serializationSegmentDelimiter, String deserializationSegmentDelimiter) {
 		HL7v2SerializationProperties serializationProperties = new HL7v2SerializationProperties();
 		serializationProperties.setConvertLineBreaks(convertLineBreaks);
-		serializationProperties.setSegmentDelimiter(serializationSegmentDelimiter);
 
 		HL7v2DeserializationProperties deserializationProperties = new HL7v2DeserializationProperties();
 		deserializationProperties.setSegmentDelimiter(deserializationSegmentDelimiter);
@@ -55,9 +50,9 @@ public class ER7SerializerTest {
 
 	@Test
 	public void testTransformWithoutSerializingNormalizesMixedLineBreaks() throws Exception {
-		ER7Serializer serializer = serializerWith(true, "\\r");
+		ER7Serializer sameEnds = serializerWith(true, "\\r");
 
-		assertEquals("MSH|^~\\&|A\rPID|1", serializer.transformWithoutSerializing("MSH|^~\\&|A\r\nPID|1", serializer));
+		assertEquals("MSH|^~\\&|A\rPID|1", sameEnds.transformWithoutSerializing("MSH|^~\\&|A\r\nPID|1", sameEnds));
 	}
 
 	@Test
@@ -66,9 +61,9 @@ public class ER7SerializerTest {
 		 * convertLineBreaks is on, so the message goes through conversion and is returned even
 		 * though it is unchanged. Only the convertLineBreaks-off case short-circuits to null.
 		 */
-		ER7Serializer serializer = serializerWith(true, "\\r");
+		ER7Serializer sameEnds = serializerWith(true, "\\r");
 
-		assertEquals("MSH|^~\\&|A\rPID|1", serializer.transformWithoutSerializing("MSH|^~\\&|A\rPID|1", serializer));
+		assertEquals("MSH|^~\\&|A\rPID|1", sameEnds.transformWithoutSerializing("MSH|^~\\&|A\rPID|1", sameEnds));
 	}
 
 	@Test
@@ -81,7 +76,7 @@ public class ER7SerializerTest {
 		 * convertLineBreaks=false skips that whole block and falls through to the delimiter
 		 * comparison at line 169.
 		 */
-		ER7Serializer inbound = serializerWith(false, "\\r", "\\r");
+		ER7Serializer inbound = serializerWith(false, "\\r");
 		ER7Serializer outbound = serializerWith(true, "\\n");
 
 		assertEquals("MSH|^~\\&|A\nPID|1", inbound.transformWithoutSerializing("MSH|^~\\&|A\rPID|1", outbound));

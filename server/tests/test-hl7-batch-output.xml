@@ -236,7 +236,10 @@
         <OBR.4>
             <OBR.4.1>MRS</OBR.4.1>
             <OBR.4.2>Shephard</OBR.4.2>
-            <OBR.4.3>Jane MRI W/&amp;W/O CONTRAST</OBR.4.3>
+            <OBR.4.3>
+                <OBR.4.3.1>Jane MRI W/</OBR.4.3.1>
+                <OBR.4.3.2>W/O CONTRAST</OBR.4.3.2>
+            </OBR.4.3>
             <OBR.4.4>70553</OBR.4.4>
         </OBR.4>
         <OBR.5/>

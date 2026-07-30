@@ -52,4 +52,12 @@ public class TestUtil {
     public static String convertCRToCRLF(String input) {
         return input.replaceAll("\r", "\r\n");
     }
+
+    /**
+     * Collapses CRLF/CR/LF to LF and trims surrounding whitespace, so that expected values stored
+     * in CRLF fixture files compare equal to output whose line separator is platform-dependent.
+     */
+    public static String normalizeLineEndings(String input) {
+        return input.replaceAll("\r\n|\r|\n", "\n").trim();
+    }
 }

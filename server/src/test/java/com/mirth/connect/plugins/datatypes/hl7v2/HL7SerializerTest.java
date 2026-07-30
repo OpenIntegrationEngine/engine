@@ -11,27 +11,19 @@ package com.mirth.connect.plugins.datatypes.hl7v2;
 
 import java.io.File;
 
-import junit.framework.Assert;
-
 import org.apache.commons.io.FileUtils;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.mirth.connect.model.converters.TestUtil;
 
-public class HL7SerializerTests {
+public class HL7SerializerTest {
     private HL7v2DataTypeProperties defaultProperties;
 
     @Before
     public void setUp() throws Exception {
         defaultProperties = new HL7v2DataTypeProperties();
-
-//        defaultProperties = new Properties();
-//        defaultProperties.put("useStrictParser", "false");
-//        defaultProperties.put("handleRepetitions", "false");
-//        defaultProperties.put("handleSubcomponents", "false");
-//        defaultProperties.put("inputSegmentDelimiter", "\\r\\n|\\r|\\n");
-//        defaultProperties.put("outputSegmentDelimiter", "\\r");
     }
 
     @Test
@@ -39,7 +31,7 @@ public class HL7SerializerTests {
         String input = FileUtils.readFileToString(new File("tests/test-hl7-input.txt"));
         String output = FileUtils.readFileToString(new File("tests/test-hl7-output.xml"));
         ER7Serializer serializer = new ER7Serializer(defaultProperties.getSerializerProperties());
-        Assert.assertEquals(output, TestUtil.prettyPrintXml(serializer.toXML(input)));
+        Assert.assertEquals(TestUtil.normalizeLineEndings(output), TestUtil.normalizeLineEndings(TestUtil.prettyPrintXml(serializer.toXML(input))));
     }
 
     @Test
@@ -55,7 +47,7 @@ public class HL7SerializerTests {
         String input = FileUtils.readFileToString(new File("tests/test-hl7-whitespace-input.txt"));
         String output = FileUtils.readFileToString(new File("tests/test-hl7-whitespace-output.xml"));
         ER7Serializer serializer = new ER7Serializer(defaultProperties.getSerializerProperties());
-        Assert.assertEquals(output, TestUtil.prettyPrintXml(serializer.toXML(input)));
+        Assert.assertEquals(TestUtil.normalizeLineEndings(output), TestUtil.normalizeLineEndings(TestUtil.prettyPrintXml(serializer.toXML(input))));
     }
 
     @Test
@@ -98,11 +90,6 @@ public class HL7SerializerTests {
     @Test
     public void testFromXmlSingleSegment() throws Exception {
         HL7v2DataTypeProperties properties = new HL7v2DataTypeProperties();
-//        properties.put("useStrictParser", "false");
-//        properties.put("handleRepetitions", "false");
-//        properties.put("handleSubcomponents", "true");
-//        properties.put("inputSegmentDelimiter", "\\r\\n|\\r|\\n");
-//        properties.put("outputSegmentDelimiter", "\\r");
 
         String input = FileUtils.readFileToString(new File("tests/test-hl7-single-segment-input.xml"));
         String output = FileUtils.readFileToString(new File("tests/test-hl7-single-segment-output.txt"));
@@ -121,28 +108,16 @@ public class HL7SerializerTests {
     @Test
     public void testToXmlWithSubcomponents() throws Exception {
         HL7v2DataTypeProperties properties = new HL7v2DataTypeProperties();
-//        Properties properties = new Properties();
-//        properties.put("useStrictParser", "false");
-//        properties.put("handleRepetitions", "false");
-//        properties.put("handleSubcomponents", "true");
-//        properties.put("inputSegmentDelimiter", "\\r\\n|\\r|\\n");
-//        properties.put("outputSegmentDelimiter", "\\r");
 
         String input = FileUtils.readFileToString(new File("tests/test-hl7-subcomponents-input.txt"));
         String output = FileUtils.readFileToString(new File("tests/test-hl7-subcomponents-output.xml"));
         ER7Serializer serializer = new ER7Serializer(properties.getSerializerProperties());
-        Assert.assertEquals(output, TestUtil.prettyPrintXml(serializer.toXML(input)));
+        Assert.assertEquals(TestUtil.normalizeLineEndings(output), TestUtil.normalizeLineEndings(TestUtil.prettyPrintXml(serializer.toXML(input))));
     }
 
     @Test
     public void testFromXmlWithSubcomponents() throws Exception {
         HL7v2DataTypeProperties properties = new HL7v2DataTypeProperties();
-//        Properties properties = new Properties();
-//        properties.put("useStrictParser", "false");
-//        properties.put("handleRepetitions", "false");
-//        properties.put("handleSubcomponents", "true");
-//        properties.put("inputSegmentDelimiter", "\\r\\n|\\r|\\n");
-//        properties.put("outputSegmentDelimiter", "\\r");
 
         String input = FileUtils.readFileToString(new File("tests/test-hl7-subcomponents-output.xml"));
         String output = FileUtils.readFileToString(new File("tests/test-hl7-subcomponents-input.txt"));
@@ -153,28 +128,16 @@ public class HL7SerializerTests {
     @Test
     public void testToXmlWithRepetitions() throws Exception {
         HL7v2DataTypeProperties properties = new HL7v2DataTypeProperties();
-//        Properties properties = new Properties();
-//        properties.put("useStrictParser", "false");
-//        properties.put("handleRepetitions", "true");
-//        properties.put("handleSubcomponents", "false");
-//        properties.put("inputSegmentDelimiter", "\\r\\n|\\r|\\n");
-//        properties.put("outputSegmentDelimiter", "\\r");
 
         String input = FileUtils.readFileToString(new File("tests/test-hl7-repetitions-input.txt"));
         String output = FileUtils.readFileToString(new File("tests/test-hl7-repetitions-output.xml"));
         ER7Serializer serializer = new ER7Serializer(properties.getSerializerProperties());
-        Assert.assertEquals(output, TestUtil.prettyPrintXml(serializer.toXML(input)));
+        Assert.assertEquals(TestUtil.normalizeLineEndings(output), TestUtil.normalizeLineEndings(TestUtil.prettyPrintXml(serializer.toXML(input))));
     }
 
     @Test
     public void testFromXmlWithRepetitions() throws Exception {
         HL7v2DataTypeProperties properties = new HL7v2DataTypeProperties();
-//        Properties properties = new Properties();
-//        properties.put("useStrictParser", "false");
-//        properties.put("handleRepetitions", "true");
-//        properties.put("handleSubcomponents", "false");
-//        properties.put("inputSegmentDelimiter", "\\r\\n|\\r|\\n");
-//        properties.put("outputSegmentDelimiter", "\\r");
 
         String input = FileUtils.readFileToString(new File("tests/test-hl7-repetitions-output.xml"));
         String output = FileUtils.readFileToString(new File("tests/test-hl7-repetitions-input.txt"));
@@ -187,7 +150,7 @@ public class HL7SerializerTests {
         String input = FileUtils.readFileToString(new File("tests/test-hl7-batch-input.txt"));
         String output = FileUtils.readFileToString(new File("tests/test-hl7-batch-output.xml"));
         ER7Serializer serializer = new ER7Serializer(defaultProperties.getSerializerProperties());
-        Assert.assertEquals(output, TestUtil.prettyPrintXml(serializer.toXML(input)));
+        Assert.assertEquals(TestUtil.normalizeLineEndings(output), TestUtil.normalizeLineEndings(TestUtil.prettyPrintXml(serializer.toXML(input))));
     }
 
     @Test

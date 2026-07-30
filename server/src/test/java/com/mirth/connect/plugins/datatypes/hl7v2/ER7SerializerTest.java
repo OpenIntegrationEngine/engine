@@ -31,8 +31,13 @@ public class ER7SerializerTest {
 	}
 	
 	private static ER7Serializer serializerWith(boolean convertLineBreaks, String deserializationSegmentDelimiter) {
+		return serializerWith(convertLineBreaks, "\\r", deserializationSegmentDelimiter);
+	}
+
+	private static ER7Serializer serializerWith(boolean convertLineBreaks, String serializationSegmentDelimiter, String deserializationSegmentDelimiter) {
 		HL7v2SerializationProperties serializationProperties = new HL7v2SerializationProperties();
 		serializationProperties.setConvertLineBreaks(convertLineBreaks);
+		serializationProperties.setSegmentDelimiter(serializationSegmentDelimiter);
 
 		HL7v2DeserializationProperties deserializationProperties = new HL7v2DeserializationProperties();
 		deserializationProperties.setSegmentDelimiter(deserializationSegmentDelimiter);
@@ -64,6 +69,22 @@ public class ER7SerializerTest {
 		ER7Serializer serializer = serializerWith(true, "\\r");
 
 		assertEquals("MSH|^~\\&|A\rPID|1", serializer.transformWithoutSerializing("MSH|^~\\&|A\rPID|1", serializer));
+	}
+
+	@Test
+	public void testTransformWithoutSerializingReplacesDelimiterWhenLineBreakConversionIsOff() throws Exception {
+		/*
+		 * The only test that reaches the StringUtils.replace branch at ER7Serializer.java:170.
+		 * Every convertLineBreaks=true configuration short-circuits earlier: either the
+		 * skipIntermediateDelimiter fast path at line 162, or (for the delimiters-match case)
+		 * the convertLineBreaks(...) call at line 165 with transformed already true. Only
+		 * convertLineBreaks=false skips that whole block and falls through to the delimiter
+		 * comparison at line 169.
+		 */
+		ER7Serializer inbound = serializerWith(false, "\\r", "\\r");
+		ER7Serializer outbound = serializerWith(true, "\\n");
+
+		assertEquals("MSH|^~\\&|A\nPID|1", inbound.transformWithoutSerializing("MSH|^~\\&|A\rPID|1", outbound));
 	}
 
 	@Test

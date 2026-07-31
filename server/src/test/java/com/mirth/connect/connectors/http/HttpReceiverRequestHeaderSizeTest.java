@@ -4,6 +4,8 @@
 package com.mirth.connect.connectors.http;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +18,7 @@ import org.junit.Test;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.mirth.connect.donkey.server.ConnectorTaskException;
 import com.mirth.connect.donkey.server.channel.Channel;
 import com.mirth.connect.donkey.server.event.EventDispatcher;
 import com.mirth.connect.server.controllers.ConfigurationController;
@@ -23,9 +26,9 @@ import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.server.controllers.EventController;
 
 /**
- * Covers what HttpReceiver.onStart() does to the configured request header size before Jetty ever
- * sees it: template resolution, the fallback for values that cannot be parsed, and the clamp that
- * keeps a non-positive value from silently removing the header limit.
+ * Covers what HttpReceiver.onStart() does with the configured request header size before Jetty ever
+ * sees it: template resolution, the default applied when nothing is configured, and the failure
+ * raised for anything that does not resolve to a positive number.
  */
 public class HttpReceiverRequestHeaderSizeTest {
 
@@ -69,33 +72,49 @@ public class HttpReceiverRequestHeaderSizeTest {
         assertEquals(HttpReceiverProperties.DEFAULT_REQUEST_HEADER_SIZE, startWith(null));
     }
 
+    /**
+     * A value that cannot be parsed would otherwise restore a cap the user was trying to lower, so it
+     * fails the connector rather than falling back.
+     */
     @Test
-    public void testUnparseableValueFallsBackToJettyDefault() throws Exception {
-        assertEquals(HttpReceiverProperties.DEFAULT_REQUEST_HEADER_SIZE, startWith("not a number"));
+    public void testUnparseableValueFailsToStart() throws Exception {
+        assertFailsToStart("not a number");
     }
 
     /**
-     * An unresolved template arrives at NumberUtils as the literal ${...} text, so it has to land on
-     * the default rather than zero.
+     * An unresolved template arrives at NumberUtils as the literal ${...} text. Failing tells the user
+     * their substitution is broken instead of quietly running on the default.
      */
     @Test
-    public void testUnresolvedTemplateFallsBackToJettyDefault() throws Exception {
-        assertEquals(HttpReceiverProperties.DEFAULT_REQUEST_HEADER_SIZE, startWith("${nothingDefinesThis}"));
+    public void testUnresolvedTemplateFailsToStart() throws Exception {
+        assertFailsToStart("${nothingDefinesThis}");
     }
 
     /**
      * Jetty treats a non-positive request header size as no limit at all. The connector panel rejects
-     * those values, but a channel imported or pushed through the REST API never runs that check, so
-     * the receiver has to clamp them itself.
+     * those values, but a channel imported or pushed through the REST API never runs that check.
      */
     @Test
-    public void testZeroIsClampedToJettyDefault() throws Exception {
-        assertEquals(HttpReceiverProperties.DEFAULT_REQUEST_HEADER_SIZE, startWith("0"));
+    public void testZeroFailsToStart() throws Exception {
+        assertFailsToStart("0");
     }
 
     @Test
-    public void testNegativeIsClampedToJettyDefault() throws Exception {
-        assertEquals(HttpReceiverProperties.DEFAULT_REQUEST_HEADER_SIZE, startWith("-1"));
+    public void testNegativeFailsToStart() throws Exception {
+        assertFailsToStart("-1");
+    }
+
+    /**
+     * Asserts the connector refuses to start and that the message carries the value as it resolved, so
+     * the cause is visible without reading the channel configuration.
+     */
+    private void assertFailsToStart(String requestHeaderSize) throws Exception {
+        try {
+            startWith(requestHeaderSize);
+            fail("Expected ConnectorTaskException for request header size \"" + requestHeaderSize + "\"");
+        } catch (ConnectorTaskException e) {
+            assertTrue("Message should contain the resolved value but was: " + e.getMessage(), e.getMessage().contains(requestHeaderSize));
+        }
     }
 
     private int startWith(String requestHeaderSize) throws Exception {

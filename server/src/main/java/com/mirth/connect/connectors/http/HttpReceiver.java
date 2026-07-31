@@ -202,15 +202,19 @@ public class HttpReceiver extends SourceConnector implements BinaryContentTypeRe
         host = replacer.replaceValues(getConnectorProperties().getListenerConnectorProperties().getHost(), channelId, channelName);
         port = NumberUtils.toInt(replacer.replaceValues(getConnectorProperties().getListenerConnectorProperties().getPort(), channelId, channelName));
         timeout = NumberUtils.toInt(replacer.replaceValues(getConnectorProperties().getTimeout(), channelId, channelName), 0);
-        requestHeaderSize = NumberUtils.toInt(replacer.replaceValues(getConnectorProperties().getRequestHeaderSize(), channelId, channelName), HttpReceiverProperties.DEFAULT_REQUEST_HEADER_SIZE);
 
         /*
-         * Jetty treats a non-positive request header size as no limit at all, so a channel deployed
-         * with one would silently lose the header cap. The connector panel rejects those values, but
+         * A request header size that does not resolve to a positive number fails the connector
+         * rather than falling back to the default. Jetty treats a non-positive size as no limit at
+         * all, and a value that cannot be parsed would quietly restore a cap the user was trying to
+         * lower, so both cases are a silent loss of the limit. The connector panel rejects them, but
          * a channel imported or pushed through the API never runs that check.
          */
+        String requestHeaderSizeValue = replacer.replaceValues(getConnectorProperties().getRequestHeaderSize(), channelId, channelName);
+        requestHeaderSize = NumberUtils.toInt(requestHeaderSizeValue, 0);
+
         if (requestHeaderSize <= 0) {
-            requestHeaderSize = HttpReceiverProperties.DEFAULT_REQUEST_HEADER_SIZE;
+            throw new ConnectorTaskException("Invalid request header size: " + requestHeaderSizeValue);
         }
 
         // Initialize contextPath to "" or its value after replacements

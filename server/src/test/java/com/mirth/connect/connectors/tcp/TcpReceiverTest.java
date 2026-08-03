@@ -36,7 +36,12 @@ public class TcpReceiverTest {
 	private static final String TEST_CHANNEL_ID = UUID.randomUUID().toString();
 	private static final String TEST_SERVER_ID = UUID.randomUUID().toString();
 	private static final String TEST_CHANNEL_NAME = "Test TCP Listener Channel";
-	
+	/*
+	 * The production bind retry interval is one second, and testServerSocketUnknownHost exhausts all
+	 * ten attempts. Shortening it in the test subclass keeps the retry path covered without the wait.
+	 */
+	private static final long BIND_RETRY_INTERVAL_MILLIS = 10;
+
 	private static Logger logger = LogManager.getLogger(TcpReceiverTest.class);
 	private TcpReceiver receiver;
 	private TcpReceiverProperties receiverProps;
@@ -74,7 +79,6 @@ public class TcpReceiverTest {
 			receiver.stop();
 			logger.debug("Undeploying TCP Receiver...");
 			receiver.onUndeploy();
-			Thread.sleep(1000);
 		}
 	}
 	
@@ -85,8 +89,8 @@ public class TcpReceiverTest {
 		logger.debug("Deploying TCP Receiver...");
 		receiver.onDeploy();
 		logger.debug("Starting TCP Receiver...");
+		// start() binds the server socket synchronously, so there is nothing to wait for afterwards.
 		receiver.start();
-		Thread.sleep(1000);
 	}
 
 	private TcpReceiver createTcpReceiver(TcpReceiverProperties receiverProps) {
@@ -109,40 +113,40 @@ public class TcpReceiverTest {
 	public void testServerSocketLocalHost1() throws Exception {
 		TcpReceiverProperties props = new TcpReceiverProperties();
 		props.getListenerConnectorProperties().setHost("127.0.0.1");
-		props.getListenerConnectorProperties().setPort("6666");
+		props.getListenerConnectorProperties().setPort("6667");
 		setupReceiver(props);
 		
 		assertEquals("127.0.0.1", receiver.getServerSocket().getInetAddress().getHostAddress());
-		assertEquals(6666, receiver.getServerSocket().getLocalPort());
+		assertEquals(6667, receiver.getServerSocket().getLocalPort());
 	}
 	
 	@Test
 	public void testServerSocketLocalHost2() throws Exception {
 		TcpReceiverProperties props = new TcpReceiverProperties();
 		props.getListenerConnectorProperties().setHost("localhost");
-		props.getListenerConnectorProperties().setPort("6666");
+		props.getListenerConnectorProperties().setPort("6667");
 		setupReceiver(props);
 		
 		assertEquals("localhost", receiver.getServerSocket().getInetAddress().getHostName());
-		assertEquals(6666, receiver.getServerSocket().getLocalPort());
+		assertEquals(6667, receiver.getServerSocket().getLocalPort());
 	}
 	
 	@Test
 	public void testServerSocketAllInterfaces() throws Exception {
 		TcpReceiverProperties props = new TcpReceiverProperties();
 		props.getListenerConnectorProperties().setHost("0.0.0.0");
-		props.getListenerConnectorProperties().setPort("6666");
+		props.getListenerConnectorProperties().setPort("6667");
 		setupReceiver(props);
 		
 		assertEquals("0.0.0.0", receiver.getServerSocket().getInetAddress().getHostAddress());
-		assertEquals(6666, receiver.getServerSocket().getLocalPort());
+		assertEquals(6667, receiver.getServerSocket().getLocalPort());
 	}
 	
 	@Test
 	public void testServerSocketUnknownHost(){
 		TcpReceiverProperties props = new TcpReceiverProperties();
 		props.getListenerConnectorProperties().setHost("111.1.1.1");
-		props.getListenerConnectorProperties().setPort("6666");
+		props.getListenerConnectorProperties().setPort("6667");
 		
 		boolean exceptionThrown = false;
 		try {
@@ -166,6 +170,11 @@ public class TcpReceiverTest {
 		@Override
 		protected String getConfigurationClass() {
 			return "com.mirth.connect.connectors.tcp.DefaultTcpConfiguration";
+		}
+
+		@Override
+		protected long getBindRetryInterval() {
+			return BIND_RETRY_INTERVAL_MILLIS;
 		}
 	}
 	

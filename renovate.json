@@ -1,0 +1,115 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "schedule:monthly"
+  ],
+  "timezone": "America/New_York",
+  "minimumReleaseAge": "14 days",
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 2,
+  "automerge": false,
+  "rebaseWhen": "conflicted",
+  "major": {
+    "dependencyDashboardApproval": true
+  },
+  "dependencyDashboard": true,
+  "semanticCommits": "enabled",
+  "labels": [
+    "dependencies"
+  ],
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "description": "Ecosystem labels",
+      "matchManagers": [
+        "gradle"
+      ],
+      "addLabels": [
+        "java"
+      ]
+    },
+    {
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "addLabels": [
+        "docker"
+      ]
+    },
+    {
+      "groupName": "aws-sdk",
+      "matchPackageNames": [
+        "software.amazon.awssdk:*",
+        "software.amazon.eventstream:*"
+      ]
+    },
+    {
+      "groupName": "jetty",
+      "matchPackageNames": [
+        "org.eclipse.jetty*"
+      ]
+    },
+    {
+      "groupName": "bouncycastle",
+      "matchPackageNames": [
+        "org.bouncycastle*"
+      ]
+    },
+    {
+      "groupName": "jersey",
+      "matchPackageNames": [
+        "org.glassfish.jersey*",
+        "org.glassfish.hk2*"
+      ]
+    },
+    {
+      "groupName": "pdfbox",
+      "matchPackageNames": [
+        "*pdfbox*"
+      ]
+    },
+    {
+      "groupName": "sun-xml",
+      "matchPackageNames": [
+        "com.sun.xml*"
+      ]
+    },
+    {
+      "groupName": "jackson",
+      "matchPackageNames": [
+        "com.fasterxml.jackson*"
+      ]
+    },
+    {
+      "groupName": "netty",
+      "matchPackageNames": [
+        "io.netty*",
+        "com.typesafe.netty*"
+      ]
+    },
+    {
+      "groupName": "log4j",
+      "matchPackageNames": [
+        "org.apache.logging.log4j*"
+      ]
+    },
+    {
+      "groupName": "apache-commons",
+      "matchPackageNames": [
+        "org.apache.commons:*",
+        "commons-*"
+      ]
+    },
+    {
+      "groupName": "test-tooling",
+      "matchPackageNames": [
+        "org.mockito*",
+        "net.bytebuddy*",
+        "org.objenesis:*",
+        "org.hamcrest:*",
+        "junit:*"
+      ]
+    }
+  ]
+}

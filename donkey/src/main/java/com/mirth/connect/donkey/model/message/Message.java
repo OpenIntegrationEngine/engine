@@ -117,6 +117,7 @@ public class Message implements Serializable {
         if (mergedConnectorMessage == null) {
             mergedConnectorMessage = new ConnectorMessage();
             mergedConnectorMessage.setChannelId(channelId);
+            mergedConnectorMessage.setChannelName(channelName);
             mergedConnectorMessage.setMessageId(messageId);
             mergedConnectorMessage.setServerId(serverId);
             mergedConnectorMessage.setReceivedDate(receivedDate);
@@ -128,6 +129,9 @@ public class Message implements Serializable {
             ConnectorMessage sourceConnectorMessage = connectorMessages.get(0);
 
             if (sourceConnectorMessage != null) {
+                if (mergedConnectorMessage.getChannelName() == null) {
+                    mergedConnectorMessage.setChannelName(sourceConnectorMessage.getChannelName());
+                }
                 mergedConnectorMessage.setRaw(sourceConnectorMessage.getRaw());
                 mergedConnectorMessage.setProcessedRaw(sourceConnectorMessage.getProcessedRaw());
                 sourceMap = sourceConnectorMessage.getSourceMap();

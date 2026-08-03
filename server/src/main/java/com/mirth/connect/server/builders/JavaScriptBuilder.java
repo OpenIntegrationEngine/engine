@@ -27,6 +27,7 @@ import com.mirth.connect.model.Filter;
 import com.mirth.connect.model.MetaData;
 import com.mirth.connect.model.Rule;
 import com.mirth.connect.model.Step;
+import com.google.common.annotations.VisibleForTesting;
 import com.mirth.connect.model.Transformer;
 import com.mirth.connect.model.codetemplates.CodeTemplate;
 import com.mirth.connect.model.codetemplates.CodeTemplateLibrary;
@@ -44,6 +45,12 @@ public class JavaScriptBuilder {
     private static Logger logger = LogManager.getLogger(JavaScriptBuilder.class);
     private static ExtensionController extensionController = ControllerFactory.getFactory().createExtensionController();
     private static CodeTemplateController codeTemplateController = ControllerFactory.getFactory().createCodeTemplateController();
+
+    @VisibleForTesting
+    public static void setControllersForTesting(ExtensionController ec, CodeTemplateController ctc) {
+        extensionController = ec;
+        codeTemplateController = ctc;
+    }
 
     /*
      * Generates the global JavaScript contained in all new scopes created

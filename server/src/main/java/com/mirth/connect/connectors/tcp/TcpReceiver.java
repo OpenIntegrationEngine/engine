@@ -895,7 +895,7 @@ public class TcpReceiver extends SourceConnector {
                     throw e;
                 } else {
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(getBindRetryInterval());
                     } catch (InterruptedException e2) {
                         Thread.currentThread().interrupt();
                     }
@@ -903,7 +903,11 @@ public class TcpReceiver extends SourceConnector {
             }
         }
     }
-    
+
+    protected long getBindRetryInterval() {
+        return 1000L;
+    }
+
     protected ServerSocket getServerSocket() {
     	return serverSocket;
     }

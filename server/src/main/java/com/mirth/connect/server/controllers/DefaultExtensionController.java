@@ -84,7 +84,14 @@ public class DefaultExtensionController extends ExtensionController {
 
     // these are plugins for specific extension points, keyed by plugin name
     // (not path)
-    private List<ServerPlugin> serverPlugins = new ArrayList<ServerPlugin>();
+    /*
+     * A plugin class may implement several of the plugin type interfaces, in which case it is
+     * registered once for each interface it implements. A Set holds a single entry per plugin,
+     * so start() and stop() are invoked once per plugin rather than once per interface.
+     * LinkedHashSet because initPlugins loads plugins in a deliberate order (by plugin weight)
+     * and that order is preserved when they are started and stopped.
+     */
+    private Set<ServerPlugin> serverPlugins = new LinkedHashSet<ServerPlugin>();
     private Map<String, ServicePlugin> servicePlugins = new LinkedHashMap<String, ServicePlugin>();
     private Map<String, ChannelPlugin> channelPlugins = new LinkedHashMap<String, ChannelPlugin>();
     private Map<String, CodeTemplateServerPlugin> codeTemplateServerPlugins = new LinkedHashMap<String, CodeTemplateServerPlugin>();
@@ -716,7 +723,8 @@ public class DefaultExtensionController extends ExtensionController {
     }
 
     public List<ServerPlugin> getServerPlugins() {
-        return serverPlugins;
+        // Copied into a List so the ExtensionController signature stays unchanged for extensions.
+        return new ArrayList<ServerPlugin>(serverPlugins);
     }
 
     void extractZipEntry(ZipEntry entry, File installTempDir, ZipFile zipFile) throws IOException {

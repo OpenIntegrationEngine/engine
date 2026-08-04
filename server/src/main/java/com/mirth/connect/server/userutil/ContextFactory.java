@@ -52,11 +52,12 @@ public class ContextFactory {
 
     /**
      * Returns a classloader containing only the libraries contained in the custom resources, with
-     * no parent classloader. If no custom libraries are being used in the current JavaScript
-     * context, this will return null.
+     * {@code System.getPlatformClassLoader()} as parent classloader. If no custom libraries are being used
+     * in the current JavaScript context, this will return null. This classloader always loads classes
+     * parent-first, and the "Load Parent-First" option on Resources has no effect on it.
      * 
      * @return A classloader containing only the libraries contained in the custom resources, with
-     *         no parent classloader.
+     *         {@code System.getPlatformClassLoader()} as parent classloader.
      */
     public ClassLoader getIsolatedClassLoader() {
         return delegate.getIsolatedClassLoader();

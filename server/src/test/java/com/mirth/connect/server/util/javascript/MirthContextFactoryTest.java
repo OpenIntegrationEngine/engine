@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-// SPDX-FileCopyrightText: Open Integration Engine
+// SPDX-FileCopyrightText: Mirth Corporation
 
 package com.mirth.connect.server.util.javascript;
 

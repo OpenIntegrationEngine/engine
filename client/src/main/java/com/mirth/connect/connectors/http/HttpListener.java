@@ -53,6 +53,7 @@ import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.http.entity.ContentType;
 import org.jdesktop.swingx.decorator.Highlighter;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
@@ -142,6 +143,7 @@ public class HttpListener extends ConnectorSettingsPanel {
         HttpReceiverProperties properties = (HttpReceiverProperties) getDefaults();
         properties.setContextPath(contextPathField.getText());
         properties.setTimeout(receiveTimeoutField.getText());
+        properties.setRequestHeaderSize(requestHeaderSizeField.getText());
         properties.setXmlBody(messageContentXmlBodyRadio.isSelected());
         properties.setParseMultipart(parseMultipartYesRadio.isSelected());
         properties.setIncludeMetadata(includeMetadataYesRadio.isSelected());
@@ -168,6 +170,7 @@ public class HttpListener extends ConnectorSettingsPanel {
 
         contextPathField.setText(props.getContextPath());
         receiveTimeoutField.setText(props.getTimeout());
+        requestHeaderSizeField.setText(props.getRequestHeaderSize());
 
         updateHttpUrl();
 
@@ -247,6 +250,19 @@ public class HttpListener extends ConnectorSettingsPanel {
             }
         }
 
+        /*
+         * A template is resolved when the channel starts, so only a plain value can be checked here.
+         * A non-positive size is worth catching because Jetty treats it as no limit at all, which
+         * silently removes the header cap rather than failing visibly.
+         */
+        String requestHeaderSize = props.getRequestHeaderSize();
+        if (!requestHeaderSize.contains("$") && NumberUtils.toInt(requestHeaderSize, 0) <= 0) {
+            valid = false;
+            if (highlight) {
+                requestHeaderSizeField.setBackground(UIConstants.INVALID_COLOR);
+            }
+        }
+
         if (!props.getSourceConnectorProperties().getResponseVariable().equalsIgnoreCase("None")) {
             if (props.getResponseContentType().length() == 0) {
                 valid = false;
@@ -269,6 +285,7 @@ public class HttpListener extends ConnectorSettingsPanel {
     @Override
     public void resetInvalidProperties() {
         receiveTimeoutField.setBackground(null);
+        requestHeaderSizeField.setBackground(null);
         responseContentTypeField.setBackground(null);
         responseHeadersVariableField.setBackground(null);
     }
@@ -841,6 +858,8 @@ public class HttpListener extends ConnectorSettingsPanel {
         contextPathField = new MirthTextField();
         receiveTimeoutLabel = new JLabel();
         receiveTimeoutField = new MirthTextField();
+        requestHeaderSizeLabel = new JLabel();
+        requestHeaderSizeField = new MirthTextField();
         httpUrlField = new JTextField();
         httpUrlLabel = new JLabel();
         headersLabel = new JLabel();
@@ -900,6 +919,8 @@ public class HttpListener extends ConnectorSettingsPanel {
         });
 
         receiveTimeoutLabel.setText("Receive Timeout (ms):");
+
+        requestHeaderSizeLabel.setText("Request Header Size (bytes):");
 
         httpUrlLabel.setText("HTTP URL:");
 
@@ -1042,6 +1063,7 @@ public class HttpListener extends ConnectorSettingsPanel {
         charsetEncodingCombobox.setToolTipText(String.format("<html>Select the character set encoding to be used for the response to the sending system.<br>Set to Default to assume the default character set encoding for the JVM running %s.</html>", BrandingConstants.PRODUCT_NAME));
         contextPathField.setToolTipText("The context path for the HTTP Listener URL.");
         receiveTimeoutField.setToolTipText("Enter the maximum idle time in milliseconds for a connection.");
+        requestHeaderSizeField.setToolTipText("<html>The maximum combined size in bytes of all request headers.<br/>Requests larger than this are rejected with 431 Request Header Fields<br/>Too Large before the channel sees them. The default is 8192.<br/>The value may include template substitutions, and must resolve to a number.</html>");
         httpUrlField.setToolTipText("<html>Displays the generated HTTP URL for the HTTP Listener.</html>");
         responseHeadersTable.setToolTipText("Response header parameters are encoded as HTTP headers in the response sent to the client.");
         responseStatusCodeField.setToolTipText("<html>Enter the status code for the HTTP response.  If this field is left blank a <br>default status code of 200 will be returned for a successful message, <br>and 500 will be returned for an errored message. If a \"Respond from\" <br>value is chosen, that response will be used to determine a successful <br>or errored response.<html>");
@@ -1061,12 +1083,14 @@ public class HttpListener extends ConnectorSettingsPanel {
     }
 
     protected void initLayout() {
-        setLayout(new MigLayout("insets 0 8 0 8, novisualpadding, hidemode 3, gap 12 6", "[][]6[]", "[][][][][][][][][][][][][grow][grow]"));
+        setLayout(new MigLayout("insets 0 8 0 8, novisualpadding, hidemode 3, gap 12 6", "[][]6[]", "[][][][][][][][][][][][][][grow][grow]"));
 
         add(contextPathLabel, "right");
         add(contextPathField, "w 150!, sx");
         add(receiveTimeoutLabel, "newline, right");
         add(receiveTimeoutField, "w 100!, sx");
+        add(requestHeaderSizeLabel, "newline, right");
+        add(requestHeaderSizeField, "w 100!, sx");
         add(messageContentLabel, "newline, right");
         add(messageContentPlainBodyRadio, "split 2");
         add(messageContentXmlBodyRadio);
@@ -1229,6 +1253,8 @@ public class HttpListener extends ConnectorSettingsPanel {
     private MirthRadioButton parseMultipartYesRadio;
     protected MirthTextField receiveTimeoutField;
     protected JLabel receiveTimeoutLabel;
+    protected MirthTextField requestHeaderSizeField;
+    protected JLabel requestHeaderSizeLabel;
     protected JLabel responseStatusCodeLabel;
     private MirthTextField responseContentTypeField;
     private JLabel responseContentTypeLabel;

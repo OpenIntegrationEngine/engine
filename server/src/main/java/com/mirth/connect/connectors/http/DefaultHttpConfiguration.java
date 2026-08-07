@@ -44,15 +44,24 @@ public class DefaultHttpConfiguration implements HttpConfiguration {
 
     @Override
     public void configureReceiver(HttpReceiver connector) throws Exception {
-        org.eclipse.jetty.server.HttpConfiguration httpConfig = new org.eclipse.jetty.server.HttpConfiguration();
-        httpConfig.setSendServerVersion(false);
-        httpConfig.setSendXPoweredBy(false);
-        
-        ServerConnector listener = new ServerConnector(connector.getServer(), new HttpConnectionFactory(httpConfig));
+        ServerConnector listener = new ServerConnector(connector.getServer(), new HttpConnectionFactory(createHttpConfig(connector)));
         listener.setHost(connector.getHost());
         listener.setPort(connector.getPort());
         listener.setIdleTimeout(connector.getTimeout());
         connector.getServer().addConnector(listener);
+    }
+
+    /**
+     * Builds the Jetty configuration the listener is created with. An implementation that overrides
+     * {@link #configureReceiver(HttpReceiver)} should build its own listener from this rather than
+     * repeating the settings, so that it keeps up with changes to the defaults.
+     */
+    protected org.eclipse.jetty.server.HttpConfiguration createHttpConfig(HttpReceiver connector) {
+        org.eclipse.jetty.server.HttpConfiguration httpConfig = new org.eclipse.jetty.server.HttpConfiguration();
+        httpConfig.setSendServerVersion(false);
+        httpConfig.setSendXPoweredBy(false);
+        httpConfig.setRequestHeaderSize(connector.getRequestHeaderSize());
+        return httpConfig;
     }
 
     @Override

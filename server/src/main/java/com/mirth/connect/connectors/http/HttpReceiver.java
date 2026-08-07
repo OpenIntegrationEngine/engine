@@ -130,6 +130,7 @@ public class HttpReceiver extends SourceConnector implements BinaryContentTypeRe
     private String host;
     private int port;
     private int timeout;
+    private int requestHeaderSize;
     private String[] binaryMimeTypesArray;
     private Pattern binaryMimeTypesRegex;
     private HttpAuthConnectorPluginProperties authProps;
@@ -201,6 +202,20 @@ public class HttpReceiver extends SourceConnector implements BinaryContentTypeRe
         host = replacer.replaceValues(getConnectorProperties().getListenerConnectorProperties().getHost(), channelId, channelName);
         port = NumberUtils.toInt(replacer.replaceValues(getConnectorProperties().getListenerConnectorProperties().getPort(), channelId, channelName));
         timeout = NumberUtils.toInt(replacer.replaceValues(getConnectorProperties().getTimeout(), channelId, channelName), 0);
+
+        /*
+         * A request header size that does not resolve to a positive number fails the connector
+         * rather than falling back to the default. Jetty treats a non-positive size as no limit at
+         * all, and a value that cannot be parsed would quietly restore a cap the user was trying to
+         * lower, so both cases are a silent loss of the limit. The connector panel rejects them, but
+         * a channel imported or pushed through the API never runs that check.
+         */
+        String requestHeaderSizeValue = replacer.replaceValues(getConnectorProperties().getRequestHeaderSize(), channelId, channelName);
+        requestHeaderSize = NumberUtils.toInt(requestHeaderSizeValue, 0);
+
+        if (requestHeaderSize <= 0) {
+            throw new ConnectorTaskException("Invalid request header size: " + requestHeaderSizeValue);
+        }
 
         // Initialize contextPath to "" or its value after replacements
         String contextPath = (getConnectorProperties().getContextPath() == null ? "" : replacer.replaceValues(getConnectorProperties().getContextPath(), channelId, channelName)).trim();
@@ -837,6 +852,10 @@ public class HttpReceiver extends SourceConnector implements BinaryContentTypeRe
 
     public int getTimeout() {
         return timeout;
+    }
+
+    public int getRequestHeaderSize() {
+        return requestHeaderSize;
     }
 
     protected Map<String, List<String>> extractParameters(Request request) {

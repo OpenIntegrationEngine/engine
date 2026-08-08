@@ -1636,6 +1636,8 @@ public class DefaultConfigurationController extends ConfigurationController {
         String username = properties.getProperty("username");
         String password = properties.getProperty("password");
         String to = properties.getProperty("toAddress");
+        String cc = properties.getProperty("ccAddress");
+        String bcc = properties.getProperty("bccAddress");
         String from = properties.getProperty("fromAddress");
 
         int port = -1;
@@ -1688,6 +1690,14 @@ public class DefaultConfigurationController extends ConfigurationController {
         try {
             for (String toAddress : StringUtils.split(to, ",")) {
                 email.addTo(toAddress);
+            }
+
+            for (String ccAddress : StringUtils.split(cc, ",")) {
+                email.addCc(ccAddress);
+            }
+
+            for (String bccAddress : StringUtils.split(bcc, ",")) {
+                email.addBcc(bccAddress);
             }
 
             email.setFrom(from);

@@ -59,6 +59,7 @@ import com.mirth.connect.server.controllers.ExtensionController;
 import com.mirth.connect.server.controllers.MigrationController;
 import com.mirth.connect.server.controllers.ScriptController;
 import com.mirth.connect.server.controllers.UsageController;
+import com.mirth.connect.server.extprops.DropInProperties;
 import com.mirth.connect.server.controllers.UserController;
 import com.mirth.connect.server.logging.JuliToLog4JService;
 import com.mirth.connect.server.logging.LogOutputStream;
@@ -187,7 +188,10 @@ public class Mirth extends Thread {
         try {
             mirthPropertiesStream = ResourceUtil.getResourceStream(this.getClass(), "mirth.properties");
             mirthProperties = PropertiesConfigurationUtil.create(mirthPropertiesStream);
+            mirthProperties = DropInProperties.overlay(mirthProperties, ResourceUtil.getMirthPropertiesDropInDirectory());
         } catch (Exception e) {
+            // Reset so a failed drop-in overlay aborts startup instead of booting with a partial configuration
+            mirthProperties = PropertiesConfigurationUtil.create();
             logger.error("could not load mirth.properties", e);
         } finally {
             IOUtils.closeQuietly(mirthPropertiesStream);

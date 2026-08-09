@@ -119,6 +119,7 @@ import com.mirth.connect.model.converters.ObjectXMLSerializer;
 import com.mirth.connect.plugins.directoryresource.DirectoryResourceProperties;
 import com.mirth.connect.server.ExtensionLoader;
 import com.mirth.connect.server.mybatis.KeyValuePair;
+import com.mirth.connect.server.extprops.DropInProperties;
 import com.mirth.connect.server.tools.ClassPathResource;
 import com.mirth.connect.server.util.DatabaseUtil;
 import com.mirth.connect.server.util.PasswordRequirementsChecker;
@@ -166,6 +167,9 @@ public class DefaultConfigurationController extends ConfigurationController {
     private static PropertiesConfiguration versionConfig = PropertiesConfigurationUtil.create();
     private static FileBasedConfigurationBuilder<PropertiesConfiguration> mirthConfigBuilder = PropertiesConfigurationUtil.createBuilder();
     protected static PropertiesConfiguration mirthConfig = PropertiesConfigurationUtil.create();
+    // The file-backed configuration that saveMirthConfig() writes. Kept separate from mirthConfig
+    // so that values from mirth.properties.d drop-in files are never baked into mirth.properties.
+    protected static PropertiesConfiguration mirthFileConfig = mirthConfig;
     private static EncryptionSettings encryptionConfig;
     private static DatabaseSettings databaseConfig;
     private static String apiBypassword;
@@ -229,14 +233,18 @@ public class DefaultConfigurationController extends ConfigurationController {
         try {
             // Delimiter parsing disabled by default so getString() returns the whole property, even if there are commas
             mirthConfigBuilder = PropertiesConfigurationUtil.createBuilder(new File(ClassPathResource.getResourceURI("mirth.properties")));
-            mirthConfig = mirthConfigBuilder.getConfiguration();
+            mirthFileConfig = mirthConfigBuilder.getConfiguration();
+            // Also assign the read view now so anything reading during migration sees real values
+            mirthConfig = mirthFileConfig;
 
-            MigrationController.getInstance().migrateConfiguration(mirthConfig);
+            MigrationController.getInstance().migrateConfiguration(mirthFileConfig);
             try {
                 mirthConfigBuilder.save();
             } catch (ConfigurationException e) {
                 logger.error("Unable to update mirth.properties version during migration.", e);
             }
+
+            mirthConfig = DropInProperties.overlay(mirthFileConfig, ResourceUtil.getMirthPropertiesDropInDirectory());
 
             // load the server version
             versionPropertiesStream = ResourceUtil.getResourceStream(this.getClass(), "version.properties");
@@ -1245,11 +1253,11 @@ public class DefaultConfigurationController extends ConfigurationController {
                  */
                 if (Arrays.equals(keyStorePassword, DEFAULT_STOREPASS.toCharArray()) && Arrays.equals(keyPassword, DEFAULT_STOREPASS.toCharArray())) {
                     String keyStorePasswordStr = generateNewPassword();
-                    mirthConfig.setProperty("keystore.storepass", keyStorePasswordStr);
+                    setMirthConfigProperty("keystore.storepass", keyStorePasswordStr);
                     keyStorePassword = keyStorePasswordStr.toCharArray();
 
                     String keyPasswordStr = generateNewPassword();
-                    mirthConfig.setProperty("keystore.keypass", keyPasswordStr);
+                    setMirthConfigProperty("keystore.keypass", keyPasswordStr);
                     keyPassword = keyPasswordStr.toCharArray();
 
                     saveMirthConfig();
@@ -1329,15 +1337,23 @@ public class DefaultConfigurationController extends ConfigurationController {
 
             if (!StringUtils.startsWith(encryptedPassword, "{")) {
                 // Re-encrypt if still using the old-style format
-                mirthConfig.setProperty(readOnly ? DatabaseConstants.DATABASE_READONLY_PASSWORD : DatabaseConstants.DATABASE_PASSWORD, EncryptionSettings.ENCRYPTION_PREFIX + encryptor.encrypt(decryptedPassword));
+                setMirthConfigProperty(readOnly ? DatabaseConstants.DATABASE_READONLY_PASSWORD : DatabaseConstants.DATABASE_PASSWORD, EncryptionSettings.ENCRYPTION_PREFIX + encryptor.encrypt(decryptedPassword));
                 saveMirthConfig();
             }
         } else if (StringUtils.isNotBlank(password)) {
             // encrypt the password and write it back to the file
             String encryptedPassword = EncryptionSettings.ENCRYPTION_PREFIX + encryptor.encrypt(password);
-            mirthConfig.setProperty(readOnly ? DatabaseConstants.DATABASE_READONLY_PASSWORD : DatabaseConstants.DATABASE_PASSWORD, encryptedPassword);
+            setMirthConfigProperty(readOnly ? DatabaseConstants.DATABASE_READONLY_PASSWORD : DatabaseConstants.DATABASE_PASSWORD, encryptedPassword);
 
             saveMirthConfig();
+        }
+    }
+
+    private void setMirthConfigProperty(String key, Object value) {
+        mirthConfig.setProperty(key, value);
+
+        if (mirthFileConfig != mirthConfig) {
+            mirthFileConfig.setProperty(key, value);
         }
     }
 
@@ -1350,7 +1366,7 @@ public class DefaultConfigurationController extends ConfigurationController {
         OutputStream os = new FileOutputStream(new File(confDir, "mirth.properties"));
 
         try {
-            PropertiesConfigurationUtil.saveTo(mirthConfig, os);
+            PropertiesConfigurationUtil.saveTo(mirthFileConfig, os);
         } finally {
             ResourceUtil.closeResourceQuietly(os);
         }

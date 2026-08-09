@@ -10,12 +10,31 @@
 package com.mirth.connect.server.util;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+
+import com.mirth.connect.server.tools.ClassPathResource;
 
 public class ResourceUtil {
+
+    /**
+     * Returns the mirth.properties.d drop-in directory next to the mirth.properties resolved from
+     * the classpath, or null when mirth.properties does not resolve to a file on disk.
+     */
+    public static File getMirthPropertiesDropInDirectory() {
+        URI uri = ClassPathResource.getResourceURI("mirth.properties");
+
+        if (uri != null && "file".equals(uri.getScheme())) {
+            return new File(new File(uri).getParentFile(), "mirth.properties.d");
+        }
+
+        return null;
+    }
+
     /**
      * Returns a resource as a stream by checking:
      * 

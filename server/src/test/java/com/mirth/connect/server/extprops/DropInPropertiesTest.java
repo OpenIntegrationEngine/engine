@@ -61,6 +61,26 @@ public class DropInPropertiesTest {
     }
 
     @Test
+    public void overlayResultIsIndependentOfBase() throws Exception {
+        PropertiesConfiguration base = new PropertiesConfiguration();
+        base.setProperty("a", "base");
+
+        File dir = tempFolder.newFolder();
+        writeFile(dir, "10-first.properties", "b = dropin\n");
+
+        PropertiesConfiguration merged = DropInProperties.overlay(base, dir);
+
+        // Writing to the merged result (as the controller does when it re-encrypts a password or
+        // generates a keystore password) must not leak back into the base configuration that
+        // saveMirthConfig() writes out to mirth.properties.
+        merged.setProperty("a", "changed");
+        merged.setProperty("c", "new");
+
+        assertEquals("base", base.getString("a"));
+        assertFalse(base.containsKey("c"));
+    }
+
+    @Test
     public void overlayKeepsCommaValuesWhole() throws Exception {
         PropertiesConfiguration base = new PropertiesConfiguration();
 

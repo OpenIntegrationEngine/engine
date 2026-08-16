@@ -118,8 +118,8 @@ import com.mirth.connect.model.converters.DocumentSerializer;
 import com.mirth.connect.model.converters.ObjectXMLSerializer;
 import com.mirth.connect.plugins.directoryresource.DirectoryResourceProperties;
 import com.mirth.connect.server.ExtensionLoader;
-import com.mirth.connect.server.mybatis.KeyValuePair;
 import com.mirth.connect.server.extprops.DropInProperties;
+import com.mirth.connect.server.mybatis.KeyValuePair;
 import com.mirth.connect.server.tools.ClassPathResource;
 import com.mirth.connect.server.util.DatabaseUtil;
 import com.mirth.connect.server.util.PasswordRequirementsChecker;
@@ -170,6 +170,9 @@ public class DefaultConfigurationController extends ConfigurationController {
     // The file-backed configuration that saveMirthConfig() writes. Kept separate from mirthConfig
     // so that values from mirth.properties.d drop-in files are never baked into mirth.properties.
     protected static PropertiesConfiguration mirthFileConfig = mirthConfig;
+    // Set when a mirth.properties.d drop-in file cannot be read, so the server refuses to start
+    // rather than run with a silently reverted configuration. Null when configuration loaded cleanly.
+    private static volatile String configurationLoadError;
     private static EncryptionSettings encryptionConfig;
     private static DatabaseSettings databaseConfig;
     private static String apiBypassword;
@@ -244,7 +247,16 @@ public class DefaultConfigurationController extends ConfigurationController {
                 logger.error("Unable to update mirth.properties version during migration.", e);
             }
 
-            mirthConfig = DropInProperties.overlay(mirthFileConfig, ResourceUtil.getMirthPropertiesDropInDirectory());
+            try {
+                mirthConfig = DropInProperties.overlay(mirthFileConfig, ResourceUtil.getMirthPropertiesDropInDirectory());
+            } catch (ConfigurationException e) {
+                // Fail closed: a broken drop-in file must stop startup rather than silently reverting
+                // to the base configuration, which could serve weaker settings than the administrator
+                // intended. mirthConfig stays at the base config and getConfigurationLoadError() reports
+                // the problem so the server refuses to start.
+                configurationLoadError = "Unable to load conf/mirth.properties.d drop-in configuration: " + e.getMessage();
+                logger.error(configurationLoadError, e);
+            }
 
             // load the server version
             versionPropertiesStream = ResourceUtil.getResourceStream(this.getClass(), "version.properties");
@@ -1452,6 +1464,16 @@ public class DefaultConfigurationController extends ConfigurationController {
             ResourceUtil.closeResourceQuietly(mirthPropsIs);
             ResourceUtil.closeResourceQuietly(keyStoreOuputStream);
         }
+    }
+
+    @Override
+    public PropertiesConfiguration getPropertiesConfiguration() {
+        return mirthConfig;
+    }
+
+    @Override
+    public String getConfigurationLoadError() {
+        return configurationLoadError;
     }
 
     @Override

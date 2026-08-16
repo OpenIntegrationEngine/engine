@@ -49,7 +49,6 @@ import com.mirth.connect.model.converters.DocumentSerializer;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.server.controllers.ExtensionController;
-import com.mirth.connect.server.extprops.DropInProperties;
 import com.mirth.connect.server.tools.ClassPathResource;
 import com.mirth.connect.server.util.ResourceUtil;
 import com.mirth.connect.util.MirthSSLUtil;
@@ -360,17 +359,8 @@ public class WebStartServlet extends HttpServlet {
     }
     
     protected PropertiesConfiguration getMirthProperties() throws FileNotFoundException, ConfigurationException {
-        PropertiesConfiguration mirthProperties = PropertiesConfigurationUtil.create();
-        
-        InputStream mirthPropsIs = null;
-        try {
-            mirthPropsIs = ResourceUtil.getResourceStream(getClass(), "mirth.properties");
-            mirthProperties = PropertiesConfigurationUtil.create(mirthPropsIs);
-            mirthProperties = DropInProperties.overlay(mirthProperties, ResourceUtil.getMirthPropertiesDropInDirectory());
-        } finally {
-            ResourceUtil.closeResourceQuietly(mirthPropsIs);
-        }
-        return mirthProperties;
+        // Read the shared, drop-in-merged copy rather than reloading the file on every request.
+        return configurationController.getPropertiesConfiguration();
     }
     
     private String getContextPathProp(PropertiesConfiguration mirthProperties) {

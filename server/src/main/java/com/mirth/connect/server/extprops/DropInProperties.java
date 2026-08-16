@@ -49,7 +49,8 @@ public class DropInProperties {
         for (File file : files) {
             try (InputStream is = new FileInputStream(file)) {
                 properties.load(is);
-            } catch (IOException e) {
+            } catch (IOException | IllegalArgumentException e) {
+                // IllegalArgumentException covers a malformed \\uXXXX escape in Properties.load()
                 logger.error("Unable to read drop-in properties file: " + file.getPath(), e);
             }
         }
@@ -58,7 +59,8 @@ public class DropInProperties {
     /**
      * Returns a configuration with any drop-in files applied on top of the given base
      * configuration. The base configuration is never modified; it is returned as-is when there are
-     * no drop-in files.
+     * no drop-in files. A drop-in file that cannot be read or parsed throws a ConfigurationException
+     * so that the caller can fail closed rather than start with a partially applied configuration.
      */
     public static PropertiesConfiguration overlay(PropertiesConfiguration base, File dropInDir) throws ConfigurationException {
         File[] files = listDropInFiles(dropInDir);
@@ -79,7 +81,10 @@ public class DropInProperties {
         for (File file : files) {
             try (InputStream is = new FileInputStream(file)) {
                 dropIns.load(is);
-            } catch (IOException e) {
+            } catch (IOException | IllegalArgumentException e) {
+                // IllegalArgumentException covers a malformed \\uXXXX escape in Properties.load().
+                // A file that cannot be read or parsed is fatal here so a broken drop-in fails startup
+                // rather than silently reverting to the base configuration.
                 throw new ConfigurationException("Unable to read drop-in properties file: " + file.getPath(), e);
             }
         }

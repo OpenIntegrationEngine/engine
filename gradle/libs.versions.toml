@@ -162,7 +162,7 @@ netty-codec = { module = "io.netty:netty-codec", version = "4.1.136.Final" }
 netty-codec-http = { module = "io.netty:netty-codec-http", version = "4.1.119.Final" }
 netty-codec-http2 = { module = "io.netty:netty-codec-http2", version = "4.1.119.Final" }
 netty-common = { module = "io.netty:netty-common", version = "4.1.119.Final" }
-netty-handler = { module = "io.netty:netty-handler", version = "4.1.119.Final" }
+netty-handler = { module = "io.netty:netty-handler", version = "4.1.135.Final" }
 netty-nio-client = { module = "software.amazon.awssdk:netty-nio-client", version = "2.20.140" }
 netty-reactive-streams = { module = "com.typesafe.netty:netty-reactive-streams", version = "2.0.8" }
 netty-reactive-streams-http = { module = "com.typesafe.netty:netty-reactive-streams-http", version = "2.0.8" }

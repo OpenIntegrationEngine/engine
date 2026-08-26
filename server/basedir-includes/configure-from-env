@@ -16,10 +16,18 @@ if [ $custom_extension_count != 0 ]; then
 	done
 fi
 
-# set storepass and keypass to 'changeme' so they aren't overwritten later
-KEYSTORE_PASS=changeme
-sed -i "s/^keystore\.storepass\s*=\s*.*\$/keystore.storepass = ${KEYSTORE_PASS//\//\\/}/" "$APP_DIR/conf/mirth.properties"
-sed -i "s/^keystore\.keypass\s*=\s*.*\$/keystore.keypass = ${KEYSTORE_PASS//\//\\/}/" "$APP_DIR/conf/mirth.properties"
+# The keystore is created with no passphrase and protected by file permissions instead, so there is
+# no longer a password to pin here. Keystores created by earlier versions are JCEKS and were pinned
+# to 'changeme', so keep those settings when one is already present in appdata.
+KEYSTORE_FILE="$APP_DIR/appdata/keystore.pfx"
+LEGACY_KEYSTORE_FILE="$APP_DIR/appdata/keystore.jks"
+if [ -f "$LEGACY_KEYSTORE_FILE" ] || ! [ -z "${KEYSTORE_DOWNLOAD+x}" ]; then
+	echo "Found an existing keystore at ${LEGACY_KEYSTORE_FILE}, using jks keystore defaults."
+	sed -i 's|^keystore\.path\s*=\s*.*$|keystore.path = ${dir.appdata}/keystore.jks|' "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^keystore\.storepass\s*=\s*.*\$/keystore.storepass = changeme/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^keystore\.keypass\s*=\s*.*\$/keystore.keypass = changeme/" "$APP_DIR/conf/mirth.properties"
+	sed -i "s/^keystore\.type\s*=\s*.*\$/keystore.type = JCEKS/" "$APP_DIR/conf/mirth.properties"
+fi
 
 # merge the environment variables into /opt/engine/conf/mirth.properties
 # db type
@@ -230,9 +238,9 @@ fi
 if ! [ -z "${KEYSTORE_DOWNLOAD+x}" ]; then
 	echo "Downloading keystore at ${KEYSTORE_DOWNLOAD}"
 	if ! [ -z "${ALLOW_INSECURE}" ] && [ "${ALLOW_INSECURE}" == "true" ]; then
-		curl -ksSLf "${KEYSTORE_DOWNLOAD}" -o "$APP_DIR/appdata/keystore.jks" || echo "problem with keystore download"
+		curl -ksSLf "${KEYSTORE_DOWNLOAD}" -o "$LEGACY_KEYSTORE_FILE" || echo "problem with keystore download"
 	else
-		curl -sSLf "${KEYSTORE_DOWNLOAD}" -o "$APP_DIR/appdata/keystore.jks" || echo "problem with keystore download"
+		curl -sSLf "${KEYSTORE_DOWNLOAD}" -o "$LEGACY_KEYSTORE_FILE" || echo "problem with keystore download"
 	fi
 fi
 

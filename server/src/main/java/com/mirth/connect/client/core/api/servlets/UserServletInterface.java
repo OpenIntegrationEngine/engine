@@ -63,7 +63,7 @@ public interface UserServletInterface extends BaseServletInterface {
     @MirthOperation(name = "login", display = "Login")
     public LoginStatus login(// @formatter:off
             @Param("username") @Parameter(description = "The username to login with.", required = true, schema = @Schema(defaultValue = "admin")) @FormParam("username") String username,
-            @Param(value = "password", excludeFromAudit = true) @Parameter(description = "The password to login with.", required = true, schema = @Schema(defaultValue = "admin")) @FormParam("password") String password) throws ClientException;
+            @Param(value = "password", excludeFromAudit = true) @Parameter(description = "The password to login with.", required = true) @FormParam("password") String password) throws ClientException;
     // @formatter:on
 
     @POST

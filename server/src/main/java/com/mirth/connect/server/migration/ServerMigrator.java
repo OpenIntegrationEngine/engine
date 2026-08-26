@@ -25,11 +25,13 @@ import java.util.Map.Entry;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.PropertiesConfigurationLayout;
 import org.apache.commons.dbutils.DbUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.mirth.connect.client.core.PropertiesConfigurationUtil;
 import com.mirth.connect.client.core.Version;
 import com.mirth.connect.model.Channel;
 import com.mirth.connect.model.ExportClearable;
@@ -38,9 +40,16 @@ import com.mirth.connect.model.codetemplates.CodeTemplate;
 import com.mirth.connect.model.codetemplates.CodeTemplateLibrary;
 import com.mirth.connect.model.converters.ObjectXMLSerializer;
 import com.mirth.connect.model.util.MigrationException;
+import com.mirth.connect.server.Mirth;
+import com.mirth.connect.server.controllers.ConfigurationController;
+import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.server.util.DatabaseUtil;
 
 public class ServerMigrator extends Migrator {
+    private static final String INITIAL_ADMIN_USERNAME = "admin";
+    private static final String INITIAL_ADMIN_PASSWORD_PROPERTY = "server.initialadminpassword";
+    private static final int GENERATED_PASSWORD_LENGTH = 20;
+
     private Logger logger = LogManager.getLogger(getClass());
 
     public ServerMigrator() {
@@ -250,24 +259,58 @@ public class ServerMigrator extends Migrator {
         if (!DatabaseUtil.tableExists(connection, "CONFIGURATION")) {
             executeScript("/" + getDatabaseType() + "/" + getDatabaseType() + "-database.sql");
 
-            /*
-             * We must update the password date for the initial user. Previously we let the database
-             * set this via CURRENT_TIMESTAMP, however this could create problems if the database is
-             * running on a separate machine in a different timezone. (MIRTH-2902)
-             */
-            PreparedStatement statement = null;
-
-            try {
-                statement = getConnection().prepareStatement("UPDATE PERSON_PASSWORD SET PASSWORD_DATE = ?");
-                statement.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
-                statement.executeUpdate();
-            } catch (SQLException e) {
-                throw new MigrationException(e);
-            } finally {
-                DbUtils.closeQuietly(statement);
-            }
+            initializeAdminPassword();
 
             updateVersion(Version.getLatest());
+        }
+    }
+
+    /**
+     * Sets the password for the initial administrator account. The password is taken from the
+     * server.initialadminpassword property if it is set, otherwise a random password is generated
+     * and logged once so that it can be used to log in for the first time.
+     * 
+     * The password date is set here rather than letting the database default it via
+     * CURRENT_TIMESTAMP, since that could create problems if the database is running on a separate
+     * machine in a different timezone. (MIRTH-2902)
+     */
+    private void initializeAdminPassword() throws MigrationException {
+        ConfigurationController configurationController = ControllerFactory.getFactory().createConfigurationController();
+        PropertiesConfiguration mirthProperties = PropertiesConfigurationUtil.create();
+        configurationController.updatePropertiesConfiguration(mirthProperties);
+        // Log through the central Mirth.class logger to hit log4j filter configs
+        Logger startupLogger = LogManager.getLogger(Mirth.class);
+
+        String password = mirthProperties.getString(INITIAL_ADMIN_PASSWORD_PROPERTY);
+        if (StringUtils.isBlank(password)) {
+            // Prefix ensures the password meets complexity requirements
+            password = "Aa1!" + RandomStringUtils.secure().nextAlphanumeric(GENERATED_PASSWORD_LENGTH);
+
+            startupLogger.warn(System.lineSeparator() +
+                "********************************************************************************" + System.lineSeparator() +
+                "************   Initial {} password is {}   ************" + System.lineSeparator() +
+                "********************************************************************************",
+                INITIAL_ADMIN_USERNAME, password);
+        }
+
+        PreparedStatement statement = null;
+        try {
+            String digestedPassword = configurationController.getDigester().digest(password);
+
+            statement = getConnection().prepareStatement(
+                "INSERT INTO PERSON_PASSWORD (PERSON_ID, PASSWORD, PASSWORD_DATE) "
+                + "SELECT ID, ?, ? FROM PERSON WHERE USERNAME = ?");
+            statement.setString(1, digestedPassword);
+            statement.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+            statement.setString(3, INITIAL_ADMIN_USERNAME);
+
+            if (statement.executeUpdate() != 1) {
+                throw new MigrationException("Could not set the initial password for the \"" + INITIAL_ADMIN_USERNAME + "\" user.");
+            }
+        } catch (SQLException e) {
+            throw new MigrationException(e);
+        } finally {
+            DbUtils.closeQuietly(statement);
         }
     }
 

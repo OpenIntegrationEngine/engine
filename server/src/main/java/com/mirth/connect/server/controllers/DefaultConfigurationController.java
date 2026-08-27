@@ -1241,13 +1241,13 @@ public class DefaultConfigurationController extends ConfigurationController {
             } else {
                 keyStore.load(null, keyStorePassword);
                 logger.debug("keystore file not found, created new one");
+                FilePermissionUtil.createOwnerOnlyFile(keyStoreFile);
             }
 
             configureEncryption(provider, keyStore, keyPassword);
             generateDefaultCertificate(provider, keyStore, keyPassword);
 
             // write the keystore back to the file
-            FilePermissionUtil.createOwnerOnlyFile(keyStoreFile);
             fos = new FileOutputStream(keyStoreFile);
             keyStore.store(fos, keyStorePassword);
         } catch (Exception e) {

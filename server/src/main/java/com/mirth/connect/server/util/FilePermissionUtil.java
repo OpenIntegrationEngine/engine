@@ -4,17 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.AclEntry;
-import java.nio.file.attribute.AclEntryPermission;
-import java.nio.file.attribute.AclEntryType;
-import java.nio.file.attribute.AclFileAttributeView;
-import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.nio.file.attribute.UserPrincipal;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
+
+import com.sun.jna.Platform;
 
 public class FilePermissionUtil {
 
@@ -23,59 +18,21 @@ public class FilePermissionUtil {
     private FilePermissionUtil() {}
 
     /*
-     * Creates the file if it does not already exist, and restricts it so that only the user the
-     * server runs as may read or write it. This is what protects files that hold key material in
-     * place of a passphrase, so the file must never be created readable and then locked down
-     * afterwards; on POSIX the permissions are applied as part of the create itself.
+     * Creates a file that only the account the server runs as, and whoever administers the machine,
+     * may read or write.
      */
     public static void createOwnerOnlyFile(File file) throws IOException {
         Path path = file.toPath();
+        File parent = file.getParentFile();
 
-        if (!Files.exists(path)) {
-            File parent = file.getParentFile();
-
-            if (parent != null) {
-                Files.createDirectories(parent.toPath());
-            }
-
-            if (isPosix(path)) {
-                Files.createFile(path, PosixFilePermissions.asFileAttribute(OWNER_ONLY));
-                return;
-            }
-
-            Files.createFile(path);
+        if (parent != null) {
+            Files.createDirectories(parent.toPath());
         }
 
-        restrictToOwner(path);
-    }
-
-    /*
-     * Replaces the permissions on an existing file with owner read/write only. On Windows the
-     * entire ACL is replaced with a single entry for the file's owner, which also detaches the file
-     * from any permissions inherited from its parent directory.
-     */
-    private static void restrictToOwner(Path path) throws IOException {
-        if (isPosix(path)) {
-            Files.setPosixFilePermissions(path, OWNER_ONLY);
-            return;
+        if (Platform.isWindows()) {
+            WindowsFilePermissionUtil.createRestrictedFile(path);
+        } else {
+            Files.createFile(path, PosixFilePermissions.asFileAttribute(OWNER_ONLY));
         }
-
-        AclFileAttributeView aclView = Files.getFileAttributeView(path, AclFileAttributeView.class);
-
-        if (aclView != null) {
-            UserPrincipal owner = aclView.getOwner();
-            // @formatter:off
-            AclEntry entry = AclEntry.newBuilder()
-                    .setType(AclEntryType.ALLOW)
-                    .setPrincipal(owner)
-                    .setPermissions(EnumSet.allOf(AclEntryPermission.class))
-                    .build();
-            // @formatter:on
-            aclView.setAcl(Collections.singletonList(entry));
-        }
-    }
-
-    private static boolean isPosix(Path path) {
-        return Files.getFileAttributeView(path, PosixFileAttributeView.class) != null;
     }
 }

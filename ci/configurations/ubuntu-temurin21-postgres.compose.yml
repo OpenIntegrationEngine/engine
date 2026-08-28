@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:18.3-alpine
+    environment:
+      POSTGRES_USER: mirthdb
+      POSTGRES_PASSWORD: mirthdb
+      POSTGRES_DB: mirthdb
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U mirthdb -d mirthdb
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
+
+  oie:
+    image: ${OIE_IMAGE}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE: postgres
+      DATABASE_URL: jdbc:postgresql://db:5432/mirthdb
+      DATABASE_USERNAME: mirthdb
+      DATABASE_PASSWORD: mirthdb
+      DATABASE_MAX_CONNECTIONS: 20
+      DATABASE_MAX_RETRY: 10
+      DATABASE_RETRY_WAIT: 5000
+    ports:
+      - "8443:8443"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -lc 'exec 3<>/dev/tcp/127.0.0.1/8443'
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 40s

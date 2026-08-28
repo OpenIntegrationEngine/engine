@@ -1,0 +1,59 @@
+// Integration ("smoke") tests that run against a live OIE server started by
+// ci/runtests.sh. They are not unit tests and are deliberately absent from the
+// root build/test/clean aggregates: `./gradlew build` (including the one inside
+// the Dockerfile builder stage) must never try to reach a server.
+
+apply plugin: 'distribution'
+
+apply from: 'generate-smoke-tests.gradle'
+
+def clientCoreJar = project(':server').tasks.named('clientCoreJar')
+def donkeyModelJar = project(':donkey').tasks.named('donkeyModelJar')
+
+dependencies {
+    // Client, Channel, DashboardStatus, MessageFilter, ObjectXMLSerializer
+    testCompileOnly files(clientCoreJar)
+    // RawMessage, Message, ConnectorMessage, MessageContent, Status, DeployedState
+    testCompileOnly files(donkeyModelJar)
+    // Provided at runtime by /opt/engine/server-lib (server-main uses it too).
+    testCompileOnly libs.snakeyaml
+
+    testImplementation libs.junit.platform.console.standalone
+}
+
+def generateSmokeTests = tasks.named('generateSmokeTests')
+
+sourceSets {
+    test {
+        java.srcDir(generateSmokeTests.flatMap { it.generatedSources })
+        resources.srcDir(generateSmokeTests.flatMap { it.generatedResources })
+    }
+}
+
+// The root convention applies useJUnit() to every Test task; this module is JUnit 5.
+tasks.named('test') {
+    useJUnitPlatform()
+    // Only run our tests if a live server URL is provided
+    // `./gradlew :smoketest:test -Doie.baseUrl=https://localhost:8443`
+    onlyIf { System.getProperty('oie.baseUrl') != null }
+    systemProperties System.getProperties().findAll { it.key.toString().startsWith('oie.') }
+}
+
+tasks.named('jar', Jar) {
+    description = 'Assembles the smoke-test harness and its fixture resources.'
+    from sourceSets.test.output
+}
+
+distributions {
+    harness {
+        contents {
+            from(tasks.named('jar')) {
+                into 'lib'
+            }
+            from(configurations.testRuntimeClasspath) {
+                into 'lib'
+            }
+            from(rootProject.file('ci/run-harness.sh'))
+        }
+    }
+}

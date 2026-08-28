@@ -79,7 +79,7 @@ public class Log4jMigrationsTest {
 
         try {
             Files.setPosixFilePermissions(path, EnumSet.of(PosixFilePermission.OWNER_READ));
-            assertFalse(Files.isWritable(path));
+            Assume.assumeFalse("Test requires the file to be effectively non-writable", Files.isWritable(path));
             System.setErr(new PrintStream(errBytes, true, StandardCharsets.UTF_8.name()));
 
             Log4jMigrations.migrateConfiguration(file);

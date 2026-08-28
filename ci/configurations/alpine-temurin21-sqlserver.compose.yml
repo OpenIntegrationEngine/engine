@@ -1,0 +1,54 @@
+services:
+  db:
+    platform: linux/amd64
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: OieSqlServerPassw0rd!
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools18/bin/sqlcmd -C -S 127.0.0.1 -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" || /opt/mssql-tools/bin/sqlcmd -S 127.0.0.1 -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1"
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  db-init:
+    platform: linux/amd64
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: OieSqlServerPassw0rd!
+    restart: "no"
+    entrypoint:
+      - /bin/bash
+      - -lc
+      - /opt/mssql-tools18/bin/sqlcmd -C -S db -U sa -P "$$MSSQL_SA_PASSWORD" -Q "IF DB_ID('mirthdb') IS NULL CREATE DATABASE mirthdb;" || /opt/mssql-tools/bin/sqlcmd -S db -U sa -P "$$MSSQL_SA_PASSWORD" -Q "IF DB_ID('mirthdb') IS NULL CREATE DATABASE mirthdb;"
+
+  oie:
+    image: ${OIE_IMAGE}
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      DATABASE: sqlserver
+      DATABASE_URL: jdbc:jtds:sqlserver://db:1433/mirthdb
+      DATABASE_USERNAME: sa
+      DATABASE_PASSWORD: OieSqlServerPassw0rd!
+      DATABASE_MAX_CONNECTIONS: 20
+      DATABASE_MAX_RETRY: 20
+      DATABASE_RETRY_WAIT: 5000
+    ports:
+      - "8443:8443"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bash -lc 'exec 3<>/dev/tcp/127.0.0.1/8443'
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 40s

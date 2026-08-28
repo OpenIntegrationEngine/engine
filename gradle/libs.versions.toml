@@ -141,6 +141,7 @@ jsr181-api = { module = "javax.jws:jsr181-api", version = "1.0-MR1" }
 jsr305 = { module = "com.google.code.findbugs:jsr305", version = "3.0.2" }
 junit = { module = "junit:junit", version = "4.8.1" }
 junit-v4-13-1 = { module = "junit:junit", version = "4.13.1" }
+junit-platform-console-standalone = { module = "org.junit.platform:junit-platform-console-standalone", version = "1.11.4" }
 kms = { module = "software.amazon.awssdk:kms", version = "2.15.28" }
 libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version = "8.12.50" }
 listenablefuture = { module = "com.google.guava:listenablefuture", version = "9999.0-empty-to-avoid-conflict-with-guava" }

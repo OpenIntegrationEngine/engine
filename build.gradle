@@ -192,9 +192,11 @@ subprojects {
         options.annotationProcessorPath = configurations.testCompileClasspath
     }
 
-    // The default java-plugin jar (build/libs/<name>.jar) is not an OIE
-    // artifact; every real jar is declared explicitly per module.
-    tasks.named('jar') { enabled = false }
+    // Legacy modules assemble their published archives explicitly. 
+    // Newer modules use Gradle's normal JAR convention.
+    if (project.name in ['donkey', 'server', 'client', 'command', 'generator']) {
+        tasks.named('jar') { enabled = false }
+    }
 
     tasks.withType(AbstractArchiveTask).configureEach {
         preserveFileTimestamps = false

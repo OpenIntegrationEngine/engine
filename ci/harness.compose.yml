@@ -1,0 +1,23 @@
+# Overlay that adds the smoke-test harness to any configuration under
+# ci/configurations.
+services:
+  # Merged into whichever configuration is being run, so every stack seeds the same
+  # admin password instead of generating a random one the harness cannot know.
+  oie:
+    environment:
+      _MP_SERVER_INITIALADMINPASSWORD: ${OIE_ADMIN_PASSWORD}
+
+  harness:
+    image: oie-ci-harness:local
+    depends_on:
+      oie:
+        condition: service_healthy
+    # Tests are run with the UID/GID of the host so we don't have permission issues
+    user: "${HOST_UID}:${HOST_GID}"
+    environment:
+      HOME: /tmp
+      OIE_BASE_URL: https://oie:8443
+      OIE_CONFIGURATION: ${OIE_CONFIGURATION}
+      OIE_PASSWORD: ${OIE_ADMIN_PASSWORD}
+    volumes:
+      - ${WORKSPACE}/ci/test-results:/results

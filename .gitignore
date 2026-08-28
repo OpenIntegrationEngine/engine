@@ -115,6 +115,9 @@ donkey/donkey-test
 /MapUtilTestDB/
 /testconf/
 
+# /ci
+/ci/test-results/
+
 # /client/
 /client/logs
 /client/classes

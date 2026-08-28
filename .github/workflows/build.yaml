@@ -8,45 +8,47 @@ on:
     branches:
       - main
 
-jobs:
-  event_file:
-    name: "Event File"
-    runs-on: ubuntu-latest
-    steps:
-    - name: Upload
-      uses: actions/upload-artifact@v4
-      with:
-        name: Event File
-        path: ${{ github.event_path }}
+# Every job builds the same Dockerfile, so this must match across jobs or they
+# miss each other's build cache.
+env:
+  GRADLE_BUILD_ARGS: ${{ github.ref != 'refs/heads/main' && '-PdisableSigning=true -Pcoverage=true' || '' }}
 
+jobs:
   build:
     runs-on: ubuntu-latest
+
+    outputs:
+      configurations: ${{ steps.configurations.outputs.names }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          java-package: 'jdk+fx'
-          distribution: 'zulu'
+      - name: List smoke-test configurations
+        id: configurations
+        run: |
+          names=$(basename -s .compose.yml ci/configurations/*.compose.yml | jq -Rsc 'split("\n") - [""]')
+          echo "names=$names" >> "$GITHUB_OUTPUT"
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
-        with:
-          validate-wrappers: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build OIE (signed)
-        if: github.ref == 'refs/heads/main'
-        run: ./gradlew build
+      - name: Expose GitHub Actions runtime for buildx cache
+        uses: crazy-max/ghaction-github-runtime@v3
 
-      - name: Build OIE (unsigned)
-        if: github.ref != 'refs/heads/main'
-        run: ./gradlew build -PdisableSigning=true -Pcoverage=true
+      - name: Build and run tests
+        run: |
+          rm -rf docker-build-output
+          docker buildx build \
+            --progress=plain \
+            --build-arg "GRADLE_BUILD_ARGS=${GRADLE_BUILD_ARGS}" \
+            --cache-from type=gha,scope=oie-build \
+            --cache-to type=gha,scope=oie-build,mode=max \
+            --target build-output-export \
+            --output type=local,dest=docker-build-output \
+            .
 
       - name: Package distribution
-        run: tar czf openintegrationengine.tar.gz -C server/ setup --transform 's|^setup|openintegrationengine/|'
+        run: tar czf openintegrationengine.tar.gz -C docker-build-output/app/server setup --transform 's|^setup|openintegrationengine/|'
 
       - name: Create artifact
         uses: actions/upload-artifact@v4
@@ -58,14 +60,66 @@ jobs:
         if: (!cancelled())
         run: |
           mkdir -p aggregate-test-results
-          # Copy the directory structures
-          cp -r --parents */build/test-results aggregate-test-results/
+          cp -r --parents docker-build-output/app/client/build/test-results aggregate-test-results/
+          cp -r --parents docker-build-output/app/command/build/test-results aggregate-test-results/
+          cp -r --parents docker-build-output/app/donkey/build/test-results aggregate-test-results/
+          cp -r --parents docker-build-output/app/server/build/test-results aggregate-test-results/
 
       - name: Upload Test Results
         if: (!cancelled())
         uses: actions/upload-artifact@v4
         with:
-          name: Test Results
+          name: Test Results (unit)
           path: |
             aggregate-test-results/**/*.xml
 
+  integration-test:
+    needs: build
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: ${{ fromJSON(needs.build.outputs.configurations) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Expose GitHub Actions runtime for buildx cache
+        uses: crazy-max/ghaction-github-runtime@v3
+
+      # Read-only: the build job populates this cache, and concurrent writers
+      # from the matrix would just fight over the same scope.
+      - name: Run integration tests
+        env:
+          EXTRA_BUILDX_ARGS: --cache-from type=gha,scope=oie-build
+        run: ci/runtests.sh ${{ matrix.configuration }}
+
+      - name: Upload Test Results
+        if: (!cancelled())
+        uses: actions/upload-artifact@v4
+        with:
+          name: Test Results (${{ matrix.configuration }})
+          path: |
+            ci/test-results/**/*.xml
+
+  test-results:
+    needs: [build, integration-test]
+    if: (!cancelled())
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Upload Event File
+        uses: actions/upload-artifact@v4
+        with:
+          name: Event File
+          path: ${{ github.event_path }}
+      - name: Merge Test Results
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: Test Results
+          pattern: Test Results (*)
+          delete-merged: true

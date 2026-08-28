@@ -118,6 +118,7 @@ import com.mirth.connect.model.converters.DocumentSerializer;
 import com.mirth.connect.model.converters.ObjectXMLSerializer;
 import com.mirth.connect.plugins.directoryresource.DirectoryResourceProperties;
 import com.mirth.connect.server.ExtensionLoader;
+import com.mirth.connect.server.extprops.DropInProperties;
 import com.mirth.connect.server.mybatis.KeyValuePair;
 import com.mirth.connect.server.tools.ClassPathResource;
 import com.mirth.connect.server.util.DatabaseUtil;
@@ -166,6 +167,12 @@ public class DefaultConfigurationController extends ConfigurationController {
     private static PropertiesConfiguration versionConfig = PropertiesConfigurationUtil.create();
     private static FileBasedConfigurationBuilder<PropertiesConfiguration> mirthConfigBuilder = PropertiesConfigurationUtil.createBuilder();
     protected static PropertiesConfiguration mirthConfig = PropertiesConfigurationUtil.create();
+    // The file-backed configuration that saveMirthConfig() writes. Kept separate from mirthConfig
+    // so that values from mirth.properties.d drop-in files are never baked into mirth.properties.
+    protected static PropertiesConfiguration mirthFileConfig = mirthConfig;
+    // Set when a mirth.properties.d drop-in file cannot be read, so the server refuses to start
+    // rather than run with a silently reverted configuration. Null when configuration loaded cleanly.
+    private static volatile String configurationLoadError;
     private static EncryptionSettings encryptionConfig;
     private static DatabaseSettings databaseConfig;
     private static String apiBypassword;
@@ -229,13 +236,26 @@ public class DefaultConfigurationController extends ConfigurationController {
         try {
             // Delimiter parsing disabled by default so getString() returns the whole property, even if there are commas
             mirthConfigBuilder = PropertiesConfigurationUtil.createBuilder(new File(ClassPathResource.getResourceURI("mirth.properties")));
-            mirthConfig = mirthConfigBuilder.getConfiguration();
+            mirthFileConfig = mirthConfigBuilder.getConfiguration();
+            // Also assign the read view now so anything reading during migration sees real values
+            mirthConfig = mirthFileConfig;
 
-            MigrationController.getInstance().migrateConfiguration(mirthConfig);
+            MigrationController.getInstance().migrateConfiguration(mirthFileConfig);
             try {
                 mirthConfigBuilder.save();
             } catch (ConfigurationException e) {
                 logger.error("Unable to update mirth.properties version during migration.", e);
+            }
+
+            try {
+                mirthConfig = DropInProperties.overlay(mirthFileConfig, ResourceUtil.getMirthPropertiesDropInDirectory());
+            } catch (ConfigurationException e) {
+                // Fail closed: a broken drop-in file must stop startup rather than silently reverting
+                // to the base configuration, which could serve weaker settings than the administrator
+                // intended. mirthConfig stays at the base config and getConfigurationLoadError() reports
+                // the problem so the server refuses to start.
+                configurationLoadError = "Unable to load conf/mirth.properties.d drop-in configuration: " + e.getMessage();
+                logger.error(configurationLoadError, e);
             }
 
             // load the server version
@@ -1245,11 +1265,11 @@ public class DefaultConfigurationController extends ConfigurationController {
                  */
                 if (Arrays.equals(keyStorePassword, DEFAULT_STOREPASS.toCharArray()) && Arrays.equals(keyPassword, DEFAULT_STOREPASS.toCharArray())) {
                     String keyStorePasswordStr = generateNewPassword();
-                    mirthConfig.setProperty("keystore.storepass", keyStorePasswordStr);
+                    setMirthConfigProperty("keystore.storepass", keyStorePasswordStr);
                     keyStorePassword = keyStorePasswordStr.toCharArray();
 
                     String keyPasswordStr = generateNewPassword();
-                    mirthConfig.setProperty("keystore.keypass", keyPasswordStr);
+                    setMirthConfigProperty("keystore.keypass", keyPasswordStr);
                     keyPassword = keyPasswordStr.toCharArray();
 
                     saveMirthConfig();
@@ -1329,15 +1349,23 @@ public class DefaultConfigurationController extends ConfigurationController {
 
             if (!StringUtils.startsWith(encryptedPassword, "{")) {
                 // Re-encrypt if still using the old-style format
-                mirthConfig.setProperty(readOnly ? DatabaseConstants.DATABASE_READONLY_PASSWORD : DatabaseConstants.DATABASE_PASSWORD, EncryptionSettings.ENCRYPTION_PREFIX + encryptor.encrypt(decryptedPassword));
+                setMirthConfigProperty(readOnly ? DatabaseConstants.DATABASE_READONLY_PASSWORD : DatabaseConstants.DATABASE_PASSWORD, EncryptionSettings.ENCRYPTION_PREFIX + encryptor.encrypt(decryptedPassword));
                 saveMirthConfig();
             }
         } else if (StringUtils.isNotBlank(password)) {
             // encrypt the password and write it back to the file
             String encryptedPassword = EncryptionSettings.ENCRYPTION_PREFIX + encryptor.encrypt(password);
-            mirthConfig.setProperty(readOnly ? DatabaseConstants.DATABASE_READONLY_PASSWORD : DatabaseConstants.DATABASE_PASSWORD, encryptedPassword);
+            setMirthConfigProperty(readOnly ? DatabaseConstants.DATABASE_READONLY_PASSWORD : DatabaseConstants.DATABASE_PASSWORD, encryptedPassword);
 
             saveMirthConfig();
+        }
+    }
+
+    private void setMirthConfigProperty(String key, Object value) {
+        mirthConfig.setProperty(key, value);
+
+        if (mirthFileConfig != mirthConfig) {
+            mirthFileConfig.setProperty(key, value);
         }
     }
 
@@ -1350,7 +1378,7 @@ public class DefaultConfigurationController extends ConfigurationController {
         OutputStream os = new FileOutputStream(new File(confDir, "mirth.properties"));
 
         try {
-            PropertiesConfigurationUtil.saveTo(mirthConfig, os);
+            PropertiesConfigurationUtil.saveTo(mirthFileConfig, os);
         } finally {
             ResourceUtil.closeResourceQuietly(os);
         }
@@ -1436,6 +1464,16 @@ public class DefaultConfigurationController extends ConfigurationController {
             ResourceUtil.closeResourceQuietly(mirthPropsIs);
             ResourceUtil.closeResourceQuietly(keyStoreOuputStream);
         }
+    }
+
+    @Override
+    public PropertiesConfiguration getPropertiesConfiguration() {
+        return mirthConfig;
+    }
+
+    @Override
+    public String getConfigurationLoadError() {
+        return configurationLoadError;
     }
 
     @Override

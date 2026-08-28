@@ -143,7 +143,10 @@ function Test-IsValidJavaVersion([string] $JavaCmd) {
     # Execute 'java -version' and capture the output from stderr
     # Example output: openjdk version "17.0.2" 2022-07-19
     try {
-        $versionOutput = & $JavaCmd -version 2>&1
+        $versionOutput = & {
+            $ErrorActionPreference = 'Continue';
+            & $JavaCmd -version 2>&1 | Out-String;
+        };
     }
     catch {
         return $false
@@ -242,7 +245,10 @@ if (-not $FinalJavaCmd -and -not [string]::IsNullOrWhiteSpace($script:VmOptionsJ
 }
 
 # Check JAVA_HOME (no fail-fast).
-if (-not $FinalJavaCmd -and (Test-Path -Path $env:JAVA_HOME -PathType Container)) {
+if (-not $FinalJavaCmd `
+    -and -not [string]::IsNullOrWhiteSpace($env:JAVA_HOME) `
+    -and (Test-Path -Path $env:JAVA_HOME -PathType Container)
+) {
     $javaHomePath = Join-Path -Path (Join-Path -Path $env:JAVA_HOME -ChildPath "bin") -ChildPath "java"
     if (Test-IsValidJavaVersion -JavaCmd $javaHomePath) {
         Write-Host "Info: Found suitable java version specified by the JAVA_HOME environment variable" -ForegroundColor Green

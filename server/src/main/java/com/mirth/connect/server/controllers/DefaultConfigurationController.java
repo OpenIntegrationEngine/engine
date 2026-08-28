@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -121,6 +122,7 @@ import com.mirth.connect.server.ExtensionLoader;
 import com.mirth.connect.server.mybatis.KeyValuePair;
 import com.mirth.connect.server.tools.ClassPathResource;
 import com.mirth.connect.server.util.DatabaseUtil;
+import com.mirth.connect.server.util.FilePermissionUtil;
 import com.mirth.connect.server.util.PasswordRequirementsChecker;
 import com.mirth.connect.server.util.ResourceUtil;
 import com.mirth.connect.server.util.SqlConfig;
@@ -194,8 +196,6 @@ public class DefaultConfigurationController extends ConfigurationController {
     private static final String XSTREAM_DENY_TYPES = "xstream.denytypes";
     private static final String XSTREAM_ALLOW_TYPES = "xstream.allowtypes";
     private static final String XSTREAM_ALLOW_TYPE_HIERARCHIES = "xstream.allowtypehierarchies";
-
-    private static final String DEFAULT_STOREPASS = "81uWxplDtB";
 
     // singleton pattern
     private static ConfigurationController instance = null;
@@ -1239,24 +1239,9 @@ public class DefaultConfigurationController extends ConfigurationController {
                 keyStore.load(keyStoreFileIs, keyStorePassword);
                 logger.debug("found and loaded keystore: " + keyStoreFile.getAbsolutePath());
             } else {
-                /*
-                 * If a new keystore is being created, and the passwords are the defaults, then
-                 * create new passwords.
-                 */
-                if (Arrays.equals(keyStorePassword, DEFAULT_STOREPASS.toCharArray()) && Arrays.equals(keyPassword, DEFAULT_STOREPASS.toCharArray())) {
-                    String keyStorePasswordStr = generateNewPassword();
-                    mirthConfig.setProperty("keystore.storepass", keyStorePasswordStr);
-                    keyStorePassword = keyStorePasswordStr.toCharArray();
-
-                    String keyPasswordStr = generateNewPassword();
-                    mirthConfig.setProperty("keystore.keypass", keyPasswordStr);
-                    keyPassword = keyPasswordStr.toCharArray();
-
-                    saveMirthConfig();
-                }
-
                 keyStore.load(null, keyStorePassword);
                 logger.debug("keystore file not found, created new one");
+                FilePermissionUtil.createOwnerOnlyFile(keyStoreFile);
             }
 
             configureEncryption(provider, keyStore, keyPassword);
@@ -1271,19 +1256,6 @@ public class DefaultConfigurationController extends ConfigurationController {
             ResourceUtil.closeResourceQuietly(keyStoreFileIs);
             ResourceUtil.closeResourceQuietly(fos);
         }
-    }
-
-    /**
-     * Creates a random 12-character alphanumeric password.
-     */
-    private String generateNewPassword() {
-        String characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        SecureRandom random = new SecureRandom();
-        StringBuilder builder = new StringBuilder();
-        for (int i = 1; i <= 12; i++) {
-            builder.append(characters.charAt(random.nextInt(characters.length())));
-        }
-        return builder.toString();
     }
 
     @Override

@@ -18,9 +18,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
@@ -521,6 +524,30 @@ public class ER7Serializer implements IMessageSerializer {
             message.setParser(this);
 
             return message;
+        }
+
+        /*
+         * HAPI 2.3's XMLUtils.parse builds its DOM parser with no protection against external XML
+         * entities, so a strict-parsed inbound message carrying a DOCTYPE can trigger XXE (SSRF and
+         * local file disclosure), reachable unauthenticated over an MLLP/TCP listener. This is the
+         * only method that reaches that parser, so override it to reject any DOCTYPE up front, using
+         * the same disallow-doctype-decl hardening already applied to the fromXML path above.
+         * Legitimate HL7 v2.x XML never contains a DOCTYPE.
+         *
+         * This stays stronger than HAPI's own >= 2.4 fix, which permits a DOCTYPE and only disables
+         * entity resolution. Remove only once HAPI is upgraded to >= 2.4 AND that weaker posture is
+         * deliberately accepted.
+         */
+        @Override
+        protected synchronized Document parseStringIntoDocument(String xml) throws HL7Exception {
+            try {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+                factory.setNamespaceAware(true);
+                return factory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
+            } catch (Exception e) {
+                throw new HL7Exception("Exception parsing XML", e);
+            }
         }
     }
 

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -63,6 +64,8 @@ import com.mirth.connect.server.mybatis.MessageTextResult;
 import com.mirth.connect.server.util.DICOMMessageUtil;
 import com.mirth.connect.server.util.ListRangeIterator;
 import com.mirth.connect.server.util.ListRangeIterator.ListRangeItem;
+import com.mirth.connect.server.util.MetaDataColumnException;
+import com.mirth.connect.server.util.MetaDataColumnValidator;
 import com.mirth.connect.server.util.SqlConfig;
 import com.mirth.connect.util.AttachmentUtil;
 import com.mirth.connect.util.MessageEncryptionUtil;
@@ -676,6 +679,24 @@ public class DonkeyMessageController extends MessageController {
         }
     }
 
+    /**
+     * Validation gate against SQL injection through custom metadata column names, which the search
+     * mappers interpolate into SQL as identifiers (MyBatis ${} substitution). It is called from the
+     * FilterOptions constructor, which every message search path (get, count, remove, reprocess;
+     * export runs through get) builds exactly once, before its batch loop. That is the single choke
+     * point through which a search must pass, so a new search entry point cannot bypass the check.
+     * Throws MetaDataColumnException, a plain domain exception left to bubble up: on the synchronous
+     * API paths the engine turns it into a 500 like any other uncaught controller exception, and the
+     * asynchronous reprocess path catches it to log and abort the run. The injection is blocked
+     * regardless of the resulting status, because the throw happens before any query runs.
+     */
+    private void validateMetaDataColumns(String channelId, MessageFilter filter) {
+        Optional<String> unknownColumn = MetaDataColumnValidator.findUnknownColumn(filter, () -> ControllerFactory.getFactory().createChannelController().getMetaDataColumns(channelId));
+        if (unknownColumn.isPresent()) {
+            throw new MetaDataColumnException(channelId, unknownColumn.get());
+        }
+    }
+
     private Map<Long, MessageSearchResult> searchAll(SqlSession session, Map<String, Object> params, MessageFilter filter, Long localChannelId, boolean includeMessageData, FilterOptions filterOptions) {
         Map<Long, MessageSearchResult> foundMessages = new HashMap<Long, MessageSearchResult>();
 
@@ -1148,6 +1169,8 @@ public class DonkeyMessageController extends MessageController {
         private boolean searchText;
 
         public FilterOptions(MessageFilter filter, String channelId, boolean readOnly) {
+            validateMetaDataColumns(channelId, filter);
+
             if (filter.getMinMessageId() != null && filter.getMaxMessageId() != null && filter.getMinMessageId() > filter.getMaxMessageId()) {
                 /*
                  * If the min message id is greater than the max, use them directly so they fail at

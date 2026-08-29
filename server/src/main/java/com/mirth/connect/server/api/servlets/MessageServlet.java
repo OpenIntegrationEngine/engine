@@ -62,6 +62,7 @@ import com.mirth.connect.server.controllers.EngineController;
 import com.mirth.connect.server.controllers.EventController;
 import com.mirth.connect.server.controllers.MessageController;
 import com.mirth.connect.server.util.DICOMMessageUtil;
+import com.mirth.connect.server.util.MetaDataColumnException;
 import com.mirth.connect.util.MessageImporter.MessageImportException;
 import com.mirth.connect.util.messagewriter.EncryptionType;
 import com.mirth.connect.util.messagewriter.MessageWriterOptions;
@@ -222,6 +223,11 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
             public void run() {
                 try {
                     messageController.reprocessMessages(channelId, filter, replace, metaDataIds);
+                } catch (MetaDataColumnException e) {
+                    // Reprocess is asynchronous, so the client already received its response; an
+                    // undefined metadata column is rejected here (the run is aborted, nothing is
+                    // reprocessed) and logged rather than surfaced as a response status.
+                    logger.warn("Rejected reprocess for channel {} referencing unknown metadata column: {}", e.getChannelId(), e.getColumnName());
                 } catch (ControllerException e) {
                     logger.error("Error reprocessing messages for channel " + channelId + ": " + e.getMessage(), e);
                 }
@@ -387,7 +393,7 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
 
         eventController.dispatchEvent(event);
     }
-    
+
     private MessageFilter getMessageFilter(Long minMessageId, Long maxMessageId, Long minOriginalId, Long maxOriginalId, Long minImportId, Long maxImportId, Calendar startDate, Calendar endDate, String textSearch, Boolean textSearchRegex, Set<Status> statuses, Set<Integer> includedMetaDataIds, Set<Integer> excludedMetaDataIds, String serverId, Set<String> rawContentSearches, Set<String> processedRawContentSearches, Set<String> transformedContentSearches, Set<String> encodedContentSearches, Set<String> sentContentSearches, Set<String> responseContentSearches, Set<String> responseTransformedContentSearches, Set<String> processedResponseContentSearches, Set<String> connectorMapContentSearches, Set<String> channelMapContentSearches, Set<String> sourceMapContentSearches, Set<String> responseMapContentSearches, Set<String> processingErrorContentSearches, Set<String> postprocessorErrorContentSearches, Set<String> responseErrorContentSearches, Set<MetaDataSearch> metaDataSearches, Set<MetaDataSearch> metaDataCaseInsensitiveSearches, Set<String> textSearchMetaDataColumns, Integer minSendAttempts, Integer maxSendAttempts, Boolean attachment, Boolean error) {
         MessageFilter filter = new MessageFilter();
         filter.setMinMessageId(minMessageId);

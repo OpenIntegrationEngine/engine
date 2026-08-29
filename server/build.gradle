@@ -10,7 +10,7 @@ dependencies {
     implementation libs.bundles.server.main
     implementation libs.bundles.server.extensions
     // classified artifact; version catalogs cannot express classifiers
-    implementation 'io.netty:netty-transport-native-epoll:4.1.119.Final:linux-x86_64'
+    implementation 'io.netty:netty-transport-native-epoll:4.1.135.Final:linux-x86_64'
     testImplementation libs.bundles.server.test
 }
 

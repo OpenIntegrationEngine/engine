@@ -1,5 +1,6 @@
 package com.mirth.connect.plugins.datatypes.hl7v2;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -15,11 +16,22 @@ import com.mirth.connect.model.datatype.SerializerProperties;
 
 public class ER7SerializerTest {
 	private static ER7Serializer serializer;
-	
+	private static ER7Serializer strictSerializer;
+	private static ER7Serializer strictSerializerAllowXml;
+
 	@BeforeClass
 	public static void setupClass() throws Exception {
 		SerializerProperties serializerProperties = new SerializerProperties(new HL7v2SerializationProperties(), new HL7v2DeserializationProperties(), null);
 		serializer = new ER7Serializer(serializerProperties);
+
+		HL7v2SerializationProperties strictProperties = new HL7v2SerializationProperties();
+		strictProperties.setUseStrictParser(true);
+		strictSerializer = new ER7Serializer(new SerializerProperties(strictProperties, new HL7v2DeserializationProperties(), null));
+
+		HL7v2SerializationProperties strictPropertiesAllowXml = new HL7v2SerializationProperties();
+		strictPropertiesAllowXml.setUseStrictParser(true);
+		strictPropertiesAllowXml.setAllowXml(true);
+		strictSerializerAllowXml = new ER7Serializer(new SerializerProperties(strictPropertiesAllowXml, new HL7v2DeserializationProperties(), null));
 	}
 	
 	@Test
@@ -52,5 +64,28 @@ public class ER7SerializerTest {
 		}
 		
 		assertFalse(exceptionThrown);
+	}
+
+	@Test
+	public void testToXmlWithStrictParserRejectsXmlInputByDefault() throws Exception {
+		String xmlDisguisedAsHl7 = "<foo><bar>notreallyhl7</bar></foo>";
+
+		boolean exceptionThrown = false;
+		try {
+			strictSerializer.toXML(xmlDisguisedAsHl7);
+		} catch (MessageSerializerException e) {
+			exceptionThrown = true;
+		}
+
+		assertTrue(exceptionThrown);
+	}
+
+	@Test
+	public void testToXmlWithStrictParserAllowsXmlInputWhenOptedIn() throws Exception {
+		String xmlDisguisedAsHl7 = "<foo><bar>notreallyhl7</bar></foo>";
+
+		String result = strictSerializerAllowXml.toXML(xmlDisguisedAsHl7);
+
+		assertEquals(xmlDisguisedAsHl7, result);
 	}
 }

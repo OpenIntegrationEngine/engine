@@ -199,7 +199,7 @@ public class ER7Serializer implements IMessageSerializer {
                 Message message = null;
                 source = source.trim();
 
-                if (source.length() > 0 && source.charAt(0) == '<') {
+                if (serializationProperties.isAllowXml() && source.length() > 0 && source.charAt(0) == '<') {
                     if (serializationProperties.isUseStrictValidation()) {
                         // If the message is XML and strict validation is needed, we'll need to create a message to be encoded.
                         message = serializationXmlParser.parse(source);

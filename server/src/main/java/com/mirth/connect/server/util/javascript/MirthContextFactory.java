@@ -114,7 +114,7 @@ public class MirthContextFactory extends ContextFactory {
         if (isolatedClassLoader == null && ArrayUtils.isNotEmpty(urls)) {
             synchronized (this) {
                 if (isolatedClassLoader == null) {
-                    isolatedClassLoader = new URLClassLoader(urls, null);
+                    isolatedClassLoader = new URLClassLoader(urls, ClassLoader.getPlatformClassLoader());
                 }
             }
         }

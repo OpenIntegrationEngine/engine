@@ -139,7 +139,7 @@ jna-platform = { module = "net.java.dev.jna:jna-platform", version = "4.5.2" }
 joda-time = { module = "joda-time:joda-time", version = "2.9.9" }
 jsr181-api = { module = "javax.jws:jsr181-api", version = "1.0-MR1" }
 jsr305 = { module = "com.google.code.findbugs:jsr305", version = "3.0.2" }
-junit = { module = "junit:junit", version = "4.8.1" }
+junit = { module = "junit:junit", version = "4.13.1" }
 junit-v4-13-1 = { module = "junit:junit", version = "4.13.1" }
 kms = { module = "software.amazon.awssdk:kms", version = "2.15.28" }
 libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version = "8.12.50" }

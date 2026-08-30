@@ -19,7 +19,7 @@ aws-core = { module = "software.amazon.awssdk:aws-core", version = "2.15.28" }
 aws-json-protocol = { module = "software.amazon.awssdk:aws-json-protocol", version = "2.15.28" }
 aws-query-protocol = { module = "software.amazon.awssdk:aws-query-protocol", version = "2.15.28" }
 aws-xml-protocol = { module = "software.amazon.awssdk:aws-xml-protocol", version = "2.15.28" }
-bcpkix-jdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version = "1.78.1" }
+bcpkix-jdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version = "1.84" }
 bcprov-jdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version = "1.78.1" }
 bcutil-jdk18on = { module = "org.bouncycastle:bcutil-jdk18on", version = "1.78.1" }
 byte-buddy = { module = "net.bytebuddy:byte-buddy", version = "1.14.13" }

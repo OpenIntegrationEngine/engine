@@ -9,9 +9,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,22 +33,21 @@ public class FilePermissionUtilTest {
     @Test
     public void testPosixPermissions() throws Exception {
         assumeFalse("Test only applies on POSIX filesystems", Platform.isWindows());
-        File file = new File(temporaryFolder.getRoot(), "keystore.p12");
+        Path path = temporaryFolder.getRoot().toPath().resolve("keystore.p12");
 
-        FilePermissionUtil.createOwnerOnlyFile(file);
+        FilePermissionUtil.createOwnerOnlyFile(path);
 
-        assertEquals("rw-------", PosixFilePermissions.toString(Files.getPosixFilePermissions(file.toPath())));
+        assertEquals("rw-------", PosixFilePermissions.toString(Files.getPosixFilePermissions(path)));
     }
 
     @Test
     public void testWindowsPermissions() throws Exception {
         assumeTrue("Test only applies on windows", Platform.isWindows());
         assumeTrue("Test assumes english locale", System.getProperty("user.language").equals("en"));
-        File file = new File(temporaryFolder.getRoot(), "keystore.p12");
-        String path = file.getAbsolutePath();
+        Path path = temporaryFolder.getRoot().toPath().resolve("keystore.p12");
 
-        FilePermissionUtil.createOwnerOnlyFile(file);
-        var icaclsOutput = system("icacls", path);
+        FilePermissionUtil.createOwnerOnlyFile(path);
+        var icaclsOutput = system("icacls", path.toAbsolutePath().toString());
         assertContains(icaclsOutput, System.getProperty("user.name") + ":(F)");
         assertContains(icaclsOutput, "BUILTIN\\Administrators:(F)");
         assertContains(icaclsOutput, "NT AUTHORITY\\SYSTEM:(F)");

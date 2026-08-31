@@ -20,6 +20,8 @@ import java.io.Reader;
 import java.math.BigInteger;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -1243,16 +1245,13 @@ public class DefaultConfigurationController extends ConfigurationController {
 
     @Override
     public void initializeSecuritySettings() {
-        InputStream keyStoreFileIs = null;
-        FileOutputStream fos = null;
-
         try {
             /*
              * Load the encryption settings so that they can be referenced client side.
              */
             encryptionConfig = new EncryptionSettings(ConfigurationConverter.getProperties(mirthConfig));
 
-            File keyStoreFile = new File(mirthConfig.getString("keystore.path"));
+            Path keyStoreFile = Path.of(mirthConfig.getString("keystore.path"));
             char[] keyStorePassword = mirthConfig.getString("keystore.storepass").toCharArray();
             char[] keyPassword = mirthConfig.getString("keystore.keypass").toCharArray();
             Provider provider = (Provider) Class.forName(encryptionConfig.getSecurityProvider()).newInstance();
@@ -1266,10 +1265,11 @@ public class DefaultConfigurationController extends ConfigurationController {
                 keyStore = KeyStore.getInstance(mirthConfig.getString("keystore.type", "JCEKS"));
             }
 
-            if (keyStoreFile.exists()) {
-                keyStoreFileIs = new FileInputStream(keyStoreFile);
-                keyStore.load(keyStoreFileIs, keyStorePassword);
-                logger.debug("found and loaded keystore: " + keyStoreFile.getAbsolutePath());
+            if (Files.exists(keyStoreFile)) {
+                try (InputStream keyStoreFileIs = Files.newInputStream(keyStoreFile)) {
+                    keyStore.load(keyStoreFileIs, keyStorePassword);
+                    logger.debug("found and loaded keystore: " + keyStoreFile.toAbsolutePath().toString());
+                }
             } else {
                 keyStore.load(null, keyStorePassword);
                 logger.debug("keystore file not found, created new one");
@@ -1280,13 +1280,11 @@ public class DefaultConfigurationController extends ConfigurationController {
             generateDefaultCertificate(provider, keyStore, keyPassword);
 
             // write the keystore back to the file
-            fos = new FileOutputStream(keyStoreFile);
-            keyStore.store(fos, keyStorePassword);
+            try (OutputStream fos = Files.newOutputStream(keyStoreFile)) {
+                keyStore.store(fos, keyStorePassword);
+            }
         } catch (Exception e) {
             logger.error("Could not initialize security settings.", e);
-        } finally {
-            ResourceUtil.closeResourceQuietly(keyStoreFileIs);
-            ResourceUtil.closeResourceQuietly(fos);
         }
     }
 

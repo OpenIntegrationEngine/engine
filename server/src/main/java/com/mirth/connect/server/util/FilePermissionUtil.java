@@ -3,7 +3,6 @@
 
 package com.mirth.connect.server.util;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,12 +23,11 @@ public class FilePermissionUtil {
      * Creates a file that only the account the server runs as, and whoever administers the machine,
      * may read or write.
      */
-    public static void createOwnerOnlyFile(File file) throws IOException {
-        Path path = file.toPath();
-        File parent = file.getParentFile();
+    public static void createOwnerOnlyFile(Path path) throws IOException {
+        Path parent = path.toAbsolutePath().getParent();
 
         if (parent != null) {
-            Files.createDirectories(parent.toPath());
+            Files.createDirectories(parent);
         }
 
         if (Platform.isWindows()) {

@@ -105,6 +105,8 @@ import com.mirth.connect.client.ui.components.tag.TagFilterCompletion;
 import com.mirth.connect.client.ui.tag.SettingsPanelTags;
 import com.mirth.connect.client.ui.util.DisplayUtil;
 import com.mirth.connect.donkey.model.channel.DebugOptions;
+import com.mirth.connect.donkey.model.channel.DestinationConnectorPropertiesInterface;
+import com.mirth.connect.donkey.model.channel.SourceConnectorPropertiesInterface;
 import com.mirth.connect.donkey.util.DonkeyElement;
 import com.mirth.connect.donkey.util.DonkeyElement.DonkeyElementException;
 import com.mirth.connect.model.Channel;
@@ -115,6 +117,7 @@ import com.mirth.connect.model.ChannelMetadata;
 import com.mirth.connect.model.ChannelStatus;
 import com.mirth.connect.model.ChannelSummary;
 import com.mirth.connect.model.ChannelTag;
+import com.mirth.connect.model.Connector;
 import com.mirth.connect.model.DashboardStatus;
 import com.mirth.connect.model.InvalidChannel;
 import com.mirth.connect.model.codetemplates.CodeTemplate;
@@ -2261,46 +2264,148 @@ public class ChannelPanel extends AbstractFramePanel {
             return;
         }
 
+        Channel sourceChannel = channel;
+
+        List<ChannelCloneDialog.GroupOption> groups = new ArrayList<ChannelCloneDialog.GroupOption>();
+        String sourceGroupId = ChannelGroup.DEFAULT_ID;
+        for (ChannelGroupStatus groupStatus : groupStatuses.values()) {
+            ChannelGroup group = groupStatus.getGroup();
+            groups.add(new ChannelCloneDialog.GroupOption(group.getId(), group.getName()));
+            for (ChannelStatus status : groupStatus.getChannelStatuses()) {
+                if (sourceChannel.getId().equals(status.getChannel().getId())) {
+                    sourceGroupId = group.getId();
+                }
+            }
+        }
+
+        String cloneId;
         try {
-            channel = (Channel) SerializationUtils.clone(channel);
+            cloneId = parent.mirthClient.getGuid();
+        } catch (ClientException e) {
+            parent.alertThrowable(parent, e);
+            return;
+        }
+
+        boolean hasCodeTemplateLibraries = false;
+        for (CodeTemplateLibrary library : parent.codeTemplatePanel.getCachedCodeTemplateLibraries().values()) {
+            if (library.getEnabledChannelIds().contains(sourceChannel.getId()) || (library.isIncludeNewChannels() && !library.getDisabledChannelIds().contains(sourceChannel.getId()))) {
+                hasCodeTemplateLibraries = true;
+                break;
+            }
+        }
+
+        boolean hasResources = channelHasResources(channel);
+        final String reservedCloneId = cloneId;
+        ChannelCloneDialog dialog = new ChannelCloneDialog(parent, sourceChannel, getCachedChannelTags(), getCachedChannelDependencies(), groups, sourceGroupId,
+                hasCodeTemplateLibraries, hasResources, name -> parent.checkChannelName(name, reservedCloneId));
+        if (!dialog.isConfirmed()) {
+            return;
+        }
+
+        try {
+            channel = (Channel) SerializationUtils.clone(sourceChannel);
         } catch (SerializationException e) {
             parent.alertThrowable(parent, e);
             return;
         }
 
-        // Before overwriting the ID, get all associated tags 
-        List<ChannelTag> channelTags = new ArrayList<ChannelTag>();
+        channel.setRevision(0);
+        channel.setId(reservedCloneId);
+
+        channel.setName(dialog.getChannelName());
+
+        if (!dialog.isIncludePruneSettings()) {
+            channel.getExportData().getMetadata().setPruningSettings(null);
+        }
+
+        updateCodeTemplateLibrariesForClone(sourceChannel.getId(), channel.getId(), dialog.isIncludeCodeTemplateLibraries());
+        if (!dialog.isIncludeCodeTemplateLibraries()) {
+            channel.getExportData().clearCodeTemplateLibraries();
+        }
+
+        if (!dialog.isIncludeResources()) {
+            clearChannelResources(channel);
+        }
+
+        List<ChannelTag> selectedTags = new ArrayList<ChannelTag>();
         for (ChannelTag tag : getCachedChannelTags()) {
-            if (tag.getChannelIds().contains(channel.getId())) {
-                channelTags.add(tag);
+            if (dialog.getTagIds().contains(tag.getId())) {
+                selectedTags.add(tag);
             }
         }
+        updateChannelTags(selectedTags, channel.getId());
+        channel.getExportData().setChannelTags(new ArrayList<ChannelTag>(selectedTags));
 
-        try {
-            channel.setRevision(0);
-            channel.setId(parent.mirthClient.getGuid());
-        } catch (ClientException e) {
-            parent.alertThrowable(parent, e);
-        }
-
-        String channelName = channel.getName();
-        do {
-            channelName = DisplayUtil.showInputDialog(this, "Please enter a new name for the channel.", channelName);
-            if (channelName == null) {
-                return;
-            }
-        } while (!parent.checkChannelName(channelName, channel.getId()));
-
-        channel.setName(channelName);
+        channel.getExportData().clearDependencies();
+        channel.getExportData().setDependencyIds(dialog.getDependencyIds());
         channelStatuses.put(channel.getId(), new ChannelStatus(channel));
 
-        // Add the cloned channel's ID to any tags
-        for (ChannelTag tag : channelTags) {
-            tag.getChannelIds().add(channel.getId());
+        Set<ChannelDependency> channelDependencies = new HashSet<ChannelDependency>(getCachedChannelDependencies());
+        for (String dependencyId : dialog.getDependencyIds()) {
+            channelDependencies.add(new ChannelDependency(channel.getId(), dependencyId));
+        }
+        try {
+            parent.mirthClient.setChannelDependencies(channelDependencies);
+        } catch (ClientException e) {
+            parent.alertThrowable(parent, e, "Unable to copy channel dependencies.");
         }
 
-        parent.editChannel(channel);
+        parent.editChannel(channel, dialog.getGroupId());
         parent.setSaveEnabled(true);
+    }
+
+    private void updateCodeTemplateLibrariesForClone(String sourceId, String cloneId, boolean include) {
+        Map<String, CodeTemplateLibrary> libraries = new HashMap<String, CodeTemplateLibrary>();
+        for (CodeTemplateLibrary library : parent.codeTemplatePanel.getCachedCodeTemplateLibraries().values()) {
+            boolean linked = library.getEnabledChannelIds().contains(sourceId) || (library.isIncludeNewChannels() && !library.getDisabledChannelIds().contains(sourceId));
+            if (linked) {
+                CodeTemplateLibrary updated = new CodeTemplateLibrary(library);
+                updated.getEnabledChannelIds().remove(cloneId);
+                updated.getDisabledChannelIds().remove(cloneId);
+                if (include) {
+                    updated.getEnabledChannelIds().add(cloneId);
+                } else {
+                    updated.getDisabledChannelIds().add(cloneId);
+                }
+                libraries.put(updated.getId(), updated);
+            }
+        }
+
+        if (!libraries.isEmpty()) {
+            CodeTemplateLibrarySaveResult result = parent.codeTemplatePanel.attemptUpdate(libraries, new HashMap<String, CodeTemplateLibrary>(), new HashMap<String, CodeTemplate>(), new HashMap<String, CodeTemplate>(), true, null, null);
+            if (result == null || !result.isLibrariesSuccess()) {
+                parent.alertWarning(parent, "Unable to copy code template library assignments.");
+            }
+        }
+    }
+
+    private void clearChannelResources(Channel channel) {
+        channel.getProperties().getResourceIds().clear();
+        if (channel.getSourceConnector() != null && channel.getSourceConnector().getProperties() instanceof SourceConnectorPropertiesInterface) {
+            ((SourceConnectorPropertiesInterface) channel.getSourceConnector().getProperties()).getSourceConnectorProperties().getResourceIds().clear();
+        }
+        for (Connector connector : channel.getDestinationConnectors()) {
+            if (connector.getProperties() instanceof DestinationConnectorPropertiesInterface) {
+                ((DestinationConnectorPropertiesInterface) connector.getProperties()).getDestinationConnectorProperties().getResourceIds().clear();
+            }
+        }
+    }
+
+    private boolean channelHasResources(Channel channel) {
+        if (!channel.getProperties().getResourceIds().isEmpty()) {
+            return true;
+        }
+        if (channel.getSourceConnector() != null && channel.getSourceConnector().getProperties() instanceof SourceConnectorPropertiesInterface
+                && !((SourceConnectorPropertiesInterface) channel.getSourceConnector().getProperties()).getSourceConnectorProperties().getResourceIds().isEmpty()) {
+            return true;
+        }
+        for (Connector connector : channel.getDestinationConnectors()) {
+            if (connector.getProperties() instanceof DestinationConnectorPropertiesInterface
+                    && !((DestinationConnectorPropertiesInterface) connector.getProperties()).getDestinationConnectorProperties().getResourceIds().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void doEditChannel() {

@@ -9,11 +9,15 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mirth.connect.client.core.api.servlets.JavaScriptServletInterface;
 import com.mirth.connect.server.api.MirthServlet;
 import com.mirth.connect.util.JavaScriptSharedUtil;
 
 public class JavaScriptServlet extends MirthServlet implements JavaScriptServletInterface {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public JavaScriptServlet(@Context HttpServletRequest request, @Context SecurityContext sc) {
         super(request, sc);
@@ -24,30 +28,12 @@ public class JavaScriptServlet extends MirthServlet implements JavaScriptServlet
         // JavaScriptSharedUtil.validateScript returns null when the script compiles, else the
         // error text ("Error on line N: ..."). Report it as { "error": <string|null> }.
         String error = JavaScriptSharedUtil.validateScript(script == null ? "" : script);
-        String json = "{\"error\":" + (error == null ? "null" : jsonString(error)) + "}";
-        return Response.ok(json).type(MediaType.APPLICATION_JSON).build();
-    }
-
-    // Minimal JSON string escaper (the response is a single {"error":"..."} object, so we build it
-    // by hand rather than pull in a serializer).
-    private static String jsonString(String s) {
-        StringBuilder b = new StringBuilder("\"");
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            switch (c) {
-                case '"':  b.append("\\\""); break;
-                case '\\': b.append("\\\\"); break;
-                case '\n': b.append("\\n"); break;
-                case '\r': b.append("\\r"); break;
-                case '\t': b.append("\\t"); break;
-                default:
-                    if (c < 0x20) {
-                        b.append(String.format("\\u%04x", (int) c));
-                    } else {
-                        b.append(c);
-                    }
-            }
+        ObjectNode out = MAPPER.createObjectNode();
+        if (error == null) {
+            out.putNull("error");
+        } else {
+            out.put("error", error);
         }
-        return b.append('"').toString();
+        return Response.ok(out.toString()).type(MediaType.APPLICATION_JSON).build();
     }
 }

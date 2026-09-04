@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Chris Gibson <cgibson@outlook.com>
+
 package com.mirth.connect.server.api.servlets;
 
 import java.io.File;

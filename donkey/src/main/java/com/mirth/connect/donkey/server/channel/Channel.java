@@ -1613,6 +1613,13 @@ public class Channel implements Runnable {
      * @throws InterruptedException
      */
     protected Message process(ConnectorMessage sourceMessage, boolean markAsProcessed) throws InterruptedException {
+        try (var observation = MessageTelemetry.start(MessageTelemetry.Stage.SOURCE, sourceMessage)) {
+            try { return processMessage(sourceMessage, markAsProcessed); }
+            catch (InterruptedException | RuntimeException | Error failure) { observation.failed(failure); throw failure; }
+        }
+    }
+
+    private Message processMessage(ConnectorMessage sourceMessage, boolean markAsProcessed) throws InterruptedException {
         ThreadUtils.checkInterruptedStatus();
         long messageId = sourceMessage.getMessageId();
 
@@ -1834,7 +1841,7 @@ public class Channel implements Runnable {
                     try {
                         DestinationChain chain = enabledChains.get(i);
                         chain.setName("Destination Chain Thread " + (i + 1) + " on " + name + " (" + channelId + ")");
-                        destinationChainTasks.add(channelExecutor.submit(chain));
+                        destinationChainTasks.add(channelExecutor.submit(MessageTelemetry.wrap(chain)));
                     } catch (RejectedExecutionException e) {
                         Thread.currentThread().interrupt();
                         throw new InterruptedException();

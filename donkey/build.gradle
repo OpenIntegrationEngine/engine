@@ -4,6 +4,7 @@
 dependencies {
     implementation libs.bundles.donkey.main
     testImplementation libs.bundles.donkey.test
+    testRuntimeOnly files('conf', 'donkeydbconf')
 }
 
 def donkeyModelJar = tasks.register('donkeyModelJar', Jar) {

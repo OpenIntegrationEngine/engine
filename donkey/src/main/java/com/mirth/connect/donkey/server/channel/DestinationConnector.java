@@ -895,6 +895,13 @@ public abstract class DestinationConnector extends Connector implements Runnable
     }
 
     private Response handleSend(ConnectorProperties connectorProperties, ConnectorMessage message) throws InterruptedException {
+        try (var observation = MessageTelemetry.start(MessageTelemetry.Stage.SEND, message)) {
+            try { Response response = sendMessage(connectorProperties, message); observation.status(response.getStatus()); return response; }
+            catch (InterruptedException | RuntimeException | Error failure) { observation.failed(failure); throw failure; }
+        }
+    }
+
+    private Response sendMessage(ConnectorProperties connectorProperties, ConnectorMessage message) throws InterruptedException {
         message.setSendDate(Calendar.getInstance());
         Response response;
 

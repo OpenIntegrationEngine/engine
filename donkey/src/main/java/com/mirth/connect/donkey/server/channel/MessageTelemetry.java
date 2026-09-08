@@ -2,6 +2,7 @@
 package com.mirth.connect.donkey.server.channel;
 
 import java.util.Objects;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,6 +25,12 @@ public final class MessageTelemetry {
     }
     public interface Provider {
         Observation start(Stage stage, ConnectorMessage message);
+        /**
+         * Before the source map becomes read-only and is first persisted. May add only private,
+         * content-free propagation data to sourceMap; preserve all application entries. This
+         * callback must open no span/scope or other resource requiring later cleanup.
+         */
+        default void beforeStore(ConnectorMessage message, Map<String, Object> sourceMap) { }
         /**
          * Capture immutable context now, without opening a scope or allocating live resources.
          * The supplier attaches it only if the task runs; its observation restores worker state.
@@ -50,6 +57,12 @@ public final class MessageTelemetry {
         Registration registration = CURRENT.get();
         if (registration == null) return NONE;
         return observe(registration, () -> registration.provider.start(stage, message));
+    }
+    public static void beforeStore(ConnectorMessage message, Map<String, Object> sourceMap) {
+        Registration registration = CURRENT.get();
+        if (registration == null) return;
+        try { registration.provider.beforeStore(message, sourceMap); }
+        catch (Throwable failure) { registration.failed(failure); }
     }
     private static Observation observe(Registration registration, Supplier<Observation> start) {
         try {

@@ -1492,6 +1492,8 @@ public class Channel implements Runnable {
         // Add the destination set to the source map
         sourceMap.put(Constants.DESTINATION_SET_KEY, destinationSet);
 
+        MessageTelemetry.beforeStore(sourceMessage, sourceMap);
+
         // The source map is read-only so we wrap it in an unmodifiable map
         sourceMessage.setSourceMap(Collections.unmodifiableMap(sourceMap));
 

@@ -7,8 +7,11 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -194,6 +197,80 @@ public class MessageTelemetryHooksTest {
     }
 
     @Test
+    public void preparationPersistsOnIngressBeforeQueuedSourceProcessingAndFreezesSourceKeys() throws Exception {
+        preparationPersistsBeforeProcessing(true);
+    }
+
+    @Test
+    public void preparationPersistsWithOnlyInitialRawDurabilityAndNoLaterMapStorage() throws Exception {
+        preparationPersistsBeforeProcessing(false);
+    }
+
+    private void preparationPersistsBeforeProcessing(boolean storeMaps) throws Exception {
+        create(false,1);
+        channel.getStorageSettings().setStoreMaps(storeMaps);
+        channel.getStorageSettings().setRawDurable(true);
+        java.util.concurrent.atomic.AtomicReference<ConnectorMessage> prepared = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicReference<Thread> ingress = new java.util.concurrent.atomic.AtomicReference<>();
+        CountDownLatch processing = new CountDownLatch(1), release = new CountDownLatch(1);
+        Map<String,String> carrier = new HashMap<>(); carrier.put("traceparent","content-free-fixture");
+        recorder.preparation = (message,map) -> { assertNull(prepared.getAndSet(message)); ingress.set(Thread.currentThread()); map.put("oie.test.context",carrier); };
+        recorder.sourceStarted = () -> {
+            processing.countDown();
+            try { assertTrue(release.await(5,TimeUnit.SECONDS)); }
+            catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); throw new IllegalStateException(interrupted); }
+        };
+        channel.deploy(); channel.start(null);
+        try {
+            ((TestSourceConnector)channel.getSourceConnector()).readTestMessage("application content");
+            assertTrue(processing.await(5,TimeUnit.SECONDS));
+            ConnectorMessage message = prepared.get(); assertNotNull(message); assertSame(Thread.currentThread(),ingress.get());
+            assertTrue(recorder.records.isEmpty());
+            TestUtils.assertConnectorMessageStatusEquals(channel.getChannelId(),message.getMessageId(),0,Status.RECEIVED);
+            var content = TestUtils.getMessageContent(channel.getChannelId(),message.getMessageId(),0,
+                    com.mirth.connect.donkey.model.message.ContentType.SOURCE_MAP);
+            Map<?,?> stored = Donkey.getInstance().getSerializer().deserialize(content.getContent(),Map.class);
+            assertEquals(carrier,stored.get("oie.test.context"));
+            try { message.getSourceMap().put("application-overwrite","forbidden"); fail("source keys must be read-only"); }
+            catch (UnsupportedOperationException expected) { }
+        } finally { release.countDown(); }
+        long until=System.nanoTime()+TimeUnit.SECONDS.toNanos(5);
+        while (recorder.records.stream().noneMatch(r->r.stage==Stage.SOURCE && r.closed==1)) {
+            assertTrue(System.nanoTime()-until<0);Thread.sleep(2);
+        }
+        assertHierarchy(1);
+        assertEquals(carrier,recorder.only(Stage.SEND,1).message.getSourceMap().get("oie.test.context"));
+        TestUtils.assertConnectorMessageStatusEquals(channel.getChannelId(),prepared.get().getMessageId(),1,Status.SENT);
+    }
+
+    @Test
+    public void failedPreparationDoesNotChangeActualMessageCompletion() throws Exception {
+        create(true,1); recorder.preparation=(message,map)->{throw new LinkageError("private callback detail");};
+        runMessage(); assertHierarchy(1);
+        Recorded source=recorder.only(Stage.SOURCE,0);
+        TestUtils.assertConnectorMessageStatusEquals(channel.getChannelId(),source.message.getMessageId(),1,Status.SENT);
+    }
+
+    @Test
+    public void fatalPreparationUsesExistingDispatchErrorAndReleasesTransactionAndProcessLock() throws Exception {
+        create(true,1);
+        Error original = new ThreadDeath();
+        java.util.concurrent.atomic.AtomicReference<ConnectorMessage> prepared = new java.util.concurrent.atomic.AtomicReference<>();
+        recorder.preparation=(message,map)->{ prepared.set(message); throw original; };
+        channel.deploy(); channel.start(null); String threadName=Thread.currentThread().getName();
+        try { ((TestSourceConnector)channel.getSourceConnector()).readTestMessage("before failure"); fail("dispatch must fail"); }
+        catch (com.mirth.connect.donkey.server.channel.ChannelException expected) { assertSame(original,expected.getCause()); }
+        assertEquals(threadName,Thread.currentThread().getName()); assertTrue(recorder.records.isEmpty()); assertNotNull(prepared.get());
+        com.mirth.connect.donkey.model.message.Message absent = new com.mirth.connect.donkey.model.message.Message();
+        absent.setChannelId(channel.getChannelId()); absent.setMessageId(prepared.get().getMessageId());
+        TestUtils.assertMessageDoesNotExist(absent);
+        recorder.preparation=(message,map)->{};
+        ((TestSourceConnector)channel.getSourceConnector()).readTestMessage("after failure");
+        assertHierarchy(1);
+        TestUtils.assertConnectorMessageStatusEquals(channel.getChannelId(),recorder.only(Stage.SOURCE,0).message.getMessageId(),1,Status.SENT);
+    }
+
+    @Test
     public void filteredSourceClosesEarlyWithoutStartingDestinations() throws Exception {
         create(true, 1);
         ((TestFilterTransformer) channel.getSourceConnector().getFilterTransformerExecutor().getFilterTransformer()).setFiltered(true);
@@ -354,7 +431,11 @@ public class MessageTelemetryHooksTest {
         final List<Recorded> records = new CopyOnWriteArrayList<>();
         final List<String> errors = new CopyOnWriteArrayList<>();
         boolean failCallbacks;
+        java.util.function.BiConsumer<ConnectorMessage,Map<String,Object>> preparation = (message,map) -> {};
+        Runnable sourceStarted = () -> {};
+        public void beforeStore(ConnectorMessage message, Map<String,Object> sourceMap) { preparation.accept(message,sourceMap); }
         public Observation start(Stage stage, ConnectorMessage message) {
+            if (stage == Stage.SOURCE) sourceStarted.run();
             Recorded record = new Recorded(stage, message, current.get());
             records.add(record);
             current.set(record);

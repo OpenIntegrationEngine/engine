@@ -12,8 +12,18 @@ source-message status is distinct from a destination's final status. Send/respon
 also receive the actual returned response status before the caller applies queue status rules.
 
 The provider receives the existing connector message, including its maps. It must not change
-message processing. The intended plugin-owned exception is publication of documented scalar
-propagation values in the channel map; that plugin behavior is not implemented by this bridge.
+message processing. The intended plugin-owned exceptions are private content-free ingress propagation data and
+publication of documented scalar propagation values in the channel map; that plugin behavior is not implemented by this bridge.
+
+`beforeStore(message, sourceMap)` is a resource-free ingress callback immediately before the
+source map is wrapped as read-only and the source connector/maps are first persisted. It may add
+private content-free propagation data while preserving all application entries. It must not open
+spans/scopes or require a later completion callback. The source message has its final identity,
+but its source map has not yet been assigned; use the explicit map argument. Message-id allocation,
+initial message insert/overwrite and failures before this point remain outside this observation.
+The callback does not create a propagation format, cache, queue claim or restart policy in the
+engine; those remain plugin responsibilities. Late map changes are not guaranteed to persist:
+RAW storage skips later source-map updates while retaining initial raw durability. A plugin must account for that mode explicitly.
 
 Capture occurs before submission to the destination-chain and JavaScript executors. The provider
 returns a resource-free context activator, not a replacement business task. The engine activates
@@ -40,6 +50,7 @@ neither drains nor shuts down provider resources.
 | Duplicate install / repeated close / stale token | Reject overlap; old token never detaches replacement | Registration regression |
 | Ordinary start, capture, activation, status, failure, close errors | Business task/result/exception preserved; cleanup attempted | Bridge fault matrix and real-channel callback-failure fixture |
 | Fatal callbacks | VM error / ThreadDeath identity retained; original engine fatal wins a second failure-callback fatal; standard suppression on cleanup | Full six-surface fatal matrix and actual transformer regression |
+| Initial source-map preparation | Same ingress thread, before first map persistence; source keys then become read-only; ordinary callback failure preserves completion | Actual queued-source barrier/readback with both later-map storage and initial-raw-only storage; final SENT, plus default/registration/fatal controls |
 | Synchronous processing | Balanced source/transform/send/response scopes; unchanged stored outcomes | Private Derby channel fixture |
 | Parallel destinations | Source context crosses worker submission; destination maps are separate | Two real destination chains, one worker and one inline |
 | Filter or source transformation error | Correct durable FILTERED/ERROR; no destination scopes | Private Derby negative paths |
@@ -50,6 +61,7 @@ neither drains nor shuts down provider resources.
 | Rejected / cancelled before start | No task execution or open telemetry scope | Controlled executor regressions |
 | Cancelled after start | Worker restores its own prior context | Bridge and JavaScript executor interruption tests |
 | Detach with captured task | Previously captured immutable context remains usable; new installation independent | Bridge detach/worker tests |
+| Fatal ingress preparation | Existing dispatch exception wrapping, rollback and process-lock cleanup; next message still completes | Actual source callback fatal before first connector insertion |
 | Partial provider start | Provider must restore any partial attachment before throwing | Explicit provider responsibility; adapter requires its own fault tests |
 | Channel-map propagation, incoming HTTP, unsampled parents | Standard W3C extraction/injection; runtime context independent of editable maps | Plugin adapter pending |
 | Destination attempt parent; retries/refill/restart/nested channel/batch | Real queue/transaction behavior unchanged; documented parent policy | Further reduced-design integration pending; no durable carrier in this bridge |

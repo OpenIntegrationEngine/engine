@@ -6,6 +6,8 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -55,6 +57,7 @@ public class MessageTelemetryTest {
             noop.status(Status.ERROR);
             noop.failed(new IOException());
             noop.close();
+            MessageTelemetry.beforeStore(null, null);
         }
     }
 
@@ -202,6 +205,41 @@ public class MessageTelemetryTest {
             install((stage, message) -> { throw fatal; });
             assertSame(fatal, assertThrows(fatal.getClass(), () -> MessageTelemetry.start(Stage.SOURCE, null)));
             registrations.get(registrations.size() - 1).close();
+        }
+    }
+
+    @Test
+    public void beforeStoreIsOptionalAndUsesTheCurrentExactInstallation() throws Exception {
+        Map<String,Object> source = new HashMap<>(); source.put("application", "preserved");
+        install((stage,message) -> null);
+        MessageTelemetry.beforeStore(null, source);
+        assertEquals(1,source.size()); registrations.get(0).close();
+        AtomicInteger calls = new AtomicInteger();
+        install(new Provider() {
+            public Observation start(Stage stage, ConnectorMessage message) { return null; }
+            public void beforeStore(ConnectorMessage message, Map<String,Object> supplied) {
+                assertSame(source,supplied); calls.incrementAndGet(); supplied.put("private.context", "scalar");
+            }
+        });
+        registrations.get(0).close(); MessageTelemetry.beforeStore(null,source);
+        assertEquals(1,calls.get()); assertEquals("preserved",source.get("application")); assertEquals("scalar",source.get("private.context"));
+        registrations.get(1).close(); MessageTelemetry.beforeStore(null,source); assertEquals(1,calls.get());
+    }
+
+    @Test
+    public void beforeStoreIsolatesOrdinaryFailuresAndPreservesFatalIdentity() throws Exception {
+        for (Throwable failure : new Throwable[] {new IllegalStateException(), new LinkageError(), new AssertionError(), new OutOfMemoryError("synthetic"), new ThreadDeath()}) {
+            install(new Provider() {
+                public Observation start(Stage stage, ConnectorMessage message) { return null; }
+                public void beforeStore(ConnectorMessage message, Map<String,Object> source) {
+                    if (failure instanceof Error) throw (Error)failure;
+                    throw (RuntimeException)failure;
+                }
+            });
+            if (failure instanceof VirtualMachineError || failure instanceof ThreadDeath)
+                assertSame(failure,assertThrows(failure.getClass(),()->MessageTelemetry.beforeStore(null,new HashMap<>())));
+            else MessageTelemetry.beforeStore(null,new HashMap<>());
+            registrations.get(registrations.size()-1).close();
         }
     }
 

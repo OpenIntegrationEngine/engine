@@ -39,6 +39,50 @@ public class MessageTelemetryTest {
 
     private void install(Provider provider) { registrations.add(MessageTelemetry.install(provider)); }
 
+    @Test public void destinationFinishClosesAfterFailedCallbackAndPreservesFirstFatalIdentity() throws Exception {
+        for (boolean same : List.of(false, true)) {
+            ThreadDeath failed = new ThreadDeath();
+            Error closing = same ? failed : new OutOfMemoryError("close");
+            List<String> calls = new ArrayList<>();
+            try (var registration = MessageTelemetry.install((stage, message) -> new Observation() {
+                public void failed(Throwable cause) { calls.add("failed"); throw failed; }
+                public void close() { calls.add("close"); throw closing; }
+            })) {
+                Observation observation = MessageTelemetry.start(Stage.DESTINATION, null);
+                assertSame(failed, assertThrows(ThreadDeath.class,
+                        () -> MessageTelemetry.finish(observation, new IllegalStateException("engine"))));
+                assertEquals(List.of("failed", "close"), calls);
+                assertEquals(same ? 0 : 1, failed.getSuppressed().length);
+                if (!same) assertSame(closing, failed.getSuppressed()[0]);
+            }
+        }
+    }
+
+    @Test public void destinationFinishCannotReplaceAnAlreadyCaughtEngineFatal() throws Exception {
+        ThreadDeath original = new ThreadDeath(), reporting = new ThreadDeath(), closing = new ThreadDeath();
+        AtomicInteger closed = new AtomicInteger();
+        try (var registration = MessageTelemetry.install((stage, message) -> new Observation() {
+            public void failed(Throwable failure) { assertSame(original, failure); throw reporting; }
+            public void close() { closed.incrementAndGet(); throw closing; }
+        })) {
+            MessageTelemetry.finish(MessageTelemetry.start(Stage.DESTINATION, null), original);
+            assertEquals(1, closed.get());
+            assertArrayEquals(new Throwable[] { reporting, closing }, original.getSuppressed());
+        }
+        MessageTelemetry.finish(null, original);
+    }
+
+    @Test public void destinationFinishIsolatesOrdinaryCallbacksAndClosesOnce() throws Exception {
+        AtomicInteger closed = new AtomicInteger();
+        try (var registration = MessageTelemetry.install((stage, message) -> new Observation() {
+            public void failed(Throwable failure) { throw new LinkageError("private callback detail"); }
+            public void close() { closed.incrementAndGet(); throw new AssertionError("private close detail"); }
+        })) {
+            MessageTelemetry.finish(MessageTelemetry.start(Stage.DESTINATION, null), new RuntimeException("engine"));
+            assertEquals(1, closed.get());
+        }
+    }
+
     @After
     public void cleanup() throws Exception {
         Thread.interrupted();

@@ -17,7 +17,7 @@ import org.apache.logging.log4j.LogManager;
  * start/activation must restore any context it already attached before throwing.
  */
 public final class MessageTelemetry {
-    public enum Stage { SOURCE, TRANSFORM, SEND, RESPONSE }
+    public enum Stage { SOURCE, TRANSFORM, SEND, RESPONSE, DESTINATION }
     public interface Observation extends AutoCloseable {
         default void status(Status status) { }
         default void failed(Throwable failure) { }
@@ -86,6 +86,35 @@ public final class MessageTelemetry {
     }
     private static boolean fatal(Throwable failure) {
         return failure instanceof VirtualMachineError || failure instanceof ThreadDeath;
+    }
+    /** Retain the first observed engine fatal across later handling or cleanup failures. */
+    static Throwable failure(Throwable previous, Throwable next) {
+        return fatal(previous) ? previous : next;
+    }
+    /** Finish after engine cleanup, including failures the engine deliberately catches. */
+    static void finish(Observation observation, Throwable failure) {
+        Throwable problem = null;
+        try {
+            if (observation != null && failure != null) observation.failed(failure);
+        } catch (VirtualMachineError | ThreadDeath telemetryFailure) { problem = telemetryFailure; }
+        finally {
+            try { if (observation != null) observation.close(); }
+            catch (VirtualMachineError | ThreadDeath telemetryFailure) {
+                if (problem == null) problem = telemetryFailure;
+                else suppress(problem, telemetryFailure);
+            }
+        }
+        if (problem != null) {
+            if (fatal(failure)) suppress(failure, problem);
+            else if (problem instanceof VirtualMachineError) throw (VirtualMachineError) problem;
+            else throw (ThreadDeath) problem;
+        }
+    }
+    private static void suppress(Throwable primary, Throwable secondary) {
+        if (primary != secondary) {
+            try { primary.addSuppressed(secondary); }
+            catch (Throwable ignored) { /* Preserve the first fatal even if suppression cannot allocate. */ }
+        }
     }
     public static <T> Callable<T> wrap(Callable<T> task) {
         Objects.requireNonNull(task);

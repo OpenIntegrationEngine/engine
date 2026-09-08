@@ -100,106 +100,125 @@ public class DestinationChain implements Callable<List<ConnectorMessage>> {
              */
             DonkeyDao dao = chainProvider.getDaoFactory().getDao();
 
+            MessageTelemetry.Observation observation = null;
+            Throwable observationFailure = null;
             try {
-                Status previousStatus = message.getStatus();
-
                 try {
-                    switch (message.getStatus()) {
-                        case RECEIVED:
-                            /*
-                             * Only transform the message if we're going to be dispatching it in the
-                             * main processing thread, or if the queue thread will not be handling
-                             * transformation
-                             */
-                            if (destinationConnector.willAttemptSend() || !destinationConnector.includeFilterTransformerInQueue()) {
-                                destinationConnector.transform(dao, message, previousStatus, true);
+                    Status previousStatus = message.getStatus();
+                    if (previousStatus == Status.RECEIVED || previousStatus == Status.PENDING) {
+                        observation = MessageTelemetry.start(MessageTelemetry.Stage.DESTINATION, message);
+                    }
 
-                                // If the message status is QUEUED, send it to the destination connector
-                                if (message.getStatus() == Status.QUEUED) {
-                                    String originalThreadName = Thread.currentThread().getName();
-                                    try {
-                                        Thread.currentThread().setName(destinationConnector.getConnectorProperties().getName() + " Process Thread on " + destinationConnector.getChannel().getName() + " (" + chainProvider.getChannelId() + "), " + destinationConnector.getDestinationName() + " (" + metaDataId + ")");
-                                        destinationConnector.process(dao, message, previousStatus);
-                                    } finally {
-                                        Thread.currentThread().setName(originalThreadName);
+                    try {
+                        switch (message.getStatus()) {
+                            case RECEIVED:
+                                /*
+                                 * Only transform the message if we're going to be dispatching it in the
+                                 * main processing thread, or if the queue thread will not be handling
+                                 * transformation
+                                 */
+                                if (destinationConnector.willAttemptSend() || !destinationConnector.includeFilterTransformerInQueue()) {
+                                    destinationConnector.transform(dao, message, previousStatus, true);
+
+                                    // If the message status is QUEUED, send it to the destination connector
+                                    if (message.getStatus() == Status.QUEUED) {
+                                        String originalThreadName = Thread.currentThread().getName();
+                                        try {
+                                            Thread.currentThread().setName(destinationConnector.getConnectorProperties().getName() + " Process Thread on " + destinationConnector.getChannel().getName() + " (" + chainProvider.getChannelId() + "), " + destinationConnector.getDestinationName() + " (" + metaDataId + ")");
+                                            destinationConnector.process(dao, message, previousStatus);
+                                        } finally {
+                                            Thread.currentThread().setName(originalThreadName);
+                                        }
+                                    } else if (message.getStatus() == Status.ERROR && message.getSent() == null) {
+                                        // If an error occurred in the filter/transformer, don't proceed with the rest of the chain
+                                        stopChain = true;
                                     }
-                                } else if (message.getStatus() == Status.ERROR && message.getSent() == null) {
-                                    // If an error occurred in the filter/transformer, don't proceed with the rest of the chain
-                                    stopChain = true;
+                                } else {
+                                    destinationConnector.updateQueuedStatus(dao, message, previousStatus);
                                 }
-                            } else {
-                                destinationConnector.updateQueuedStatus(dao, message, previousStatus);
-                            }
-                            break;
+                                break;
 
-                        case PENDING:
-                            chainProvider.getDestinationConnectors().get(metaDataId).processPendingConnectorMessage(dao, message);
-                            break;
+                            case PENDING:
+                                chainProvider.getDestinationConnectors().get(metaDataId).processPendingConnectorMessage(dao, message);
+                                break;
 
-                        case SENT:
-                            break;
+                            case SENT:
+                                break;
 
-                        default:
-                            // the status should never be anything but one of the above statuses, but in case it's not, log an error
-                            logger.error("Received a message with an invalid status in channel " + chainProvider.getChannelId() + ".");
-                            break;
-                    }
-                } catch (RuntimeException e) { // TODO: remove this catch since we can't determine an error code
-                    // if an error occurred in processing the message through the current destination, then update the message status to ERROR and continue processing through the chain
-                    logger.error("Error processing destination " + chainProvider.getDestinationConnectors().get(metaDataId).getDestinationName() + " for channel " + chainProvider.getChannelId() + ".", e);
-                    stopChain = true;
-                    dao.rollback();
-                    message.setStatus(Status.ERROR);
-                    message.setProcessingError(e.toString());
-                    dao.updateStatus(message, previousStatus);
-                    // Insert errors if necessary
-                    if (StringUtils.isNotBlank(message.getProcessingError())) {
-                        dao.updateErrors(message);
-                    }
-                }
-
-                // now that we're finished processing the current message, we can create the next message in the chain
-                if (nextMetaDataId != null && !stopChain) {
-                    nextMessage = new ConnectorMessage(message.getChannelId(), message.getChannelName(), message.getMessageId(), nextMetaDataId, message.getServerId(), Calendar.getInstance(), Status.RECEIVED);
-
-                    DestinationConnector nextDestinationConnector = chainProvider.getDestinationConnectors().get(nextMetaDataId);
-                    nextMessage.setConnectorName(nextDestinationConnector.getDestinationName());
-                    nextMessage.setChainId(chainProvider.getChainId());
-                    nextMessage.setOrderId(nextDestinationConnector.getOrderId());
-
-                    // We don't create a new map here because the source map is read-only and thus won't ever be changed
-                    nextMessage.setSourceMap(message.getSourceMap());
-                    nextMessage.setChannelMap(new HashMap<String, Object>(message.getChannelMap()));
-                    nextMessage.setResponseMap(new HashMap<String, Object>(message.getResponseMap()));
-                    nextMessage.setRaw(new MessageContent(message.getChannelId(), message.getMessageId(), nextMetaDataId, ContentType.RAW, message.getRaw().getContent(), nextDestinationConnector.getInboundDataType().getType(), message.getRaw().isEncrypted()));
-
-                    ThreadUtils.checkInterruptedStatus();
-                    dao.insertConnectorMessage(nextMessage, chainProvider.getStorageSettings().isStoreMaps(), true);
-                }
-
-                ThreadUtils.checkInterruptedStatus();
-
-                if (message.getStatus() != Status.QUEUED) {
-                    dao.commit(chainProvider.getStorageSettings().isDurable());
-                } else {
-                    // Block other threads from reading from or modifying the destination queue until both the current commit and queue addition finishes
-                    // Otherwise the same message could be sent multiple times.
-                    synchronized (destinationConnector.getQueue()) {
-                        dao.commit(chainProvider.getStorageSettings().isDurable());
-
-                        if (message.getStatus() == Status.QUEUED) {
-                            destinationConnector.getQueue().add(message);
+                            default:
+                                // the status should never be anything but one of the above statuses, but in case it's not, log an error
+                                logger.error("Received a message with an invalid status in channel " + chainProvider.getChannelId() + ".");
+                                break;
+                        }
+                    } catch (RuntimeException e) { // TODO: remove this catch since we can't determine an error code
+                        observationFailure = e;
+                        // if an error occurred in processing the message through the current destination, then update the message status to ERROR and continue processing through the chain
+                        logger.error("Error processing destination " + chainProvider.getDestinationConnectors().get(metaDataId).getDestinationName() + " for channel " + chainProvider.getChannelId() + ".", e);
+                        stopChain = true;
+                        dao.rollback();
+                        message.setStatus(Status.ERROR);
+                        message.setProcessingError(e.toString());
+                        dao.updateStatus(message, previousStatus);
+                        // Insert errors if necessary
+                        if (StringUtils.isNotBlank(message.getProcessingError())) {
+                            dao.updateErrors(message);
                         }
                     }
+
+                    // now that we're finished processing the current message, we can create the next message in the chain
+                    if (nextMetaDataId != null && !stopChain) {
+                        nextMessage = new ConnectorMessage(message.getChannelId(), message.getChannelName(), message.getMessageId(), nextMetaDataId, message.getServerId(), Calendar.getInstance(), Status.RECEIVED);
+
+                        DestinationConnector nextDestinationConnector = chainProvider.getDestinationConnectors().get(nextMetaDataId);
+                        nextMessage.setConnectorName(nextDestinationConnector.getDestinationName());
+                        nextMessage.setChainId(chainProvider.getChainId());
+                        nextMessage.setOrderId(nextDestinationConnector.getOrderId());
+
+                        // We don't create a new map here because the source map is read-only and thus won't ever be changed
+                        nextMessage.setSourceMap(message.getSourceMap());
+                        nextMessage.setChannelMap(new HashMap<String, Object>(message.getChannelMap()));
+                        nextMessage.setResponseMap(new HashMap<String, Object>(message.getResponseMap()));
+                        nextMessage.setRaw(new MessageContent(message.getChannelId(), message.getMessageId(), nextMetaDataId, ContentType.RAW, message.getRaw().getContent(), nextDestinationConnector.getInboundDataType().getType(), message.getRaw().isEncrypted()));
+
+                        ThreadUtils.checkInterruptedStatus();
+                        dao.insertConnectorMessage(nextMessage, chainProvider.getStorageSettings().isStoreMaps(), true);
+                    }
+
+                    ThreadUtils.checkInterruptedStatus();
+
+                    if (message.getStatus() != Status.QUEUED) {
+                        dao.commit(chainProvider.getStorageSettings().isDurable());
+                    } else {
+                        // Block other threads from reading from or modifying the destination queue until both the current commit and queue addition finishes
+                        // Otherwise the same message could be sent multiple times.
+                        synchronized (destinationConnector.getQueue()) {
+                            dao.commit(chainProvider.getStorageSettings().isDurable());
+
+                            if (message.getStatus() == Status.QUEUED) {
+                                destinationConnector.getQueue().add(message);
+                            }
+                        }
+                    }
+
+                    messages.add(message);
+                } catch (RuntimeException e) {
+                    // An exception caught at this point either occurred when attempting to handle an exception in the above try/catch, or when attempting to create the next destination's message, the thread cannot continue running
+                    logger.error("Error processing destination " + chainProvider.getDestinationConnectors().get(metaDataId).getDestinationName() + " for channel " + chainProvider.getChannelId() + ".", e);
+                    throw e;
                 }
 
-                messages.add(message);
-            } catch (RuntimeException e) {
-                // An exception caught at this point either occurred when attempting to handle an exception in the above try/catch, or when attempting to create the next destination's message, the thread cannot continue running
-                logger.error("Error processing destination " + chainProvider.getDestinationConnectors().get(metaDataId).getDestinationName() + " for channel " + chainProvider.getChannelId() + ".", e);
-                throw e;
+            } catch (InterruptedException | RuntimeException | Error failure) {
+                observationFailure = MessageTelemetry.failure(observationFailure, failure);
+                throw failure;
             } finally {
-                dao.close();
+                try {
+                    dao.close();
+                } catch (RuntimeException | Error failure) {
+                    observationFailure = MessageTelemetry.failure(observationFailure, failure);
+                    throw failure;
+                } finally {
+                    MessageTelemetry.finish(observation, observationFailure);
+                }
             }
 
             // Set the next message in the loop

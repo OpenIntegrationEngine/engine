@@ -318,8 +318,12 @@ public class MessageTelemetryHooksTest {
         TestUtils.assertConnectorMessageStatusEquals(channel.getChannelId(), only(Stage.SOURCE, 0).message.getMessageId(), connector, status);
     }
     private TestDestinationConnector sender(Supplier<Response> body) throws Exception {
+        return sender(body, message -> { });
+    }
+    private TestDestinationConnector sender(Supplier<Response> body, java.util.function.Consumer<ConnectorMessage> replacement) throws Exception {
         TestDestinationConnector destination = new TestDestinationConnector() {
             @Override public Response send(ConnectorProperties properties, ConnectorMessage message) { return body.get(); }
+            @Override public void replaceConnectorProperties(ConnectorProperties properties, ConnectorMessage message) { replacement.accept(message); }
         };
         destination.setChannel(channel);
         TestUtils.initDestinationConnector(destination, channel.getChannelId(), channel.getServerId(), new TestConnectorProperties(), "review destination", new TestDataType(), new TestDataType(), new TestResponseTransformer(), 1);
@@ -328,6 +332,110 @@ public class MessageTelemetryHooksTest {
         destination.setFilterTransformerExecutor(TestUtils.createDefaultFilterTransformerExecutor());
         channel.getDestinationChainProviders().get(0).addDestination(1, destination);
         return destination;
+    }
+
+    private void awaitQueuedCompletion() throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (true) {
+            try {
+                status(1, Status.SENT);
+                assertFalse(channel.getDestinationConnector(1).getQueue().isCheckedOut(only(Stage.SOURCE, 0).message.getMessageId()));
+                assertTrue(recorder.records.stream().filter(r -> r.stage == Stage.DESTINATION).allMatch(r -> r.closed == 1));
+                return;
+            } catch (AssertionError waiting) {
+                if (System.nanoTime() - deadline >= 0) throw waiting;
+                Thread.sleep(5);
+            }
+        }
+    }
+
+    private DestinationConnectorProperties queueProperties(TestDestinationConnector destination) {
+        var props = ((TestConnectorProperties) destination.getConnectorProperties()).getDestinationConnectorProperties();
+        props.setQueueEnabled(true); props.setSendFirst(false); props.setRegenerateTemplate(true); props.setRetryIntervalMillis(1);
+        return props;
+    }
+
+    @Test public void sentTraversalSkipsDestinationObservation() throws Exception {
+        create(true, 1); runMessage();
+        ConnectorMessage sent = only(Stage.SEND, 1).message;
+        assertEquals(Status.SENT, sent.getStatus());
+        int before = recorder.records.size();
+        var chain = new com.mirth.connect.donkey.server.channel.DestinationChain(channel.getDestinationChainProviders().get(0));
+        chain.setMessage(sent); assertEquals(1, chain.call().size());
+        assertEquals(before, recorder.records.size());
+        status(1, Status.SENT);
+    }
+
+    @Test public void actualPersistedPendingDestinationCreatesOnlyCoarseAndResponseScopes() throws Exception {
+        create(true, 1); runMessage();
+        ConnectorMessage sent = only(Stage.SEND, 1).message;
+        var dao = channel.getDaoFactory().getDao();
+        try { sent.setStatus(Status.PENDING); dao.updateStatus(sent, Status.SENT); dao.commit(true); }
+        finally { dao.close(); }
+        ConnectorMessage restored;
+        dao = channel.getDaoFactory().getDao();
+        try { restored = dao.getConnectorMessages(channel.getChannelId(), sent.getMessageId(), java.util.Set.of(1), true).get(0); }
+        finally { dao.close(); }
+        assertNotSame(sent, restored); assertEquals(Status.PENDING, restored.getStatus());
+        int before = recorder.records.size();
+        var chain = new com.mirth.connect.donkey.server.channel.DestinationChain(channel.getDestinationChainProviders().get(0));
+        chain.setMessage(restored); chain.call();
+        assertEquals(before + 2, recorder.records.size());
+        Recorded coarse = records(Stage.DESTINATION, 1).get(1), response = records(Stage.RESPONSE, 1).get(1);
+        assertNull(coarse.parent); assertSame(coarse, response.parent);
+        assertEquals(1, records(Stage.SEND, 1).size()); assertEquals(1, records(Stage.SOURCE, 0).size());
+        assertEquals(Status.SENT, coarse.status); status(1, Status.SENT);
+    }
+
+    @Test public void fatalQueueStartReleasesAcquiredMessageForRealRetry() throws Exception {
+        create(true, 1);
+        AtomicInteger starts = new AtomicInteger(), sends = new AtomicInteger();
+        var destination = sender(() -> { sends.incrementAndGet(); return new Response(Status.SENT, "reply"); });
+        queueProperties(destination);
+        recorder.beforeStage = (stage, message) -> {
+            if (stage == Stage.DESTINATION && Thread.currentThread() instanceof DestinationConnector.DestinationQueueThread
+                    && starts.incrementAndGet() == 1) throw new ThreadDeath();
+        };
+        runMessage(); awaitQueuedCompletion();
+        assertEquals(2, starts.get()); assertEquals(1, sends.get());
+        assertEquals(2, records(Stage.DESTINATION, 1).size());
+    }
+
+    @Test public void queuePreSendFailureIsObservedEvenWhileStatusRemainsQueued() throws Exception {
+        create(true, 1);
+        AtomicInteger replacements = new AtomicInteger(), sends = new AtomicInteger();
+        RuntimeException original = new IllegalStateException("private pre-send failure");
+        var destination = sender(() -> { sends.incrementAndGet(); return new Response(Status.SENT, "reply"); }, message -> {
+            if (Thread.currentThread() instanceof DestinationConnector.DestinationQueueThread
+                    && replacements.incrementAndGet() == 1) throw original;
+        });
+        queueProperties(destination);
+        runMessage(); awaitQueuedCompletion();
+        List<Recorded> attempts = records(Stage.DESTINATION, 1).stream()
+                .filter(r -> r.thread instanceof DestinationConnector.DestinationQueueThread).toList();
+        assertEquals(2, attempts.size()); assertSame(original, attempts.get(0).failure);
+        assertEquals(Status.QUEUED, attempts.get(0).status); assertEquals(Status.SENT, attempts.get(1).status);
+        assertEquals(1, sends.get()); assertSame(attempts.get(1), only(Stage.SEND, 1).parent);
+    }
+
+    @Test public void fatalQueueCloseRunsAfterEntryAndStatusLockRelease() throws Exception {
+        create(true, 1);
+        var destination = sender(() -> new Response(Status.SENT, "reply"));
+        queueProperties(destination);
+        AtomicInteger closes = new AtomicInteger();
+        recorder.afterClose = record -> {
+            if (record.stage == Stage.DESTINATION && record.thread instanceof DestinationConnector.DestinationQueueThread) {
+                try {
+                    assertFalse(destination.getQueue().isCheckedOut(record.message.getMessageId()));
+                    Field field = destination.getQueue().getClass().getDeclaredField("statusUpdateLock"); field.setAccessible(true);
+                    assertEquals(0, ((java.util.concurrent.locks.ReentrantReadWriteLock) field.get(destination.getQueue())).getReadLockCount());
+                    closes.incrementAndGet();
+                } catch (ReflectiveOperationException failure) { throw new AssertionError(failure); }
+                throw new ThreadDeath();
+            }
+        };
+        runMessage(); awaitQueuedCompletion(); assertEquals(1, closes.get());
+        assertEquals(Status.SENT, only(Stage.SEND, 1).status);
     }
     @Test public void checkedPreprocessorFailureStoresSourceErrorWithoutDestinationScopes() throws Exception {
         create(true, 1);
@@ -386,6 +494,7 @@ public class MessageTelemetryHooksTest {
         TestDestinationConnector d=sender(() -> new Response(Status.SENT,"reply","","",true));
         d.setResponseValidator((response,message) -> {throw original;}); runMessage();
         assertSame(original,only(Stage.SEND,1).failure);
+        assertSame(original,only(Stage.DESTINATION,1).failure);
         assertTrue(records(Stage.RESPONSE,1).isEmpty()); status(1,Status.ERROR);
     }
     @Test public void queuedRetryRunsPerAttemptSendAndResponseOnQueueWorker() throws Exception {
@@ -403,14 +512,63 @@ public class MessageTelemetryHooksTest {
         for(Recorded record:records(Stage.SEND,1)) assertTrue(record.thread instanceof DestinationConnector.DestinationQueueThread);
         assertEquals(Status.QUEUED,records(Stage.SEND,1).get(0).status);
         assertEquals(Status.SENT,records(Stage.SEND,1).get(1).status);
+        List<Recorded> attempts = records(Stage.DESTINATION, 1).stream()
+                .filter(r -> r.thread instanceof DestinationConnector.DestinationQueueThread).toList();
+        assertEquals(2, attempts.size());
+        for (int i = 0; i < 2; i++) assertSame(attempts.get(i), records(Stage.SEND, 1).get(i).parent);
+    }
+
+    @Test public void queuedTransformationBelongsToAcquiredDestinationScope() throws Exception {
+        create(true, 1);
+        var destination = sender(() -> new Response(Status.SENT, "reply"));
+        queueProperties(destination).setIncludeFilterTransformer(true);
+        runMessage(); awaitQueuedCompletion();
+        List<Recorded> coarse = records(Stage.DESTINATION, 1);
+        assertEquals(2, coarse.size());
+        Recorded actual = coarse.stream().filter(r -> r.thread instanceof DestinationConnector.DestinationQueueThread).findFirst().orElseThrow();
+        assertSame(actual, only(Stage.TRANSFORM, 1).parent);
+        assertSame(actual, only(Stage.SEND, 1).parent);
+        assertSame(actual, only(Stage.RESPONSE, 1).parent);
+        assertEquals(Status.QUEUED, coarse.get(0).status);
+    }
+
+    @Test public void interruptedHeldRetryIsObservedBeforeAnySecondSend() throws Exception {
+        create(true, 1);
+        AtomicInteger starts = new AtomicInteger(), sends = new AtomicInteger();
+        CountDownLatch retry = new CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicReference<Thread> retryThread = new java.util.concurrent.atomic.AtomicReference<>();
+        var destination = sender(() -> { sends.incrementAndGet(); return new Response(Status.QUEUED, "reply"); });
+        queueProperties(destination).setRetryIntervalMillis(30000);
+        recorder.beforeStage = (stage, message) -> {
+            if (stage == Stage.DESTINATION && Thread.currentThread() instanceof DestinationConnector.DestinationQueueThread
+                    && starts.incrementAndGet() == 2) {
+                retryThread.set(Thread.currentThread()); retry.countDown();
+            }
+        };
+        runMessage(); assertTrue(retry.await(5, TimeUnit.SECONDS)); retryThread.get().interrupt();
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (destination.isQueueThreadRunning()) {
+            if (System.nanoTime() - deadline >= 0) fail("interrupted queue worker did not exit");
+            Thread.sleep(5);
+        }
+        List<Recorded> attempts = records(Stage.DESTINATION, 1).stream()
+                .filter(r -> r.thread instanceof DestinationConnector.DestinationQueueThread).toList();
+        assertEquals(2, attempts.size()); assertEquals(1, sends.get());
+        assertTrue(attempts.get(1).failure instanceof InterruptedException);
+        assertEquals(Status.QUEUED, attempts.get(1).status); assertEquals(1, attempts.get(1).closed);
+        status(1, Status.QUEUED);
     }
 
     private void assertHierarchy(int destinations) {
-        assertEquals(2 + destinations * 3, recorder.records.size());
+        assertEquals(2 + destinations * 4, recorder.records.size());
         Recorded source = recorder.only(Stage.SOURCE, 0);
         assertNull(source.parent);
         for (Recorded record : recorder.records) {
-            if (record != source) assertSame("all detailed scopes belong to source in this initial slice", source, record.parent);
+            if (record != source) {
+                Recorded expected = record.message.getMetaDataId() == 0 || record.stage == Stage.DESTINATION
+                        ? source : recorder.only(Stage.DESTINATION, record.message.getMetaDataId());
+                assertSame("details belong to the actual destination scope", expected, record.parent);
+            }
             assertEquals(1, record.closed);
         }
     }
@@ -433,8 +591,11 @@ public class MessageTelemetryHooksTest {
         boolean failCallbacks;
         java.util.function.BiConsumer<ConnectorMessage,Map<String,Object>> preparation = (message,map) -> {};
         Runnable sourceStarted = () -> {};
+        java.util.function.BiConsumer<Stage, ConnectorMessage> beforeStage = (stage, message) -> {};
+        java.util.function.Consumer<Recorded> afterClose = record -> {};
         public void beforeStore(ConnectorMessage message, Map<String,Object> sourceMap) { preparation.accept(message,sourceMap); }
         public Observation start(Stage stage, ConnectorMessage message) {
+            beforeStage.accept(stage, message);
             if (stage == Stage.SOURCE) sourceStarted.run();
             Recorded record = new Recorded(stage, message, current.get());
             records.add(record);
@@ -446,7 +607,8 @@ public class MessageTelemetryHooksTest {
                     if (record.thread != Thread.currentThread() || current.get() != record) errors.add("scope restored on wrong thread or in wrong order");
                     current.set(record.parent);
                     if (record.status == null) record.status = message.getStatus();
-                    record.closed++;
+                    try { afterClose.accept(record); }
+                    finally { record.closed++; }
                     if (failCallbacks) throw new IllegalStateException();
                 }
             };

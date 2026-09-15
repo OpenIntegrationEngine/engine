@@ -176,6 +176,7 @@ public class DestinationChain implements Callable<List<ConnectorMessage>> {
 
                         // We don't create a new map here because the source map is read-only and thus won't ever be changed
                         nextMessage.setSourceMap(message.getSourceMap());
+                        MessageTelemetry.copyDispatchContext(message, nextMessage);
                         nextMessage.setChannelMap(new HashMap<String, Object>(message.getChannelMap()));
                         nextMessage.setResponseMap(new HashMap<String, Object>(message.getResponseMap()));
                         nextMessage.setRaw(new MessageContent(message.getChannelId(), message.getMessageId(), nextMetaDataId, ContentType.RAW, message.getRaw().getContent(), nextDestinationConnector.getInboundDataType().getType(), message.getRaw().isEncrypted()));

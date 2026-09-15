@@ -25,6 +25,21 @@ public final class MessageTelemetry {
     }
     public interface Provider {
         Observation start(Stage stage, ConnectorMessage message);
+        /** Static API capability, not a cached policy/admission decision. No live resources. */
+        default boolean supportsDispatchContext() { return false; }
+        /**
+         * Optional immutable, bounded, content-free preparation proof. It must retain no message,
+         * application map, Throwable, Context, SDK/provider or lease. Persisted data stays in the
+         * existing map representation. Null opts this dispatch into the ordinary start path.
+         */
+        default Object prepareDispatch(ConnectorMessage message, Map<String, Object> sourceMap) {
+            beforeStore(message, sourceMap);
+            return null;
+        }
+        /** Providers must recheck native coordinates, observed map values and current policy. */
+        default Observation start(Stage stage, ConnectorMessage message, Object dispatchContext) {
+            return start(stage, message);
+        }
         /**
          * Before the source map becomes read-only and is first persisted. May add only private,
          * content-free propagation data to sourceMap; preserve all application entries. This
@@ -56,13 +71,39 @@ public final class MessageTelemetry {
     public static Observation start(Stage stage, ConnectorMessage message) {
         Registration registration = CURRENT.get();
         if (registration == null) return NONE;
-        return observe(registration, () -> registration.provider.start(stage, message));
+        return observe(registration, () -> registration.dispatchOwner == null
+                ? registration.provider.start(stage, message)
+                : registration.provider.start(stage, message, message == null ? null
+                        : message.getTelemetryContext(registration.dispatchOwner)));
     }
     public static void beforeStore(ConnectorMessage message, Map<String, Object> sourceMap) {
         Registration registration = CURRENT.get();
         if (registration == null) return;
-        try { registration.provider.beforeStore(message, sourceMap); }
-        catch (Throwable failure) { registration.failed(failure); }
+        if (registration.dispatchOwner == null || message == null) {
+            try { registration.provider.beforeStore(message, sourceMap); }
+            catch (Throwable failure) { registration.failed(failure); }
+            return;
+        }
+        Object reservation = null;
+        try {
+            reservation = message.reserveTelemetryContext(registration.dispatchOwner);
+            Object prepared = registration.provider.prepareDispatch(message, sourceMap);
+            message.completeTelemetryContext(reservation, prepared);
+        } catch (Throwable failure) {
+            if (reservation != null) message.completeTelemetryContext(reservation, null);
+            registration.failed(failure);
+        }
+    }
+
+    /** Native dispatch copies only this installation's scalar proof, never a source message/SDK. */
+    static void copyDispatchContext(ConnectorMessage source, ConnectorMessage destination) {
+        Registration registration = CURRENT.get();
+        if (registration == null || registration.dispatchOwner == null || source == null || destination == null) return;
+        try {
+            Object value = source.getTelemetryContext(registration.dispatchOwner);
+            Object reservation = destination.reserveTelemetryContext(registration.dispatchOwner);
+            destination.completeTelemetryContext(reservation, value);
+        } catch (Throwable failure) { registration.failed(failure); }
     }
     private static Observation observe(Registration registration, Supplier<Observation> start) {
         try {
@@ -133,8 +174,13 @@ public final class MessageTelemetry {
     }
     private static final class Registration {
         final Provider provider;
+        // This key is deliberately not Registration: messages must not retain Provider/SDK owners.
+        final Object dispatchOwner;
         final AtomicBoolean warned = new AtomicBoolean();
-        Registration(Provider provider) { this.provider = provider; }
+        Registration(Provider provider) {
+            this.provider = provider;
+            dispatchOwner = provider.supportsDispatchContext() ? new Object() : null;
+        }
         void failed(Throwable failure) {
             if (failure instanceof VirtualMachineError) throw (VirtualMachineError) failure;
             if (failure instanceof ThreadDeath) throw (ThreadDeath) failure;

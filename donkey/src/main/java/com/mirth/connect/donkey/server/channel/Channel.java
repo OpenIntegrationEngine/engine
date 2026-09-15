@@ -1808,6 +1808,7 @@ public class Channel implements Runnable {
                     message.setChannelMap(new HashMap<String, Object>(sourceMessage.getChannelMap()));
                     message.setResponseMap(new HashMap<String, Object>(sourceMessage.getResponseMap()));
                     message.setRaw(raw);
+                    MessageTelemetry.copyDispatchContext(sourceMessage, message);
 
                     // store the new message, but we don't need to store the content because we will reference the source's encoded content
                     dao.insertConnectorMessage(message, storageSettings.isStoreMaps(), true);

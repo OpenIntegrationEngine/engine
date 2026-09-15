@@ -10,6 +10,8 @@
 package com.mirth.connect.donkey.model.message;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +26,14 @@ public class ConnectorMessage implements Serializable {
 
     /** Optional content-free scalar state. Neither key nor value may retain an SDK/provider. */
     private transient volatile TelemetrySlot telemetrySlot;
+    private static final VarHandle TELEMETRY_SLOT;
+    static {
+        try {
+            TELEMETRY_SLOT = MethodHandles.lookup().findVarHandle(ConnectorMessage.class, "telemetrySlot", TelemetrySlot.class);
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     private static final class TelemetrySlot {
         final Object owner;
@@ -32,20 +42,19 @@ public class ConnectorMessage implements Serializable {
     }
 
     /** Reserve before a callback; an older/reentrant callback cannot publish over a newer one. */
-    public final synchronized Object reserveTelemetryContext(Object owner) {
+    public final Object reserveTelemetryContext(Object owner) {
         if (owner == null) throw new IllegalArgumentException("telemetry_context_owner");
-        telemetrySlot = null; // Allocation failure must not leave a prior dispatch's proof live.
         TelemetrySlot selected = new TelemetrySlot(owner, null);
         telemetrySlot = selected;
         return selected;
     }
 
     /** Null retires only this reservation. The opaque reservation is not the owner key. */
-    public final synchronized boolean completeTelemetryContext(Object reservation, Object value) {
-        if (!(reservation instanceof TelemetrySlot) || telemetrySlot != reservation) return false;
+    public final boolean completeTelemetryContext(Object reservation, Object value) {
+        if (!(reservation instanceof TelemetrySlot)) return false;
         TelemetrySlot selected = (TelemetrySlot) reservation;
-        telemetrySlot = value == null ? null : new TelemetrySlot(selected.owner, value);
-        return true;
+        TelemetrySlot next = value == null ? null : new TelemetrySlot(selected.owner, value);
+        return TELEMETRY_SLOT.compareAndSet(this, selected, next);
     }
 
     /** Possession of an unrelated key cannot read or manufacture an installed provider's slot. */

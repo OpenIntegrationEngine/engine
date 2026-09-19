@@ -1,0 +1,59 @@
+<NCPDP_D0_Billing_Request>
+    <TransactionHeaderRequest>
+        <BinNumber>000000</BinNumber>
+        <VersionReleaseNumber>D0</VersionReleaseNumber>
+        <TransactionCode>B1</TransactionCode>
+        <ProcessorControlNumber>ASDF      </ProcessorControlNumber>
+        <TransactionCount>1</TransactionCount>
+        <ServiceProviderIdQualifier>01</ServiceProviderIdQualifier>
+        <ServiceProviderId>1234567890     </ServiceProviderId>
+        <DateOfService>20260913</DateOfService>
+        <SoftwareVendorCertificationId>          </SoftwareVendorCertificationId>
+    </TransactionHeaderRequest>
+    <Patient>
+        <PatientId>123456789</PatientId>
+        <PlaceOfService>01</PlaceOfService>
+    </Patient>
+    <Insurance>
+        <CardholderId>123456789</CardholderId>
+    </Insurance>
+    <TRANSACTIONS>
+        <TRANSACTION counter="1">
+            <Claim>
+                <PrescriptionServiceReferenceNumberQualifier>1</PrescriptionServiceReferenceNumberQualifier>
+                <PrescriptionServiceReferenceNumber>98765432</PrescriptionServiceReferenceNumber>
+                <ProductServiceIdQualifier>03</ProductServiceIdQualifier>
+                <ProductServiceId>11111022222</ProductServiceId>
+                <QuantityDispensed>28000</QuantityDispensed>
+                <FillNumber>0</FillNumber>
+                <DaysSupply>7</DaysSupply>
+                <CompoundCode>1</CompoundCode>
+                <DispenseAsWrittenProductSelectionCode>0</DispenseAsWrittenProductSelectionCode>
+                <NumberOfRefillsAuthorized>0</NumberOfRefillsAuthorized>
+                <PrescriptionOriginCode>3</PrescriptionOriginCode>
+                <DatePrescriptionWritten>20260913</DatePrescriptionWritten>
+                <PharmacyServiceType>5</PharmacyServiceType>
+            </Claim>
+            <Prescriber>
+                <PrescriberIdQualifier>01</PrescriberIdQualifier>
+                <PrescriberId>1234567890</PrescriberId>
+            </Prescriber>
+            <Pricing>
+                <IngredientCostSubmitted>136E</IngredientCostSubmitted>
+                <DispensingFeeSubmitted>80{</DispensingFeeSubmitted>
+                <PatientPaidAmountSubmitted>00{</PatientPaidAmountSubmitted>
+                <UsualAndCustomaryCharge>216E</UsualAndCustomaryCharge>
+                <GrossAmountDue>216E</GrossAmountDue>
+                <BasisOfCostDetermination>01</BasisOfCostDetermination>
+            </Pricing>
+            <Facility>
+                <FacilityId>EX</FacilityId>
+                <FacilityName>Example</FacilityName>
+                <FacilityStreetAddress>123 Anywhere St.</FacilityStreetAddress>
+                <FacilityCityAddress>Nowhere</FacilityCityAddress>
+                <FacilityStateAddress>IN</FacilityStateAddress>
+                <FacilityZipAddress>12345</FacilityZipAddress>
+            </Facility>
+        </TRANSACTION>
+    </TRANSACTIONS>
+</NCPDP_D0_Billing_Request>

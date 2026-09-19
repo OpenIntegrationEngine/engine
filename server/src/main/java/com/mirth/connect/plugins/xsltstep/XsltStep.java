@@ -70,7 +70,7 @@ public class XsltStep extends Step implements FilterTransformerIterable<Step> {
         script.append("transformer = tFactory.newTransformer(new Packages.javax.xml.transform.stream.StreamSource(xsltTemplate));\n");
         script.append("sourceVar = new Packages.java.io.StringReader(" + sourceXml + ");\n");
         script.append("resultVar = new Packages.java.io.StringWriter();\n");
-        script.append("transformer.transform(new Packages.javax.xml.transform.stream.StreamSource(sourceVar), new Packages.javax.xml.transform.stream.StreamResult(resultVar));\n");
+        script.append("transformer.transform(Packages.com.mirth.connect.util.MirthXmlUtil.getSecureSource(sourceVar), new Packages.javax.xml.transform.stream.StreamResult(resultVar));\n");
 
         return script.toString();
     }

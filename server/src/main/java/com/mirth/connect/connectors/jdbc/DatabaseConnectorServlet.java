@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
@@ -52,6 +51,9 @@ public class DatabaseConnectorServlet extends MirthServlet implements DatabaseCo
 
     @Override
     public SortedSet<Table> getTables(String channelId, String channelName, String driver, String url, String username, String password, Set<String> tableNamePatterns, String selectLimit, Set<String> resourceIds) {
+        // selectLimit is deprecated and ignored for security reasons. Kept for backcompat.
+        selectLimit = null;
+
         CustomDriver customDriver = null;
         Connection connection = null;
         try {
@@ -150,55 +152,40 @@ public class DatabaseConnectorServlet extends MirthServlet implements DatabaseCo
                     // then we'll define to the generic method of getting column information, but
                     // this could be extremely slow
                     List<Column> columnList = new ArrayList<Column>();
-                    if (StringUtils.isEmpty(selectLimit)) {
-                        logger.debug("No select limit is defined, using generic method");
-                        rs = dbMetaData.getColumns(null, null, tableName, null);
+                    final String schemaTableName = StringUtils.isNotEmpty(schema) ? "\"" + schema + "\".\"" + tableName + "\"" : "\"" + tableName + "\"";
+                    final String queryString = "SELECT * FROM " + schemaTableName + " WHERE 1 = 0";
+                    Statement statement = connection.createStatement();
+                    try {
+                        rs = statement.executeQuery(queryString);
+                        ResultSetMetaData rsmd = rs.getMetaData();
 
-                        // retrieve all relevant column information                         
-                        for (int i = 0; rs.next(); i++) {
-                            Column column = new Column(rs.getString("COLUMN_NAME"), rs.getString("TYPE_NAME"), rs.getInt("COLUMN_SIZE"));
+                        // retrieve all relevant column information
+                        for (int i = 1; i < rsmd.getColumnCount() + 1; i++) {
+                            Column column = new Column(rsmd.getColumnName(i), rsmd.getColumnTypeName(i), rsmd.getPrecision(i));
                             columnList.add(column);
                         }
-                    } else {
-                        logger.debug("Select limit is defined, using specific select query : '" + selectLimit + "'");
-
-                        // replace the '?' with the appropriate schema.table name, and use ResultSetMetaData to 
-                        // retrieve column information 
-                        final String schemaTableName = StringUtils.isNotEmpty(schema) ? "\"" + schema + "\".\"" + tableName + "\"" : "\"" + tableName + "\"";
-                        final String queryString = selectLimit.trim().replaceAll("\\?", Matcher.quoteReplacement(schemaTableName));
-                        Statement statement = connection.createStatement();
-                        try {
-                            rs = statement.executeQuery(queryString);
-                            ResultSetMetaData rsmd = rs.getMetaData();
-
-                            // retrieve all relevant column information
-                            for (int i = 1; i < rsmd.getColumnCount() + 1; i++) {
-                                Column column = new Column(rsmd.getColumnName(i), rsmd.getColumnTypeName(i), rsmd.getPrecision(i));
-                                columnList.add(column);
-                            }
-                        } catch (SQLException sqle) {
-                            logger.info("Failed to execute '" + queryString + "', fall back to generic approach to retrieve column information");
-                            fallback = true;
-                        } finally {
-                            if (statement != null) {
-                                statement.close();
-                            }
+                    } catch (SQLException sqle) {
+                        logger.info("Failed to execute '" + queryString + "', fall back to generic approach to retrieve column information");
+                        fallback = true;
+                    } finally {
+                        if (statement != null) {
+                            statement.close();
                         }
+                    }
 
-                        // failed to use selectLimit method, so we need to fall back to generic
-                        // if this generic approach fails, then there's nothing we can do
-                        if (fallback) {
-                            // Re-initialize in case some columns were added before failing
-                            columnList = new ArrayList<Column>();
+                    // failed to use selectLimit method, so we need to fall back to generic
+                    // if this generic approach fails, then there's nothing we can do
+                    if (fallback) {
+                        // Re-initialize in case some columns were added before failing
+                        columnList = new ArrayList<Column>();
 
-                            logger.debug("Using fallback method for retrieving columns");
-                            backupRs = dbMetaData.getColumns(null, null, tableName.replace("/", "//"), null);
+                        logger.debug("Using fallback method for retrieving columns");
+                        backupRs = dbMetaData.getColumns(null, null, tableName.replace("/", "//"), null);
 
-                            // retrieve all relevant column information                         
-                            while (backupRs.next()) {
-                                Column column = new Column(backupRs.getString("COLUMN_NAME"), backupRs.getString("TYPE_NAME"), backupRs.getInt("COLUMN_SIZE"));
-                                columnList.add(column);
-                            }
+                        // retrieve all relevant column information                         
+                        while (backupRs.next()) {
+                            Column column = new Column(backupRs.getString("COLUMN_NAME"), backupRs.getString("TYPE_NAME"), backupRs.getInt("COLUMN_SIZE"));
+                            columnList.add(column);
                         }
                     }
 

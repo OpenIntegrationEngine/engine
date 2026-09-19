@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<dicom>
+    <tag00020000 len="4" tag="00020000" vr="UL">206</tag00020000>
+    <tag00020001 len="2" tag="00020001" vr="OB">00\01</tag00020001>
+    <tag00020002 len="26" tag="00020002" vr="UI">1.2.840.10008.5.1.4.1.1.2</tag00020002>
+    <tag00020003 len="64" tag="00020003" vr="UI">1.3.6.1.4.1.14519.5.2.1.6919.4624.157171626006094822772795196788</tag00020003>
+    <tag00020010 len="20" tag="00020010" vr="UI">1.2.840.10008.1.2.1</tag00020010>
+    <tag00020012 len="24" tag="00020012" vr="UI">1.3.6.1.4.1.22213.1.143</tag00020012>
+    <tag00020013 len="4" tag="00020013" vr="SH">0.5</tag00020013>
+    <tag00020016 len="6" tag="00020016" vr="AE">POSDA</tag00020016>
+    <tag00080005 len="10" tag="00080005" vr="CS">ISO_IR 100</tag00080005>
+    <tag00080008 len="34" tag="00080008" vr="CS">ORIGINAL\PRIMARY\AXIAL\CT_SOM5 SPI</tag00080008>
+    <tag00080016 len="26" tag="00080016" vr="UI">1.2.840.10008.5.1.4.1.1.2</tag00080016>
+    <tag00080018 len="64" tag="00080018" vr="UI">1.3.6.1.4.1.14519.5.2.1.6919.4624.157171626006094822772795196788</tag00080018>
+    <tag00080020 len="8" tag="00080020" vr="DA">20040912</tag00080020>
+    <tag00080021 len="8" tag="00080021" vr="DA">20040912</tag00080021>
+    <tag00080022 len="8" tag="00080022" vr="DA">20040912</tag00080022>
+    <tag00080023 len="8" tag="00080023" vr="DA">20040912</tag00080023>
+    <tag0008002A len="22" tag="0008002A" vr="DT">20040912062713.470000</tag0008002A>
+    <tag00080030 len="14" tag="00080030" vr="TM">062339.242000</tag00080030>
+    <tag00080031 len="14" tag="00080031" vr="TM">062946.132000</tag00080031>
+    <tag00080032 len="14" tag="00080032" vr="TM">062713.470000</tag00080032>
+    <tag00080033 len="14" tag="00080033" vr="TM">062713.470000</tag00080033>
+    <tag00080050 len="0" tag="00080050" vr="SH"/>
+    <tag00080060 len="2" tag="00080060" vr="CS">CT</tag00080060>
+    <tag00080070 len="8" tag="00080070" vr="LO">SIEMENS</tag00080070>
+    <tag00080090 len="0" tag="00080090" vr="PN"/>
+    <tag00081030 len="24" tag="00081030" vr="LO">chest_abdomen_pelvis__w</tag00081030>
+    <tag00081032 len="-1" tag="00081032" vr="SQ">
+        <item len="-1" off="784">
+            <tag00080100 len="8" tag="00080100" vr="SH">IMG2002</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">FHS</tag00080102>
+            <tag00080104 len="44" tag="00080104" vr="LO">CTA ANGIOGRAM CHEST/ABD/PELVIS W PROCESSING</tag00080104>
+        </item>
+    </tag00081032>
+    <tag0008103E len="8" tag="0008103E" vr="LO">arterial</tag0008103E>
+    <tag00081090 len="24" tag="00081090" vr="LO">SOMATOM Definition Edge</tag00081090>
+    <tag00081110 len="-1" tag="00081110" vr="SQ">
+        <item len="-1" off="948">
+            <tag00081150 len="24" tag="00081150" vr="UI">1.2.840.10008.3.1.2.3.1</tag00081150>
+            <tag00081155 len="64" tag="00081155" vr="UI">1.3.6.1.4.1.14519.5.2.1.6919.4624.179475577869989445825322252923</tag00081155>
+        </item>
+    </tag00081110>
+    <tag00081140 len="-1" tag="00081140" vr="SQ">
+        <item len="-1" off="1088">
+            <tag00081150 len="26" tag="00081150" vr="UI">1.2.840.10008.5.1.4.1.1.2</tag00081150>
+            <tag00081155 len="64" tag="00081155" vr="UI">1.3.6.1.4.1.14519.5.2.1.6919.4624.297042649168128363219752116592</tag00081155>
+        </item>
+    </tag00081140>
+    <tag00082112 len="-1" tag="00082112" vr="SQ">
+        <item len="-1" off="1230">
+            <tag00081150 len="20" tag="00081150" vr="UI">1.3.12.2.1107.5.9.1</tag00081150>
+            <tag00081155 len="64" tag="00081155" vr="UI">1.3.6.1.4.1.14519.5.2.1.6919.4624.688401930884469382984667769886</tag00081155>
+        </item>
+    </tag00082112>
+    <tag00083010 len="64" tag="00083010" vr="UI">1.3.6.1.4.1.14519.5.2.1.6919.4624.688401930884469382984667769886</tag00083010>
+    <tag00090010 len="20" tag="00090010" vr="LO">SIEMENS CT VA1 DUMMY</tag00090010>
+    <tag00100010 len="10" tag="00100010" vr="PN">KiTS-00136</tag00100010>
+    <tag00100020 len="10" tag="00100020" vr="LO">KiTS-00136</tag00100020>
+    <tag00100030 len="0" tag="00100030" vr="DA"/>
+    <tag00100040 len="2" tag="00100040" vr="CS">M</tag00100040>
+    <tag00101010 len="4" tag="00101010" vr="AS">052Y</tag00101010>
+    <tag001021C0 len="2" tag="001021C0" vr="US">4</tag001021C0>
+    <tag00120050 len="4" tag="00120050" vr="LO">-49</tag00120050>
+    <tag00120051 len="24" tag="00120051" vr="ST">Days offset from surgery</tag00120051>
+    <tag00120052 len="8" tag="00120052" vr="FD">-49.0</tag00120052>
+    <tag00120053 len="8" tag="00120053" vr="CS">SURGERY</tag00120053>
+    <tag00120062 len="4" tag="00120062" vr="CS">YES</tag00120062>
+    <tag00120063 len="46" tag="00120063" vr="LO">Per DICOM PS 3.15 AnnexE. Details in 0012,0064</tag00120063>
+    <tag00120064 len="-1" tag="00120064" vr="SQ">
+        <item len="-1" off="1684">
+            <tag00080100 len="6" tag="00080100" vr="SH">113100</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="42" tag="00080104" vr="LO">Basic Application Confidentiality Profile</tag00080104>
+        </item>
+        <item len="-1" off="1776">
+            <tag00080100 len="6" tag="00080100" vr="SH">113101</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="24" tag="00080104" vr="LO">Clean Pixel Data Option</tag00080104>
+        </item>
+        <item len="-1" off="1850">
+            <tag00080100 len="6" tag="00080100" vr="SH">113104</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="32" tag="00080104" vr="LO">Clean Structured Content Option</tag00080104>
+        </item>
+        <item len="-1" off="1932">
+            <tag00080100 len="6" tag="00080100" vr="SH">113105</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="24" tag="00080104" vr="LO">Clean Descriptors Option</tag00080104>
+        </item>
+        <item len="-1" off="2006">
+            <tag00080100 len="6" tag="00080100" vr="SH">113107</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="62" tag="00080104" vr="LO">Retain Longitudinal Temporal Information Modified Dates Option</tag00080104>
+        </item>
+        <item len="-1" off="2118">
+            <tag00080100 len="6" tag="00080100" vr="SH">113108</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="38" tag="00080104" vr="LO">Retain Patient Characteristics Option</tag00080104>
+        </item>
+        <item len="-1" off="2206">
+            <tag00080100 len="6" tag="00080100" vr="SH">113109</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="30" tag="00080104" vr="LO">Retain Device Identity Option</tag00080104>
+        </item>
+        <item len="-1" off="2286">
+            <tag00080100 len="6" tag="00080100" vr="SH">113111</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="26" tag="00080104" vr="LO">Retain Safe Private Option</tag00080104>
+        </item>
+    </tag00120064>
+    <tag00130010 len="4" tag="00130010" vr="LO">CTP</tag00130010>
+    <tag00131010 len="10" tag="00131010" vr="LO">C4KC-KiTS</tag00131010>
+    <tag00131013 len="8" tag="00131013" vr="LO">69194624</tag00131013>
+    <tag00180010 len="4" tag="00180010" vr="LO">None</tag00180010>
+    <tag00180015 len="8" tag="00180015" vr="CS">ABDOMEN</tag00180015>
+    <tag00180050 len="2" tag="00180050" vr="DS">5</tag00180050>
+    <tag00180060 len="4" tag="00180060" vr="DS">100</tag00180060>
+    <tag00180090 len="4" tag="00180090" vr="DS">500</tag00180090>
+    <tag00181000 len="2" tag="00181000" vr="LO">0</tag00181000>
+    <tag00181020 len="14" tag="00181020" vr="LO">syngo CT VA48A</tag00181020>
+    <tag00181030 len="6" tag="00181030" vr="LO">PE_CAP</tag00181030>
+    <tag00181041 len="2" tag="00181041" vr="DS">0</tag00181041>
+    <tag00181042 len="14" tag="00181042" vr="TM">062615.760996</tag00181042>
+    <tag00181043 len="14" tag="00181043" vr="TM">062615.760996</tag00181043>
+    <tag00181044 len="2" tag="00181044" vr="DS">0</tag00181044>
+    <tag00181046 len="2" tag="00181046" vr="DS">0</tag00181046>
+    <tag00181047 len="2" tag="00181047" vr="DS">0</tag00181047>
+    <tag00181049 len="2" tag="00181049" vr="DS">0</tag00181049>
+    <tag00181100 len="4" tag="00181100" vr="DS">350</tag00181100>
+    <tag00181110 len="6" tag="00181110" vr="DS">1085.6</tag00181110>
+    <tag00181111 len="4" tag="00181111" vr="DS">595</tag00181111>
+    <tag00181120 len="2" tag="00181120" vr="DS">0</tag00181120>
+    <tag00181130 len="4" tag="00181130" vr="DS">151</tag00181130>
+    <tag00181140 len="2" tag="00181140" vr="CS">CW</tag00181140>
+    <tag00181150 len="4" tag="00181150" vr="IS">500</tag00181150>
+    <tag00181151 len="4" tag="00181151" vr="IS">264</tag00181151>
+    <tag00181152 len="4" tag="00181152" vr="IS">220</tag00181152>
+    <tag00181160 len="4" tag="00181160" vr="SH">FLAT</tag00181160>
+    <tag00181170 len="2" tag="00181170" vr="IS">30</tag00181170>
+    <tag00181190 len="4" tag="00181190" vr="DS">1.2</tag00181190>
+    <tag00181200 len="8" tag="00181200" vr="DA">20040912</tag00181200>
+    <tag00181201 len="0" tag="00181201" vr="TM"/>
+    <tag00181210 len="6" tag="00181210" vr="SH">I40f\2</tag00181210>
+    <tag00185100 len="4" tag="00185100" vr="CS">FFS</tag00185100>
+    <tag00189306 len="8" tag="00189306" vr="FD">0.6</tag00189306>
+    <tag00189307 len="8" tag="00189307" vr="FD">38.4</tag00189307>
+    <tag00189309 len="8" tag="00189309" vr="FD">46.0</tag00189309>
+    <tag00189310 len="8" tag="00189310" vr="FD">23.0</tag00189310>
+    <tag00189311 len="8" tag="00189311" vr="FD">0.6</tag00189311>
+    <tag00189313 len="24" tag="00189313" vr="FD">0.0\-151.0\-504.3</tag00189313>
+    <tag00189318 len="24" tag="00189318" vr="FD">-5.0\-151.0\-504.3</tag00189318>
+    <tag00189323 len="6" tag="00189323" vr="CS">XYZ_EC</tag00189323>
+    <tag00189324 len="8" tag="00189324" vr="FD">53.0769</tag00189324>
+    <tag00189345 len="8" tag="00189345" vr="FD">8.67425947826087</tag00189345>
+    <tag00189346 len="-1" tag="00189346" vr="SQ">
+        <item len="-1" off="3010">
+            <tag00080100 len="6" tag="00080100" vr="SH">113691</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="26" tag="00080104" vr="LO">IEC Body Dosimetry Phantom</tag00080104>
+        </item>
+    </tag00189346>
+    <tag00189352 len="12" tag="00189352" vr="FL">0.679\0.714\0.746</tag00189352>
+    <tag00190010 len="20" tag="00190010" vr="LO">SIEMENS CT VA0  COAD</tag00190010>
+    <tag00191090 len="2" tag="00191090" vr="DS">0</tag00191090>
+    <tag00191092 len="6" tag="00191092" vr="DS">0.9236</tag00191092>
+    <tag00191093 len="8" tag="00191093" vr="DS">-1.6565</tag00191093>
+    <tag00191096 len="2" tag="00191096" vr="IS">0</tag00191096>
+    <tag001910B0 len="2" tag="001910B0" vr="DS">23</tag001910B0>
+    <tag0020000D len="64" tag="0020000D" vr="UI">1.3.6.1.4.1.14519.5.2.1.6919.4624.179475577869989445825322252923</tag0020000D>
+    <tag0020000E len="64" tag="0020000E" vr="UI">1.3.6.1.4.1.14519.5.2.1.6919.4624.927472659782721902556191020020</tag0020000E>
+    <tag00200010 len="0" tag="00200010" vr="SH"/>
+    <tag00200011 len="2" tag="00200011" vr="IS">8</tag00200011>
+    <tag00200012 len="2" tag="00200012" vr="IS">7</tag00200012>
+    <tag00200013 len="2" tag="00200013" vr="IS">51</tag00200013>
+    <tag00200032 len="36" tag="00200032" vr="DS">-179.658203125\-325.658203125\-504.3</tag00200032>
+    <tag00200037 len="12" tag="00200037" vr="DS">1\0\0\0\1\0</tag00200037>
+    <tag00200052 len="64" tag="00200052" vr="UI">1.3.6.1.4.1.14519.5.2.1.6919.4624.240499823560899143234666603682</tag00200052>
+    <tag00201040 len="0" tag="00201040" vr="LO"/>
+    <tag00201041 len="6" tag="00201041" vr="DS">504.3</tag00201041>
+    <tag00204000 len="0" tag="00204000" vr="LT"/>
+    <tag00210010 len="12" tag="00210010" vr="LO">SIEMENS MED</tag00210010>
+    <tag00211011 len="4" tag="00211011" vr="DS">5\0</tag00211011>
+    <tag00280002 len="2" tag="00280002" vr="US">1</tag00280002>
+    <tag00280004 len="12" tag="00280004" vr="CS">MONOCHROME2</tag00280004>
+    <tag00280010 len="2" tag="00280010" vr="US">512</tag00280010>
+    <tag00280011 len="2" tag="00280011" vr="US">512</tag00280011>
+    <tag00280030 len="22" tag="00280030" vr="DS">0.68359375\0.68359375</tag00280030>
+    <tag00280100 len="2" tag="00280100" vr="US">16</tag00280100>
+    <tag00280101 len="2" tag="00280101" vr="US">12</tag00280101>
+    <tag00280102 len="2" tag="00280102" vr="US">11</tag00280102>
+    <tag00280103 len="2" tag="00280103" vr="US">0</tag00280103>
+    <tag00280106 len="2" tag="00280106" vr="US">0</tag00280106>
+    <tag00280107 len="2" tag="00280107" vr="US">2419</tag00280107>
+    <tag00280303 len="8" tag="00280303" vr="CS">MODIFIED</tag00280303>
+    <tag00281050 len="8" tag="00281050" vr="DS">60\-600</tag00281050>
+    <tag00281051 len="8" tag="00281051" vr="DS">375\1200</tag00281051>
+    <tag00281052 len="6" tag="00281052" vr="DS">-1024</tag00281052>
+    <tag00281053 len="2" tag="00281053" vr="DS">1</tag00281053>
+    <tag00281054 len="2" tag="00281054" vr="LO">HU</tag00281054>
+    <tag00281055 len="16" tag="00281055" vr="LO">WINDOW1\WINDOW2</tag00281055>
+    <tag00290010 len="18" tag="00290010" vr="LO">SIEMENS CSA HEADER</tag00290010>
+    <tag00290011 len="22" tag="00290011" vr="LO">SIEMENS MEDCOM HEADER</tag00290011>
+    <tag00321060 len="44" tag="00321060" vr="LO">CTA ANGIOGRAM CHEST/ABD/PELVIS W PROCESSING</tag00321060>
+    <tag00321064 len="-1" tag="00321064" vr="SQ">
+        <item len="-1" off="3948">
+            <tag00080100 len="8" tag="00080100" vr="SH">IMG2002</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">FHS</tag00080102>
+            <tag00080104 len="44" tag="00080104" vr="LO">CTA ANGIOGRAM CHEST/ABD/PELVIS W PROCESSING</tag00080104>
+        </item>
+    </tag00321064>
+    <tag00730010 len="8" tag="00730010" vr="LO">STENTOR</tag00730010>
+</dicom>

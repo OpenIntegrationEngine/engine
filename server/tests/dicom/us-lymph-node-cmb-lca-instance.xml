@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<dicom>
+    <tag00020000 len="4" tag="00020000" vr="UL">208</tag00020000>
+    <tag00020001 len="2" tag="00020001" vr="OB">00\01</tag00020001>
+    <tag00020002 len="28" tag="00020002" vr="UI">1.2.840.10008.5.1.4.1.1.6.1</tag00020002>
+    <tag00020003 len="64" tag="00020003" vr="UI">1.3.6.1.4.1.14519.5.2.1.185577958846157191089023023733319573972</tag00020003>
+    <tag00020010 len="20" tag="00020010" vr="UI">1.2.840.10008.1.2.1</tag00020010>
+    <tag00020012 len="24" tag="00020012" vr="UI">1.3.6.1.4.1.22213.1.143</tag00020012>
+    <tag00020013 len="4" tag="00020013" vr="SH">0.5</tag00020013>
+    <tag00020016 len="6" tag="00020016" vr="AE">POSDA</tag00020016>
+    <tag00080005 len="10" tag="00080005" vr="CS">ISO_IR 192</tag00080005>
+    <tag00080008 len="28" tag="00080008" vr="CS">DERIVED\PRIMARY\SMALL PARTS</tag00080008>
+    <tag00080012 len="8" tag="00080012" vr="DA">19591020</tag00080012>
+    <tag00080013 len="6" tag="00080013" vr="TM">113433</tag00080013>
+    <tag00080016 len="28" tag="00080016" vr="UI">1.2.840.10008.5.1.4.1.1.6.1</tag00080016>
+    <tag00080018 len="64" tag="00080018" vr="UI">1.3.6.1.4.1.14519.5.2.1.185577958846157191089023023733319573972</tag00080018>
+    <tag00080020 len="8" tag="00080020" vr="DA">19591020</tag00080020>
+    <tag00080021 len="8" tag="00080021" vr="DA">19591020</tag00080021>
+    <tag00080023 len="8" tag="00080023" vr="DA">19591020</tag00080023>
+    <tag0008002A len="14" tag="0008002A" vr="DT">19591020113433</tag0008002A>
+    <tag00080030 len="6" tag="00080030" vr="TM">100000</tag00080030>
+    <tag00080031 len="6" tag="00080031" vr="TM">110358</tag00080031>
+    <tag00080033 len="6" tag="00080033" vr="TM">113433</tag00080033>
+    <tag00080050 len="0" tag="00080050" vr="SH"/>
+    <tag00080060 len="2" tag="00080060" vr="CS">US</tag00080060>
+    <tag00080068 len="16" tag="00080068" vr="CS">FOR PRESENTATION</tag00080068>
+    <tag00080070 len="24" tag="00080070" vr="LO">Philips Medical Systems</tag00080070>
+    <tag00080090 len="0" tag="00080090" vr="PN"/>
+    <tag00081030 len="24" tag="00081030" vr="LO">US_Biopsy_RCervicalNode</tag00081030>
+    <tag00081032 len="-1" tag="00081032" vr="SQ">
+        <item len="-1" off="782">
+            <tag00080100 len="8" tag="00080100" vr="SH">IMG1101</tag00080100>
+            <tag00080102 len="6" tag="00080102" vr="SH">GEIIS</tag00080102>
+            <tag00080103 len="2" tag="00080103" vr="SH">0</tag00080103>
+            <tag00080104 len="22" tag="00080104" vr="LO">US GUIDED THYROID FNA</tag00080104>
+        </item>
+    </tag00081032>
+    <tag0008103E len="40" tag="0008103E" vr="LO">US GUIDED LYMPH NODE SUPERFICIAL BIOPSY</tag0008103E>
+    <tag00081090 len="8" tag="00081090" vr="LO">EPIQ 5G</tag00081090>
+    <tag00081110 len="-1" tag="00081110" vr="SQ">
+        <item len="-1" off="952">
+            <tag00081150 len="24" tag="00081150" vr="UI">1.2.840.100008.3.1.2.3.1</tag00081150>
+            <tag00081155 len="64" tag="00081155" vr="UI">1.3.6.1.4.1.14519.5.2.1.207522269430030124341950649812029134159</tag00081155>
+        </item>
+    </tag00081110>
+    <tag00081111 len="-1" tag="00081111" vr="SQ">
+        <item len="-1" off="1092">
+            <tag00081150 len="24" tag="00081150" vr="UI">1.2.840.10008.3.1.2.3.3</tag00081150>
+            <tag00081155 len="64" tag="00081155" vr="UI">1.3.6.1.4.1.14519.5.2.1.241721883221006165848038945169821191225</tag00081155>
+        </item>
+    </tag00081111>
+    <tag00082111 len="0" tag="00082111" vr="ST"/>
+    <tag00100010 len="10" tag="00100010" vr="PN">MSB-02120</tag00100010>
+    <tag00100020 len="10" tag="00100020" vr="LO">MSB-02120</tag00100020>
+    <tag00100030 len="0" tag="00100030" vr="DA"/>
+    <tag00100040 len="2" tag="00100040" vr="CS">O</tag00100040>
+    <tag00102160 len="0" tag="00102160" vr="SH"/>
+    <tag001021C0 len="2" tag="001021C0" vr="US">4</tag001021C0>
+    <tag00120052 len="8" tag="00120052" vr="FD">-72.0</tag00120052>
+    <tag00120053 len="12" tag="00120053" vr="CS">REGISTRATION</tag00120053>
+    <tag00120062 len="4" tag="00120062" vr="CS">YES</tag00120062>
+    <tag00120063 len="46" tag="00120063" vr="LO">Per DICOM PS 3.15 AnnexE. Details in 0012,0064</tag00120063>
+    <tag00120064 len="-1" tag="00120064" vr="SQ">
+        <item len="-1" off="1414">
+            <tag00080100 len="6" tag="00080100" vr="SH">113100</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="42" tag="00080104" vr="LO">Basic Application Confidentiality Profile</tag00080104>
+        </item>
+        <item len="-1" off="1506">
+            <tag00080100 len="6" tag="00080100" vr="SH">113101</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="24" tag="00080104" vr="LO">Clean Pixel Data Option</tag00080104>
+        </item>
+        <item len="-1" off="1580">
+            <tag00080100 len="6" tag="00080100" vr="SH">113104</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="32" tag="00080104" vr="LO">Clean Structured Content Option</tag00080104>
+        </item>
+        <item len="-1" off="1662">
+            <tag00080100 len="6" tag="00080100" vr="SH">113105</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="24" tag="00080104" vr="LO">Clean Descriptors Option</tag00080104>
+        </item>
+        <item len="-1" off="1736">
+            <tag00080100 len="6" tag="00080100" vr="SH">113107</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="62" tag="00080104" vr="LO">Retain Longitudinal Temporal Information Modified Dates Option</tag00080104>
+        </item>
+        <item len="-1" off="1848">
+            <tag00080100 len="6" tag="00080100" vr="SH">113108</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="38" tag="00080104" vr="LO">Retain Patient Characteristics Option</tag00080104>
+        </item>
+        <item len="-1" off="1936">
+            <tag00080100 len="6" tag="00080100" vr="SH">113109</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="30" tag="00080104" vr="LO">Retain Device Identity Option</tag00080104>
+        </item>
+        <item len="-1" off="2016">
+            <tag00080100 len="6" tag="00080100" vr="SH">113111</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="26" tag="00080104" vr="LO">Retain Safe Private Option</tag00080104>
+        </item>
+    </tag00120064>
+    <tag00130010 len="4" tag="00130010" vr="LO">CTP</tag00130010>
+    <tag00131010 len="8" tag="00131010" vr="LO">CMB-LCA</tag00131010>
+    <tag00131013 len="8" tag="00131013" vr="LO">16001202</tag00131013>
+    <tag00181020 len="18" tag="00181020" vr="LO">EPIQ 5G_7.0.5.962</tag00181020>
+    <tag00181088 len="2" tag="00181088" vr="IS">0</tag00181088>
+    <tag00185010 len="14" tag="00185010" vr="LO">L15_7io\54108</tag00185010>
+    <tag00185020 len="20" tag="00185020" vr="LO">SM_PRTS_SUPERFICIAL</tag00185020>
+    <tag00186011 len="-1" tag="00186011" vr="SQ">
+        <item len="-1" off="2242">
+            <tag00186012 len="2" tag="00186012" vr="US">1</tag00186012>
+            <tag00186014 len="2" tag="00186014" vr="US">1</tag00186014>
+            <tag00186016 len="4" tag="00186016" vr="UL">2</tag00186016>
+            <tag00186018 len="4" tag="00186018" vr="UL">14</tag00186018>
+            <tag0018601A len="4" tag="0018601A" vr="UL">38</tag0018601A>
+            <tag0018601C len="4" tag="0018601C" vr="UL">1010</tag0018601C>
+            <tag0018601E len="4" tag="0018601E" vr="UL">758</tag0018601E>
+            <tag00186024 len="2" tag="00186024" vr="US">3</tag00186024>
+            <tag00186026 len="2" tag="00186026" vr="US">3</tag00186026>
+            <tag0018602C len="8" tag="0018602C" vr="FD">0.003708797278190173</tag0018602C>
+            <tag0018602E len="8" tag="0018602E" vr="FD">0.003708797278190173</tag0018602E>
+        </item>
+    </tag00186011>
+    <tag0020000D len="64" tag="0020000D" vr="UI">1.3.6.1.4.1.14519.5.2.1.207522269430030124341950649812029134159</tag0020000D>
+    <tag0020000E len="62" tag="0020000E" vr="UI">1.3.6.1.4.1.14519.5.2.1.58866608043609699358076981026977397142</tag0020000E>
+    <tag00200010 len="0" tag="00200010" vr="SH"/>
+    <tag00200011 len="2" tag="00200011" vr="IS">1</tag00200011>
+    <tag00200013 len="2" tag="00200013" vr="IS">10</tag00200013>
+    <tag00280002 len="2" tag="00280002" vr="US">1</tag00280002>
+    <tag00280004 len="12" tag="00280004" vr="CS">MONOCHROME2</tag00280004>
+    <tag00280010 len="2" tag="00280010" vr="US">768</tag00280010>
+    <tag00280011 len="2" tag="00280011" vr="US">1024</tag00280011>
+    <tag00280014 len="2" tag="00280014" vr="US">0</tag00280014>
+    <tag00280100 len="2" tag="00280100" vr="US">8</tag00280100>
+    <tag00280101 len="2" tag="00280101" vr="US">8</tag00280101>
+    <tag00280102 len="2" tag="00280102" vr="US">7</tag00280102>
+    <tag00280103 len="2" tag="00280103" vr="US">0</tag00280103>
+    <tag00280301 len="2" tag="00280301" vr="CS">NO</tag00280301>
+    <tag00280303 len="8" tag="00280303" vr="CS">MODIFIED</tag00280303>
+    <tag00281050 len="4" tag="00281050" vr="DS">127</tag00281050>
+    <tag00281051 len="4" tag="00281051" vr="DS">254</tag00281051>
+    <tag00282110 len="2" tag="00282110" vr="CS">00</tag00282110>
+    <tag00402017 len="0" tag="00402017" vr="LO"/>
+    <tag20500020 len="8" tag="20500020" vr="CS">IDENTITY</tag20500020>
+</dicom>

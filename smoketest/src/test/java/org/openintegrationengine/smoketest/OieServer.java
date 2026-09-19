@@ -81,6 +81,14 @@ final class OieServer implements AutoCloseable {
     }
 
     /**
+     * Returns a typed client for one of the server's servlet interfaces, for the APIs the
+     * administrator uses that have no {@link Client} convenience method.
+     */
+    <T> T servlet(Class<T> servletInterface) {
+        return client.getServlet(servletInterface);
+    }
+
+    /**
      * Deploys an exported channel and waits for it to reach {@link DeployedState#STARTED}.
      *
      * @param xml   the exported channel XML

@@ -16,9 +16,14 @@ mkdir -p "$results"
 # Lock engine to junit-jupiter to prevent false-pass results.
 status=0
 java \
+    "@$ENGINE_HOME/conf/default_modules.vmoptions" \
     -Doie.baseUrl="$OIE_BASE_URL" \
     -Doie.configuration="$OIE_CONFIGURATION" \
     -Doie.password="$OIE_PASSWORD" \
+    ${OIE_DB_DRIVER:+-Doie.db.driver="$OIE_DB_DRIVER"} \
+    ${OIE_DB_URL:+-Doie.db.url="$OIE_DB_URL"} \
+    ${OIE_DB_USERNAME:+-Doie.db.username="$OIE_DB_USERNAME"} \
+    ${OIE_DB_PASSWORD:+-Doie.db.password="$OIE_DB_PASSWORD"} \
     ${OIE_HARNESS_OPTS:-} \
     -cp "$classpath" \
     org.junit.platform.console.ConsoleLauncher execute \

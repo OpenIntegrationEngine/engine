@@ -57,6 +57,7 @@ FROM eclipse-temurin:21.0.9_10-jre-noble AS smoketest-harness
 
 COPY --from=builder /app/server/setup/server-lib /opt/engine/server-lib
 COPY --from=builder /app/server/setup/extensions /opt/engine/extensions
+COPY --from=builder /app/server/setup/conf /opt/engine/conf
 COPY --from=builder /app/smoketest/build/install/smoketest-harness /harness
 
 ENTRYPOINT ["/bin/bash", "/harness/run-harness.sh"]

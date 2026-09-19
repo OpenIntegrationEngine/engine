@@ -32,6 +32,11 @@ final class HarnessConfig {
      */
     static final String CONFIGURATION = System.getProperty("oie.configuration", "");
 
+    static final String DB_DRIVER = System.getProperty("oie.db.driver");
+    static final String DB_URL = System.getProperty("oie.db.url");
+    static final String DB_USERNAME = System.getProperty("oie.db.username", "");
+    static final String DB_PASSWORD = System.getProperty("oie.db.password", "");
+
     /** Ceiling on waiting for a channel to start or a message to reach its asserted state. */
     static final Duration TIMEOUT =
             Duration.ofSeconds(Long.parseLong(System.getProperty("oie.timeoutSeconds", "90")));

@@ -7,16 +7,15 @@ apply plugin: 'distribution'
 
 apply from: 'generate-smoke-tests.gradle'
 
-def clientCoreJar = project(':server').tasks.named('clientCoreJar')
-def donkeyModelJar = project(':donkey').tasks.named('donkeyModelJar')
+// The harness runs with the server's whole staged distribution
+def stagedServer = files([
+        project(':server').fileTree('setup/server-lib') { include '**/*.jar' },
+        project(':server').fileTree('setup/extensions') { include '**/*.jar' }]) {
+    builtBy ':server:createSetup'
+}
 
 dependencies {
-    // Client, Channel, DashboardStatus, MessageFilter, ObjectXMLSerializer
-    testCompileOnly files(clientCoreJar)
-    // RawMessage, Message, ConnectorMessage, MessageContent, Status, DeployedState
-    testCompileOnly files(donkeyModelJar)
-    // Provided at runtime by /opt/engine/server-lib (server-main uses it too).
-    testCompileOnly libs.snakeyaml
+    testCompileOnly stagedServer
 
     testImplementation libs.junit.platform.console.standalone
 }

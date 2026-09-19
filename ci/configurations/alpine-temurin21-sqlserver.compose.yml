@@ -52,3 +52,12 @@ services:
       timeout: 5s
       retries: 30
       start_period: 40s
+
+  # Lets the Database Connector metadata test reach this configuration's database. The URL is
+  # resolved by the oie service, not the harness, so it is the same one the engine uses.
+  harness:
+    environment:
+      OIE_DB_DRIVER: net.sourceforge.jtds.jdbc.Driver
+      OIE_DB_URL: jdbc:jtds:sqlserver://db:1433/mirthdb
+      OIE_DB_USERNAME: sa
+      OIE_DB_PASSWORD: OieSqlServerPassw0rd!

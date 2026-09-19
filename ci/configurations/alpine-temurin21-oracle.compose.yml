@@ -38,3 +38,12 @@ services:
       timeout: 5s
       retries: 30
       start_period: 40s
+
+  # Lets the Database Connector metadata test reach this configuration's database. The URL is
+  # resolved by the oie service, not the harness, so it is the same one the engine uses.
+  harness:
+    environment:
+      OIE_DB_DRIVER: oracle.jdbc.driver.OracleDriver
+      OIE_DB_URL: jdbc:oracle:thin:@//db:1521/FREEPDB1
+      OIE_DB_USERNAME: mirthdb
+      OIE_DB_PASSWORD: mirthdb

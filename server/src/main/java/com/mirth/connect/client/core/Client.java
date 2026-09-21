@@ -810,6 +810,16 @@ public class Client implements UserServletInterface, ConfigurationServletInterfa
     }
 
     /**
+     * Updates a single entry in the configuration map, leaving the rest alone.
+     * 
+     * @see ConfigurationServletInterface#setConfigurationProperty
+     */
+    @Override
+    public void setConfigurationProperty(String key, ConfigurationProperty property) throws ClientException {
+        getServlet(ConfigurationServletInterface.class).setConfigurationProperty(key, property);
+    }
+
+    /**
      * Returns the database driver list.
      * 
      * @see ConfigurationServletInterface#getDatabaseDrivers

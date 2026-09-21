@@ -328,6 +328,19 @@ public abstract class ConfigurationController extends Controller {
      */
     public abstract void setConfigurationProperties(Map<String, ConfigurationProperty> map, boolean persist) throws ControllerException;
 
+    /**
+     * Sets a single configuration map entry, leaving every other entry alone. Doing the
+     * read-modify-write here rather than in the caller is what makes it atomic: a client can only
+     * replace the whole map, so two clients updating different keys at once would otherwise drop
+     * each other's writes.
+     * 
+     * @param key
+     *            The key of the entry to set.
+     * @param property
+     *            The value and comment to store under the key.
+     */
+    public abstract void setConfigurationProperty(String key, ConfigurationProperty property) throws ControllerException;
+
     // properties
     public Properties getPropertiesForGroup(String group) {
         return getPropertiesForGroup(group, null);

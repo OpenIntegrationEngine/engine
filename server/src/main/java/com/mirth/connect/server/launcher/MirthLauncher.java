@@ -17,7 +17,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 import java.util.Properties;
 import java.util.jar.JarFile;
 
@@ -32,9 +35,10 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
-import com.mirth.connect.client.core.ExtensionCompatibility;
+import com.mirth.connect.client.core.ExtensionDependencies;
+import com.mirth.connect.client.core.ExtensionDependencies.Extension;
+import com.mirth.connect.client.core.ExtensionDependency;
 import com.mirth.connect.server.extprops.ExtensionStatuses;
 import com.mirth.connect.server.extprops.LoggerWrapper;
 
@@ -231,72 +235,165 @@ public class MirthLauncher {
     }
 
     private static void addExtensionsToClasspath(List<URL> urls, String currentVersion) throws Exception {
+        addExtensionsToClasspath(urls, currentVersion, new File(EXTENSIONS_DIR), ExtensionStatuses.getInstance()::isEnabled);
+    }
+
+    static void addExtensionsToClasspath(List<URL> urls, String currentVersion, File extensionPath,
+            Predicate<String> enabled) throws Exception {
         FileFilter extensionFileFilter = new NameFileFilter(new String[] { "plugin.xml",
                 "source.xml", "destination.xml" }, IOCase.INSENSITIVE);
-        FileFilter directoryFilter = FileFilterUtils.directoryFileFilter();
-        File extensionPath = new File(EXTENSIONS_DIR);
+        File[] directories = extensionPath.listFiles((FileFilter) FileFilterUtils.directoryFileFilter());
+        if (directories == null) {
+            logger.warn("no extensions found");
+            return;
+        }
 
-        ExtensionStatuses extensionStatuses = ExtensionStatuses.getInstance();
+        // Resolve the complete inventory before adding libraries, regardless of filesystem order.
+        Map<Extension, Element> metadata = new LinkedHashMap<>();
+        Map<Extension, File> paths = new LinkedHashMap<>();
+        for (File directory : directories) {
+            if ("install_temp".equals(directory.getName()) || directory.getName().startsWith(".install-")) {
+                continue;
+            }
+            File[] extensionFiles = directory.listFiles(extensionFileFilter);
+            if (extensionFiles == null) {
+                continue;
+            }
+            for (File extensionFile : extensionFiles) {
+                try {
+                    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                    dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+                    Document document = dbf.newDocumentBuilder().parse(extensionFile);
+                    Element root = document.getDocumentElement();
+                    String name = getMetadataValue(root, "name");
+                    if (name == null || name.trim().isEmpty()) {
+                        throw new IllegalArgumentException("Extension metadata must declare a name");
+                    }
+                    Extension extension = readExtension(root, enabled.test(name));
+                    metadata.put(extension, root);
+                    paths.put(extension, directory);
+                } catch (Exception e) {
+                    logger.error("failed to parse extension metadata: " + extensionFile.getAbsolutePath(), e);
+                }
+            }
+        }
 
-        if (extensionPath.exists() && extensionPath.isDirectory()) {
-            File[] directories = extensionPath.listFiles(directoryFilter);
-
-            for (File directory : directories) {
-                File[] extensionFiles = directory.listFiles(extensionFileFilter);
-
-                for (File extensionFile : extensionFiles) {
-                    try {
-                		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-                		dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-                		Document document = dbf.newDocumentBuilder().parse(extensionFile);
-                		Element rootElement = document.getDocumentElement();
-
-                        boolean enabled = extensionStatuses.isEnabled(rootElement.getElementsByTagName("name").item(0).getTextContent());
-                        boolean compatible = isExtensionCompatible(rootElement, currentVersion);
-
-                        // Only add libraries from extensions that are not disabled and are compatible with the current version
-                        if (enabled && compatible) {
-                            NodeList libraries = rootElement.getElementsByTagName("library");
-
-                            for (int i = 0; i < libraries.getLength(); i++) {
-                                Element libraryElement = (Element) libraries.item(i);
-                                String type = libraryElement.getAttribute("type");
-
-                                if (type.equalsIgnoreCase("server") || type.equalsIgnoreCase("shared")) {
-                                    File pathFile = new File(directory, libraryElement.getAttribute("path"));
-
-                                    if (pathFile.exists()) {
-                                        logger.trace("adding library to classpath: " + pathFile.getAbsolutePath());
-                                        urls.add(pathFile.toURI().toURL());
-                                    } else {
-                                        logger.error("could not locate library: " + pathFile.getAbsolutePath());
-                                    }
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        logger.error("failed to parse extension metadata: " + extensionFile.getAbsolutePath(), e);
+        Map<Extension, String> errors = ExtensionDependencies.validate(metadata.keySet(), currentVersion);
+        for (Map.Entry<Extension, Element> entry : metadata.entrySet()) {
+            Extension extension = entry.getKey();
+            if (errors.containsKey(extension)) {
+                logger.error("could not load extension " + extension.getName() + ": " + errors.get(extension));
+                continue;
+            }
+            if (!extension.isEnabled()) {
+                continue;
+            }
+            for (Node child = entry.getValue().getFirstChild(); child != null; child = child.getNextSibling()) {
+                if (!(child instanceof Element) || !"library".equals(child.getNodeName())) {
+                    continue;
+                }
+                Element library = (Element) child;
+                String type = library.getAttribute("type");
+                if (type.equalsIgnoreCase("server") || type.equalsIgnoreCase("shared")) {
+                    File pathFile = new File(paths.get(extension), library.getAttribute("path"));
+                    if (pathFile.exists()) {
+                        logger.trace("adding library to classpath: " + pathFile.getAbsolutePath());
+                        urls.add(pathFile.toURI().toURL());
+                    } else {
+                        logger.error("could not locate library: " + pathFile.getAbsolutePath());
                     }
                 }
             }
-        } else {
-            logger.warn("no extensions found");
         }
     }
 
     static boolean isExtensionCompatible(Element metadata, String currentVersion) {
-        return ExtensionCompatibility.isCompatible(getMetadataValue(metadata, "mirthVersion"),
-                getMetadataValue(metadata, "minExtensionApiVersion"), currentVersion);
+        try {
+            return ExtensionDependencies.getEngineError(readExtension(metadata, true), currentVersion) == null;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    static Extension readExtension(Element metadata, boolean enabled) {
+        String root = metadata.getNodeName();
+        if (!"pluginMetaData".equals(root) && !"connectorMetaData".equals(root)) {
+            throw new IllegalArgumentException("Unknown extension metadata type: " + root);
+        }
+        String metadataType = metadata.hasAttribute("resolves-to") ? metadata.getAttribute("resolves-to") : metadata.getAttribute("class");
+        String className = "com.mirth.connect.model." + ("pluginMetaData".equals(root) ? "PluginMetaData" : "ConnectorMetaData");
+        if (!metadataType.isEmpty() && !root.equals(metadataType) && !className.equals(metadataType)) {
+            throw new IllegalArgumentException("Extension metadata type must match its root element");
+        }
+        List<ExtensionDependency> dependencies = new ArrayList<>();
+        boolean foundDependencies = false;
+        for (Node child = metadata.getFirstChild(); child != null; child = child.getNextSibling()) {
+            if (!(child instanceof Element) || !"dependencies".equals(child.getNodeName())) {
+                continue;
+            }
+            if (foundDependencies) {
+                throw new IllegalArgumentException("Duplicate dependencies list");
+            }
+            foundDependencies = true;
+            Element list = (Element) child;
+            if (isNull(list)) {
+                continue;
+            }
+            for (Node item = list.getFirstChild(); item != null; item = item.getNextSibling()) {
+                if (!(item instanceof Element)) {
+                    if ((item.getNodeType() == Node.TEXT_NODE || item.getNodeType() == Node.CDATA_SECTION_NODE)
+                            && !item.getNodeValue().trim().isEmpty()) {
+                        throw new IllegalArgumentException("Dependencies must contain dependency elements");
+                    }
+                    continue;
+                }
+                Element dependency = (Element) item;
+                if (!"dependency".equals(dependency.getNodeName())) {
+                    throw new IllegalArgumentException("Unknown dependency element: " + dependency.getNodeName());
+                }
+                for (int i = 0; i < dependency.getAttributes().getLength(); i++) {
+                    String name = dependency.getAttributes().item(i).getNodeName();
+                    if (!"type".equals(name) && !"name".equals(name) && !"minVersion".equals(name)) {
+                        throw new IllegalArgumentException("Unknown dependency attribute: " + name);
+                    }
+                }
+                for (Node value = dependency.getFirstChild(); value != null; value = value.getNextSibling()) {
+                    if (value instanceof Element || ((value.getNodeType() == Node.TEXT_NODE
+                            || value.getNodeType() == Node.CDATA_SECTION_NODE) && !value.getNodeValue().trim().isEmpty())) {
+                        throw new IllegalArgumentException("Dependency values must be attributes");
+                    }
+                }
+                dependencies.add(new ExtensionDependency(attribute(dependency, "type"),
+                        attribute(dependency, "name"), attribute(dependency, "minVersion")));
+            }
+        }
+        return new Extension(getMetadataValue(metadata, "name"), "pluginMetaData".equals(root),
+                getMetadataValue(metadata, "pluginVersion"), getMetadataValue(metadata, "mirthVersion"),
+                getMetadataValue(metadata, "minExtensionApiVersion"), dependencies, enabled);
+    }
+
+    private static String attribute(Element element, String name) {
+        return element.hasAttribute(name) ? element.getAttribute(name) : null;
+    }
+
+    private static boolean isNull(Element element) {
+        String type = element.hasAttribute("resolves-to") ? element.getAttribute("resolves-to") : element.getAttribute("class");
+        return "null".equals(type) || "com.thoughtworks.xstream.mapper.Mapper$Null".equals(type);
     }
 
     private static String getMetadataValue(Element metadata, String name) {
+        String result = null;
+        boolean found = false;
         for (Node child = metadata.getFirstChild(); child != null; child = child.getNextSibling()) {
             if (child instanceof Element && name.equals(child.getNodeName())) {
+                if (found) {
+                    throw new IllegalArgumentException("Duplicate metadata field: " + name);
+                }
+                found = true;
                 // Match XStream's null and scalar text handling without loading XStream here.
                 Element element = (Element) child;
-                String type = element.hasAttribute("resolves-to") ? element.getAttribute("resolves-to") : element.getAttribute("class");
-                if ("null".equals(type) || "com.thoughtworks.xstream.mapper.Mapper$Null".equals(type)) {
-                    return null;
+                if (isNull(element)) {
+                    continue;
                 }
                 StringBuilder text = new StringBuilder();
                 for (Node value = child.getFirstChild(); value != null; value = value.getNextSibling()) {
@@ -304,10 +401,10 @@ public class MirthLauncher {
                         text.append(value.getNodeValue());
                     }
                 }
-                return text.toString();
+                result = text.toString();
             }
         }
-        return null;
+        return result;
     }
 
     private static void createAppdataDir(Properties mirthProperties) {

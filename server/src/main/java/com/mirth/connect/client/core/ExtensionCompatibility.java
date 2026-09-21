@@ -48,6 +48,10 @@ public final class ExtensionCompatibility {
                         || (current[1] == minimum[1] && current[2] >= minimum[2]));
     }
 
+    static boolean isValidVersion(String version) {
+        return parseApiVersion(version) != null;
+    }
+
     private static int[] parseApiVersion(String version) {
         if (version == null) {
             return null;

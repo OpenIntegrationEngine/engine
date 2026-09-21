@@ -167,6 +167,7 @@ public class ObjectXMLSerializer extends XStreamSerializer {
         processAnnotations(annotatedClasses);
         getXStream().registerConverter(new MapContentConverter(getXStream().getMapper()));
         getXStream().registerConverter(new PluginMetaDataConverter(getXStream().getMapper()));
+        getXStream().registerLocalConverter(MetaData.class, "dependencies", new ExtensionDependenciesConverter());
         getXStream().registerConverter(new JavaScriptObjectConverter(getXStream().getMapper()));
         getXStream().registerConverter(new ThrowableConverter(getXStream().getMapper()));
         getXStream().registerConverter(new FilterTransformerElementsConverter(getXStream().getMapper()));

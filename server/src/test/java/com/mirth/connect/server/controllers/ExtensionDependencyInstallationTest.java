@@ -1,0 +1,538 @@
+/*
+ * Copyright (c) Open Integration Engine contributors.
+ * Licensed under the Mozilla Public License 2.0.
+ */
+
+package com.mirth.connect.server.controllers;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNoException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.MockedStatic;
+
+import com.mirth.connect.client.core.ControllerException;
+import com.mirth.connect.model.converters.ObjectXMLSerializer;
+import com.mirth.connect.server.ExtensionLoader;
+import com.mirth.connect.server.controllers.ExtensionController.InstallationResult;
+import com.mirth.connect.server.extprops.ExtensionStatuses;
+import com.mirth.connect.server.tools.ClassPathResource;
+import com.mirth.connect.server.util.ResourceUtil;
+
+/** Exercises installation and administrative actions without an engine or database. */
+public class ExtensionDependencyInstallationTest {
+    @Rule
+    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    private final List<MockedStatic<?>> staticMocks = new ArrayList<>();
+    private final Map<String, Boolean> enabled = new HashMap<>();
+    private Path extensions;
+    private DefaultExtensionController controller;
+    private ExtensionStatuses statuses;
+    private MockedStatic<ResourceUtil> resources;
+
+    @Before
+    public void setUp() throws Exception {
+        extensions = temporaryFolder.newFolder("extensions").toPath();
+        ObjectXMLSerializer serializer = new ObjectXMLSerializer(getClass().getClassLoader());
+        mockGlobal(ObjectXMLSerializer.class).when(ObjectXMLSerializer::getInstance).thenReturn(serializer);
+
+        statuses = mock(ExtensionStatuses.class);
+        when(statuses.isEnabled(anyString())).thenAnswer(call -> enabled.getOrDefault(call.getArgument(0), true));
+        doAnswer(call -> {
+            enabled.put(call.getArgument(0), call.getArgument(1));
+            return null;
+        }).when(statuses).setEnabled(anyString(), anyBoolean());
+        mockGlobal(ExtensionStatuses.class).when(ExtensionStatuses::getInstance).thenReturn(statuses);
+
+        Constructor<ExtensionLoader> constructor = ExtensionLoader.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        ExtensionLoader loader = constructor.newInstance();
+        mockGlobal(ExtensionLoader.class).when(ExtensionLoader::getInstance).thenReturn(loader);
+
+        ControllerFactory factory = mock(ControllerFactory.class);
+        when(factory.createConfigurationController()).thenReturn(mock(ConfigurationController.class));
+        mockGlobal(ControllerFactory.class).when(ControllerFactory::getFactory).thenReturn(factory);
+        mockGlobal(ExtensionController.class).when(ExtensionController::getExtensionsPath)
+                .thenAnswer(call -> extensions.toString());
+        mockGlobal(ClassPathResource.class).when(() -> ClassPathResource.getResourceURI("extensions"))
+                .thenAnswer(call -> extensions.toUri());
+        resources = mockGlobal(ResourceUtil.class);
+        resources.when(() -> ResourceUtil.getResourceStream(ExtensionLoader.class, "version.properties"))
+                .thenAnswer(call -> new ByteArrayInputStream("mirth.version=4.5.2.123".getBytes(StandardCharsets.UTF_8)));
+        controller = new DefaultExtensionController();
+    }
+
+    @After
+    public void closeMocks() {
+        Collections.reverse(staticMocks);
+        staticMocks.forEach(MockedStatic::close);
+    }
+
+    private <T> MockedStatic<T> mockGlobal(Class<T> type) {
+        MockedStatic<T> mocked = mockStatic(type, CALLS_REAL_METHODS);
+        staticMocks.add(mocked);
+        return mocked;
+    }
+
+    @Test
+    public void bundledProvidersResolveRegardlessOfZipEntryOrder() throws Exception {
+        for (boolean providerFirst : new boolean[] { false, true }) {
+            extensions = temporaryFolder.newFolder().toPath();
+            Map<String, String> archive = new LinkedHashMap<>();
+            if (providerFirst) {
+                archive.putAll(plugin("provider", "Provider", "2.1.0"));
+            }
+            archive.putAll(plugin("consumer", "Consumer", "1.0.0", "Provider"));
+            if (!providerFirst) {
+                archive.putAll(plugin("provider", "Provider", "2.1.0"));
+            }
+            assertAccepted(install(archive));
+            assertEquals("Consumer", Files.readString(staged("consumer/payload.txt")));
+            assertEquals("Provider", Files.readString(staged("provider/payload.txt")));
+        }
+    }
+
+    @Test
+    public void installedAndPreviouslyStagedProvidersAreAvailable() throws Exception {
+        writeInstalled(plugin("installed", "Installed", "2.1.0"));
+        assertAccepted(install(plugin("staged", "Staged", "2.1.0")));
+        assertAccepted(install(plugin("consumer", "Consumer", "1.0.0", "Installed", "Staged")));
+        assertTrue(Files.exists(staged("consumer/plugin.xml")));
+    }
+
+    @Test
+    public void invalidInstalledDescriptorsDoNotHideUnrelatedPluginMetadata() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        String nameless = plugin("nameless", "Nameless", "1.0.0").get("nameless/plugin.xml")
+                .replace("<name>Nameless</name>", "");
+        writeInstalled(Map.of("null/plugin.xml", "<null/>", "foreign/plugin.xml", "<string>Unexpected type</string>",
+                "nameless/plugin.xml", nameless));
+        assertEquals(Set.of("Provider"), controller.getPluginMetaData().keySet());
+    }
+
+    @Test
+    public void statusLookupFailureDoesNotHideUnrelatedPluginMetadata() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        writeInstalled(plugin("broken", "Broken", "2.1.0"));
+        when(statuses.isEnabled("Broken")).thenThrow(new IllegalStateException("Status unavailable for Broken"));
+        assertEquals(Set.of("Provider"), controller.getPluginMetaData().keySet());
+    }
+
+    @Test
+    public void connectorRequirementsUseTheSameArchiveInventory() throws Exception {
+        for (String file : new String[] { "source.xml", "destination.xml" }) {
+            extensions = temporaryFolder.newFolder().toPath();
+            Map<String, String> archive = plugin("connector", "Connector", "1.0.0", "Provider");
+            String metadata = archive.remove("connector/plugin.xml").replace("pluginMetaData", "connectorMetaData");
+            archive.put("connector/" + file, metadata);
+            assertRejected(install(archive), "Provider");
+            assertTrue(stagedFiles().isEmpty());
+            archive.putAll(plugin("provider", "Provider", "2.1.0"));
+            assertAccepted(install(archive));
+            assertTrue(Files.exists(staged("connector/" + file)));
+        }
+    }
+
+    @Test
+    public void pendingRemovalIsAppliedBeforePendingInstallation() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        Files.writeString(extensions.resolve("uninstall"), "provider\n");
+        assertRejected(install(plugin("consumer", "Consumer", "1.0.0", "Provider")), "Provider");
+        assertFalse(Files.exists(staged("consumer/payload.txt")));
+        assertAccepted(install(plugin("provider", "Provider", "2.2.0")));
+        assertAccepted(install(plugin("consumer", "Consumer", "1.0.0", "Provider")));
+    }
+
+    @Test
+    public void aliasedPendingRemovalStillExcludesProviderFromNewInstallation() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        Files.writeString(extensions.resolve("uninstall"), "./provider/\n");
+        assertRejected(install(plugin("consumer", "Consumer", "1.0.0", "Provider")), "Provider");
+        assertFalse(Files.exists(staged("consumer/plugin.xml")));
+    }
+
+    @Test
+    public void disabledProviderRejectsConsumerUntilCorrected() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        enabled.put("Provider", false);
+        assertRejected(install(plugin("consumer", "Consumer", "1.0.0", "Provider")), "Provider");
+        assertFalse(Files.exists(staged("consumer/payload.txt")));
+        controller.setExtensionEnabled("Provider", true);
+        assertAccepted(install(plugin("consumer", "Consumer", "1.0.0", "Provider")));
+    }
+
+    @Test
+    public void disabledConsumerDefersDependenciesUntilEnable() throws Exception {
+        enabled.put("Consumer", false);
+        assertAccepted(install(plugin("consumer", "Consumer", "1.0.0", "Provider")));
+        assertActionRejected(() -> controller.setExtensionEnabled("Consumer", true), "Provider");
+        assertFalse(controller.isExtensionEnabled("Consumer"));
+        assertAccepted(install(plugin("provider", "Provider", "2.1.0")));
+        controller.setExtensionEnabled("Consumer", true);
+        assertTrue(controller.isExtensionEnabled("Consumer"));
+    }
+
+    @Test
+    public void providerUpdateCannotBreakExistingConsumerOrReplacePriorStaging() throws Exception {
+        writeInstalled(plugin("consumer", "Consumer", "1.0.0", "Provider"));
+        assertAccepted(install(plugin("provider", "Provider", "2.1.0")));
+        Map<String, String> before = stagedFiles();
+        assertRejected(install(plugin("provider", "Provider", "3.0.0")), "Consumer");
+        assertEquals(before, stagedFiles());
+        assertAccepted(install(plugin("provider", "Provider", "2.2.0")));
+    }
+
+    @Test
+    public void disableChecksCurrentAndStagedConsumersBeforeChangingStatus() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        assertAccepted(install(plugin("consumer", "Consumer", "1.0.0", "Provider")));
+        assertActionRejected(() -> controller.setExtensionEnabled("Provider", false), "Consumer");
+        assertTrue(controller.isExtensionEnabled("Provider"));
+        controller.setExtensionEnabled("Consumer", false);
+        controller.setExtensionEnabled("Provider", false);
+        assertFalse(controller.isExtensionEnabled("Provider"));
+        assertActionRejected(() -> controller.setExtensionEnabled("Consumer", true), "Provider");
+        assertFalse(controller.isExtensionEnabled("Consumer"));
+    }
+
+    @Test
+    public void uninstallRequiresConsumersFirstAndDoesNotWriteOnRejection() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        writeInstalled(plugin("consumer", "Consumer", "1.0.0", "Provider"));
+        assertActionRejected(() -> controller.prepareExtensionForUninstallation("provider"), "Consumer");
+        assertFalse(Files.exists(extensions.resolve("uninstall")));
+        assertFalse(Files.exists(extensions.resolve(ExtensionController.EXTENSIONS_UNINSTALL_PROPERTIES_FILE)));
+        controller.prepareExtensionForUninstallation("consumer");
+        controller.prepareExtensionForUninstallation("provider");
+        assertEquals(List.of("consumer", "provider"), Files.readAllLines(extensions.resolve("uninstall")));
+    }
+
+    @Test
+    public void statusPersistenceFailureRestoresMemoryAndAllowsRetry() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        doThrow(new IllegalStateException("Status storage unavailable")).when(statuses).save();
+        assertActionRejected(() -> controller.setExtensionEnabled("Provider", false), "Could not save");
+        assertTrue(controller.isExtensionEnabled("Provider"));
+        doNothing().when(statuses).save();
+        controller.setExtensionEnabled("Provider", false);
+        assertFalse(controller.isExtensionEnabled("Provider"));
+    }
+
+    @Test
+    public void unavailableVersionResourceRejectsEveryMutationUntilRetry() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        resources.when(() -> ResourceUtil.getResourceStream(ExtensionLoader.class, "version.properties"))
+                .thenThrow(new FileNotFoundException("Version resource unavailable"));
+        assertRejected(install(plugin("independent", "Independent", "1.0.0")), "Could not determine extension compatibility");
+        assertActionRejected(() -> controller.setExtensionEnabled("Provider", false), "Could not determine extension compatibility");
+        assertActionRejected(() -> controller.prepareExtensionForUninstallation("provider"), "Could not determine extension compatibility");
+        assertTrue(stagedFiles().isEmpty());
+        assertTrue(controller.isExtensionEnabled("Provider"));
+        assertFalse(Files.exists(extensions.resolve("uninstall")));
+        resources.when(() -> ResourceUtil.getResourceStream(ExtensionLoader.class, "version.properties"))
+                .thenAnswer(call -> new ByteArrayInputStream("mirth.version=4.5.2.123".getBytes(StandardCharsets.UTF_8)));
+        assertAccepted(install(plugin("independent", "Independent", "1.0.0")));
+        controller.setExtensionEnabled("Provider", false);
+        controller.prepareExtensionForUninstallation("provider");
+        assertFalse(controller.isExtensionEnabled("Provider"));
+        assertEquals(List.of("provider"), Files.readAllLines(extensions.resolve("uninstall")));
+    }
+
+    @Test
+    public void unavailableStatusRejectsEveryMutationUntilRetry() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        when(statuses.isEnabled("Provider")).thenThrow(new IllegalStateException("Status unavailable"));
+        assertRejected(install(plugin("independent", "Independent", "1.0.0")), "Could not read extension status");
+        assertActionRejected(() -> controller.setExtensionEnabled("Provider", false), "Could not read extension status");
+        assertActionRejected(() -> controller.prepareExtensionForUninstallation("provider"), "Could not read extension status");
+        assertTrue(stagedFiles().isEmpty());
+        assertFalse(enabled.containsKey("Provider"));
+        assertFalse(Files.exists(extensions.resolve("uninstall")));
+        doAnswer(call -> enabled.getOrDefault("Provider", true)).when(statuses).isEnabled("Provider");
+        assertAccepted(install(plugin("independent", "Independent", "1.0.0")));
+        controller.setExtensionEnabled("Provider", false);
+        controller.prepareExtensionForUninstallation("provider");
+        assertFalse(controller.isExtensionEnabled("Provider"));
+        assertEquals(List.of("provider"), Files.readAllLines(extensions.resolve("uninstall")));
+    }
+
+    @Test
+    public void uninstallAliasesCannotBypassConsumerProtection() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        writeInstalled(plugin("consumer", "Consumer", "1.0.0", "Provider"));
+        for (String alias : new String[] { "provider/", "./provider", "./provider/" }) {
+            assertActionRejected(() -> controller.prepareExtensionForUninstallation(alias), "Consumer");
+            assertFalse(Files.exists(extensions.resolve("uninstall")));
+        }
+        controller.setExtensionEnabled("Consumer", false);
+        controller.prepareExtensionForUninstallation("./provider/");
+        assertEquals(List.of("provider"), Files.readAllLines(extensions.resolve("uninstall")));
+    }
+
+    @Test
+    public void uninstallSymlinkQueuesTheLinkWithoutResolvingItsTarget() throws Exception {
+        Map<String, String> provider = plugin("provider", "Provider", "2.1.0");
+        writeInstalled(provider);
+        try {
+            Files.createSymbolicLink(extensions.resolve("link"), extensions.resolve("provider"));
+        } catch (IOException | UnsupportedOperationException e) {
+            assumeNoException(e);
+        }
+        controller.prepareExtensionForUninstallation("link");
+        assertEquals(List.of("link"), Files.readAllLines(extensions.resolve("uninstall")));
+        assertEquals(provider.get("provider/plugin.xml"), Files.readString(extensions.resolve("provider/plugin.xml")));
+        assertTrue(Files.isSymbolicLink(extensions.resolve("link")));
+    }
+
+    @Test
+    public void uninstallRejectsCaseAliasesAndParentSegmentsBeforeMutation() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0"));
+        assertActionRejected(() -> controller.prepareExtensionForUninstallation("PROVIDER"), "case");
+        assertActionRejected(() -> controller.prepareExtensionForUninstallation("provider/../provider"), "Invalid extension package path");
+        assertFalse(Files.exists(extensions.resolve("uninstall")));
+        Files.writeString(extensions.resolve("uninstall"), "PROVIDER\n");
+        assertRejected(install(plugin("consumer", "Consumer", "1.0.0", "Provider")), "case");
+        assertTrue(stagedFiles().isEmpty());
+    }
+
+    @Test
+    public void caseAliasesAndReservedDirectoriesAreRejectedBeforeExtraction() throws Exception {
+        Map<String, String> duplicateFile = plugin("provider", "Provider", "2.1.0");
+        duplicateFile.put("provider/PLUGIN.XML", plugin("provider", "Other", "2.1.0").get("provider/plugin.xml"));
+        Map<String, String> duplicatePackage = plugin("provider", "Provider", "2.1.0");
+        duplicatePackage.putAll(plugin("PROVIDER", "Other", "2.1.0"));
+        for (Map<String, String> archive : List.of(duplicateFile, duplicatePackage,
+                plugin("Install_Temp", "Provider", "2.1.0"))) {
+            assertNotNull("Ambiguous or reserved ZIP path was accepted", install(archive).getCause());
+            assertTrue(stagedFiles().isEmpty());
+        }
+    }
+
+    @Test
+    public void caseOnlyPackageUpdatesCannotOverwriteInstalledOrStagedPackages() throws Exception {
+        for (boolean staged : new boolean[] { false, true }) {
+            extensions = temporaryFolder.newFolder().toPath();
+            Map<String, String> original = plugin("provider", "Provider", "2.1.0");
+            if (staged) {
+                assertAccepted(install(original));
+            } else {
+                writeInstalled(original);
+            }
+            Map<String, String> before = stagedFiles();
+            // A different metadata identity avoids relying on duplicate provider-name rejection.
+            assertNotNull(install(plugin("PROVIDER", "Replacement", "2.2.0")).getCause());
+            assertEquals(before, stagedFiles());
+            Path descriptor = staged ? staged("provider/plugin.xml") : extensions.resolve("provider/plugin.xml");
+            assertEquals(original.get("provider/plugin.xml"), Files.readString(descriptor));
+        }
+    }
+
+    @Test
+    public void duplicateProvidersAndCyclesAreRejectedBeforePayloadExtraction() throws Exception {
+        Map<String, String> duplicate = plugin("one", "Provider", "2.1.0");
+        duplicate.putAll(plugin("two", "Provider", "2.1.0"));
+        assertRejected(install(duplicate), "Provider");
+        assertTrue(stagedFiles().isEmpty());
+        Map<String, String> cyclic = plugin("alpha", "Alpha", "2.1.0", "Beta");
+        cyclic.putAll(plugin("beta", "Beta", "2.1.0", "Alpha"));
+        assertNotNull(install(cyclic).getCause());
+        assertTrue(stagedFiles().isEmpty());
+    }
+
+    @Test
+    public void transitiveFailureRejectsNewConsumerButNotUnrelatedInstallation() throws Exception {
+        writeInstalled(plugin("provider", "Provider", "2.1.0", "Missing"));
+        assertRejected(install(plugin("consumer", "Consumer", "1.0.0", "Provider")), "Provider");
+        assertFalse(Files.exists(staged("consumer/payload.txt")));
+        assertAccepted(install(plugin("independent", "Independent", "1.0.0")));
+    }
+
+    @Test
+    public void malformedDescriptorRejectsTheWholeArchiveAndPreservesStaging() throws Exception {
+        assertAccepted(install(plugin("provider", "Provider", "2.1.0")));
+        Map<String, String> before = stagedFiles();
+        Map<String, String> broken = plugin("provider", "Provider", "2.2.0");
+        broken.put("provider/source.xml", "<connectorMetaData><name>Incomplete");
+        assertNotNull(install(broken).getCause());
+        assertEquals(before, stagedFiles());
+    }
+
+    @Test
+    public void incomingDescriptorsMustHaveAnExtensionTypeAndNonblankName() throws Exception {
+        String valid = plugin("provider", "Provider", "2.1.0").get("provider/plugin.xml");
+        for (String invalid : List.of(valid.replace("<name>Provider</name>", ""),
+                valid.replace("<name>Provider</name>", "<name> </name>"), "<null/>", "<string>Unexpected type</string>")) {
+            Map<String, String> archive = plugin("provider", "Provider", "2.1.0");
+            archive.put("provider/plugin.xml", invalid);
+            assertNotNull("Invalid metadata identity was accepted", install(archive).getCause());
+            assertTrue(stagedFiles().isEmpty());
+        }
+    }
+
+    @Test
+    public void extractionFailurePreservesPriorStagingAndCorrectedRetryReplacesWholePackage() throws Exception {
+        Map<String, String> original = plugin("provider", "Provider", "2.1.0");
+        original.put("provider/obsolete.jar", "old library");
+        assertAccepted(install(original));
+        Map<String, String> before = stagedFiles();
+        Map<String, String> broken = plugin("provider", "Provider", "2.2.0");
+        broken.put("provider/collision", "file blocks directory creation");
+        broken.put("provider/collision/child", "cannot extract");
+        assertNotNull(install(broken).getCause());
+        assertEquals(before, stagedFiles());
+        for (int retry = 0; retry < 2; retry++) {
+            assertAccepted(install(plugin("provider", "Provider", "2.2.0")));
+            assertFalse(Files.exists(staged("provider/obsolete.jar")));
+            assertEquals(2, stagedFiles().size());
+        }
+        try (var paths = Files.list(extensions)) {
+            assertFalse("Failed extraction left private staging behind",
+                    paths.anyMatch(path -> path.getFileName().toString().startsWith(".install-")));
+        }
+    }
+
+    @Test
+    public void failedPackagePromotionRestoresAllPriorStagedPackages() throws Exception {
+        Map<String, String> original = plugin("one", "One", "2.1.0");
+        original.putAll(plugin("two", "Two", "2.1.0"));
+        assertAccepted(install(original));
+        Map<String, String> before = stagedFiles();
+        Map<String, String> updated = plugin("one", "One", "2.2.0");
+        updated.putAll(plugin("two", "Two", "2.2.0"));
+        AtomicInteger promotions = new AtomicInteger();
+        try (MockedStatic<Files> files = mockStatic(Files.class, CALLS_REAL_METHODS)) {
+            files.when(() -> Files.move(any(Path.class), any(Path.class))).thenAnswer(call -> {
+                Path source = call.getArgument(0);
+                if (source.getParent().getFileName().toString().equals("payload")
+                        && promotions.incrementAndGet() == 2) {
+                    throw new IOException("Simulated failure after one package was promoted");
+                }
+                return call.callRealMethod();
+            });
+            assertRejected(install(updated), "Simulated failure");
+        }
+        assertEquals(2, promotions.get());
+        assertEquals(before, stagedFiles());
+        assertAccepted(install(updated));
+    }
+
+    private static Map<String, String> plugin(String path, String name, String version, String... providers) {
+        StringBuilder requirements = new StringBuilder("<dependency type=\"engine-api\" minVersion=\"1.0.0\"/>");
+        for (String provider : providers) {
+            requirements.append("<dependency type=\"plugin\" name=\"").append(provider).append("\" minVersion=\"2.1.0\"/>");
+        }
+        Map<String, String> entries = new LinkedHashMap<>();
+        // Place payload before the descriptor to prove rejection precedes extraction.
+        entries.put(path + "/payload.txt", name);
+        entries.put(path + "/plugin.xml", "<pluginMetaData path=\"" + path + "\"><name>" + name
+                + "</name><pluginVersion>" + version + "</pluginVersion><dependencies>" + requirements
+                + "</dependencies></pluginMetaData>");
+        return entries;
+    }
+
+    private void writeInstalled(Map<String, String> entries) throws Exception {
+        for (Map.Entry<String, String> entry : entries.entrySet()) {
+            Path file = extensions.resolve(entry.getKey());
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, entry.getValue());
+        }
+    }
+
+    private InstallationResult install(Map<String, String> entries) throws Exception {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(bytes)) {
+            Set<String> directories = new HashSet<>();
+            for (Map.Entry<String, String> entry : entries.entrySet()) {
+                String parent = entry.getKey().substring(0, entry.getKey().lastIndexOf('/') + 1);
+                if (directories.add(parent)) {
+                    zip.putNextEntry(new ZipEntry(parent));
+                    zip.closeEntry();
+                }
+                zip.putNextEntry(new ZipEntry(entry.getKey()));
+                zip.write(entry.getValue().getBytes(StandardCharsets.UTF_8));
+                zip.closeEntry();
+            }
+        }
+        return controller.extractExtension(new ByteArrayInputStream(bytes.toByteArray()));
+    }
+
+    private Path staged(String relative) {
+        return extensions.resolve("install_temp").resolve(relative);
+    }
+
+    private Map<String, String> stagedFiles() throws Exception {
+        Map<String, String> contents = new TreeMap<>();
+        Path root = staged("");
+        if (Files.exists(root)) {
+            try (var paths = Files.walk(root)) {
+                for (Path path : (Iterable<Path>) paths.filter(Files::isRegularFile)::iterator) {
+                    contents.put(root.relativize(path).toString(), Files.readString(path));
+                }
+            }
+        }
+        return contents;
+    }
+
+    private static void assertAccepted(InstallationResult result) {
+        assertNull("Installation failed: " + result.getCause(), result.getCause());
+    }
+
+    private static void assertRejected(InstallationResult result, String requirement) {
+        assertNotNull("Installation unexpectedly succeeded", result.getCause());
+        assertTrue(result.getCause().toString(), result.getCause().toString().contains(requirement));
+    }
+
+    private static void assertActionRejected(ControllerAction action, String requirement) throws Exception {
+        try {
+            action.run();
+            fail("Administrative action unexpectedly succeeded");
+        } catch (ControllerException e) {
+            assertTrue(e.toString(), e.toString().contains(requirement));
+        }
+    }
+
+    private interface ControllerAction {
+        void run() throws ControllerException;
+    }
+}

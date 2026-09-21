@@ -31,8 +31,10 @@ import org.apache.commons.io.filefilter.NameFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.mirth.connect.client.core.ExtensionCompatibility;
 import com.mirth.connect.server.extprops.ExtensionStatuses;
 import com.mirth.connect.server.extprops.LoggerWrapper;
 
@@ -250,7 +252,7 @@ public class MirthLauncher {
                 		Element rootElement = document.getDocumentElement();
 
                         boolean enabled = extensionStatuses.isEnabled(rootElement.getElementsByTagName("name").item(0).getTextContent());
-                        boolean compatible = isExtensionCompatible(rootElement.getElementsByTagName("mirthVersion").item(0).getTextContent(), currentVersion);
+                        boolean compatible = isExtensionCompatible(rootElement, currentVersion);
 
                         // Only add libraries from extensions that are not disabled and are compatible with the current version
                         if (enabled && compatible) {
@@ -282,23 +284,30 @@ public class MirthLauncher {
         }
     }
 
-    private static boolean isExtensionCompatible(String extensionVersion, String currentVersion) {
-        if (extensionVersion != null) {
-            String[] extensionMirthVersions = extensionVersion.split(",");
+    static boolean isExtensionCompatible(Element metadata, String currentVersion) {
+        return ExtensionCompatibility.isCompatible(getMetadataValue(metadata, "mirthVersion"),
+                getMetadataValue(metadata, "minExtensionApiVersion"), currentVersion);
+    }
 
-            // If there is no build version, just use the patch version
-            if (currentVersion.split("\\.").length == 4) {
-                currentVersion = currentVersion.substring(0, currentVersion.lastIndexOf('.'));
-            }
-
-            for (int i = 0; i < extensionMirthVersions.length; i++) {
-                if (extensionMirthVersions[i].trim().equals(currentVersion)) {
-                    return true;
+    private static String getMetadataValue(Element metadata, String name) {
+        for (Node child = metadata.getFirstChild(); child != null; child = child.getNextSibling()) {
+            if (child instanceof Element && name.equals(child.getNodeName())) {
+                // Match XStream's null and scalar text handling without loading XStream here.
+                Element element = (Element) child;
+                String type = element.hasAttribute("resolves-to") ? element.getAttribute("resolves-to") : element.getAttribute("class");
+                if ("null".equals(type) || "com.thoughtworks.xstream.mapper.Mapper$Null".equals(type)) {
+                    return null;
                 }
+                StringBuilder text = new StringBuilder();
+                for (Node value = child.getFirstChild(); value != null; value = value.getNextSibling()) {
+                    if (value.getNodeType() == Node.TEXT_NODE || value.getNodeType() == Node.CDATA_SECTION_NODE) {
+                        text.append(value.getNodeValue());
+                    }
+                }
+                return text.toString();
             }
         }
-
-        return false;
+        return null;
     }
 
     private static void createAppdataDir(Properties mirthProperties) {

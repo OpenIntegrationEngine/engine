@@ -25,12 +25,12 @@ import org.apache.commons.io.filefilter.AndFileFilter;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.NameFileFilter;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
+import com.mirth.connect.client.core.ExtensionCompatibility;
 import com.mirth.connect.client.core.PropertiesConfigurationUtil;
 import com.mirth.connect.model.ConnectorMetaData;
 import com.mirth.connect.model.MetaData;
@@ -149,22 +149,11 @@ public class ExtensionLoader {
             return false;
         }
 
-        String[] extensionMirthVersions = metaData.getMirthVersion().split(",");
-
-        logger.debug("checking extension \"" + metaData.getName() + "\" version compatability: versions=" + ArrayUtils.toString(extensionMirthVersions) + ", server=" + serverMirthVersion);
-
-        // if there is no build version, just use the patch version
-        if (serverMirthVersion.split("\\.").length == 4) {
-            serverMirthVersion = serverMirthVersion.substring(0, serverMirthVersion.lastIndexOf('.'));
-        }
-
-        for (int i = 0; i < extensionMirthVersions.length; i++) {
-            if (extensionMirthVersions[i].trim().equals(serverMirthVersion)) {
-                return true;
-            }
-        }
-
-        return false;
+        logger.debug("Checking extension \"{}\" compatibility: releases={}, minimum API={}, server={}, API={}",
+                metaData.getName(), metaData.getMirthVersion(), metaData.getMinExtensionApiVersion(),
+                serverMirthVersion, ExtensionCompatibility.API_VERSION);
+        return ExtensionCompatibility.isCompatible(metaData.getMirthVersion(),
+                metaData.getMinExtensionApiVersion(), serverMirthVersion);
     }
 
     /**

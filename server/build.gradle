@@ -678,6 +678,8 @@ def launcherJar = tasks.register('launcherJar', Jar) {
     archiveFileName = 'mirth-server-launcher.jar'
     destinationDirectory = file('setup')
     from(sourceSets.main.output.classesDirs) {
+        // The launcher checks compatibility before loading mirth-client-core.jar.
+        include 'com/mirth/connect/client/core/ExtensionCompatibility.class'
         include 'com/mirth/connect/server/launcher/**'
         include 'com/mirth/connect/server/extprops/**'
     }

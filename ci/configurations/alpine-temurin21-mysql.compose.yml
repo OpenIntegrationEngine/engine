@@ -22,7 +22,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE: mysql
-      DATABASE_URL: jdbc:mysql://db:3306/mirthdb
+      DATABASE_URL: jdbc:mysql://db:3306/mirthdb?sessionVariables=transaction_isolation='READ-COMMITTED'
       DATABASE_USERNAME: mirthdb
       DATABASE_PASSWORD: mirthdb
       DATABASE_MAX_CONNECTIONS: 20

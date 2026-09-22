@@ -86,7 +86,11 @@ public abstract class ChannelController extends Controller {
 
     public abstract Statistics getStatisticsFromStorage(String serverId);
 
+    public abstract Statistics getStatisticsFromStorage(String serverId, Set<String> channelIds);
+
     public abstract Statistics getTotalStatisticsFromStorage(String serverId);
+
+    public abstract Statistics getTotalStatisticsFromStorage(String serverId, Set<String> channelIds);
 
     public abstract int getConnectorMessageCount(String channelId, String serverId, int metaDataId, Status status);
 

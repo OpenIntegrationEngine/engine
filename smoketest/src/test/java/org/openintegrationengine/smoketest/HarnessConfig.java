@@ -37,11 +37,17 @@ final class HarnessConfig {
             Duration.ofSeconds(Long.parseLong(System.getProperty("oie.timeoutSeconds", "90")));
 
     /**
-     * Per-request socket timeout. {@code new Client(address)} defaults to an infinite
-     * timeout, which would let a wedged server hang CI instead of failing it.
+     * Per-request socket timeout. {@code new Client(address)} defaults to an infinite timeout,
+     * which would let a wedged server hang CI instead of failing it.
+     *
+     * <p>This has to clear the slowest thing one request can legitimately queue behind, not the
+     * time a request normally takes: test classes run in parallel against one server, and a
+     * channel deploy holds it long enough that an unrelated {@code getChannelStatus} can wait
+     * seconds. {@link #TIMEOUT} still bounds the test as a whole, so a genuinely wedged server
+     * fails - just not on the first read that was merely waiting its turn.
      */
     static final int REQUEST_TIMEOUT_MILLIS =
-            Integer.parseInt(System.getProperty("oie.requestTimeoutMillis", "15000"));
+            Integer.parseInt(System.getProperty("oie.requestTimeoutMillis", "30000"));
 
     private HarnessConfig() {
     }

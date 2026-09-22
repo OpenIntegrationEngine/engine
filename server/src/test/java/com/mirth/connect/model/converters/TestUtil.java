@@ -49,6 +49,11 @@ public class TestUtil {
         return writer.toString();
     }
 
+    /** Line endings carry no meaning in pretty-printed XML, and the fixtures on disk are CRLF. */
+    public static String normalizeLineEndings(String input) {
+        return input.replaceAll("\r\n|\r", "\n");
+    }
+
     public static String convertCRToCRLF(String input) {
         return input.replaceAll("\r", "\r\n");
     }

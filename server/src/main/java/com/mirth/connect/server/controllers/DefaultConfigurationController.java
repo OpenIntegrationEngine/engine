@@ -939,6 +939,13 @@ public class DefaultConfigurationController extends ConfigurationController {
     }
 
     @Override
+    public synchronized void setConfigurationProperty(String key, ConfigurationProperty property) throws ControllerException {
+        Map<String, ConfigurationProperty> properties = getConfigurationProperties();
+        properties.put(key, property);
+        setConfigurationProperties(properties, true);
+    }
+
+    @Override
     public void setStatus(int status) {
         this.status = status;
     }

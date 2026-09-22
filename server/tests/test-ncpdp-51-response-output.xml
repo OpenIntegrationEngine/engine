@@ -1,0 +1,34 @@
+<NCPDP_51_Billing_Response>
+    <TransactionHeaderResponse>
+        <VersionReleaseNumber>51</VersionReleaseNumber>
+        <TransactionCode>B1</TransactionCode>
+        <TransactionCount>1</TransactionCount>
+        <HeaderResponseStatus>A</HeaderResponseStatus>
+        <ServiceProviderIdQualifier>01</ServiceProviderIdQualifier>
+        <ServiceProviderId>1234567890     </ServiceProviderId>
+        <DateOfService>20260913</DateOfService>
+    </TransactionHeaderResponse>
+    <ResponseInsurance>
+        <CardholderId>123456789</CardholderId>
+    </ResponseInsurance>
+    <AM29/>
+    <TRANSACTIONS>
+        <TRANSACTION counter="1">
+            <ResponseStatus>
+                <TransactionResponseStatus>P</TransactionResponseStatus>
+                <AuthorizationNumber>54716cb1bb9646a9bc8c</AuthorizationNumber>
+            </ResponseStatus>
+            <ResponseClaim>
+                <PrescriptionServiceReferenceNumberQualifier>1</PrescriptionServiceReferenceNumberQualifier>
+                <PrescriptionServiceReferenceNumber>98765432</PrescriptionServiceReferenceNumber>
+            </ResponseClaim>
+            <ResponsePricing>
+                <PatientPayAmount>00{</PatientPayAmount>
+                <IngredientCostPaid>00{</IngredientCostPaid>
+                <DispensingFeePaid>216E</DispensingFeePaid>
+                <TotalAmountPaid>216E</TotalAmountPaid>
+                <BasisOfReimbursementDetermination>6</BasisOfReimbursementDetermination>
+            </ResponsePricing>
+        </TRANSACTION>
+    </TRANSACTIONS>
+</NCPDP_51_Billing_Response>

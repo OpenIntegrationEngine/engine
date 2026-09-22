@@ -208,6 +208,12 @@ public class JdbcDao implements DonkeyDao {
         insertContent(messageContent.getChannelId(), messageContent.getMessageId(), messageContent.getMetaDataId(), messageContent.getContentType(), messageContent.getContent(), messageContent.getDataType(), messageContent.isEncrypted());
     }
 
+    /*
+     * The statement is deliberately left open here. It is the cached statement that holds the
+     * accumulated batch, so closing it would discard every addBatch() made so far;
+     * executeBatchInsertMessageContent() runs the batch and closes the statement if the
+     * subclass needs that.
+     */
     @Override
     public void batchInsertMessageContent(MessageContent messageContent) {
         logger.debug(messageContent.getChannelId() + "/" + messageContent.getMessageId() + "/" + messageContent.getMetaDataId() + ": batch inserting message content (" + messageContent.getContentType().toString() + ")");
@@ -237,9 +243,9 @@ public class JdbcDao implements DonkeyDao {
             statement.addBatch();
             statement.clearParameters();
         } catch (SQLException e) {
+            // The batch will never be executed now, so do not leave it for the next message.
+            clearBatchQuietly(statement);
             throw new DonkeyDaoException(e);
-        } finally {
-            closeDatabaseObjectIfNeeded(statement);
         }
     }
 
@@ -258,11 +264,26 @@ public class JdbcDao implements DonkeyDao {
              */
             statement = prepareStatement("batchInsertMessageContent", channelId);
             statement.executeBatch();
-            statement.clearBatch();
         } catch (SQLException e) {
             throw new DonkeyDaoException(e);
         } finally {
+            clearBatchQuietly(statement);
             closeDatabaseObjectIfNeeded(statement);
+        }
+    }
+
+    /**
+     * Empties a cached statement's batch without letting the cleanup itself fail. The statement
+     * outlives the DAO in the prepared statement cache, so anything left on its batch would be
+     * executed along with the next message's rows.
+     */
+    private void clearBatchQuietly(Statement statement) {
+        if (statement != null) {
+            try {
+                statement.clearBatch();
+            } catch (SQLException e) {
+                logger.debug("Failed to clear batch", e);
+            }
         }
     }
 
@@ -2332,21 +2353,35 @@ public class JdbcDao implements DonkeyDao {
 
     @Override
     public Statistics getChannelStatistics(String serverId) {
-        return getChannelStatistics(serverId, false);
+        return getChannelStatistics(serverId, null, false);
+    }
+
+    @Override
+    public Statistics getChannelStatistics(String serverId, Set<String> channelIds) {
+        return getChannelStatistics(serverId, channelIds, false);
     }
 
     @Override
     public Statistics getChannelTotalStatistics(String serverId) {
-        return getChannelStatistics(serverId, true);
+        return getChannelStatistics(serverId, null, true);
     }
 
-    private Statistics getChannelStatistics(String serverId, boolean total) {
-        Map<String, Long> channelIds = getLocalChannelIds();
+    @Override
+    public Statistics getChannelTotalStatistics(String serverId, Set<String> channelIds) {
+        return getChannelStatistics(serverId, channelIds, true);
+    }
+
+    private Statistics getChannelStatistics(String serverId, Set<String> requestedChannelIds, boolean total) {
+        Map<String, Long> localChannelIds = getLocalChannelIds();
         String queryId = (total) ? "getChannelTotalStatistics" : "getChannelStatistics";
         Statistics statistics = new Statistics(!total);
         ResultSet resultSet = null;
 
-        for (String channelId : channelIds.keySet()) {
+        for (String channelId : localChannelIds.keySet()) {
+            if (CollectionUtils.isNotEmpty(requestedChannelIds) && !requestedChannelIds.contains(channelId)) {
+                continue;
+            }
+
             PreparedStatement statement = null;
             try {
                 statement = prepareStatement(queryId, channelId);
@@ -2865,6 +2900,7 @@ public class JdbcDao implements DonkeyDao {
 
             // do not cache this statement since metadata columns may be added/removed
             statement = connection.prepareStatement(querySource.getQuery("getMetaDataMap", values));
+            disableServerSidePlanCache(statement);
             statement.setLong(1, messageId);
             statement.setInt(2, metaDataId);
 
@@ -2933,6 +2969,7 @@ public class JdbcDao implements DonkeyDao {
 
             // do not cache this statement since metadata columns may be added/removed
             statement = connection.prepareStatement(querySource.getQuery("getMetaDataMapByMessageId", values));
+            disableServerSidePlanCache(statement);
             resultSet = statement.executeQuery();
 
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
@@ -3070,6 +3107,14 @@ public class JdbcDao implements DonkeyDao {
         }
 
         return statementSource.getPreparedStatement(queryId, localChannelId);
+    }
+
+    /**
+     * Stops the driver from caching a server-side plan for one statement where the schema may have
+     * changed from query to query.
+     */
+    protected void disableServerSidePlanCache(PreparedStatement statement) throws SQLException {
+        // nop for most drivers
     }
 
     protected void close(Statement statement) {

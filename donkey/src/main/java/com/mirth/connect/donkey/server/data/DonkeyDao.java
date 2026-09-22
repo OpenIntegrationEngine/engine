@@ -130,7 +130,13 @@ public interface DonkeyDao {
 
     public Statistics getChannelStatistics(String serverId);
 
+    /** The current statistics of the given channels only. A null or empty set means every channel. */
+    public Statistics getChannelStatistics(String serverId, Set<String> channelIds);
+
     public Statistics getChannelTotalStatistics(String serverId);
+
+    /** The lifetime counterpart of {@link #getChannelStatistics(String, Set)}. */
+    public Statistics getChannelTotalStatistics(String serverId, Set<String> channelIds);
     
     public List<Ports> getPortsInUse();
 

@@ -1,0 +1,4 @@
+mdstring: "a string value"
+mdnumber: "1234.5678"
+mdboolean: "true"
+mdtimestamp: "2010-01-02 13:01:02"

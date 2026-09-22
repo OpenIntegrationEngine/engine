@@ -9,13 +9,17 @@
 
 package com.mirth.connect.donkey.server.data.jdbc;
 
+import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.mirth.connect.donkey.server.Donkey;
+import com.mirth.connect.donkey.server.channel.Statistics;
 import com.mirth.connect.donkey.server.data.DonkeyDaoException;
+import com.mirth.connect.donkey.server.data.StatisticsUpdater;
 import com.mirth.connect.donkey.util.SerializerProvider;
 
 public class PostgresqlDaoFactory extends JdbcDaoFactory {
@@ -31,6 +35,11 @@ public class PostgresqlDaoFactory extends JdbcDaoFactory {
         JdbcDao dao = super.getDao(serializerProvider);
         dao.setAsyncCommitCommand(getAsyncCommitCommand(dao));
         return dao;
+    }
+
+    @Override
+    protected JdbcDao getDao(Donkey donkey, Connection connection, QuerySource querySource, PreparedStatementSource statementSource, SerializerProvider serializerProvider, boolean encryptMessageContent, boolean encryptAttachments, boolean encryptCustomMetaData, boolean decryptData, StatisticsUpdater statisticsUpdater, Statistics currentStats, Statistics totalStats, String statsServerId) {
+        return new PostgresqlJdbcDao(donkey, connection, querySource, statementSource, serializerProvider, encryptMessageContent, encryptAttachments, encryptCustomMetaData, decryptData, statisticsUpdater, currentStats, totalStats, statsServerId);
     }
 
     private String getAsyncCommitCommand(JdbcDao dao) {

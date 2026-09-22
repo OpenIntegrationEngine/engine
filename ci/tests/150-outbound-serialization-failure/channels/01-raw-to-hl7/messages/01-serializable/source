@@ -1,0 +1,1 @@
+<HL7Message><MSH><MSH.1>|</MSH.1><MSH.2>^~\&amp;</MSH.2><MSH.3>Destination</MSH.3><MSH.9><MSH.9.1>ADT</MSH.9.1><MSH.9.2>A01</MSH.9.2></MSH.9><MSH.10>Msgid99999</MSH.10><MSH.11>P</MSH.11><MSH.12>2.3</MSH.12></MSH><PID><PID.3>222333</PID.3><PID.5><PID.5.1>Smith</PID.5.1><PID.5.2>Alice</PID.5.2></PID.5></PID></HL7Message>

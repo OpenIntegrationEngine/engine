@@ -11,3 +11,7 @@ configure-from-env text eol=lf
 
 # Binary files are left untouched
 *.jar           binary
+*.dcm           binary
+
+# NCPDP fixtures delimit with control characters (0x1C/0x1D/0x1E), not line breaks
+/server/tests/test-ncpdp-*-input.txt binary

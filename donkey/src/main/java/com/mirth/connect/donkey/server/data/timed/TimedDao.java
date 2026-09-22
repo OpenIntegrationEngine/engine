@@ -663,11 +663,33 @@ public class TimedDao implements DonkeyDao {
     }
 
     @Override
+    public Statistics getChannelStatistics(String serverId, Set<String> channelIds) {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            return dao.getChannelStatistics(serverId, channelIds);
+        } finally {
+            timer.log("getChannelStatistics", System.currentTimeMillis() - startTime);
+        }
+    }
+
+    @Override
     public Statistics getChannelTotalStatistics(String serverId) {
         long startTime = System.currentTimeMillis();
 
         try {
             return dao.getChannelTotalStatistics(serverId);
+        } finally {
+            timer.log("getChannelTotalStatistics", System.currentTimeMillis() - startTime);
+        }
+    }
+
+    @Override
+    public Statistics getChannelTotalStatistics(String serverId, Set<String> channelIds) {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            return dao.getChannelTotalStatistics(serverId, channelIds);
         } finally {
             timer.log("getChannelTotalStatistics", System.currentTimeMillis() - startTime);
         }

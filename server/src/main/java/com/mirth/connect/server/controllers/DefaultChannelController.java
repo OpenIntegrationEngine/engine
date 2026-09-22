@@ -733,8 +733,18 @@ public class DefaultChannelController extends ChannelController {
     }
 
     @Override
+    public Statistics getStatisticsFromStorage(String serverId, Set<String> channelIds) {
+        return com.mirth.connect.donkey.server.controllers.ChannelController.getInstance().getStatisticsFromStorage(serverId, channelIds);
+    }
+
+    @Override
     public Statistics getTotalStatisticsFromStorage(String serverId) {
         return com.mirth.connect.donkey.server.controllers.ChannelController.getInstance().getTotalStatisticsFromStorage(serverId);
+    }
+
+    @Override
+    public Statistics getTotalStatisticsFromStorage(String serverId, Set<String> channelIds) {
+        return com.mirth.connect.donkey.server.controllers.ChannelController.getInstance().getTotalStatisticsFromStorage(serverId, channelIds);
     }
 
     @Override

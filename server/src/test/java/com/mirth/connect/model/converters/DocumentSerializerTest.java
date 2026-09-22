@@ -1,5 +1,6 @@
 package com.mirth.connect.model.converters;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -22,6 +23,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
 public class DocumentSerializerTest {
@@ -87,6 +89,34 @@ public class DocumentSerializerTest {
 		assertNotNull(document);
 	}
 	
+	@Test
+	public void testToXML() throws Exception {
+		Document document = newDocument();
+		Element root = document.createElement("root");
+		root.setTextContent("Hello\r\nworld!");
+		document.appendChild(root);
+
+		// the carriage return survives as a character reference, the line feed as itself
+		assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<root>Hello&#13;\nworld!</root>\n", serializer.toXML(document));
+	}
+
+	@Test
+	public void testPreserveSpace() throws Exception {
+		Document document = newDocument();
+		Element root = document.createElement("root");
+		document.appendChild(root);
+		Element child = document.createElement("child");
+		child.setTextContent("Hello\nworld!");
+		root.appendChild(child);
+
+		// the element gets indented, but the line feed inside the value is left alone
+		assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<root>\n    <child>Hello\nworld!</child>\n</root>\n", serializer.toXML(document));
+	}
+
+	private static Document newDocument() throws Exception {
+		return DocumentSerializer.getSecureDocumentBuilderFactory().newDocumentBuilder().newDocument();
+	}
+
 	// Util method for debugging purposes
 	@SuppressWarnings("unused")
 	private static void printDocument(Document doc) throws IOException, TransformerException {

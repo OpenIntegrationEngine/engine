@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<dicom>
+    <tag00020000 len="4" tag="00020000" vr="UL">196</tag00020000>
+    <tag00020001 len="2" tag="00020001" vr="OB">00\01</tag00020001>
+    <tag00020002 len="26" tag="00020002" vr="UI">1.2.840.10008.5.1.4.1.1.4</tag00020002>
+    <tag00020003 len="64" tag="00020003" vr="UI">1.3.6.1.4.1.14519.5.2.1.7311.5101.174080670823095725391876950759</tag00020003>
+    <tag00020010 len="20" tag="00020010" vr="UI">1.2.840.10008.1.2.1</tag00020010>
+    <tag00020012 len="18" tag="00020012" vr="UI">1.2.40.0.13.1.1.1</tag00020012>
+    <tag00020013 len="14" tag="00020013" vr="SH">dcm4che-1.4.35</tag00020013>
+    <tag00080005 len="10" tag="00080005" vr="CS">ISO_IR 100</tag00080005>
+    <tag00080008 len="38" tag="00080008" vr="CS">DERIVED\PRIMARY\DIFFUSION\TRACEW\DIS2D</tag00080008>
+    <tag00080012 len="8" tag="00080012" vr="DA">20120222</tag00080012>
+    <tag00080013 len="14" tag="00080013" vr="TM">093124.703000</tag00080013>
+    <tag00080016 len="26" tag="00080016" vr="UI">1.2.840.10008.5.1.4.1.1.4</tag00080016>
+    <tag00080018 len="64" tag="00080018" vr="UI">1.3.6.1.4.1.14519.5.2.1.7311.5101.174080670823095725391876950759</tag00080018>
+    <tag00080020 len="8" tag="00080020" vr="DA">20120222</tag00080020>
+    <tag00080021 len="8" tag="00080021" vr="DA">20120222</tag00080021>
+    <tag00080022 len="8" tag="00080022" vr="DA">20120222</tag00080022>
+    <tag00080023 len="8" tag="00080023" vr="DA">20120222</tag00080023>
+    <tag00080030 len="14" tag="00080030" vr="TM">091218.078000</tag00080030>
+    <tag00080031 len="14" tag="00080031" vr="TM">093124.609000</tag00080031>
+    <tag00080032 len="14" tag="00080032" vr="TM">093113.347500</tag00080032>
+    <tag00080033 len="14" tag="00080033" vr="TM">093124.703000</tag00080033>
+    <tag00080050 len="16" tag="00080050" vr="SH">8913853518574410</tag00080050>
+    <tag00080060 len="2" tag="00080060" vr="CS">MR</tag00080060>
+    <tag00080070 len="8" tag="00080070" vr="LO">SIEMENS</tag00080070>
+    <tag00081030 len="40" tag="00081030" vr="LO">MR prostaat kanker detectie_mc MCAPRODET</tag00081030>
+    <tag0008103E len="22" tag="0008103E" vr="LO">ep2d_diff_tra_DYNDIST</tag0008103E>
+    <tag00081090 len="6" tag="00081090" vr="LO">Skyra</tag00081090>
+    <tag00081110 len="-1" tag="00081110" vr="SQ">
+        <item len="-1" off="854">
+            <tag00081150 len="24" tag="00081150" vr="UI">1.2.840.10008.3.1.2.3.1</tag00081150>
+            <tag00081155 len="64" tag="00081155" vr="UI">1.3.6.1.4.1.14519.5.2.1.7311.5101.989962386484007264256688307298</tag00081155>
+        </item>
+    </tag00081110>
+    <tag00100010 len="14" tag="00100010" vr="PN">ProstateX-0204</tag00100010>
+    <tag00100020 len="14" tag="00100020" vr="LO">ProstateX-0204</tag00100020>
+    <tag00100030 len="0" tag="00100030" vr="DA"/>
+    <tag00100040 len="2" tag="00100040" vr="CS">M</tag00100040>
+    <tag00101010 len="4" tag="00101010" vr="AS">068Y</tag00101010>
+    <tag00101020 len="4" tag="00101020" vr="DS">1.85</tag00101020>
+    <tag00101030 len="2" tag="00101030" vr="DS">78</tag00101030>
+    <tag00120062 len="4" tag="00120062" vr="CS">YES</tag00120062>
+    <tag00120063 len="60" tag="00120063" vr="LO">DIAG-ANON 0.3\Per DICOM PS 3.15 AnnexE. Details in 0012,0064</tag00120063>
+    <tag00120064 len="-1" tag="00120064" vr="SQ">
+        <item len="-1" off="1170">
+            <tag00080100 len="6" tag="00080100" vr="SH">113100</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="42" tag="00080104" vr="LO">Basic Application Confidentiality Profile</tag00080104>
+        </item>
+        <item len="-1" off="1262">
+            <tag00080100 len="6" tag="00080100" vr="SH">113101</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="24" tag="00080104" vr="LO">Clean Pixel Data Option</tag00080104>
+        </item>
+        <item len="-1" off="1336">
+            <tag00080100 len="6" tag="00080100" vr="SH">113104</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="32" tag="00080104" vr="LO">Clean Structured Content Option</tag00080104>
+        </item>
+        <item len="-1" off="1418">
+            <tag00080100 len="6" tag="00080100" vr="SH">113105</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="24" tag="00080104" vr="LO">Clean Descriptors Option</tag00080104>
+        </item>
+        <item len="-1" off="1492">
+            <tag00080100 len="6" tag="00080100" vr="SH">113107</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="62" tag="00080104" vr="LO">Retain Longitudinal Temporal Information Modified Dates Option</tag00080104>
+        </item>
+        <item len="-1" off="1604">
+            <tag00080100 len="6" tag="00080100" vr="SH">113108</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="38" tag="00080104" vr="LO">Retain Patient Characteristics Option</tag00080104>
+        </item>
+        <item len="-1" off="1692">
+            <tag00080100 len="6" tag="00080100" vr="SH">113109</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="30" tag="00080104" vr="LO">Retain Device Identity Option</tag00080104>
+        </item>
+        <item len="-1" off="1772">
+            <tag00080100 len="6" tag="00080100" vr="SH">113111</tag00080100>
+            <tag00080102 len="4" tag="00080102" vr="SH">DCM</tag00080102>
+            <tag00080104 len="26" tag="00080104" vr="LO">Retain Safe Private Option</tag00080104>
+        </item>
+    </tag00120064>
+    <tag00130010 len="4" tag="00130010" vr="LO">CTP</tag00130010>
+    <tag00131010 len="10" tag="00131010" vr="LO">PROSTATEx</tag00131010>
+    <tag00131013 len="8" tag="00131013" vr="LO">73105101</tag00131013>
+    <tag00180015 len="8" tag="00180015" vr="CS">PROSTATE</tag00180015>
+    <tag00180020 len="2" tag="00180020" vr="CS">EP</tag00180020>
+    <tag00180021 len="10" tag="00180021" vr="CS">SK\SP\OSP</tag00180021>
+    <tag00180022 len="6" tag="00180022" vr="CS">PFP\FS</tag00180022>
+    <tag00180023 len="2" tag="00180023" vr="CS">2D</tag00180023>
+    <tag00180024 len="10" tag="00180024" vr="SH">*ep_b400t</tag00180024>
+    <tag00180025 len="2" tag="00180025" vr="CS">N</tag00180025>
+    <tag00180050 len="2" tag="00180050" vr="DS">3</tag00180050>
+    <tag00180080 len="4" tag="00180080" vr="DS">2700</tag00180080>
+    <tag00180081 len="2" tag="00180081" vr="DS">63</tag00180081>
+    <tag00180083 len="2" tag="00180083" vr="DS">8</tag00180083>
+    <tag00180084 len="10" tag="00180084" vr="DS">123.240954</tag00180084>
+    <tag00180085 len="2" tag="00180085" vr="SH">1H</tag00180085>
+    <tag00180086 len="2" tag="00180086" vr="IS">1</tag00180086>
+    <tag00180087 len="2" tag="00180087" vr="DS">3</tag00180087>
+    <tag00180088 len="2" tag="00180088" vr="DS">3</tag00180088>
+    <tag00180089 len="2" tag="00180089" vr="IS">95</tag00180089>
+    <tag00180091 len="2" tag="00180091" vr="IS">48</tag00180091>
+    <tag00180093 len="4" tag="00180093" vr="DS">100</tag00180093>
+    <tag00180094 len="6" tag="00180094" vr="DS">65.625</tag00180094>
+    <tag00180095 len="4" tag="00180095" vr="DS">1500</tag00180095>
+    <tag00181020 len="12" tag="00181020" vr="LO">syngo MR D11</tag00181020>
+    <tag00181030 len="14" tag="00181030" vr="LO">ep2d_diff_tra</tag00181030>
+    <tag00181251 len="4" tag="00181251" vr="SH">Body</tag00181251>
+    <tag00181310 len="8" tag="00181310" vr="US">0\128\84\0</tag00181310>
+    <tag00181312 len="4" tag="00181312" vr="CS">ROW</tag00181312>
+    <tag00181314 len="2" tag="00181314" vr="DS">90</tag00181314>
+    <tag00181315 len="2" tag="00181315" vr="CS">N</tag00181315>
+    <tag00181316 len="16" tag="00181316" vr="DS">0.57373217280629</tag00181316>
+    <tag00181318 len="2" tag="00181318" vr="DS">0</tag00181318>
+    <tag00185100 len="4" tag="00185100" vr="CS">FFS</tag00185100>
+    <tag00190010 len="18" tag="00190010" vr="LO">SIEMENS MR HEADER</tag00190010>
+    <tag0019100B len="2" tag="0019100B" vr="OB">33\35</tag0019100B>
+    <tag0019100C len="4" tag="0019100C" vr="OB">34\30\30\20</tag0019100C>
+    <tag0019100D len="10" tag="0019100D" vr="OB">49\53\4F\54\52\4F\50\49\43\20</tag0019100D>
+    <tag0019100F len="4" tag="0019100F" vr="OB">46\61\73\74</tag0019100F>
+    <tag00191011 len="2" tag="00191011" vr="OB">4E\6F</tag00191011>
+    <tag00191012 len="12" tag="00191012" vr="OB">00\00\00\00\00\00\00\00\6E\F8\FF\FF</tag00191012>
+    <tag00191013 len="12" tag="00191013" vr="OB">00\00\00\00\00\00\00\00\73\F8\FF\FF</tag00191013>
+    <tag00191014 len="6" tag="00191014" vr="OB">30\5C\30\5C\2D\35</tag00191014>
+    <tag00191015 len="24" tag="00191015" vr="OB">DC\2C\1C\10\7A\C9\52\C0\22\8E\33\55\09\EE\59\C0\75\95\8B\84\78\4C\49\40</tag00191015>
+    <tag00191016 len="8" tag="00191016" vr="OB">31\39\33\2E\36\37\35\20</tag00191016>
+    <tag00191017 len="2" tag="00191017" vr="OB">31\20</tag00191017>
+    <tag00191018 len="4" tag="00191018" vr="OB">32\36\30\30</tag00191018>
+    <tag00191028 len="8" tag="00191028" vr="OB">77\BE\9F\1A\2F\9D\34\40</tag00191028>
+    <tag0020000D len="64" tag="0020000D" vr="UI">1.3.6.1.4.1.14519.5.2.1.7311.5101.989962386484007264256688307298</tag0020000D>
+    <tag0020000E len="64" tag="0020000E" vr="UI">1.3.6.1.4.1.14519.5.2.1.7311.5101.184815022142880568898393767017</tag0020000E>
+    <tag00200010 len="0" tag="00200010" vr="SH"/>
+    <tag00200011 len="2" tag="00200011" vr="IS">6</tag00200011>
+    <tag00200012 len="2" tag="00200012" vr="IS">1</tag00200012>
+    <tag00200013 len="2" tag="00200013" vr="IS">29</tag00200013>
+    <tag00200032 len="50" tag="00200032" vr="DS">-75.148075130013\-103.71931963112\45.597427910633</tag00200032>
+    <tag00200037 len="78" tag="00200037" vr="DS">1\-1.885178e-010\8.07988e-011\2.051034e-010\0.91913534192834\-0.3939419033541</tag00200037>
+    <tag00200052 len="64" tag="00200052" vr="UI">1.3.6.1.4.1.14519.5.2.1.7311.5101.221351907157888248216888359615</tag00200052>
+    <tag00201040 len="0" tag="00201040" vr="LO"/>
+    <tag00201041 len="16" tag="00201041" vr="DS">1.0508213036143</tag00201041>
+    <tag00280002 len="2" tag="00280002" vr="US">1</tag00280002>
+    <tag00280004 len="12" tag="00280004" vr="CS">MONOCHROME2</tag00280004>
+    <tag00280010 len="2" tag="00280010" vr="US">128</tag00280010>
+    <tag00280011 len="2" tag="00280011" vr="US">84</tag00280011>
+    <tag00280030 len="4" tag="00280030" vr="DS">2\2</tag00280030>
+    <tag00280100 len="2" tag="00280100" vr="US">16</tag00280100>
+    <tag00280101 len="2" tag="00280101" vr="US">12</tag00280101>
+    <tag00280102 len="2" tag="00280102" vr="US">11</tag00280102>
+    <tag00280103 len="2" tag="00280103" vr="US">0</tag00280103>
+    <tag00280106 len="2" tag="00280106" vr="US">0</tag00280106>
+    <tag00280107 len="2" tag="00280107" vr="US">320</tag00280107>
+    <tag00280303 len="8" tag="00280303" vr="CS">MODIFIED</tag00280303>
+    <tag00281050 len="2" tag="00281050" vr="DS">89</tag00281050>
+    <tag00281051 len="4" tag="00281051" vr="DS">239</tag00281051>
+    <tag00281055 len="6" tag="00281055" vr="LO">Algo1</tag00281055>
+    <tag00290010 len="18" tag="00290010" vr="LO">SIEMENS CSA HEADER</tag00290010>
+    <tag00290011 len="22" tag="00290011" vr="LO">SIEMENS MEDCOM HEADER2</tag00290011>
+    <tag00291160 len="4" tag="00291160" vr="OB">63\6F\6D\20</tag00291160>
+    <tag00310010 len="28" tag="00310010" vr="LO">MITRA LINKED ATTRIBUTES 1.0</tag00310010>
+    <tag00310011 len="32" tag="00310011" vr="LO">AGFA PACS Archive Mirroring 1.0</tag00310011>
+    <tag0032000A len="8" tag="0032000A" vr="CS">ARRIVED</tag0032000A>
+    <tag0032000C len="4" tag="0032000C" vr="CS">MED</tag0032000C>
+    <tag00321030 len="40" tag="00321030" vr="LO">MR prostaat kanker detectie_mc MCAPRODET</tag00321030>
+    <tag00321060 len="30" tag="00321060" vr="LO">MR prostaat kanker detectie_mc</tag00321060>
+    <tag00330010 len="32" tag="00330010" vr="LO">MITRA OBJECT UTF8 ATTRIBUTES 1.0</tag00330010>
+    <tag00400244 len="8" tag="00400244" vr="DA">20120222</tag00400244>
+    <tag00400245 len="14" tag="00400245" vr="TM">091218.156000</tag00400245>
+    <tag00400254 len="30" tag="00400254" vr="LO">MR prostaat kanker detectie_mc</tag00400254>
+    <tag00400280 len="0" tag="00400280" vr="ST"/>
+    <tag00510010 len="18" tag="00510010" vr="LO">SIEMENS MR HEADER</tag00510010>
+    <tag00511008 len="12" tag="00511008" vr="OB">49\4D\41\47\45\20\4E\55\4D\20\34\20</tag00511008>
+    <tag00511009 len="4" tag="00511009" vr="OB">31\2E\30\20</tag00511009>
+    <tag0051100B len="8" tag="0051100B" vr="OB">38\34\70\2A\31\32\38\73</tag0051100B>
+    <tag0051100F len="12" tag="0051100F" vr="OB">42\4F\31\2C\32\3B\53\50\35\2C\36\20</tag0051100F>
+    <tag00511013 len="4" tag="00511013" vr="OB">2B\4C\50\48</tag00511013>
+</dicom>

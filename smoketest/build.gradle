@@ -30,13 +30,26 @@ sourceSets {
     }
 }
 
+// match ci/run-harness.sh, sort is critical
+def engineHome = project(':server').file('setup')
+def engineJars = files({
+    fileTree(engineHome) {
+        include 'extensions/**/*.jar'
+        include 'server-lib/**/*.jar'
+    }.files.sort { it.path }
+})
+
 // The root convention applies useJUnit() to every Test task; this module is JUnit 5.
 tasks.named('test') {
     useJUnitPlatform()
     // Only run our tests if a live server URL is provided
     // `./gradlew :smoketest:test -Doie.baseUrl=https://localhost:8443`
     onlyIf { System.getProperty('oie.baseUrl') != null }
+    // The thing under test is a running server, no incremental build is possible.
+    outputs.upToDateWhen { false }
     systemProperties System.getProperties().findAll { it.key.toString().startsWith('oie.') }
+    // Engine jars first, harness classes and fixtures last, as in the container.
+    classpath = engineJars + classpath
 }
 
 tasks.named('jar', Jar) {

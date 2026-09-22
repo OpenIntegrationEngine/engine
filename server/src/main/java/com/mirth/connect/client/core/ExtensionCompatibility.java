@@ -7,7 +7,7 @@ package com.mirth.connect.client.core;
 
 import java.util.regex.Pattern;
 
-/** Shared by the launcher and engine; must not depend on engine or third-party classes. */
+/** Numeric extension API and legacy engine release compatibility. */
 public final class ExtensionCompatibility {
     // Independent of the product release. See docs/extension-compatibility.md before changing.
     public static final String API_VERSION = "1.0.0";
@@ -17,11 +17,11 @@ public final class ExtensionCompatibility {
 
     private ExtensionCompatibility() {}
 
-    public static boolean isCompatible(String mirthVersions, String minExtensionApiVersion,
+    public static boolean isCompatible(String mirthVersions, String minimumApiVersion,
             String serverVersion) {
-        if (minExtensionApiVersion != null) {
+        if (minimumApiVersion != null) {
             // An invalid explicit requirement must never fall back to the legacy release check.
-            return isApiCompatible(minExtensionApiVersion, API_VERSION);
+            return isApiCompatible(minimumApiVersion, API_VERSION);
         }
 
         if (mirthVersions == null || serverVersion == null) {

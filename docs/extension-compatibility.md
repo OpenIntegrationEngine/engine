@@ -169,19 +169,13 @@ check completely. A future API requirement still rejects the extension even
 if the legacy engine release matches. Every descriptor in the ZIP must pass
 its own checks or the entire archive is rejected.
 
-If you already use `<minExtensionApiVersion>1.0.0</minExtensionApiVersion>`, it
-remains supported. To migrate, remove that element and add the corresponding
-`engine-api` dependency. Declaring both is invalid. Plugin dependencies can
-also be added while retaining either the shorthand API requirement or legacy
-release matching.
-
 ### Supporting older engines
 
 Engines predating dependency-list support cannot read `dependencies`.
 Including legacy fields does **not** make the same archive compatible with
 those engines.
 If you need to support them, publish a separately identified legacy archive
-that omits `dependencies` and `minExtensionApiVersion` and retains its tested
+that omits `dependencies` and retains its tested
 `mirthVersion` list. Document and verify its plugin prerequisites separately.
 Do not claim an older release supports API 1.0.0 merely because your extension
 previously ran on it. To return an archive to legacy matching, remove the API
@@ -198,8 +192,7 @@ relative to it. Keep package-directory spelling and case unchanged when
 updating or uninstalling an extension. Archive paths that differ only by case
 are rejected to avoid filesystem-dependent results. Do not wrap the extension directory in another `extensions/`
 directory. Library declarations are direct children of the metadata root,
-not nested under a `libraries` element. Include directory entries before their
-files, as normal recursive ZIP packaging does:
+not nested under a `libraries` element. For example:
 
 ```bash
 zip -r example-extension-1.0.0.zip example/
@@ -239,9 +232,12 @@ or uninstall consumers first when intentionally removing their providers.
 Restart the server and Administrator to apply staged changes; staging does
 not unload classes from a running process.
 
-At startup, dependency checks run before extension libraries are admitted and
-before metadata is made available to the engine. Unsatisfied extensions are
-excluded, with diagnostics identifying the requirement. Disabled consumers
+At startup, the engine reads metadata with its normal XML serializer and checks
+dependencies before exposing extensions to engine and Administrator hooks.
+Unsatisfied extensions are excluded, with diagnostics identifying the requirement.
+The launcher discovers libraries for enabled extensions before these checks;
+libraries can therefore remain on the shared classpath even when their extension
+is rejected. This is an activation check, not classloader isolation. Disabled consumers
 still need valid declarations and engine compatibility, but their plugin
 requirements are checked when they are enabled. Compatibility metadata
 declares a requirement; it does not prove binary or runtime behavior.
@@ -268,9 +264,8 @@ not use a name. Unknown types, malformed declarations, duplicate requirements,
 self-dependencies, cycles, and ambiguous duplicate provider names are rejected.
 
 The engine check uses the `engine-api` dependency if present. Otherwise it uses
-a non-null `minExtensionApiVersion`, then legacy `mirthVersion` matching when
-the shorthand is absent or explicitly null. A list containing only plugin
-dependencies, or an empty list, never skips the engine check. Legacy matching
+legacy `mirthVersion` matching. A list containing only plugin dependencies, or
+an empty list, never skips the engine check. Legacy matching
 accepts exact comma-separated engine releases, ignoring the engine's fourth
 build component. Existing descriptors without the new declarations keep this
 behavior.

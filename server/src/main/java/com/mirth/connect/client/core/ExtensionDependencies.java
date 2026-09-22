@@ -5,7 +5,6 @@
 
 package com.mirth.connect.client.core;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -14,69 +13,39 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
+import java.util.function.Predicate;
 
-/** Shared dependency validation; must remain usable before engine classes are loaded. */
+import com.mirth.connect.model.MetaData;
+import com.mirth.connect.model.PluginMetaData;
+
+/** Validates engine compatibility and required plugins before extension activation. */
 public final class ExtensionDependencies {
     private ExtensionDependencies() {}
 
-    /** One descriptor in the proposed extension inventory. Identity is per descriptor. */
-    public static final class Extension {
-        private final String name;
-        private final boolean plugin;
-        private final String pluginVersion;
-        private final String mirthVersion;
-        private final String minExtensionApiVersion;
-        private final List<ExtensionDependency> dependencies;
-        private final boolean enabled;
-
-        public Extension(String name, boolean plugin, String pluginVersion, String mirthVersion,
-                String minExtensionApiVersion, List<ExtensionDependency> dependencies, boolean enabled) {
-            this.name = name;
-            this.plugin = plugin;
-            this.pluginVersion = pluginVersion;
-            this.mirthVersion = mirthVersion;
-            this.minExtensionApiVersion = minExtensionApiVersion;
-            this.dependencies = dependencies == null ? Collections.emptyList()
-                    : Collections.unmodifiableList(new ArrayList<>(dependencies));
-            this.enabled = enabled;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public boolean isPlugin() {
-            return plugin;
-        }
-
-        public boolean isEnabled() {
-            return enabled;
-        }
-    }
-
     /** Returns the first declaration or engine-compatibility error, or null on success. */
-    public static String getEngineError(Extension extension, String serverVersion) {
-        String minimumApiVersion = extension.minExtensionApiVersion;
-        boolean engineRequirement = false;
+    public static String getEngineError(MetaData extension, String serverVersion) {
+        String minimumApiVersion = null;
         Set<String> pluginRequirements = new HashSet<>();
 
-        for (ExtensionDependency dependency : extension.dependencies) {
-            if (dependency == null) {
+        for (Object declaration : dependencies(extension)) {
+            if (declaration == null) {
                 return "Dependency declaration must not be null.";
             }
+            if (!(declaration instanceof ExtensionDependency)) {
+                return "Dependency declaration must be a dependency element.";
+            }
+            ExtensionDependency dependency = (ExtensionDependency) declaration;
             if (!ExtensionCompatibility.isValidVersion(dependency.getMinVersion())) {
                 return "Dependency minVersion must be a numeric major.minor.patch version.";
             }
             if ("engine-api".equals(dependency.getType())) {
-                if (engineRequirement || extension.minExtensionApiVersion != null) {
+                if (minimumApiVersion != null) {
                     return "Declare the engine API requirement only once.";
                 }
                 if (dependency.getName() != null) {
                     return "An engine-api dependency must not declare a name.";
                 }
-                engineRequirement = true;
                 minimumApiVersion = dependency.getMinVersion();
             } else if ("plugin".equals(dependency.getType())) {
                 String name = dependency.getName();
@@ -86,7 +55,7 @@ public final class ExtensionDependencies {
                 if (!pluginRequirements.add(name)) {
                     return "Plugin dependency '" + name + "' is declared more than once.";
                 }
-                if (extension.plugin && name.equals(extension.name)) {
+                if (extension instanceof PluginMetaData && name.equals(extension.getName())) {
                     return "A plugin cannot depend on itself: '" + name + "'.";
                 }
             } else {
@@ -94,110 +63,111 @@ public final class ExtensionDependencies {
             }
         }
 
-        if (!ExtensionCompatibility.isCompatible(extension.mirthVersion, minimumApiVersion, serverVersion)) {
+        if (!ExtensionCompatibility.isCompatible(extension.getMirthVersion(), minimumApiVersion, serverVersion)) {
             return minimumApiVersion == null
-                    ? "The engine release does not match mirthVersion '" + extension.mirthVersion + "'."
+                    ? "The engine release does not match mirthVersion '" + extension.getMirthVersion() + "'."
                     : "Requires engine API '" + minimumApiVersion + "' with the same major version; current API is '"
                             + ExtensionCompatibility.API_VERSION + "'.";
         }
         return null;
     }
 
-    /**
-     * Checks the complete inventory. Disabled descriptors retain declaration/engine checks, but
-     * only enabled consumers require their plugins to be available. Results follow inventory order.
-     */
-    public static Map<Extension, String> validate(Collection<Extension> extensions, String serverVersion) {
-        List<Extension> inventory = new ArrayList<>(extensions);
-        Map<Extension, String> errors = new HashMap<>();
-        Map<String, Extension> plugins = new HashMap<>();
+    /** Disabled consumers retain declaration/engine checks, but do not require their plugins. */
+    public static Map<MetaData, String> validate(Collection<MetaData> extensions, String serverVersion,
+            Predicate<String> enabled) {
+        List<MetaData> inventory = new ArrayList<>(extensions);
+        Map<MetaData, String> errors = new HashMap<>();
+        Map<String, MetaData> plugins = new HashMap<>();
         Set<String> duplicateNames = new HashSet<>();
+        Set<MetaData> enabledExtensions = new HashSet<>();
 
-        for (Extension extension : inventory) {
+        for (MetaData extension : inventory) {
             String error = getEngineError(extension, serverVersion);
             if (error != null) {
                 errors.put(extension, error);
             }
-            if (extension.plugin && plugins.putIfAbsent(extension.name, extension) != null) {
-                duplicateNames.add(extension.name);
+            if (extension instanceof PluginMetaData && plugins.putIfAbsent(extension.getName(), extension) != null) {
+                duplicateNames.add(extension.getName());
             }
-        }
-        for (Extension extension : inventory) {
-            if (extension.plugin && duplicateNames.contains(extension.name)) {
-                errors.put(extension, "More than one plugin declares the name '" + extension.name + "'.");
+            if (enabled.test(extension.getName())) {
+                enabledExtensions.add(extension);
             }
         }
 
-        Map<Extension, List<Extension>> consumers = new HashMap<>();
-        Map<Extension, Integer> remaining = new HashMap<>();
-        for (Extension extension : inventory) {
-            remaining.put(extension, 0);
-            if (!extension.enabled || errors.containsKey(extension)) {
+        // Check direct requirements first, so a missing provider inside a cycle is still reported.
+        for (MetaData extension : inventory) {
+            if (extension instanceof PluginMetaData && duplicateNames.contains(extension.getName())) {
+                errors.put(extension, "More than one plugin declares the name '" + extension.getName() + "'.");
+            }
+            if (!enabledExtensions.contains(extension) || errors.containsKey(extension)) {
                 continue;
             }
-            for (ExtensionDependency dependency : extension.dependencies) {
+            for (ExtensionDependency dependency : dependencies(extension)) {
                 if (!"plugin".equals(dependency.getType())) {
                     continue;
                 }
                 String name = dependency.getName();
-                Extension provider = plugins.get(name);
+                MetaData provider = plugins.get(name);
                 String error = null;
                 if (provider == null) {
                     error = "Required plugin '" + name + "' is not installed.";
                 } else if (duplicateNames.contains(name)) {
                     error = "Required plugin name '" + name + "' is ambiguous.";
-                } else if (!provider.enabled) {
+                } else if (!enabledExtensions.contains(provider)) {
                     error = "Required plugin '" + name + "' is disabled.";
-                } else if (!ExtensionCompatibility.isApiCompatible(dependency.getMinVersion(), provider.pluginVersion)) {
+                } else if (!ExtensionCompatibility.isApiCompatible(dependency.getMinVersion(), provider.getPluginVersion())) {
                     error = "Required plugin '" + name + "' needs version '" + dependency.getMinVersion()
-                            + "' or later with the same major version; installed version is '" + provider.pluginVersion + "'.";
+                            + "' or later with the same major version; installed version is '" + provider.getPluginVersion() + "'.";
                 }
                 if (error != null) {
                     errors.put(extension, error);
                     break;
                 }
-                consumers.computeIfAbsent(provider, key -> new ArrayList<>()).add(extension);
-                remaining.put(extension, remaining.get(extension) + 1);
             }
         }
 
-        // Resolve providers before consumers. Failed providers propagate immediately, including
-        // into cycles. Any nodes left afterward belong to, or depend on, a dependency cycle.
-        Queue<Extension> ready = new ArrayDeque<>();
-        Set<Extension> resolved = new HashSet<>();
-        for (Extension extension : inventory) {
-            if (errors.containsKey(extension) || remaining.get(extension) == 0) {
-                ready.add(extension);
+        Set<MetaData> visiting = new HashSet<>();
+        Set<MetaData> checked = new HashSet<>();
+        for (MetaData extension : inventory) {
+            if (enabledExtensions.contains(extension)) {
+                canLoad(extension, plugins, errors, visiting, checked);
             }
         }
-        while (!ready.isEmpty()) {
-            Extension provider = ready.remove();
-            if (!resolved.add(provider)) {
-                continue;
-            }
-            for (Extension consumer : consumers.getOrDefault(provider, Collections.emptyList())) {
-                if (errors.containsKey(provider) && !errors.containsKey(consumer)) {
-                    errors.put(consumer, "Required plugin '" + provider.name
-                            + "' cannot be loaded; see its compatibility or dependency error.");
-                    ready.add(consumer);
-                }
-                int count = remaining.get(consumer) - 1;
-                remaining.put(consumer, count);
-                if (count == 0) {
-                    ready.add(consumer);
-                }
-            }
-        }
-
-        Map<Extension, String> orderedErrors = new LinkedHashMap<>();
-        for (Extension extension : inventory) {
-            if (!resolved.contains(extension)) {
-                errors.put(extension, "Circular plugin dependencies prevent loading '" + extension.name + "'.");
-            }
+        Map<MetaData, String> orderedErrors = new LinkedHashMap<>();
+        for (MetaData extension : inventory) {
             if (errors.containsKey(extension)) {
                 orderedErrors.put(extension, errors.get(extension));
             }
         }
         return orderedErrors;
+    }
+
+    private static boolean canLoad(MetaData extension, Map<String, MetaData> plugins,
+            Map<MetaData, String> errors, Set<MetaData> visiting, Set<MetaData> checked) {
+        if (errors.containsKey(extension)) {
+            return false;
+        }
+        if (checked.contains(extension)) {
+            return true;
+        }
+        if (!visiting.add(extension)) {
+            errors.put(extension, "Circular plugin dependencies prevent loading '" + extension.getName() + "'.");
+            return false;
+        }
+        for (ExtensionDependency dependency : dependencies(extension)) {
+            if ("plugin".equals(dependency.getType())
+                    && !canLoad(plugins.get(dependency.getName()), plugins, errors, visiting, checked)) {
+                errors.putIfAbsent(extension, "Required plugin '" + dependency.getName()
+                        + "' cannot be loaded; see its compatibility or dependency error.");
+                break;
+            }
+        }
+        visiting.remove(extension);
+        checked.add(extension);
+        return !errors.containsKey(extension);
+    }
+
+    private static List<ExtensionDependency> dependencies(MetaData extension) {
+        return extension.getDependencies() == null ? Collections.emptyList() : extension.getDependencies();
     }
 }

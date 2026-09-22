@@ -7,12 +7,19 @@ package com.mirth.connect.client.core;
 
 import java.io.Serializable;
 
+import com.thoughtworks.xstream.annotations.XStreamAlias;
+import com.thoughtworks.xstream.annotations.XStreamAsAttribute;
+
 /** A required engine API or plugin version declared by an extension. */
+@XStreamAlias("dependency")
 public class ExtensionDependency implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    @XStreamAsAttribute
     private String type;
+    @XStreamAsAttribute
     private String name;
+    @XStreamAsAttribute
     private String minVersion;
 
     public ExtensionDependency() {}

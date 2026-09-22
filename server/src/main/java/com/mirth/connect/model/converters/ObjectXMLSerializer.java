@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
+import com.mirth.connect.client.core.ExtensionDependency;
 import com.mirth.connect.donkey.model.channel.DestinationConnectorProperties;
 import com.mirth.connect.donkey.util.DonkeyElement;
 import com.mirth.connect.donkey.util.DonkeyElement.DonkeyElementException;
@@ -113,6 +114,7 @@ public class ObjectXMLSerializer extends XStreamSerializer {
         DeployedChannelInfo.class,
         DriverInfo.class,
         EventFilter.class,
+        ExtensionDependency.class,
         ExtensionLibrary.class,
         Filter.class,
         MessageFilter.class,
@@ -167,7 +169,6 @@ public class ObjectXMLSerializer extends XStreamSerializer {
         processAnnotations(annotatedClasses);
         getXStream().registerConverter(new MapContentConverter(getXStream().getMapper()));
         getXStream().registerConverter(new PluginMetaDataConverter(getXStream().getMapper()));
-        getXStream().registerLocalConverter(MetaData.class, "dependencies", new ExtensionDependenciesConverter());
         getXStream().registerConverter(new JavaScriptObjectConverter(getXStream().getMapper()));
         getXStream().registerConverter(new ThrowableConverter(getXStream().getMapper()));
         getXStream().registerConverter(new FilterTransformerElementsConverter(getXStream().getMapper()));

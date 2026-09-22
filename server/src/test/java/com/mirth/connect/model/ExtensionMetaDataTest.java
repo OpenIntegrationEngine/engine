@@ -6,9 +6,8 @@
 package com.mirth.connect.model;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -17,6 +16,7 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import com.mirth.connect.client.core.ExtensionDependency;
+import com.mirth.connect.client.core.ExtensionDependencies;
 import com.mirth.connect.model.converters.ObjectXMLSerializer;
 
 public class ExtensionMetaDataTest {
@@ -41,58 +41,31 @@ public class ExtensionMetaDataTest {
     }
 
     @Test
-    public void dependencySchemaRejectsTyposAndNestedFields() {
-        for (String dependency : new String[] {
-                "<dependency type=\"plugin\" name=\"Provider\" minVersion=\"1.0.0\" optional=\"true\"/>",
-                "<dependency><type>plugin</type><name>Provider</name><minVersion>1.0.0</minVersion></dependency>",
-                "<plugin name=\"Provider\" minVersion=\"1.0.0\"/>",
-                "<dependency type=\"engine-api\" minVersion=\"1.0.0\">unexpected</dependency>",
-                "unexpected", "<null/>" }) {
-            for (String root : new String[] { "pluginMetaData", "connectorMetaData" }) {
-                String xml = "<" + root + "><dependencies>" + dependency + "</dependencies></" + root + ">";
-                assertThrows(xml, RuntimeException.class, () -> serializer.deserialize(xml, MetaData.class));
+    public void absentEmptyAndNullListsRetainLegacyMatching() {
+        for (String root : new String[] { "pluginMetaData", "connectorMetaData" }) {
+            for (String dependencies : new String[] { "", "<dependencies/>", "<dependencies class=\"null\"/>" }) {
+                String xml = "<" + root + "><mirthVersion>4.6.0</mirthVersion>" + dependencies + "</" + root + ">";
+                MetaData metadata = serializer.deserialize(xml, MetaData.class);
+                assertNull(ExtensionDependencies.getEngineError(metadata, "4.6.0.123"));
+                assertNotNull(ExtensionDependencies.getEngineError(metadata, "4.7.0"));
             }
         }
     }
 
     @Test
-    public void apiLockRoundTripsForPluginsAndConnectors() {
-        for (MetaData metadata : new MetaData[] { new PluginMetaData(), new ConnectorMetaData() }) {
-            metadata.setName("Custom extension");
-            metadata.setMinExtensionApiVersion("1.0.0");
-            String xml = serializer.serialize(metadata);
-            assertTrue(xml.contains("<minExtensionApiVersion>1.0.0</minExtensionApiVersion>"));
-            MetaData restored = serializer.deserialize(xml, MetaData.class);
-            assertEquals(metadata.getClass(), restored.getClass());
-            assertEquals("1.0.0", restored.getMinExtensionApiVersion());
-            assertNull(restored.getMirthVersion());
-        }
-    }
-
-    @Test
-    public void legacyAndEmptyApiLocksRemainDistinctAfterDeserialization() {
+    public void malformedRequirementsCannotFallBackToMatchingRelease() {
         for (String root : new String[] { "pluginMetaData", "connectorMetaData" }) {
-            String legacyXml = "<" + root + "><mirthVersion>4.5.2</mirthVersion></" + root + ">";
-            MetaData legacy = serializer.deserialize(legacyXml, MetaData.class);
-            assertNull(legacy.getMinExtensionApiVersion());
-            assertEquals("4.5.2", legacy.getMirthVersion());
-            String emptyXml = "<" + root + "><minExtensionApiVersion/></" + root + ">";
-            assertEquals("", serializer.deserialize(emptyXml, MetaData.class).getMinExtensionApiVersion());
-        }
-    }
-
-    @Test
-    public void explicitNullApiLocksRoundTripAsAbsentForPluginsAndConnectors() {
-        for (String root : new String[] { "pluginMetaData", "connectorMetaData" }) {
-            String xml = "<" + root + "><mirthVersion>4.5.2</mirthVersion>"
-                    + "<minExtensionApiVersion class=\"null\"/></" + root + ">";
-            MetaData metadata = serializer.deserialize(xml, MetaData.class);
-            assertNull(metadata.getMinExtensionApiVersion());
-            String serialized = serializer.serialize(metadata);
-            assertFalse(serialized.contains("minExtensionApiVersion"));
-            MetaData restored = serializer.deserialize(serialized, MetaData.class);
-            assertNull(restored.getMinExtensionApiVersion());
-            assertEquals("4.5.2", restored.getMirthVersion());
+            for (String dependency : new String[] {
+                    "<dependency type=\"engine-api\"/>",
+                    "<dependency type=\"engine-api\" minVersion=\"invalid\"/>",
+                    "<dependency type=\"engine\" minVersion=\"1.0.0\"/>",
+                    "<dependency type=\"plugin\" minVersion=\"1.0.0\"/>",
+                    "<null/>", "<string>not a dependency</string>" }) {
+                String xml = "<" + root + "><mirthVersion>4.6.0</mirthVersion><dependencies>"
+                        + dependency + "</dependencies></" + root + ">";
+                MetaData metadata = serializer.deserialize(xml, MetaData.class);
+                assertNotNull(xml, ExtensionDependencies.getEngineError(metadata, "4.6.0"));
+            }
         }
     }
 }

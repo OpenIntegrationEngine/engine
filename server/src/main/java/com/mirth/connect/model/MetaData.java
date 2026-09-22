@@ -28,7 +28,6 @@ public abstract class MetaData {
     private String name;
     private String author;
     private String mirthVersion;
-    private String minExtensionApiVersion;
     private List<ExtensionDependency> dependencies;
     private String pluginVersion;
     private String url;
@@ -73,15 +72,6 @@ public abstract class MetaData {
 
     public void setMirthVersion(String mirthVersion) {
         this.mirthVersion = mirthVersion;
-    }
-
-    /** Minimum OIE extension API version; when present, replaces the release version check. */
-    public String getMinExtensionApiVersion() {
-        return minExtensionApiVersion;
-    }
-
-    public void setMinExtensionApiVersion(String minExtensionApiVersion) {
-        this.minExtensionApiVersion = minExtensionApiVersion;
     }
 
     public List<ExtensionDependency> getDependencies() {

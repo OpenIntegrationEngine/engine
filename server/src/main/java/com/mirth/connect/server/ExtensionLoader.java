@@ -32,7 +32,6 @@ import org.apache.logging.log4j.Logger;
 import com.google.inject.Inject;
 import com.mirth.connect.client.core.ControllerException;
 import com.mirth.connect.client.core.ExtensionDependencies;
-import com.mirth.connect.client.core.ExtensionDependencies.Extension;
 import com.mirth.connect.client.core.PropertiesConfigurationUtil;
 import com.mirth.connect.model.ConnectorMetaData;
 import com.mirth.connect.model.MetaData;
@@ -57,10 +56,16 @@ public class ExtensionLoader {
     private Map<String, ConnectorMetaData> connectorProtocolsMap = new HashMap<String, ConnectorMetaData>();
     private Map<String, MetaData> invalidMetaDataMap = new HashMap<String, MetaData>();
     private boolean loadedExtensions = false;
-    private ObjectXMLSerializer serializer = ObjectXMLSerializer.getInstance();
+    private final ObjectXMLSerializer serializer;
     private static Logger logger = LogManager.getLogger(ExtensionLoader.class);
 
-    private ExtensionLoader() {}
+    private ExtensionLoader() {
+        this(ObjectXMLSerializer.getInstance());
+    }
+
+    public ExtensionLoader(ObjectXMLSerializer serializer) {
+        this.serializer = serializer;
+    }
 
     public Map<String, ConnectorMetaData> getConnectorMetaData() {
         loadExtensions();
@@ -145,7 +150,7 @@ public class ExtensionLoader {
     /** Checks declarations and the engine requirement; plugin requirements need the full inventory. */
     public boolean isExtensionCompatible(MetaData metaData) {
         try {
-            return ExtensionDependencies.getEngineError(describe(metaData, true), getServerVersion()) == null;
+            return ExtensionDependencies.getEngineError(metaData, getServerVersion()) == null;
         } catch (Exception e) {
             logger.error("An error occurred while attempting to determine extension compatibility.", e);
             return false;
@@ -154,29 +159,24 @@ public class ExtensionLoader {
 
     /** Validates a complete inventory, including providers rejected by their own requirements. */
     public Map<MetaData, String> getCompatibilityErrors(Collection<MetaData> metadata, Predicate<String> enabled) throws ControllerException {
-        Map<Extension, MetaData> descriptors = new LinkedHashMap<>();
+        List<MetaData> candidates = new ArrayList<>();
+        Map<String, Boolean> statuses = new HashMap<>();
         Map<MetaData, String> errors = new LinkedHashMap<>();
         for (MetaData extension : metadata) {
             try {
-                descriptors.put(describe(extension, enabled.test(extension.getName())), extension);
+                statuses.computeIfAbsent(extension.getName(), enabled::test);
+                candidates.add(extension);
             } catch (Exception e) {
-                errors.put(extension, "Could not read extension status or metadata: " + e.getMessage());
+                errors.put(extension, "Could not read extension status: " + e.getMessage());
             }
         }
         try {
-            for (Map.Entry<Extension, String> error : ExtensionDependencies.validate(descriptors.keySet(), getServerVersion()).entrySet()) {
-                errors.put(descriptors.get(error.getKey()), error.getValue());
-            }
+            errors.putAll(ExtensionDependencies.validate(candidates, getServerVersion(), statuses::get));
         } catch (Exception e) {
             logger.error("An error occurred while attempting to determine extension compatibility.", e);
             throw new ControllerException("Could not determine extension compatibility.", e);
         }
         return errors;
-    }
-
-    private Extension describe(MetaData metadata, boolean enabled) {
-        return new Extension(metadata.getName(), metadata instanceof PluginMetaData, metadata.getPluginVersion(),
-                metadata.getMirthVersion(), metadata.getMinExtensionApiVersion(), metadata.getDependencies(), enabled);
     }
 
     /** Reads the same package/descriptor layout as the launcher, without including pending installs. */
@@ -265,7 +265,7 @@ public class ExtensionLoader {
         }
     }
 
-    private String getServerVersion() throws FileNotFoundException, ConfigurationException {
+    protected String getServerVersion() throws FileNotFoundException, ConfigurationException {
         PropertiesConfiguration versionConfig = PropertiesConfigurationUtil.create();
         
         InputStream versionPropertiesStream = null;

@@ -17,12 +17,9 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
 import java.util.Properties;
-import java.util.jar.JarFile;
+import java.util.function.Predicate;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -36,9 +33,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-import com.mirth.connect.client.core.ExtensionDependencies;
-import com.mirth.connect.client.core.ExtensionDependencies.Extension;
-import com.mirth.connect.client.core.ExtensionDependency;
 import com.mirth.connect.server.extprops.ExtensionStatuses;
 import com.mirth.connect.server.extprops.LoggerWrapper;
 
@@ -55,7 +49,6 @@ public class MirthLauncher {
     private static LoggerWrapper logger;
 
     public static void main(String[] args) {
-        JarFile mirthClientCoreJarFile = null;
         try {
             Log4jMigrations.migrateConfiguration(new File(LOG4J_PROPERTIES_FILE));
 
@@ -106,14 +99,8 @@ public class MirthLauncher {
 
             ManifestEntry[] manifest = manifestList.toArray(new ManifestEntry[manifestList.size()]);
 
-            // Get the current server version
-            mirthClientCoreJarFile = new JarFile(mirthClientCoreJar.getName());
-            Properties versionProperties = new Properties();
-            versionProperties.load(mirthClientCoreJarFile.getInputStream(mirthClientCoreJarFile.getJarEntry("version.properties")));
-            String currentVersion = versionProperties.getProperty("mirth.version");
-
             addManifestToClasspath(manifest, classpathUrls);
-            addExtensionsToClasspath(classpathUrls, currentVersion);
+            addExtensionsToClasspath(classpathUrls, new File(EXTENSIONS_DIR), ExtensionStatuses.getInstance()::isEnabled);
             URLClassLoader classLoader = new URLClassLoader(classpathUrls.toArray(new URL[classpathUrls.size()]), Thread.currentThread().getContextClassLoader());
             Class<?> mirthClass = classLoader.loadClass("com.mirth.connect.server.Mirth");
             Thread mirthThread = (Thread) mirthClass.newInstance();
@@ -121,14 +108,6 @@ public class MirthLauncher {
             mirthThread.start();
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if (mirthClientCoreJarFile != null) {
-                    mirthClientCoreJarFile.close();
-                }
-            } catch (IOException e) {
-                logger.error("Error closing mirthClientCoreJarFile.", e);
-            }
         }
     }
 
@@ -234,23 +213,15 @@ public class MirthLauncher {
         }
     }
 
-    private static void addExtensionsToClasspath(List<URL> urls, String currentVersion) throws Exception {
-        addExtensionsToClasspath(urls, currentVersion, new File(EXTENSIONS_DIR), ExtensionStatuses.getInstance()::isEnabled);
-    }
-
-    static void addExtensionsToClasspath(List<URL> urls, String currentVersion, File extensionPath,
-            Predicate<String> enabled) throws Exception {
+    // Compatibility is checked by ExtensionLoader using the engine's metadata serializer.
+    static void addExtensionsToClasspath(List<URL> urls, File extensionPath, Predicate<String> enabled) {
         FileFilter extensionFileFilter = new NameFileFilter(new String[] { "plugin.xml",
                 "source.xml", "destination.xml" }, IOCase.INSENSITIVE);
-        File[] directories = extensionPath.listFiles((FileFilter) FileFilterUtils.directoryFileFilter());
+        File[] directories = extensionPath.listFiles(File::isDirectory);
         if (directories == null) {
             logger.warn("no extensions found");
             return;
         }
-
-        // Resolve the complete inventory before adding libraries, regardless of filesystem order.
-        Map<Extension, Element> metadata = new LinkedHashMap<>();
-        Map<Extension, File> paths = new LinkedHashMap<>();
         for (File directory : directories) {
             if ("install_temp".equals(directory.getName()) || directory.getName().startsWith(".install-")) {
                 continue;
@@ -265,146 +236,43 @@ public class MirthLauncher {
                     dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
                     Document document = dbf.newDocumentBuilder().parse(extensionFile);
                     Element root = document.getDocumentElement();
-                    String name = getMetadataValue(root, "name");
+                    String name = getExtensionName(root);
                     if (name == null || name.trim().isEmpty()) {
                         throw new IllegalArgumentException("Extension metadata must declare a name");
                     }
-                    Extension extension = readExtension(root, enabled.test(name));
-                    metadata.put(extension, root);
-                    paths.put(extension, directory);
+                    if (!enabled.test(name)) {
+                        continue;
+                    }
+                    for (Node child = root.getFirstChild(); child != null; child = child.getNextSibling()) {
+                        if (!(child instanceof Element) || !"library".equals(child.getNodeName())) {
+                            continue;
+                        }
+                        Element library = (Element) child;
+                        String type = library.getAttribute("type");
+                        if (type.equalsIgnoreCase("server") || type.equalsIgnoreCase("shared")) {
+                            File pathFile = new File(directory, library.getAttribute("path"));
+                            if (pathFile.exists()) {
+                                logger.trace("adding library to classpath: " + pathFile.getAbsolutePath());
+                                urls.add(pathFile.toURI().toURL());
+                            } else {
+                                logger.error("could not locate library: " + pathFile.getAbsolutePath());
+                            }
+                        }
+                    }
                 } catch (Exception e) {
                     logger.error("failed to parse extension metadata: " + extensionFile.getAbsolutePath(), e);
                 }
             }
         }
-
-        Map<Extension, String> errors = ExtensionDependencies.validate(metadata.keySet(), currentVersion);
-        for (Map.Entry<Extension, Element> entry : metadata.entrySet()) {
-            Extension extension = entry.getKey();
-            if (errors.containsKey(extension)) {
-                logger.error("could not load extension " + extension.getName() + ": " + errors.get(extension));
-                continue;
-            }
-            if (!extension.isEnabled()) {
-                continue;
-            }
-            for (Node child = entry.getValue().getFirstChild(); child != null; child = child.getNextSibling()) {
-                if (!(child instanceof Element) || !"library".equals(child.getNodeName())) {
-                    continue;
-                }
-                Element library = (Element) child;
-                String type = library.getAttribute("type");
-                if (type.equalsIgnoreCase("server") || type.equalsIgnoreCase("shared")) {
-                    File pathFile = new File(paths.get(extension), library.getAttribute("path"));
-                    if (pathFile.exists()) {
-                        logger.trace("adding library to classpath: " + pathFile.getAbsolutePath());
-                        urls.add(pathFile.toURI().toURL());
-                    } else {
-                        logger.error("could not locate library: " + pathFile.getAbsolutePath());
-                    }
-                }
-            }
-        }
     }
 
-    static boolean isExtensionCompatible(Element metadata, String currentVersion) {
-        try {
-            return ExtensionDependencies.getEngineError(readExtension(metadata, true), currentVersion) == null;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
-    }
-
-    static Extension readExtension(Element metadata, boolean enabled) {
-        String root = metadata.getNodeName();
-        if (!"pluginMetaData".equals(root) && !"connectorMetaData".equals(root)) {
-            throw new IllegalArgumentException("Unknown extension metadata type: " + root);
-        }
-        String metadataType = metadata.hasAttribute("resolves-to") ? metadata.getAttribute("resolves-to") : metadata.getAttribute("class");
-        String className = "com.mirth.connect.model." + ("pluginMetaData".equals(root) ? "PluginMetaData" : "ConnectorMetaData");
-        if (!metadataType.isEmpty() && !root.equals(metadataType) && !className.equals(metadataType)) {
-            throw new IllegalArgumentException("Extension metadata type must match its root element");
-        }
-        List<ExtensionDependency> dependencies = new ArrayList<>();
-        boolean foundDependencies = false;
+    private static String getExtensionName(Element metadata) {
         for (Node child = metadata.getFirstChild(); child != null; child = child.getNextSibling()) {
-            if (!(child instanceof Element) || !"dependencies".equals(child.getNodeName())) {
-                continue;
-            }
-            if (foundDependencies) {
-                throw new IllegalArgumentException("Duplicate dependencies list");
-            }
-            foundDependencies = true;
-            Element list = (Element) child;
-            if (isNull(list)) {
-                continue;
-            }
-            for (Node item = list.getFirstChild(); item != null; item = item.getNextSibling()) {
-                if (!(item instanceof Element)) {
-                    if ((item.getNodeType() == Node.TEXT_NODE || item.getNodeType() == Node.CDATA_SECTION_NODE)
-                            && !item.getNodeValue().trim().isEmpty()) {
-                        throw new IllegalArgumentException("Dependencies must contain dependency elements");
-                    }
-                    continue;
-                }
-                Element dependency = (Element) item;
-                if (!"dependency".equals(dependency.getNodeName())) {
-                    throw new IllegalArgumentException("Unknown dependency element: " + dependency.getNodeName());
-                }
-                for (int i = 0; i < dependency.getAttributes().getLength(); i++) {
-                    String name = dependency.getAttributes().item(i).getNodeName();
-                    if (!"type".equals(name) && !"name".equals(name) && !"minVersion".equals(name)) {
-                        throw new IllegalArgumentException("Unknown dependency attribute: " + name);
-                    }
-                }
-                for (Node value = dependency.getFirstChild(); value != null; value = value.getNextSibling()) {
-                    if (value instanceof Element || ((value.getNodeType() == Node.TEXT_NODE
-                            || value.getNodeType() == Node.CDATA_SECTION_NODE) && !value.getNodeValue().trim().isEmpty())) {
-                        throw new IllegalArgumentException("Dependency values must be attributes");
-                    }
-                }
-                dependencies.add(new ExtensionDependency(attribute(dependency, "type"),
-                        attribute(dependency, "name"), attribute(dependency, "minVersion")));
+            if (child instanceof Element && "name".equals(child.getNodeName())) {
+                return child.getTextContent();
             }
         }
-        return new Extension(getMetadataValue(metadata, "name"), "pluginMetaData".equals(root),
-                getMetadataValue(metadata, "pluginVersion"), getMetadataValue(metadata, "mirthVersion"),
-                getMetadataValue(metadata, "minExtensionApiVersion"), dependencies, enabled);
-    }
-
-    private static String attribute(Element element, String name) {
-        return element.hasAttribute(name) ? element.getAttribute(name) : null;
-    }
-
-    private static boolean isNull(Element element) {
-        String type = element.hasAttribute("resolves-to") ? element.getAttribute("resolves-to") : element.getAttribute("class");
-        return "null".equals(type) || "com.thoughtworks.xstream.mapper.Mapper$Null".equals(type);
-    }
-
-    private static String getMetadataValue(Element metadata, String name) {
-        String result = null;
-        boolean found = false;
-        for (Node child = metadata.getFirstChild(); child != null; child = child.getNextSibling()) {
-            if (child instanceof Element && name.equals(child.getNodeName())) {
-                if (found) {
-                    throw new IllegalArgumentException("Duplicate metadata field: " + name);
-                }
-                found = true;
-                // Match XStream's null and scalar text handling without loading XStream here.
-                Element element = (Element) child;
-                if (isNull(element)) {
-                    continue;
-                }
-                StringBuilder text = new StringBuilder();
-                for (Node value = child.getFirstChild(); value != null; value = value.getNextSibling()) {
-                    if (value.getNodeType() == Node.TEXT_NODE || value.getNodeType() == Node.CDATA_SECTION_NODE) {
-                        text.append(value.getNodeValue());
-                    }
-                }
-                result = text.toString();
-            }
-        }
-        return result;
+        return null;
     }
 
     private static void createAppdataDir(Properties mirthProperties) {

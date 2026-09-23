@@ -29,6 +29,7 @@ public class PasswordRequirements implements Serializable {
     private int gracePeriod;
     private int reusePeriod;
     private int reuseLimit;
+    private boolean allowDetailedAuthErrors;
 
     public PasswordRequirements() {
         this.minLength = 0;
@@ -42,6 +43,7 @@ public class PasswordRequirements implements Serializable {
         this.gracePeriod = 0;
         this.reusePeriod = 0;
         this.reuseLimit = 0;
+        this.allowDetailedAuthErrors = false;
     }
 
     public PasswordRequirements(int minLength, int minUpper, int minLower, int minNumeric, int minSpecial, int retryLimit, int lockoutPeriod, int expiration, int gracePeriod, int reusePeriod, int reuseLimit) {
@@ -56,6 +58,7 @@ public class PasswordRequirements implements Serializable {
         this.gracePeriod = gracePeriod;
         this.reusePeriod = reusePeriod;
         this.reuseLimit = reuseLimit;
+        this.allowDetailedAuthErrors = false;
     }
 
     public int getMinLength() {
@@ -144,5 +147,13 @@ public class PasswordRequirements implements Serializable {
 
     public void setReuseLimit(int reuseLimit) {
         this.reuseLimit = reuseLimit;
+    }
+
+    public boolean getAllowDetailedAuthErrors() {
+        return allowDetailedAuthErrors;
+    }
+
+    public void setAllowDetailedAuthErrors(boolean allowDetailedAuthErrors) {
+        this.allowDetailedAuthErrors = allowDetailedAuthErrors;
     }
 }

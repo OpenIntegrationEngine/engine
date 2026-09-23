@@ -9,12 +9,14 @@
 
 package com.mirth.connect.server.util;
 
+import org.apache.commons.configuration2.PropertiesConfiguration;
+
 import junit.framework.TestCase;
 
 import com.mirth.connect.client.core.ControllerException;
 import com.mirth.connect.model.PasswordRequirements;
 
-public class PasswordRequirementsTests extends TestCase {
+public class PasswordRequirementsTest extends TestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
@@ -78,5 +80,17 @@ public class PasswordRequirementsTests extends TestCase {
         PasswordRequirements req = new PasswordRequirements(15, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0);
         assertNotNull(PasswordRequirementsChecker.getInstance().doesPasswordMeetRequirements(null, "test", req));
         assertNull(PasswordRequirementsChecker.getInstance().doesPasswordMeetRequirements(null, "Th1$isAtestTEST*#", req));
+    }
+
+    public void testAllowDetailedAuthErrorsDefaultsToFalse() {
+        PasswordRequirements req = PasswordRequirementsChecker.getInstance().loadPasswordRequirements(new PropertiesConfiguration());
+        assertFalse(req.getAllowDetailedAuthErrors());
+    }
+
+    public void testAllowDetailedAuthErrorsHonorsProperty() {
+        PropertiesConfiguration properties = new PropertiesConfiguration();
+        properties.setProperty("password.allowdetailedautherrors", true);
+        PasswordRequirements req = PasswordRequirementsChecker.getInstance().loadPasswordRequirements(properties);
+        assertTrue(req.getAllowDetailedAuthErrors());
     }
 }

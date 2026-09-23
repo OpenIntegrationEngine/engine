@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +44,12 @@ import com.mirth.connect.server.util.StatementLock;
 public class DefaultUserController extends UserController {
     public static final String VACUUM_LOCK_PERSON_STATEMENT_ID = "User.vacuumPersonTable";
     public static final String VACUUM_LOCK_PREFERENCES_STATEMENT_ID = "User.vacuumPersonPreferencesTable";
+    private static final String INCORRECT_CREDENTIALS_MESSAGE = "Incorrect username or password.";
+    private static final String TIMING_EQUALIZATION_PASSWORD = "password used only to equalize authentication timing";
+
+    private final Object timingEqualizationLock = new Object();
+    private volatile String timingEqualizationHash;
+    private final AtomicBoolean timingEqualizationFailureLogged = new AtomicBoolean();
 
     private Logger logger = LogManager.getLogger(this.getClass());
     private ExtensionController extensionController = null;
@@ -301,15 +308,22 @@ public class DefaultUserController extends UserController {
             boolean authorized = false;
             Credentials credentials = null;
             LoginRequirementsChecker loginRequirementsChecker = null;
+            PasswordRequirements passwordRequirements = ControllerFactory.getFactory().createConfigurationController().getPasswordRequirements();
+            Digester digester = ControllerFactory.getFactory().createConfigurationController().getDigester();
 
             // Retrieve the matching User
             User validUser = getUser(null, username);
 
             if (validUser != null) {
-                Digester digester = ControllerFactory.getFactory().createConfigurationController().getDigester();
                 loginRequirementsChecker = new LoginRequirementsChecker(validUser);
                 if (loginRequirementsChecker.isUserLockedOut()) {
-                    return new LoginStatus(LoginStatus.Status.FAIL_LOCKED_OUT, "User account \"" + username + "\" has been locked. You may attempt to login again in " + loginRequirementsChecker.getPrintableStrikeTimeRemaining() + ".");
+                    equalizeAuthenticationTime(digester, plainPassword);
+
+                    if (passwordRequirements.getAllowDetailedAuthErrors()) {
+                        return new LoginStatus(LoginStatus.Status.FAIL_LOCKED_OUT, "User account \"" + username + "\" has been locked. You may attempt to login again in " + loginRequirementsChecker.getPrintableStrikeTimeRemaining() + ".");
+                    } else {
+                        return new LoginStatus(LoginStatus.Status.FAIL, INCORRECT_CREDENTIALS_MESSAGE);
+                    }
                 }
 
                 loginRequirementsChecker.resetExpiredStrikes();
@@ -322,14 +336,21 @@ public class DefaultUserController extends UserController {
                         if (Pre22PasswordChecker.checkPassword(plainPassword, credentials.getPassword())) {
                             checkOrUpdateUserPassword(validUser.getId(), plainPassword);
                             authorized = true;
+                        } else {
+                            // A pre-2.2 hash is checked with a cheap digest, so equalize the miss
+                            equalizeAuthenticationTime(digester, plainPassword);
                         }
                     } else {
                         authorized = digester.matches(plainPassword, credentials.getPassword());
                     }
+                } else {
+                    // The account exists but has never had a password set
+                    equalizeAuthenticationTime(digester, plainPassword);
                 }
+            } else {
+                equalizeAuthenticationTime(digester, plainPassword);
             }
 
-            PasswordRequirements passwordRequirements = ControllerFactory.getFactory().createConfigurationController().getPasswordRequirements();
             LoginStatus loginStatus = null;
 
             if (authorized) {
@@ -392,12 +413,12 @@ public class DefaultUserController extends UserController {
                 }
             } else {
                 LoginStatus.Status status = LoginStatus.Status.FAIL;
-                String failMessage = "Incorrect username or password.";
+                String failMessage = INCORRECT_CREDENTIALS_MESSAGE;
 
                 if (loginRequirementsChecker != null) {
                     loginRequirementsChecker.incrementStrikes();
 
-                    if (loginRequirementsChecker.isLockoutEnabled()) {
+                    if (loginRequirementsChecker.isLockoutEnabled() && passwordRequirements.getAllowDetailedAuthErrors()) {
                         if (loginRequirementsChecker.isUserLockedOut()) {
                             status = LoginStatus.Status.FAIL_LOCKED_OUT;
                             failMessage += " User account \"" + username + "\" has been locked. You may attempt to login again in " + loginRequirementsChecker.getPrintableStrikeTimeRemaining() + ".";
@@ -626,6 +647,43 @@ public class DefaultUserController extends UserController {
             logger.error("Could not delete preference: user id=" + id + ", name=" + name, e);
         } finally {
             StatementLock.getInstance(VACUUM_LOCK_PREFERENCES_STATEMENT_ID).readUnlock();
+        }
+    }
+
+    /**
+     * Performs a throwaway password digest so that a failed login costs roughly the same whether or
+     * not the username exists, and whether or not the account is locked out. The real digest is only
+     * reached for a valid, unlocked user, so without this the response time alone identifies which
+     * usernames are real regardless of what the response message says.
+     *
+     * Called on every path that skips the real digest: an unknown username, a locked account, an
+     * account with no stored credentials, and a failed pre-2.2 hash check.
+     *
+     * The throwaway hash is generated once from the live digester, so it follows the configured
+     * algorithm and iteration count rather than a value baked in here.
+     *
+     * ponytail: equalizes the digest only, not the extra credentials query a valid user costs.
+     * That gap measured under 1ms against a 237ms floor. Revisit if the digest cost ever drops
+     * far enough for a sub-millisecond difference to be readable.
+     */
+    private void equalizeAuthenticationTime(Digester digester, String plainPassword) {
+        try {
+            String hash = timingEqualizationHash;
+
+            if (hash == null) {
+                synchronized (timingEqualizationLock) {
+                    if (timingEqualizationHash == null) {
+                        timingEqualizationHash = digester.digest(TIMING_EQUALIZATION_PASSWORD);
+                    }
+                    hash = timingEqualizationHash;
+                }
+            }
+
+            digester.matches(plainPassword, hash);
+        } catch (Exception e) {
+            if (timingEqualizationFailureLogged.compareAndSet(false, true)) {
+                logger.warn("Unable to equalize authentication timing. Until this is resolved, the time taken to reject a login reveals whether the username exists. This is logged once per server run.", e);
+            }
         }
     }
 

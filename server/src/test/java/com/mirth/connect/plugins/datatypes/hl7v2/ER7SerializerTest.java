@@ -18,6 +18,7 @@ public class ER7SerializerTest {
 	private static ER7Serializer serializer;
 	private static ER7Serializer strictSerializer;
 	private static ER7Serializer strictSerializerAllowXml;
+	private static String xmlDisguisedAsHl7 = "<foo><bar>notreallyhl7</bar></foo>";
 
 	@BeforeClass
 	public static void setupClass() throws Exception {
@@ -68,13 +69,12 @@ public class ER7SerializerTest {
 
 	@Test
 	public void testToXmlWithStrictParserRejectsXmlInputByDefault() throws Exception {
-		String xmlDisguisedAsHl7 = "<foo><bar>notreallyhl7</bar></foo>";
-
 		boolean exceptionThrown = false;
 		try {
 			strictSerializer.toXML(xmlDisguisedAsHl7);
 		} catch (MessageSerializerException e) {
 			exceptionThrown = true;
+			assertEquals("Error converting ER7 to XML", e.getMessage());
 		}
 
 		assertTrue(exceptionThrown);
@@ -82,8 +82,6 @@ public class ER7SerializerTest {
 
 	@Test
 	public void testToXmlWithStrictParserAllowsXmlInputWhenOptedIn() throws Exception {
-		String xmlDisguisedAsHl7 = "<foo><bar>notreallyhl7</bar></foo>";
-
 		String result = strictSerializerAllowXml.toXML(xmlDisguisedAsHl7);
 
 		assertEquals(xmlDisguisedAsHl7, result);

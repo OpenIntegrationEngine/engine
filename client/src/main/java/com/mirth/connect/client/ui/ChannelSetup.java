@@ -511,6 +511,10 @@ public class ChannelSetup extends JPanel {
 
     /** Sets the overall panel to edit the channel with the given channel index. */
     public void editChannel(Channel channel) {
+        editChannel(channel, null);
+    }
+
+    public void editChannel(Channel channel, String groupId) {
         loadingChannel = true;
         dateStartEdit = Calendar.getInstance();
 
@@ -524,7 +528,7 @@ public class ChannelSetup extends JPanel {
         channelValidationFailed = false;
         lastModelIndex = -1;
         currentChannel = channel;
-        saveGroupId = null;
+        saveGroupId = groupId;
         setResourceIds();
         setChannelTags();
 

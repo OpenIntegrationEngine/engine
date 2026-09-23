@@ -112,6 +112,8 @@ public class SmtpSender extends ConnectorSettingsPanel {
         properties.setUsername(usernameField.getText());
         properties.setPassword(new String(passwordField.getPassword()));
         properties.setTo(toField.getText());
+        properties.setCc(ccField.getText());
+        properties.setBcc(bccField.getText());
         properties.setFrom(fromField.getText());
         properties.setSubject(subjectField.getText());
 
@@ -185,6 +187,8 @@ public class SmtpSender extends ConnectorSettingsPanel {
         usernameField.setText(props.getUsername());
         passwordField.setText(props.getPassword());
         toField.setText(props.getTo());
+        ccField.setText(props.getCc());
+        bccField.setText(props.getBcc());
         fromField.setText(props.getFrom());
         subjectField.setText(props.getSubject());
 
@@ -257,13 +261,13 @@ public class SmtpSender extends ConnectorSettingsPanel {
             errors.append("\"Send Timeout\" is required\n");
         }
 
-        if (props.getTo().length() == 0) {
+        if (StringUtils.isBlank(props.getTo()) && StringUtils.isBlank(props.getCc()) && StringUtils.isBlank(props.getBcc())) {
             valid = false;
             if (highlight) {
                 toField.setBackground(UIConstants.INVALID_COLOR);
             }
 
-            errors.append("\"To\" is required\n");
+            errors.append("At least one of \"To\", \"CC\", or \"BCC\" is required\n");
         }
 
         if (props.getFrom().length() == 0) {
@@ -695,6 +699,12 @@ public class SmtpSender extends ConnectorSettingsPanel {
         toLabel = new JLabel("To:");
         toField = new MirthTextField();
 
+        ccLabel = new JLabel("CC:");
+        ccField = new MirthTextField();
+
+        bccLabel = new JLabel("BCC:");
+        bccField = new MirthTextField();
+
         fromLabel = new JLabel("From:");
         fromField = new MirthTextField();
 
@@ -828,6 +838,8 @@ public class SmtpSender extends ConnectorSettingsPanel {
         usernameField.setToolTipText("If the SMTP server requires authentication to send a message, enter the username here.");
         passwordField.setToolTipText("If the SMTP server requires authentication to send a message, enter the password here.");
         toField.setToolTipText("The name of the mailbox (person, usually) to which the email should be sent.");
+        ccField.setToolTipText("Addresses to carbon copy the email to.");
+        bccField.setToolTipText("Addresses to blind carbon copy the email to.");
         fromField.setToolTipText("The name that should appear as the \"From address\" in the email.");
         subjectField.setToolTipText("The text that should appear as the subject of the email, as seen by the receiver's email client.");
         charsetEncodingComboBox.setToolTipText(String.format("<html>Select the character set encoding used by the sender of the message,<br> or Default to assume the default character set encoding for the JVM running %s.</html>", BrandingConstants.PRODUCT_NAME));
@@ -875,6 +887,10 @@ public class SmtpSender extends ConnectorSettingsPanel {
         add(passwordField, "w 125!, sx");
         add(toLabel, "newline, right");
         add(toField, "w 200!, sx");
+        add(ccLabel, "newline, right");
+        add(ccField, "w 200!, sx");
+        add(bccLabel, "newline, right");
+        add(bccField, "w 200!, sx");
         add(fromLabel, "newline, right");
         add(fromField, "w 200!, sx");
         add(subjectLabel, "newline, right");
@@ -1035,6 +1051,10 @@ public class SmtpSender extends ConnectorSettingsPanel {
     private MirthPasswordField passwordField;
     private JLabel toLabel;
     private MirthTextField toField;
+    private JLabel ccLabel;
+    private MirthTextField ccField;
+    private JLabel bccLabel;
+    private MirthTextField bccField;
     private JLabel fromLabel;
     private MirthTextField fromField;
     private JLabel subjectLabel;

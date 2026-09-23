@@ -46,6 +46,8 @@ public class PasswordRequirementsChecker implements Serializable {
     private static final String PASSWORD_MUST_CONTAIN_AN_UPPERCASE_LETTER = "Password must contain %d uppercase letter(s)";
     private static final String PASSWORD_MUST_NOT_CONTAIN_AN_UPPERCASE_LETTER = "Password not must contain an uppercase letter";
 
+    private static final String PASSWORD_HAS_BEEN_BREACHED = "Password has appeared in a known data breach";
+
     private static final String PASSWORD_MINLENGTH = "password.minlength";
     private static final String PASSWORD_MIN_NUMERIC = "password.minnumeric";
     private static final String PASSWORD_MIN_LOWER = "password.minlower";
@@ -57,6 +59,7 @@ public class PasswordRequirementsChecker implements Serializable {
     private static final String PASSWORD_LOCKOUT_PERIOD = "password.lockoutperiod";
     private static final String PASSWORD_REUSE_PERIOD = "password.reuseperiod";
     private static final String PASSWORD_REUSE_LIMIT = "password.reuselimit";
+    private static final String PASSWORD_BREACHED_URL = "password.breachedurl";
 
     private static PasswordRequirementsChecker instance = null;
 
@@ -88,6 +91,7 @@ public class PasswordRequirementsChecker implements Serializable {
         passwordRequirements.setLockoutPeriod(securityProperties.getInt(PASSWORD_LOCKOUT_PERIOD, 0));
         passwordRequirements.setReusePeriod(securityProperties.getInt(PASSWORD_REUSE_PERIOD, 0));
         passwordRequirements.setReuseLimit(securityProperties.getInt(PASSWORD_REUSE_LIMIT, 0));
+        passwordRequirements.setBreachedUrl(securityProperties.getString(PASSWORD_BREACHED_URL, ""));
 
         return passwordRequirements;
     }
@@ -123,8 +127,13 @@ public class PasswordRequirementsChecker implements Serializable {
                 addResult(resultList, checkReusePeriod(previousCredentials, plainPassword, passwordRequirements.getReusePeriod()));
                 addResult(resultList, checkReuseLimit(previousCredentials, plainPassword, passwordRequirements.getReuseLimit()));
             } catch (ControllerException e) {
-                addResult(resultList, "There was an error checking against previous user passwords.");
+                addResult(resultList, "There was an error checking against previous user passwords");
             }
+        }
+
+        String breachedUrl = passwordRequirements.getBreachedUrl();
+        if (resultList.isEmpty() && StringUtils.isNotBlank(breachedUrl)) {
+            addResult(resultList, BreachedPasswordChecker.checkBreached(plainPassword, breachedUrl) ? PASSWORD_HAS_BEEN_BREACHED : null);
         }
 
         if (resultList.size() == 0) {

@@ -1,0 +1,12 @@
+<pluginMetaData path="passwordscanner">
+	<name>Password Scanner</name>
+	<author>Open Integration Engine</author>
+	<pluginVersion>@mirthversion</pluginVersion>
+	<mirthVersion>@mirthversion</mirthVersion>
+	<url>https://openintegrationengine.org</url>
+	<description>Checks user accounts for trivially guessable passwords and logs a warning for each one it finds.</description>
+	<serverClasses>
+		<string>com.mirth.connect.plugins.passwordscanner.PasswordScannerService</string>
+	</serverClasses>
+	<library type="SERVER" path="passwordscanner-server.jar" />
+</pluginMetaData>

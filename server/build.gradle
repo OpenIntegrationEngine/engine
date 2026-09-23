@@ -370,6 +370,10 @@ def serverExtensions = [
      server: [includes: ['com/mirth/connect/plugins/datapruner/**'],
               excludes: ['com/mirth/connect/plugins/datapruner/DataPrunerServletInterface.class']]],
 
+    [name: 'passwordscanner', pkg: 'com/mirth/connect/plugins/passwordscanner', lib: 'passwordscanner',
+     shared: null,
+     server: [includes: ['com/mirth/connect/plugins/passwordscanner/**']]],
+
     [name: 'mllpmode', pkg: 'com/mirth/connect/plugins/mllpmode', lib: 'mllpmode',
      shared: [includes: ['com/mirth/connect/plugins/mllpmode/MLLPModeProperties.class']],
      server: [includes: ['com/mirth/connect/plugins/mllpmode/**'],
@@ -857,7 +861,7 @@ def zippedExtensions = ['jms', 'jdbc', 'dicom', 'http', 'doc', 'smtp', 'tcp', 'f
                         'destinationsetfilter', 'serverlog', 'datapruner', 'javascriptstep',
                         'mapper', 'messagebuilder', 'scriptfilestep', 'rulebuilder',
                         'javascriptrule', 'dicomviewer', 'pdfviewer', 'textviewer', 'httpauth',
-                        'imageviewer', 'globalmapviewer']
+                        'imageviewer', 'globalmapviewer', 'passwordscanner']
 
 // The zip names carry the version, so clear the directory first the way
 // Ant did; otherwise zips from previous versions accumulate.

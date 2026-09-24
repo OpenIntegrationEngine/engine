@@ -23,6 +23,7 @@ public class HL7v2SerializationProperties extends SerializationProperties {
     private boolean handleSubcomponents = true;
     private boolean useStrictParser = false;
     private boolean useStrictValidation = false;
+    private boolean allowUnknownMessageTypes = false;
     private boolean stripNamespaces = false;
     private String segmentDelimiter = "\\r";
     private boolean convertLineBreaks = true;
@@ -35,6 +36,7 @@ public class HL7v2SerializationProperties extends SerializationProperties {
         properties.put("handleSubcomponents", new DataTypePropertyDescriptor(handleSubcomponents, "Parse Subcomponents", "Parse subcomponents (applies to Non-Strict Parser only).", PropertyEditorType.BOOLEAN));
         properties.put("useStrictParser", new DataTypePropertyDescriptor(useStrictParser, "Use Strict Parser", "Parse messages based upon strict HL7 specifications.", PropertyEditorType.BOOLEAN));
         properties.put("useStrictValidation", new DataTypePropertyDescriptor(useStrictValidation, "Validate in Strict Parser", "Validate messages using HL7 specifications (applies to Strict Parser only).", PropertyEditorType.BOOLEAN));
+        properties.put("allowUnknownMessageTypes", new DataTypePropertyDescriptor(allowUnknownMessageTypes, "Allow Unrecognized Message Types", "Convert a message whose type has no known structure into generic XML instead of rejecting it (applies to Strict Parser only).", PropertyEditorType.BOOLEAN));
         properties.put("stripNamespaces", new DataTypePropertyDescriptor(stripNamespaces, "Strip Namespaces", "Strips namespace definitions from the transformed XML message (applies to Strict Parser only).", PropertyEditorType.BOOLEAN));
         properties.put("segmentDelimiter", new DataTypePropertyDescriptor(segmentDelimiter, "Segment Delimiter", "This is the input delimiter character(s) expected to occur after each segment.", PropertyEditorType.STRING));
         properties.put("convertLineBreaks", new DataTypePropertyDescriptor(convertLineBreaks, "Convert Line Breaks", "Convert all styles of line breaks (CRLF, CR, LF) in the raw message to the segment delimiter. ", PropertyEditorType.BOOLEAN));
@@ -59,6 +61,10 @@ public class HL7v2SerializationProperties extends SerializationProperties {
 
             if (properties.get("useStrictValidation") != null) {
                 this.useStrictValidation = (Boolean) properties.get("useStrictValidation");
+            }
+
+            if (properties.get("allowUnknownMessageTypes") != null) {
+                this.allowUnknownMessageTypes = (Boolean) properties.get("allowUnknownMessageTypes");
             }
 
             if (properties.get("stripNamespaces") != null) {
@@ -107,6 +113,14 @@ public class HL7v2SerializationProperties extends SerializationProperties {
         this.useStrictValidation = useStrictValidation;
     }
 
+    public boolean isAllowUnknownMessageTypes() {
+        return allowUnknownMessageTypes;
+    }
+
+    public void setAllowUnknownMessageTypes(boolean allowUnknownMessageTypes) {
+        this.allowUnknownMessageTypes = allowUnknownMessageTypes;
+    }
+
     public boolean isStripNamespaces() {
         return stripNamespaces;
     }
@@ -152,6 +166,7 @@ public class HL7v2SerializationProperties extends SerializationProperties {
         purgedProperties.put("handleRepetitions", handleRepetitions);
         purgedProperties.put("handleSubcomponents", handleSubcomponents);
         purgedProperties.put("useStrictParser", useStrictParser);
+        purgedProperties.put("allowUnknownMessageTypes", allowUnknownMessageTypes);
         purgedProperties.put("stripNamespaces", stripNamespaces);
         purgedProperties.put("convertLineBreaks", convertLineBreaks);
         return purgedProperties;

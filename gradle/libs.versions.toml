@@ -127,7 +127,7 @@ jetty-jndi = { module = "org.eclipse.jetty:jetty-jndi", version = "9.4.57.v20241
 jetty-plus = { module = "org.eclipse.jetty:jetty-plus", version = "9.4.57.v20241219" }
 jetty-rewrite = { module = "org.eclipse.jetty:jetty-rewrite", version = "9.4.57.v20241219" }
 jetty-schemas = { module = "org.eclipse.jetty.toolchain:jetty-schemas", version = "3.1.2" }
-jetty-security = { module = "org.eclipse.jetty:jetty-security", version = "9.4.57.v20241219" }
+jetty-security = { module = "org.eclipse.jetty:jetty-security", version = "10.0.0" }
 jetty-server = { module = "org.eclipse.jetty:jetty-server", version = "9.4.57.v20241219" }
 jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet", version = "9.4.57.v20241219" }
 jetty-util = { module = "org.eclipse.jetty:jetty-util", version = "9.4.57.v20241219" }

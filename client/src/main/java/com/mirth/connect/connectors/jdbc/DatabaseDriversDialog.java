@@ -111,9 +111,8 @@ public class DatabaseDriversDialog extends MirthDialog {
             String name = StringUtils.trim((String) driversTable.getModel().getValueAt(row, 0));
             String className = StringUtils.trim((String) driversTable.getModel().getValueAt(row, 1));
             String template = StringUtils.trim((String) driversTable.getModel().getValueAt(row, 2));
-            String selectLimit = StringUtils.trim((String) driversTable.getModel().getValueAt(row, 3));
-            List<String> alternativeClassNames = new ArrayList<String>(Arrays.asList(StringUtils.split(StringUtils.trim((String) driversTable.getModel().getValueAt(row, 4)), ',')));
-            drivers.add(new DriverInfo(name, className, template, selectLimit, alternativeClassNames));
+            List<String> alternativeClassNames = new ArrayList<String>(Arrays.asList(StringUtils.split(StringUtils.trim((String) driversTable.getModel().getValueAt(row, 3)), ',')));
+            drivers.add(new DriverInfo(name, className, template, alternativeClassNames));
         }
 
         return drivers;
@@ -124,21 +123,20 @@ public class DatabaseDriversDialog extends MirthDialog {
             drivers = new ArrayList<DriverInfo>();
         }
 
-        Object[][] data = new Object[drivers.size()][5];
+        Object[][] data = new Object[drivers.size()][4];
 
         for (int i = 0; i < drivers.size(); i++) {
             DriverInfo info = drivers.get(i);
             data[i][0] = StringUtils.trim(StringUtils.defaultString(info.getName()));
             data[i][1] = StringUtils.trim(StringUtils.defaultString(info.getClassName()));
             data[i][2] = StringUtils.trim(StringUtils.defaultString(info.getTemplate()));
-            data[i][3] = StringUtils.trim(StringUtils.defaultString(info.getSelectLimit()));
 
             String alternativeClassNamesStr = "";
             List<String> alternativeClassNames = info.getAlternativeClassNames();
             if (CollectionUtils.isNotEmpty(alternativeClassNames)) {
                 alternativeClassNamesStr = StringUtils.join(alternativeClassNames, ',');
             }
-            data[i][4] = alternativeClassNamesStr;
+            data[i][3] = alternativeClassNamesStr;
         }
 
         ((RefreshTableModel) driversTable.getModel()).refreshDataVector(data);
@@ -184,7 +182,7 @@ public class DatabaseDriversDialog extends MirthDialog {
 
         driversTable = new MirthTable();
         driversTable.setModel(new RefreshTableModel(new Object[] { "Name", "Driver Class",
-                "JDBC URL Template", "Select with Limit Query", "Legacy Driver Classes" }, 0));
+                "JDBC URL Template", "Legacy Driver Classes" }, 0));
         driversTable.setDragEnabled(false);
         driversTable.setRowSelectionAllowed(true);
         driversTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -204,8 +202,7 @@ public class DatabaseDriversDialog extends MirthDialog {
         driversTable.getColumnExt(0).setPreferredWidth(101);
         driversTable.getColumnExt(1).setPreferredWidth(162);
         driversTable.getColumnExt(2).setPreferredWidth(269);
-        driversTable.getColumnExt(3).setPreferredWidth(200);
-        driversTable.getColumnExt(4).setPreferredWidth(137);
+        driversTable.getColumnExt(3).setPreferredWidth(137);
 
         driversScrollPane = new JScrollPane(driversTable);
 
@@ -233,8 +230,7 @@ public class DatabaseDriversDialog extends MirthDialog {
         driversTable.getColumnExt(0).setToolTipText("<html>The name of the driver entry. This will appear in the<br/>drop-down menu for the Database Reader/Writer connectors.</html>");
         driversTable.getColumnExt(1).setToolTipText("<html>The fully-qualified Java class name for the JDBC driver.</html>");
         driversTable.getColumnExt(2).setToolTipText("<html>The template for the JDBC connection URL that can be<br/>auto-populated from the Database Reader/Writer settings.</html>");
-        driversTable.getColumnExt(3).setToolTipText("<html>A select query (with limit 1) that can be used to<br/>retrieve column metadata. If empty the driver-specific<br/>generic query will be used, which could be slow.</html>");
-        driversTable.getColumnExt(4).setToolTipText("<html>A comma-separated list of alternate or legacy JDBC driver class names.<br/>Any Database Reader/Writer connector using one of these driver classes<br/>will have the corresponding entry selected in the Driver drop-down menu.<br/>The driver will be updated to the primary value upon next channel save.</html>");
+        driversTable.getColumnExt(3).setToolTipText("<html>A comma-separated list of alternate or legacy JDBC driver class names.<br/>Any Database Reader/Writer connector using one of these driver classes<br/>will have the corresponding entry selected in the Driver drop-down menu.<br/>The driver will be updated to the primary value upon next channel save.</html>");
     }
 
     private void initLayout() {
@@ -256,12 +252,11 @@ public class DatabaseDriversDialog extends MirthDialog {
         int selectedRow = getSelectedRow();
         if (selectedRow >= 0) {
             ((RefreshTableModel) driversTable.getModel()).insertRow(selectedRow + 1, new Object[] {
-                    "", "", "", "", "" });
+                    "", "", "", "" });
             driversTable.getSelectionModel().setSelectionInterval(selectedRow + 1, selectedRow + 1);
             driversTable.scrollRowToVisible(selectedRow + 1);
         } else {
-            ((RefreshTableModel) driversTable.getModel()).addRow(new Object[] { "", "", "", "",
-                    "" });
+            ((RefreshTableModel) driversTable.getModel()).addRow(new Object[] { "", "", "", "" });
             driversTable.getSelectionModel().setSelectionInterval(driversTable.getRowCount() - 1, driversTable.getRowCount() - 1);
             driversTable.scrollRowToVisible(driversTable.getRowCount() - 1);
         }

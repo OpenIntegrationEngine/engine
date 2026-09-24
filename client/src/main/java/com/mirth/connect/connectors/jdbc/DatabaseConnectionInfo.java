@@ -17,16 +17,14 @@ public class DatabaseConnectionInfo {
     private String username;
     private String password;
     private String tableNamePatternExpression;
-    private String selectLimit;
     private Set<String> resourceIds;
 
-    public DatabaseConnectionInfo(String driver, String url, String username, String password, String tableNamePatternExpression, String selectLimit, Set<String> resourceIds) {
+    public DatabaseConnectionInfo(String driver, String url, String username, String password, String tableNamePatternExpression, Set<String> resourceIds) {
         this.driver = driver;
         this.url = url;
         this.username = username;
         this.password = password;
         this.tableNamePatternExpression = tableNamePatternExpression;
-        this.selectLimit = selectLimit;
         this.resourceIds = resourceIds;
     }
 
@@ -68,14 +66,6 @@ public class DatabaseConnectionInfo {
 
     public void setTableNamePatternExpression(String tableNamePatternExpression) {
         this.tableNamePatternExpression = tableNamePatternExpression;
-    }
-
-    public String getSelectLimit() {
-        return selectLimit;
-    }
-
-    public void setSelectLimit(String selectLimit) {
-        this.selectLimit = selectLimit;
     }
 
     public Set<String> getResourceIds() {

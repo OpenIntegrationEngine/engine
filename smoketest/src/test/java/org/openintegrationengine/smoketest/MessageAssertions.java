@@ -35,7 +35,7 @@ final class MessageAssertions {
     private static final Pattern RESPONSE_ENVELOPE = Pattern.compile("^\\s*<response[\\s>].*", Pattern.DOTALL);
 
     /** Destination assertion files are {@code dest<NN>} plus an optional suffix. */
-    private static final Pattern DEST_NAME = Pattern.compile("dest(\\d+)(_transformed|_response|_status|_metadata\\.yml)?");
+    private static final Pattern DEST_NAME = Pattern.compile("dest(\\d+)(_raw|_transformed|_encoded|_response|_status|_metadata\\.yml)?");
 
     /** Source connector metadata id; destination N is metadata id N. */
     private static final int SOURCE_META_DATA_ID = 0;
@@ -53,6 +53,8 @@ final class MessageAssertions {
         switch (fileName) {
             case "source_status" -> assertStatus("source status", content,
                     connector(message, SOURCE_META_DATA_ID, fileName).getStatus());
+            case "source_raw" -> assertContent("source raw", content,
+                    content(connector(message, SOURCE_META_DATA_ID, fileName).getRaw()));
             case "source_transformed" -> assertContent("source transformed", content,
                     content(connector(message, SOURCE_META_DATA_ID, fileName).getTransformed()));
             case "source_encoded" -> assertContent("source encoded", content,
@@ -77,7 +79,9 @@ final class MessageAssertions {
 
         switch (suffix) {
             case "" -> assertContent(fileName, content, content(destination.getSent()));
+            case "_raw" -> assertContent(fileName, content, content(destination.getRaw()));
             case "_transformed" -> assertContent(fileName, content, content(destination.getTransformed()));
+            case "_encoded" -> assertContent(fileName, content, content(destination.getEncoded()));
             case "_response" -> assertResponse(fileName, content, destination);
             case "_status" -> assertStatus(fileName, content, destination.getStatus());
             case "_metadata.yml" -> assertMetadata(fileName, parseYamlMap(content), destination);

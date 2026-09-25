@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Assumptions;
 
+import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.donkey.model.message.ConnectorMessage;
 import com.mirth.connect.donkey.model.message.Message;
 import com.mirth.connect.donkey.model.message.MessageContent;
@@ -63,40 +65,48 @@ public final class Harness {
     /**
      * Submits {@code <base>/source} (with {@code <base>/source_sourcemap.yml} when
      * {@code hasSourceMap}) into the channel, then retries the named assertion files until
-     * they all hold or the message reaches a terminal state. Because the message is written
+     * they all hold or every message reaches a terminal state. Because messages are written
      * asynchronously, an early poll can legitimately fail; only a failure that persists once
-     * the message is terminal is a real failure.
+     * the messages are terminal is a real failure.
+     *
+     * @param assertionFiles a bare file name for a payload that produces one message, or one
+     *                       prefixed with the message's 1-based number when it produces several,
+     *                       e.g. {@code "02/source_status"}.
      */
-    public static void runMessage(String channelId, String base, boolean hasSourceMap, String... assertionFiles)
-            throws Exception {
+    public static void runMessage(String channelId, String base, boolean hasSourceMap, int expectedMessageCount,
+            String... assertionFiles) throws Exception {
         String source = resource(base + "/source");
-        Map<String, Object> sourceMap = hasSourceMap
-                ? MessageAssertions.parseSourceMap(resource(base + "/source_sourcemap.yml"))
-                : new LinkedHashMap<>();
+        Map<String, Object> sourceMap = sourceMap(base, hasSourceMap);
 
         // Load the fixtures once; the poll loop below may check them many times.
-        Map<String, String> assertions = new LinkedHashMap<>();
-        for (String fileName : assertionFiles) {
-            assertions.put(fileName, resource(base + "/" + fileName));
+        List<Map<String, String>> assertions = loadAssertions(base, expectedMessageCount, assertionFiles);
+
+        List<Long> messageIds;
+        try {
+            messageIds = server().submitMessage(channelId, source, sourceMap);
+        } catch (ClientException e) {
+            throw new AssertionError(base + " failed: the server refused the payload. Add source_rejected"
+                    + " to the fixture if that is expected. " + e.getMessage(), e);
         }
 
-        long messageId = server().submitMessage(channelId, source, sourceMap);
+        if (messageIds.size() != expectedMessageCount) {
+            throw new AssertionError(base + " failed: expected the payload to produce " + expectedMessageCount
+                    + " message(s), found " + messageIds.size() + " " + messageIds);
+        }
 
         long deadline = System.nanoTime() + HarnessConfig.TIMEOUT.toNanos();
         AssertionError lastFailure = null;
-        Message lastMessage = null;
+        List<Message> lastMessages = List.of();
         while (System.nanoTime() < deadline) {
-            Message message = server().fetchMessage(channelId, messageId);
-            if (message != null) {
-                lastMessage = message;
+            List<Message> messages = fetchMessages(channelId, messageIds);
+            lastMessages = messages;
+            if (!messages.contains(null)) {
                 try {
-                    for (Map.Entry<String, String> assertion : assertions.entrySet()) {
-                        MessageAssertions.assertFixtureFile(message, assertion.getKey(), assertion.getValue());
-                    }
+                    assertAll(messages, assertions);
                     return;
                 } catch (AssertionError e) {
                     lastFailure = e;
-                    if (isTerminal(message)) {
+                    if (messages.stream().allMatch(Harness::isTerminal)) {
                         break;
                     }
                 }
@@ -106,10 +116,30 @@ public final class Harness {
 
         if (lastFailure != null) {
             throw new AssertionError(base + " failed: " + lastFailure.getMessage()
-                    + "\n\n" + describe(lastMessage), lastFailure);
+                    + "\n\n" + describe(lastMessages), lastFailure);
         }
-        throw new AssertionError("Timed out after " + HarnessConfig.TIMEOUT.toSeconds() + "s waiting for message "
-                + messageId + " for fixture " + base + "\n\n" + describe(lastMessage));
+        throw new AssertionError("Timed out after " + HarnessConfig.TIMEOUT.toSeconds() + "s waiting for message(s) "
+                + messageIds + " for fixture " + base + "\n\n" + describe(lastMessages));
+    }
+
+    /**
+     * Submits {@code <base>/source} and requires the server to refuse it. A refusal reaches the
+     * client only as a {@link ClientException} carrying the status line as text, so the refusal
+     * itself is the assertion.
+     */
+    public static void runRejectedMessage(String channelId, String base, boolean hasSourceMap) throws Exception {
+        String source = resource(base + "/source");
+        Map<String, Object> sourceMap = sourceMap(base, hasSourceMap);
+
+        List<Long> messageIds;
+        try {
+            messageIds = server().submitMessage(channelId, source, sourceMap);
+        } catch (ClientException refused) {
+            return;
+        }
+
+        throw new AssertionError(base + " failed: expected the server to reject the payload, but it was accepted"
+                + " and produced message(s) " + messageIds + "\n\n" + describe(fetchMessages(channelId, messageIds)));
     }
 
     /** Reads a staged fixture from the classpath. */
@@ -122,6 +152,45 @@ public final class Harness {
         } catch (IOException e) {
             throw new UncheckedIOException("Could not read fixture resource " + path, e);
         }
+    }
+
+    private static Map<String, Object> sourceMap(String base, boolean hasSourceMap) {
+        return hasSourceMap
+                ? MessageAssertions.parseSourceMap(resource(base + "/source_sourcemap.yml"))
+                : new LinkedHashMap<>();
+    }
+
+    /** Groups the assertion files by the message they describe, keyed by their bare file name. */
+    private static List<Map<String, String>> loadAssertions(String base, int expectedMessageCount,
+            String[] assertionFiles) {
+        List<Map<String, String>> assertions = new ArrayList<>();
+        for (int index = 0; index < expectedMessageCount; index++) {
+            assertions.add(new LinkedHashMap<>());
+        }
+
+        for (String path : assertionFiles) {
+            int separator = path.lastIndexOf('/');
+            int index = separator < 0 ? 0 : Integer.parseInt(path.substring(0, separator)) - 1;
+            assertions.get(index).put(path.substring(separator + 1), resource(base + "/" + path));
+        }
+        return assertions;
+    }
+
+    private static void assertAll(List<Message> messages, List<Map<String, String>> assertions) {
+        for (int index = 0; index < messages.size(); index++) {
+            for (Map.Entry<String, String> assertion : assertions.get(index).entrySet()) {
+                MessageAssertions.assertFixtureFile(messages.get(index), assertion.getKey(), assertion.getValue());
+            }
+        }
+    }
+
+    /** Reads each message back, leaving a null in place of one the server has not stored yet. */
+    private static List<Message> fetchMessages(String channelId, List<Long> messageIds) throws ClientException {
+        List<Message> messages = new ArrayList<>(messageIds.size());
+        for (Long messageId : messageIds) {
+            messages.add(server().fetchMessage(channelId, messageId));
+        }
+        return messages;
     }
 
     /** True once the server has finished processing and no connector is still pending. */
@@ -137,8 +206,26 @@ public final class Harness {
                 .noneMatch(connectorMessage -> PENDING_STATUSES.contains(connectorMessage.getStatus()));
     }
 
-    /** Renders the message the way a fixture author needs to see it to fix a mismatch. */
-    private static String describe(Message message) {
+    /** Renders the messages the way a fixture author needs to see them to fix a mismatch. */
+    private static String describe(List<Message> messages) {
+        if (messages.isEmpty()) {
+            return "No messages were retrieved from the server.";
+        }
+
+        StringBuilder detail = new StringBuilder();
+        for (int index = 0; index < messages.size(); index++) {
+            if (index > 0) {
+                detail.append("\n\n");
+            }
+            if (messages.size() > 1) {
+                detail.append("--- message ").append(index + 1).append(" of ").append(messages.size()).append(" ---\n");
+            }
+            detail.append(describeMessage(messages.get(index)));
+        }
+        return detail.toString();
+    }
+
+    private static String describeMessage(Message message) {
         if (message == null) {
             return "No message was retrieved from the server.";
         }
@@ -159,7 +246,8 @@ public final class Harness {
             appendContent(detail, "encoded", connectorMessage.getEncoded());
             appendContent(detail, "sent", connectorMessage.getSent());
             appendContent(detail, "response", connectorMessage.getResponse());
-            detail.append("\n        connectorMap=").append(connectorMessage.getConnectorMap())
+            detail.append("\n        sourceMap=").append(connectorMessage.getSourceMap())
+                    .append("\n        connectorMap=").append(connectorMessage.getConnectorMap())
                     .append("\n        metaDataMap=").append(connectorMessage.getMetaDataMap());
             if (connectorMessage.getProcessingError() != null) {
                 detail.append("\n        processingError=").append(connectorMessage.getProcessingError());

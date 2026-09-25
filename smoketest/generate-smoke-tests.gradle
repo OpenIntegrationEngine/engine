@@ -117,31 +117,65 @@ abstract class GenerateSmokeTests extends DefaultTask {
         out << "    }\n"
     }
 
+    /** Files that describe the submission rather than the messages it produces. */
+    private static final List<String> INPUT_FILES = ['source', 'source_sourcemap.yml', 'source_rejected']
+
     void writeMessage(StringBuilder out, File root, File resOut, File messageDir, int order) {
         File source = new File(messageDir, 'source')
         if (!source.isFile()) {
             throw new GradleException("Message fixture is missing its source payload: ${messageDir}")
         }
         boolean hasSourceMap = new File(messageDir, 'source_sourcemap.yml').isFile()
+        boolean rejected = new File(messageDir, 'source_rejected').isFile()
         String base = 'fixtures/' + rel(root, messageDir)
 
+        // Naming files relative to the message directory yields "source_status" for a fixture that
+        // produces one message and "02/source_status" for one that produces several.
         List<String> assertionFiles = []
-        messageDir.listFiles().findAll { it.isFile() }.sort().each { File file ->
+        messageDir.eachFileRecurse(groovy.io.FileType.FILES) { File file ->
+            if (file.name.startsWith('.')) return
             copyResource(file, new File(resOut, 'fixtures/' + rel(root, file)))
-            if (file.name != 'source' && file.name != 'source_sourcemap.yml') {
-                assertionFiles << file.name
+            String path = rel(messageDir, file)
+            if (!INPUT_FILES.contains(path)) {
+                assertionFiles << path
             }
         }
+        assertionFiles.sort()
 
-        StringBuilder args = new StringBuilder("channelId, ${quote(base)}, ${hasSourceMap}")
-        assertionFiles.each { args << ", ${quote(it)}" }
+        int messageCount = expectedMessageCount(messageDir, assertionFiles, rejected)
 
         out << "\n        @Test\n"
         out << "        @Order(${order})\n"
         out << "        @DisplayName(${quote(messageDir.name)})\n"
         out << "        void message_${ident(messageDir.name)}() throws Exception {\n"
-        out << "            Harness.runMessage(${args});\n"
+        if (rejected) {
+            out << "            Harness.runRejectedMessage(channelId, ${quote(base)}, ${hasSourceMap});\n"
+        } else {
+            StringBuilder args = new StringBuilder("channelId, ${quote(base)}, ${hasSourceMap}, ${messageCount}")
+            assertionFiles.each { args << ", ${quote(it)}" }
+            out << "            Harness.runMessage(${args});\n"
+        }
         out << "        }\n"
+    }
+
+    /** One message, unless the fixture has a numbered directory per message it expects. */
+    static int expectedMessageCount(File messageDir, List<String> assertionFiles, boolean rejected) {
+        if (rejected && !assertionFiles.isEmpty()) {
+            throw new GradleException("source_rejected means no message is created, so it cannot be combined with ${assertionFiles} in ${messageDir}")
+        }
+
+        List<String> slots = messageDir.listFiles().findAll { it.isDirectory() }*.name.sort()
+        if (slots.any { !(it ==~ /\d+/) }) {
+            throw new GradleException("Subdirectories of a message fixture must be message numbers, found ${slots} in ${messageDir}")
+        }
+        if (slots.indexed().any { index, slot -> Integer.parseInt(slot) != index + 1 }) {
+            throw new GradleException("Numbered message directories must run from 01 with no gaps, found ${slots} in ${messageDir}")
+        }
+        if (!slots.isEmpty() && assertionFiles.any { !it.contains('/') }) {
+            throw new GradleException("Move the loose assertion files into a numbered message directory: ${messageDir}")
+        }
+
+        return slots.isEmpty() ? 1 : slots.size()
     }
 
     static List<String> readConfigurations(File caseDir) {

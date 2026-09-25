@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -33,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
+import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -42,6 +44,7 @@ import com.mirth.connect.donkey.server.channel.SourceConnector;
 import com.mirth.connect.donkey.server.message.batch.BatchMessageException;
 import com.mirth.connect.donkey.server.message.batch.BatchMessageReader;
 import com.mirth.connect.donkey.server.message.batch.BatchMessageReceiver;
+import com.mirth.connect.model.converters.DocumentSerializer;
 import com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties.SplitType;
 import com.mirth.connect.server.controllers.ContextFactoryController;
 import com.mirth.connect.server.controllers.ControllerFactory;
@@ -127,7 +130,12 @@ public class XMLBatchAdaptor extends DebuggableBatchAdaptor  {
 
                 XPath xpath = xPathFactory.newXPath();
 
-                nodeList = (NodeList) xpath.evaluate(query.toString(), new InputSource(bufferedReader), XPathConstants.NODESET);
+                // Parse the XML securely to prevent XXE
+                DocumentBuilderFactory documentBuilderFactory = DocumentSerializer.getSecureDocumentBuilderFactory();
+                documentBuilderFactory.setNamespaceAware(true);
+                Document document = documentBuilderFactory.newDocumentBuilder().parse(new InputSource(bufferedReader));
+
+                nodeList = (NodeList) xpath.evaluate(query.toString(), document, XPathConstants.NODESET);
             }
 
             if (currentNode < nodeList.getLength()) {

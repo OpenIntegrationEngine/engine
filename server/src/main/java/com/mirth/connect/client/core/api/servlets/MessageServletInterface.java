@@ -97,6 +97,19 @@ public interface MessageServletInterface extends BaseServletInterface {
                             @ExampleObject(name = "rawMessage", ref = "../apiexamples/raw_message_json") }) }) RawMessage rawMessage) throws ClientException;
     // @formatter:on
 
+    @POST
+    @Path("/{channelId}/batchMessagesWithObj")
+    @Operation(summary = "Processes a new message through a channel, returning the ID of every message it produced.")
+    @MirthOperation(name = "processMessages", display = "Process messages", permission = Permissions.MESSAGES_PROCESS, type = ExecuteType.ASYNC)
+    public List<Long> processBatchMessage(// @formatter:off
+            @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
+            @Param("rawMessage") @RequestBody(description = "The RawMessage object to process.", required = true, content = {
+                    @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                            @ExampleObject(name = "rawMessage", ref = "../apiexamples/raw_message_xml") }),
+                    @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
+                            @ExampleObject(name = "rawMessage", ref = "../apiexamples/raw_message_json") }) }) RawMessage rawMessage) throws ClientException;
+    // @formatter:on
+
     @GET
     @Path("/{channelId}/messages/{messageId}")
     @Operation(summary = "Retrieve a message by ID.")

@@ -130,14 +130,14 @@ final class OieServer implements AutoCloseable {
                 + HarnessConfig.TIMEOUT.toSeconds() + "s; last state was " + lastState);
     }
 
-    /** Submits a source payload and returns the new message id. */
-    long submitMessage(String channelId, String rawData, Map<String, Object> sourceMap) throws ClientException {
+    /** Submits a source payload and returns the id of every message it produced, in dispatch order. */
+    List<Long> submitMessage(String channelId, String rawData, Map<String, Object> sourceMap) throws ClientException {
         RawMessage rawMessage = new RawMessage(rawData, null, sourceMap);
-        Long messageId = client.processMessage(channelId, rawMessage);
-        if (messageId == null) {
-            throw new AssertionError("Server returned no message id for channel " + channelId);
+        List<Long> messageIds = client.processBatchMessage(channelId, rawMessage);
+        if (messageIds == null) {
+            throw new AssertionError("Server returned no message ids for channel " + channelId);
         }
-        return messageId;
+        return messageIds;
     }
 
     /** Reads one message back, with content, so assertions can inspect every connector. */

@@ -35,16 +35,26 @@ ci/tests/
 ```
 
 `channel.xml` is an exported OIE channel. Every message fixture requires `source`,
-the payload sent to the channel. The other files are optional assertions:
+the payload sent to the channel. These files describe the submission:
+
+| File | Meaning |
+| --- | --- |
+| `source` | The payload sent to the channel. Required. |
+| `source_sourcemap.yml` | Source map supplied with `source` |
+| `source_rejected` | The server must refuse the submission. |
+
+The rest are optional assertions against the message the channel produced:
 
 | File | Assertion |
 | --- | --- |
-| `source_sourcemap.yml` | Source map supplied with `source` |
 | `source_metadata.yml` | Selected source message metadata |
+| `source_raw` | Raw source payload |
+| `source_encoded` | Encoded source payload |
 | `source_status` | Source status |
 | `source_response` | Source response payload |
 | `source_transformed` | Transformed source payload |
-| `source_encoded` | Encoded source payload |
+| `destNN_raw` | Raw payload for destination `NN` |
+| `destNN_encoded` | Encoded payload for destination `NN` |
 | `destNN` | Sent payload for destination `NN` |
 | `destNN_transformed` | Transformed payload for destination `NN` |
 | `destNN_response` | Response payload from destination `NN` |
@@ -62,6 +72,24 @@ A fixture case runs in every configuration by default. To limit it, add a
 ```text
 alpine-temurin21-postgres
 ubuntu-temurin21-postgres
+```
+
+### Parse Batch
+
+If you are using "Parse Batch" mode, put each expected message's assertion
+files in a numbered subdirectory instead.  There must be one directory per
+expected message.
+
+```text
+messages/
+  03-two-messages/
+    source
+    01/
+      source_raw
+      source_status
+    02/
+      source_raw
+      source_status
 ```
 
 ## Add a Configuration

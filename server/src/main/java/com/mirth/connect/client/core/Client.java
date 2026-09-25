@@ -1786,6 +1786,16 @@ public class Client implements UserServletInterface, ConfigurationServletInterfa
     }
 
     /**
+     * Processes a new message through a channel, returning the ID of every message it produced.
+     * 
+     * @see MessageServletInterface#processBatchMessage
+     */
+    @Override
+    public List<Long> processBatchMessage(String channelId, RawMessage rawMessage) throws ClientException {
+        return getServlet(MessageServletInterface.class).processBatchMessage(channelId, rawMessage);
+    }
+
+    /**
      * Processes a new message through a channel, using the RawMessage object.
      * 
      * @see MessageServletInterface#getMessageContent

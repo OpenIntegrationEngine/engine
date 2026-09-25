@@ -45,6 +45,7 @@ import com.mirth.connect.donkey.model.message.attachment.Attachment;
 import com.mirth.connect.donkey.server.channel.ChannelException;
 import com.mirth.connect.donkey.server.channel.DispatchResult;
 import com.mirth.connect.donkey.server.message.batch.BatchMessageException;
+import com.mirth.connect.donkey.server.message.batch.CollectingResponseHandler;
 import com.mirth.connect.model.MessageImportResult;
 import com.mirth.connect.model.ServerEvent;
 import com.mirth.connect.model.ServerEvent.Level;
@@ -126,6 +127,27 @@ public class MessageServlet extends MirthServlet implements MessageServletInterf
             // Do nothing. An error should have been logged.
         } catch (BatchMessageException e) {
             logger.error("Error processing batch message", e);
+        }
+
+        containerRequestContext.setProperty(ResponseCodeFilter.RESPONSE_CODE_PROPERTY, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+
+        return null;
+    }
+
+    @Override
+    @CheckAuthorizedChannelId
+    public List<Long> processBatchMessage(final String channelId, final RawMessage rawMessage) {
+        CollectingResponseHandler responseHandler = new CollectingResponseHandler();
+
+        try {
+            engineController.dispatchRawMessage(channelId, rawMessage, true, true, responseHandler);
+
+            containerRequestContext.setProperty(ResponseCodeFilter.RESPONSE_CODE_PROPERTY, Response.Status.CREATED.getStatusCode());
+            return responseHandler.getMessageIds();
+        } catch (ChannelException e) {
+            // Do nothing. An error should have been logged.
+        } catch (BatchMessageException e) {
+            logger.error("Error processing batch message for channel " + channelId, e);
         }
 
         containerRequestContext.setProperty(ResponseCodeFilter.RESPONSE_CODE_PROPERTY, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());

@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<!DOCTYPE ACK [ <!ENTITY xxe SYSTEM "file:///etc/hostname"> ]>
+<Batch>
+    <Message>&xxe;</Message>
+</Batch>

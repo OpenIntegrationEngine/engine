@@ -22,6 +22,7 @@ import com.mirth.connect.donkey.server.channel.ChannelException;
 import com.mirth.connect.donkey.model.channel.DebugOptions;
 import com.mirth.connect.donkey.server.channel.DispatchResult;
 import com.mirth.connect.donkey.server.message.batch.BatchMessageException;
+import com.mirth.connect.donkey.server.message.batch.ResponseHandler;
 import com.mirth.connect.model.ChannelStatistics;
 import com.mirth.connect.model.DashboardStatus;
 import com.mirth.connect.model.ServerEventContext;
@@ -72,6 +73,9 @@ public interface EngineController {
     public Channel getDeployedChannel(String channelId);
 
     public DispatchResult dispatchRawMessage(String channelId, RawMessage rawMessage, boolean force, boolean canBatch) throws ChannelException, BatchMessageException;
+
+    /** Dispatches a raw message, reporting each message it produced to {@code responseHandler}. */
+    public DispatchResult dispatchRawMessage(String channelId, RawMessage rawMessage, boolean force, boolean canBatch, ResponseHandler responseHandler) throws ChannelException, BatchMessageException;
 
     /**
      * Returns a list of DashboardStatus objects representing the running channels.

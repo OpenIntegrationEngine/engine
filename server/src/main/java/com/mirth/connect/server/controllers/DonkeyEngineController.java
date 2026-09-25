@@ -1119,6 +1119,11 @@ public class DonkeyEngineController implements EngineController {
 
     @Override
     public DispatchResult dispatchRawMessage(String channelId, RawMessage rawMessage, boolean force, boolean canBatch) throws ChannelException, BatchMessageException {
+        return dispatchRawMessage(channelId, rawMessage, force, canBatch, new SimpleResponseHandler());
+    }
+
+    @Override
+    public DispatchResult dispatchRawMessage(String channelId, RawMessage rawMessage, boolean force, boolean canBatch, ResponseHandler responseHandler) throws ChannelException, BatchMessageException {
         if (!isDeployed(channelId)) {
             ChannelException e = new ChannelException(true);
             logger.error("Could not find channel to route to: " + channelId, e);
@@ -1133,7 +1138,6 @@ public class DonkeyEngineController implements EngineController {
             } else {
                 BatchRawMessage batchRawMessage = new BatchRawMessage(new BatchMessageReader(rawMessage.getRawData()), rawMessage.getSourceMap());
 
-                ResponseHandler responseHandler = new SimpleResponseHandler();
                 sourceConnector.dispatchBatchMessage(batchRawMessage, responseHandler, rawMessage.getDestinationMetaDataIds());
 
                 return responseHandler.getResultForResponse();
@@ -1144,6 +1148,7 @@ public class DonkeyEngineController implements EngineController {
             try {
                 dispatchResult = sourceConnector.dispatchRawMessage(rawMessage, force);
                 dispatchResult.setAttemptedResponse(true);
+                responseHandler.setDispatchResult(dispatchResult);
             } finally {
                 sourceConnector.finishDispatch(dispatchResult);
             }

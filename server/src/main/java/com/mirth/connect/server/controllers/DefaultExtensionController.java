@@ -9,19 +9,18 @@
 
 package com.mirth.connect.server.controllers;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.StringReader;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,16 +30,11 @@ import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipException;
-import java.util.zip.ZipFile;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.commons.lang3.StringUtils;
@@ -79,8 +73,9 @@ import com.mirth.connect.server.util.ServerUUIDGenerator;
 
 public class DefaultExtensionController extends ExtensionController {
     private Logger logger = LogManager.getLogger(this.getClass());
-    private ObjectXMLSerializer serializer = ObjectXMLSerializer.getInstance();
-    private ConfigurationController configurationController = ControllerFactory.getFactory().createConfigurationController();
+    private final ObjectXMLSerializer serializer;
+    private final ConfigurationController configurationController;
+    private final File extensionsRoot;
 
     // these are plugins for specific extension points, keyed by plugin name
     // (not path)
@@ -100,8 +95,8 @@ public class DefaultExtensionController extends ExtensionController {
     private Map<String, TransmissionModeProvider> transmissionModeProviders = new LinkedHashMap<String, TransmissionModeProvider>();
     private MultiFactorAuthenticationPlugin multiFactorAuthenticationPlugin = null;
     private AuthorizationPlugin authorizationPlugin = null;
-    private ExtensionLoader extensionLoader = ExtensionLoader.getInstance();
-    private ExtensionStatuses extensionStatuses = ExtensionStatuses.getInstance();
+    private final ExtensionLoader extensionLoader;
+    private final ExtensionStatuses extensionStatuses;
 
     // singleton pattern
     private static ExtensionController instance = null;
@@ -121,13 +116,23 @@ public class DefaultExtensionController extends ExtensionController {
     }
 
     DefaultExtensionController() {
+        this(ObjectXMLSerializer.getInstance(), ControllerFactory.getFactory().createConfigurationController(),
+                ExtensionLoader.getInstance(), ExtensionStatuses.getInstance(), new File(getExtensionsPath()));
+    }
 
+    DefaultExtensionController(ObjectXMLSerializer serializer, ConfigurationController configurationController,
+            ExtensionLoader extensionLoader, ExtensionStatuses extensionStatuses, File extensionsRoot) {
+        this.serializer = serializer;
+        this.configurationController = configurationController;
+        this.extensionLoader = extensionLoader;
+        this.extensionStatuses = extensionStatuses;
+        this.extensionsRoot = extensionsRoot;
     }
 
     @Override
     public void removePropertiesForUninstalledExtensions() {
         try {
-            File uninstallFile = new File(getExtensionsPath(), EXTENSIONS_UNINSTALL_PROPERTIES_FILE);
+            File uninstallFile = new File(extensionsRoot, EXTENSIONS_UNINSTALL_PROPERTIES_FILE);
 
             if (uninstallFile.exists()) {
                 List<String> extensionPaths = FileUtils.readLines(uninstallFile);
@@ -362,9 +367,28 @@ public class DefaultExtensionController extends ExtensionController {
     /* ********************************************************************** */
 
     @Override
-    public void setExtensionEnabled(String extensionName, boolean enabled) throws ControllerException {
+    public synchronized void setExtensionEnabled(String extensionName, boolean enabled) throws ControllerException {
+        Map<String, List<MetaData>> inventory = getPlannedExtensions();
+        List<MetaData> required = new ArrayList<>();
+        if (enabled) {
+            for (MetaData metadata : flatten(inventory)) {
+                if (extensionName.equals(metadata.getName())) {
+                    required.add(metadata);
+                }
+            }
+        }
+        String error = getExtensionChangeError(inventory, inventory, required, extensionName, enabled);
+        if (error != null) {
+            throw new ControllerException(error);
+        }
+        boolean previous = extensionStatuses.isEnabled(extensionName);
         extensionStatuses.setEnabled(extensionName, enabled);
-        extensionStatuses.save();
+        try {
+            extensionStatuses.save();
+        } catch (RuntimeException e) {
+            extensionStatuses.setEnabled(extensionName, previous);
+            throw new ControllerException("Could not save extension status.", e);
+        }
     }
 
     @Override
@@ -429,80 +453,114 @@ public class DefaultExtensionController extends ExtensionController {
     }
 
     @Override
-    public InstallationResult extractExtension(InputStream inputStream) {
-        Throwable cause = null;
-        Set<MetaData> metaDataSet = new HashSet<MetaData>();
-
-        File installTempDir = new File(ExtensionController.getExtensionsPath(), "install_temp");
-
-        if (!installTempDir.exists()) {
-            installTempDir.mkdir();
-        }
-
-        File tempFile = null;
-        FileOutputStream tempFileOutputStream = null;
-        ZipFile zipFile = null;
-
-        try {
-            /*
-             * create a new temp file (in the install temp dir) to store the zip file contents
-             */
-            tempFile = File.createTempFile(ServerUUIDGenerator.getUUID(), ".zip", installTempDir);
-            // write the contents of the multipart fileitem to the temp file
-            try {
-                tempFileOutputStream = new FileOutputStream(tempFile);
-                IOUtils.copy(inputStream, tempFileOutputStream);
-            } finally {
-                ResourceUtil.closeResourceQuietly(tempFileOutputStream);
+    public synchronized InstallationResult extractExtension(InputStream inputStream) {
+        ExtensionInstaller.Result result = new ExtensionInstaller(extensionsRoot, serializer).install(inputStream, incoming -> {
+            Map<String, List<MetaData>> before = getPlannedExtensions();
+            for (String path : incoming.keySet()) {
+                for (String installedPath : before.keySet()) {
+                    if (path.equalsIgnoreCase(installedPath) && !path.equals(installedPath)) {
+                        throw new ControllerException("Package path must retain its installed case: " + installedPath);
+                    }
+                }
             }
+            Map<String, List<MetaData>> after = new LinkedHashMap<>(before);
+            after.putAll(incoming);
+            String error = getExtensionChangeError(before, after, flatten(incoming), null, false);
+            if (error != null) {
+                throw new VersionMismatchException(error);
+            }
+        });
+        return new InstallationResult(result.cause(), result.metadata());
+    }
 
-            // create a new zip file from the temp file
-            zipFile = new ZipFile(tempFile);
-            // get a list of all of the entries in the zip file
-            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+    private Map<String, List<MetaData>> getPlannedExtensions() throws ControllerException {
+        File root = extensionsRoot;
+        Map<String, List<MetaData>> inventory = extensionLoader.readExtensionMetaData(root);
+        File uninstall = new File(root, EXTENSIONS_UNINSTALL_FILE);
+        try {
+            if (uninstall.exists()) {
+                for (String path : FileUtils.readLines(uninstall)) {
+                    inventory.remove(normalizeExtensionPath(path));
+                }
+            }
+            // The launcher applies pending installations after pending removals.
+            inventory.putAll(extensionLoader.readExtensionMetaData(new File(root, "install_temp")));
+            return inventory;
+        } catch (IOException e) {
+            throw new ControllerException("Could not read pending extension changes.", e);
+        }
+    }
 
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                String entryName = entry.getName();
-
-                if (entryName.endsWith("plugin.xml") || entryName.endsWith("destination.xml") || entryName.endsWith("source.xml")) {
-                    // parse the extension metadata xml file
-                    MetaData extensionMetaData = serializer.deserialize(IOUtils.toString(zipFile.getInputStream(entry)), MetaData.class);
-                    metaDataSet.add(extensionMetaData);
-
-                    if (!extensionLoader.isExtensionCompatible(extensionMetaData)) {
-                        if (cause == null) {
-                            cause = new VersionMismatchException(String.format("Extension \"%s\" is not compatible with this version of %s.", entry.getName(), BrandingConstants.PRODUCT_NAME));
+    private String normalizeExtensionPath(String path) throws ControllerException {
+        if (path == null || path.isEmpty() || path.contains("\\")) {
+            throw new ControllerException("A valid extension package path is required.");
+        }
+        try {
+            Path relative = Paths.get(path);
+            for (Path part : relative) {
+                if (part.toString().equals("..")) {
+                    throw new ControllerException("Invalid extension package path: " + path);
+                }
+            }
+            relative = relative.normalize();
+            if (relative.isAbsolute() || relative.getNameCount() != 1 || relative.toString().isEmpty()
+                    || ExtensionInstaller.isReservedPath(relative.toString())) {
+                throw new ControllerException("Invalid extension package path: " + path);
+            }
+            String name = relative.toString();
+            File root = extensionsRoot;
+            for (File directory : new File[] { root, new File(root, "install_temp") }) {
+                File[] packages = directory.listFiles(File::isDirectory);
+                if (packages != null) {
+                    for (File extension : packages) {
+                        if (name.equalsIgnoreCase(extension.getName()) && !name.equals(extension.getName())) {
+                            throw new ControllerException("Package path must retain its installed case: " + extension.getName());
                         }
                     }
                 }
             }
-
-            if (cause == null) {
-                // reset the entries and extract
-                entries = zipFile.entries();
-
-                while (entries.hasMoreElements()) {
-                    ZipEntry entry = entries.nextElement();
-                    extractZipEntry(entry, installTempDir, zipFile);
-                }
-            }
-        } catch (Throwable t) {
-            cause = new ControllerException("Error extracting extension. " + t.toString(), t);
-        } finally {
-            if (zipFile != null) {
-                try {
-                    zipFile.close();
-                } catch (Exception e) {
-                    cause = new ControllerException(e);
-                }
-            }
-
-            // delete the temp file since it is no longer needed
-            FileUtils.deleteQuietly(tempFile);
+            // Preserve the package basename; resolving a symlink could uninstall its target.
+            return name;
+        } catch (InvalidPathException e) {
+            throw new ControllerException("Invalid extension package path: " + path, e);
         }
+    }
 
-        return new InstallationResult(cause, metaDataSet);
+    private List<MetaData> flatten(Map<String, List<MetaData>> inventory) {
+        List<MetaData> metadata = new ArrayList<>();
+        for (List<MetaData> extensions : inventory.values()) {
+            metadata.addAll(extensions);
+        }
+        return metadata;
+    }
+
+    private String getExtensionChangeError(Map<String, List<MetaData>> before, Map<String, List<MetaData>> after,
+            Collection<MetaData> required, String changedName, boolean changedEnabled) throws ControllerException {
+        List<MetaData> previousMetadata = flatten(before);
+        List<MetaData> proposedMetadata = flatten(after);
+        Map<String, Boolean> previousStatus = new HashMap<>();
+        List<MetaData> inventory = new ArrayList<>(previousMetadata);
+        inventory.addAll(proposedMetadata);
+        try {
+            for (MetaData metadata : inventory) {
+                previousStatus.computeIfAbsent(metadata.getName(), extensionStatuses::isEnabled);
+            }
+        } catch (RuntimeException e) {
+            throw new ControllerException("Could not read extension status; no extension changes were applied.", e);
+        }
+        Map<String, Boolean> proposedStatus = new HashMap<>(previousStatus);
+        if (changedName != null) {
+            proposedStatus.put(changedName, changedEnabled);
+        }
+        Map<MetaData, String> previousErrors = extensionLoader.getCompatibilityErrors(previousMetadata, previousStatus::get);
+        Map<MetaData, String> errors = extensionLoader.getCompatibilityErrors(proposedMetadata, proposedStatus::get);
+        for (Map.Entry<MetaData, String> error : errors.entrySet()) {
+            MetaData metadata = error.getKey();
+            if (required.contains(metadata) || proposedStatus.get(metadata.getName()) && !previousErrors.containsKey(metadata)) {
+                return "Extension \"" + metadata.getName() + "\": " + error.getValue();
+            }
+        }
+        return null;
     }
 
     /**
@@ -513,7 +571,17 @@ public class DefaultExtensionController extends ExtensionController {
      * 
      */
     @Override
-    public void prepareExtensionForUninstallation(String pluginPath) throws ControllerException {
+    public synchronized void prepareExtensionForUninstallation(String pluginPath) throws ControllerException {
+        pluginPath = normalizeExtensionPath(pluginPath);
+        Map<String, List<MetaData>> before = getPlannedExtensions();
+        Map<String, List<MetaData>> after = new LinkedHashMap<>(before);
+        if (!new File(new File(extensionsRoot, "install_temp"), pluginPath).isDirectory()) {
+            after.remove(pluginPath);
+        }
+        String error = getExtensionChangeError(before, after, Collections.emptyList(), null, false);
+        if (error != null) {
+            throw new ControllerException(error);
+        }
         addExtensionToUninstallFile(pluginPath);
 
         for (PluginMetaData plugin : getPluginMetaData().values()) {
@@ -567,7 +635,7 @@ public class DefaultExtensionController extends ExtensionController {
      * by MirthLauncher
      */
     private void addExtensionToUninstallFile(String pluginPath) {
-        File uninstallFile = new File(getExtensionsPath(), EXTENSIONS_UNINSTALL_FILE);
+        File uninstallFile = new File(extensionsRoot, EXTENSIONS_UNINSTALL_FILE);
         FileWriter writer = null;
 
         try {
@@ -581,7 +649,7 @@ public class DefaultExtensionController extends ExtensionController {
     }
 
     private void addExtensionToUninstallPropertiesFile(String pluginName) {
-        File uninstallFile = new File(getExtensionsPath(), EXTENSIONS_UNINSTALL_PROPERTIES_FILE);
+        File uninstallFile = new File(extensionsRoot, EXTENSIONS_UNINSTALL_PROPERTIES_FILE);
         FileWriter writer = null;
 
         try {
@@ -674,14 +742,14 @@ public class DefaultExtensionController extends ExtensionController {
         }
 
         // delete the uninstall scripts file
-        FileUtils.deleteQuietly(new File(getExtensionsPath(), EXTENSIONS_UNINSTALL_SCRIPTS_FILE));
+        FileUtils.deleteQuietly(new File(extensionsRoot, EXTENSIONS_UNINSTALL_SCRIPTS_FILE));
     }
 
     private void appendToUninstallScript(List<String> uninstallStatements) throws IOException {
         if (uninstallStatements != null) {
             List<String> uninstallScripts = readUninstallScript();
             uninstallScripts.addAll(uninstallStatements);
-            File uninstallScriptsFile = new File(getExtensionsPath(), EXTENSIONS_UNINSTALL_SCRIPTS_FILE);
+            File uninstallScriptsFile = new File(extensionsRoot, EXTENSIONS_UNINSTALL_SCRIPTS_FILE);
             FileUtils.writeStringToFile(uninstallScriptsFile, serializer.serialize(uninstallScripts));
         }
     }
@@ -691,7 +759,7 @@ public class DefaultExtensionController extends ExtensionController {
      */
     @SuppressWarnings("unchecked")
     private List<String> readUninstallScript() throws IOException {
-        File uninstallScriptsFile = new File(getExtensionsPath(), EXTENSIONS_UNINSTALL_SCRIPTS_FILE);
+        File uninstallScriptsFile = new File(extensionsRoot, EXTENSIONS_UNINSTALL_SCRIPTS_FILE);
         List<String> scripts = new ArrayList<String>();
 
         if (uninstallScriptsFile.exists()) {
@@ -725,40 +793,5 @@ public class DefaultExtensionController extends ExtensionController {
     public List<ServerPlugin> getServerPlugins() {
         // Copied into a List so the ExtensionController signature stays unchanged for extensions.
         return new ArrayList<ServerPlugin>(serverPlugins);
-    }
-
-    void extractZipEntry(ZipEntry entry, File installTempDir, ZipFile zipFile) throws IOException {
-        String canonicalDestinationDirPath = installTempDir.getCanonicalPath();
-        File destinationfile = new File(installTempDir, entry.getName());
-        String canonicalDestinationFile = destinationfile.getCanonicalPath();
-
-        if (!canonicalDestinationFile.startsWith(canonicalDestinationDirPath + File.separator)) {
-            throw new ZipException("Zip file is attempting to traverse out of base directory");
-        }
-
-        if (entry.isDirectory()) {
-            /*
-             * assume directories are stored parents first then children.
-             * 
-             * TODO: this is not robust, just for demonstration purposes.
-             */
-            File directory = new File(installTempDir, entry.getName());
-            directory.mkdir();
-        } else {
-            // otherwise, write the file out to the install temp dir
-            InputStream zipInputStream = null;
-            FileOutputStream fileOutputStream = null;
-            OutputStream outputStream = null;
-            try {
-                zipInputStream = zipFile.getInputStream(entry);
-                fileOutputStream = new FileOutputStream(new File(installTempDir, entry.getName()));
-                outputStream = new BufferedOutputStream(fileOutputStream);
-                IOUtils.copy(zipInputStream, outputStream);
-            } finally {
-                ResourceUtil.closeResourceQuietly(outputStream);
-                ResourceUtil.closeResourceQuietly(fileOutputStream);
-                ResourceUtil.closeResourceQuietly(zipInputStream);
-            }
-        }
     }
 }

@@ -13,6 +13,7 @@ import com.mirth.connect.donkey.server.channel.SourceConnector;
 import com.mirth.connect.donkey.server.message.batch.BatchAdaptorFactory;
 import com.mirth.connect.model.datatype.DataTypeDelegate;
 import com.mirth.connect.model.datatype.SerializerProperties;
+import com.mirth.connect.model.util.MessageVocabulary;
 import com.mirth.connect.plugins.DataTypeServerPlugin;
 
 public class NCPDPDataTypeServerPlugin extends DataTypeServerPlugin {
@@ -37,5 +38,10 @@ public class NCPDPDataTypeServerPlugin extends DataTypeServerPlugin {
     @Override
     protected DataTypeDelegate getDataTypeDelegate() {
         return dataTypeDelegate;
+    }
+
+    @Override
+    public MessageVocabulary getVocabulary(String version, String type) {
+        return new NCPDPVocabulary(version, type);
     }
 }

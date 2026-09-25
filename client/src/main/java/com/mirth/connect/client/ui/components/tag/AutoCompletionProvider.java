@@ -22,8 +22,4 @@ public class AutoCompletionProvider extends DefaultCompletionProvider {
     public String getAlreadyEnteredText(JTextComponent component) {
         return component.getText();
     }
-
-    public void updateUI() {
-        updateUI();
-    }
 }

@@ -22,8 +22,8 @@ import com.mirth.connect.donkey.util.DonkeyElement;
 
 @SuppressWarnings("serial")
 public class TestListenerConnectorProperties extends ConnectorProperties implements ListenerConnectorPropertiesInterface, SourceConnectorPropertiesInterface {
-    private ListenerConnectorProperties listenerConnectorProperties;
-    private SourceConnectorProperties sourceConnectorProperties;
+    private ListenerConnectorProperties listenerConnectorProperties = new ListenerConnectorProperties("0");
+    private SourceConnectorProperties sourceConnectorProperties = new SourceConnectorProperties();
 
     @Override
     public SourceConnectorProperties getSourceConnectorProperties() {

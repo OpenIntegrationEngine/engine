@@ -216,7 +216,6 @@ public class CommandLineInterface {
                 runConsole();
             }
             client.logout();
-            client.close();
             out.println("Disconnected from server.");
         } catch (ClientException ce) {
             ce.printStackTrace();
@@ -224,6 +223,12 @@ public class CommandLineInterface {
             error("Could not load script file.", ioe);
         } catch (URISyntaxException e) {
             error("Invalid server address.", e);
+        } finally {
+            // The client's connection monitor is a non-daemon thread, so an unclosed
+            // client keeps the JVM alive instead of letting it exit.
+            if (client != null) {
+                client.close();
+            }
         }
     }
 

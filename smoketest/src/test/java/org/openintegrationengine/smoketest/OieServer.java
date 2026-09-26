@@ -130,6 +130,11 @@ final class OieServer implements AutoCloseable {
                 + HarnessConfig.TIMEOUT.toSeconds() + "s; last state was " + lastState);
     }
 
+    /** The server's reported version, as the CLI echoes it in its connect banner. */
+    String version() throws ClientException {
+        return client.getVersion();
+    }
+
     /** Submits a source payload and returns the new message id. */
     long submitMessage(String channelId, String rawData, Map<String, Object> sourceMap) throws ClientException {
         RawMessage rawMessage = new RawMessage(rawData, null, sourceMap);

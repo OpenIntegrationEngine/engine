@@ -20,6 +20,7 @@ java \
     -Doie.baseUrl="$OIE_BASE_URL" \
     -Doie.configuration="$OIE_CONFIGURATION" \
     -Doie.password="$OIE_PASSWORD" \
+    -Doie.cliHome="$ENGINE_HOME" \
     ${OIE_DB_DRIVER:+-Doie.db.driver="$OIE_DB_DRIVER"} \
     ${OIE_DB_URL:+-Doie.db.url="$OIE_DB_URL"} \
     ${OIE_DB_USERNAME:+-Doie.db.username="$OIE_DB_USERNAME"} \

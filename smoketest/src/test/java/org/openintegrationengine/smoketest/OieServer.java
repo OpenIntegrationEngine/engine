@@ -25,10 +25,12 @@ import com.mirth.connect.util.MirthSSLUtil;
  * read the resulting message back.
  *
  * <p>This is a thin façade over {@link Client}, which already handles everything the
- * previous Python runner had to hand-roll: it trusts the server's self-signed certificate
- * ({@code TrustSelfSignedStrategy} plus {@code NoopHostnameVerifier}), sends the mandatory
- * {@code X-Requested-With} header, keeps the session cookie, and serialises the OIE model
- * classes. Assertions therefore run against typed objects rather than scraped XML.
+ * previous Python runner had to hand-roll: it applies the trust configuration from
+ * {@link HarnessConfig#PINNED_CLIENT_TRUST} (trust-all by default, because the stack's
+ * server presents a self-signed certificate for a hostname no certificate could match),
+ * sends the mandatory {@code X-Requested-With} header, keeps the session cookie, and
+ * serialises the OIE model classes. Assertions therefore run against typed objects
+ * rather than scraped XML.
  */
 final class OieServer implements AutoCloseable {
 
@@ -46,7 +48,8 @@ final class OieServer implements AutoCloseable {
         Client client;
         try {
             client = new Client(HarnessConfig.BASE_URL, HarnessConfig.REQUEST_TIMEOUT_MILLIS,
-                    MirthSSLUtil.DEFAULT_HTTPS_CLIENT_PROTOCOLS, MirthSSLUtil.DEFAULT_HTTPS_CIPHER_SUITES);
+                    MirthSSLUtil.DEFAULT_HTTPS_CLIENT_PROTOCOLS, MirthSSLUtil.DEFAULT_HTTPS_CIPHER_SUITES,
+                    HarnessConfig.PINNED_CLIENT_TRUST);
         } catch (Exception e) {
             throw new IllegalStateException("Could not create a client for " + HarnessConfig.BASE_URL, e);
         }
@@ -128,6 +131,11 @@ final class OieServer implements AutoCloseable {
         }
         throw new AssertionError("Channel " + label + " (" + channelId + ") did not start within "
                 + HarnessConfig.TIMEOUT.toSeconds() + "s; last state was " + lastState);
+    }
+
+    /** The server's reported version, as the CLI echoes it in its connect banner. */
+    String version() throws ClientException {
+        return client.getVersion();
     }
 
     /** Submits a source payload and returns the new message id. */

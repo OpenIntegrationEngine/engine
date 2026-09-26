@@ -210,6 +210,11 @@ public abstract class ConfigurationController extends Controller {
     public abstract String generateGuid();
 
     /**
+     * Returns the SHA-256 thumbprint for the server certificate in the configured keystore.
+     */
+    public abstract String getServerCertificateThumbprint() throws Exception;
+
+    /**
      * Returns the database driver list used for the Database Reader/Writer connectors.
      * 
      * @return a list of database driver metadata

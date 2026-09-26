@@ -89,6 +89,7 @@ import com.mirth.connect.util.MessageExporter;
 import com.mirth.connect.util.MessageImporter;
 import com.mirth.connect.util.MessageImporter.MessageImportException;
 import com.mirth.connect.util.MessageImporter.MessageImportInvalidPathException;
+import com.mirth.connect.util.MirthSSLUtil;
 import com.mirth.connect.util.messagewriter.AttachmentSource;
 import com.mirth.connect.util.messagewriter.MessageWriter;
 import com.mirth.connect.util.messagewriter.MessageWriterException;
@@ -123,6 +124,7 @@ public class CommandLineInterface {
         Option scriptOption = OptionBuilder.withArgName("script").hasArg().withDescription("script file").create("s");
         Option versionOption = OptionBuilder.withArgName("version").hasArg().withDescription("version").create("v");
         Option configOption = OptionBuilder.withArgName("config file").hasArg().withDescription("path to default configuration [default: mirth-cli-config.properties]").create("c");
+        Option trustOption = OptionBuilder.withArgName("trust").hasArg().withDescription("how to trust the server's certificate: any comma-separated combination of pki, localhost, a SHA-256 thumbprint, or insecure_trust_all_certs [default: pki,localhost]").create("trust");
         Option helpOption = new Option("h", "help");
         Option debugOption = new Option("d", "debug");
 
@@ -133,6 +135,7 @@ public class CommandLineInterface {
         options.addOption(passwordOption);
         options.addOption(scriptOption);
         options.addOption(versionOption);
+        options.addOption(trustOption);
         options.addOption(helpOption);
         options.addOption(debugOption);
 
@@ -175,9 +178,10 @@ public class CommandLineInterface {
             String user = line.getOptionValue("u", config.getString("user"));
             String password = line.getOptionValue("p", config.getString("password"));
             String script = line.getOptionValue("s", config.getString("script"));
+            String trust = line.getOptionValue("trust", config.getString("trust"));
 
             if ((server != null) && (user != null) && (password != null)) {
-                runShell(server, user, password, script, line.hasOption("d"));
+                runShell(server, user, password, script, trust, line.hasOption("d"));
             } else {
                 new HelpFormatter().printHelp("Shell", options);
                 error("all of address, user, password, and version options must be supplied as arguments or in the default configuration file", null);
@@ -189,9 +193,11 @@ public class CommandLineInterface {
         }
     }
 
-    private void runShell(String server, String user, String password, String script, boolean debug) {
+    private void runShell(String server, String user, String password, String script, String trust, boolean debug) {
         try {
-            client = new Client(server);
+            // A null trust takes the client default of pki,localhost, which reaches a
+            // server on this machine but no other.
+            client = new Client(server, MirthSSLUtil.DEFAULT_HTTPS_CLIENT_PROTOCOLS, MirthSSLUtil.DEFAULT_HTTPS_CIPHER_SUITES, trust);
             this.debug = debug;
 
             LoginStatus loginStatus = client.login(user, password);
@@ -216,7 +222,6 @@ public class CommandLineInterface {
                 runConsole();
             }
             client.logout();
-            client.close();
             out.println("Disconnected from server.");
         } catch (ClientException ce) {
             ce.printStackTrace();
@@ -224,6 +229,12 @@ public class CommandLineInterface {
             error("Could not load script file.", ioe);
         } catch (URISyntaxException e) {
             error("Invalid server address.", e);
+        } finally {
+            // The client's connection monitor is a non-daemon thread, so an unclosed
+            // client keeps the JVM alive instead of letting it exit.
+            if (client != null) {
+                client.close();
+            }
         }
     }
 

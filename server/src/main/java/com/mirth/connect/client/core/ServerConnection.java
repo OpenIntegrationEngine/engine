@@ -58,9 +58,7 @@ import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ConnectionKeepAliveStrategy;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.BasicCookieStore;
@@ -70,7 +68,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.ssl.SSLContexts;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.ClientRequest;
@@ -110,22 +107,32 @@ public class ServerConnection implements Connector {
     private ExecutorService abortExecutor = Executors.newSingleThreadExecutor();
     private IdleConnectionMonitor idleConnectionMonitor;
     private ConnectionKeepAliveStrategy keepAliveStrategy;
+    private final PinnedClientTrustSslContextFactory pinnedClientTrustSslContextFactory = new PinnedClientTrustSslContextFactory();
 
+    /**
+     * @deprecated Use {@link #ServerConnection(int, String[], String[], String, String, boolean)} so trust behavior can be configured explicitly.
+     */
+    @Deprecated
     public ServerConnection(int timeout, String[] httpsProtocols, String[] httpsCipherSuites) {
-        this(timeout, httpsProtocols, httpsCipherSuites, false);
+        this(timeout, httpsProtocols, httpsCipherSuites, null, null, false);
     }
 
+    /**
+     * @deprecated Use {@link #ServerConnection(int, String[], String[], String, String, boolean)} so trust behavior can be configured explicitly.
+     */
+    @Deprecated
     public ServerConnection(int timeout, String[] httpsProtocols, String[] httpsCipherSuites, boolean allowHTTP) {
-        SSLContext sslContext = null;
-        try {
-            sslContext = SSLContexts.custom().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
-        } catch (Exception e) {
-            logger.error("Unable to build SSL context.", e);
-        }
+        this(timeout, httpsProtocols, httpsCipherSuites, null, null, allowHTTP);
+    }
+
+    public ServerConnection(int timeout, String[] httpsProtocols, String[] httpsCipherSuites, String pinnedClientTrust, String serverHost, boolean allowHTTP) {
+        PinnedClientTrustConfig pinnedClientTrustConfig = PinnedClientTrustConfig.parse(pinnedClientTrust);
+        SSLContext sslContext = pinnedClientTrustSslContextFactory.createSslContext(pinnedClientTrustConfig, serverHost);
 
         String[] enabledProtocols = MirthSSLUtil.getEnabledHttpsProtocols(httpsProtocols);
         String[] enabledCipherSuites = MirthSSLUtil.getEnabledHttpsCipherSuites(httpsCipherSuites);
-        SSLConnectionSocketFactory sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContext, enabledProtocols, enabledCipherSuites, NoopHostnameVerifier.INSTANCE);
+        SSLConnectionSocketFactory sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContext, enabledProtocols, enabledCipherSuites,
+            pinnedClientTrustSslContextFactory.createHostnameVerifier(pinnedClientTrustConfig, serverHost));
         RegistryBuilder<ConnectionSocketFactory> builder = RegistryBuilder.<ConnectionSocketFactory> create().register("https", sslConnectionSocketFactory);
         if (allowHTTP) {
             builder.register("http", PlainConnectionSocketFactory.getSocketFactory());

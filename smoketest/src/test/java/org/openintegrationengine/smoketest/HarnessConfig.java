@@ -48,6 +48,17 @@ final class HarnessConfig {
     static final int REQUEST_TIMEOUT_MILLIS =
             Integer.parseInt(System.getProperty("oie.requestTimeoutMillis", "15000"));
 
+    /**
+     * How the client validates the server's certificate, in the format of the
+     * {@code administrator.pinnedclienttrust} server property. The harness talks to a
+     * throwaway stack whose server generates its own self-signed certificate under a
+     * hostname nothing could match ({@code oie} inside compose), so the general harness
+     * trusts anything; the trust-manager tests pin deliberately instead. Override with
+     * {@code -Doie.pinnedClientTrust=pki} to run against a real certificate.
+     */
+    static final String PINNED_CLIENT_TRUST =
+            System.getProperty("oie.pinnedClientTrust", "insecure_trust_all_certs");
+
     private HarnessConfig() {
     }
 

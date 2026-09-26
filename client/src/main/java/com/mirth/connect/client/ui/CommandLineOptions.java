@@ -3,6 +3,10 @@
 
 package com.mirth.connect.client.ui;
 
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -15,57 +19,46 @@ public class CommandLineOptions {
     private final String password;
     private final String protocols;
     private final String cipherSuites;
+    private final String pinnedClientTrust;
 
     /**
      * Parse command line arguments for Mirth client.
      */
     public CommandLineOptions(String[] args) {
+        if (args == null) {
+            args = new String[0];
+        }
+
         String server = "https://localhost:8443";
         String version = "";
         String username = "";
         String password = "";
         String protocols = "";
         String cipherSuites = "";
+        String pinnedClientTrust = "";
 
-        if (args == null) {
-            args = new String[0];
-        }
+        Deque<String> remaining = new ArrayDeque<String>(Arrays.asList(args));
+        int idx = 0;
+        while (true) {
+            String arg = remaining.pollFirst();
+            if (arg == null) {
+                break;
+            }
 
-        if (args.length > 0) {
-            server = args[0];
-        }
-        if (args.length > 1) {
-            version = args[1];
-        }
-        if (args.length > 2) {
-            if (StringUtils.equalsIgnoreCase(args[2], "-ssl")) {
-                // <server> <version> -ssl [<protocols> [<ciphersuites> [<username> [<password>]]]]
-                if (args.length > 3) {
-                    protocols = args[3];
-                }
-                if (args.length > 4) {
-                    cipherSuites = args[4];
-                }
-                if (args.length > 5) {
-                    username = args[5];
-                }
-                if (args.length > 6) {
-                    password = args[6];
-                }
+            if (StringUtils.equalsIgnoreCase(arg, "-ssl")) {
+                protocols = StringUtils.defaultString(remaining.pollFirst());
+                cipherSuites = StringUtils.defaultString(remaining.pollFirst());
+            } else if (StringUtils.equalsIgnoreCase(arg, "-trust")) {
+                pinnedClientTrust = StringUtils.defaultString(remaining.pollFirst());
             } else {
-                // <server> <version> <username> [<password> [-ssl [<protocols> [<ciphersuites>]]]]
-                username = args[2];
-                if (args.length > 3) {
-                    password = args[3];
+                switch (idx) {
+                    case 0 -> server = arg;
+                    case 1 -> version = arg;
+                    case 2 -> username = arg;
+                    case 3 -> password = arg;
+                    default -> {} // Explicitly ignore extra arguments
                 }
-                if (args.length > 4 && StringUtils.equalsIgnoreCase(args[4], "-ssl")) {
-                    if (args.length > 5) {
-                        protocols = args[5];
-                    }
-                    if (args.length > 6) {
-                        cipherSuites = args[6];
-                    }
-                }
+                idx++;
             }
         }
 
@@ -73,8 +66,9 @@ public class CommandLineOptions {
         this.version = version;
         this.username = username;
         this.password = password;
-        this.protocols = protocols;
-        this.cipherSuites = cipherSuites;
+        this.protocols = StringUtils.defaultString(protocols);
+        this.cipherSuites = StringUtils.defaultString(cipherSuites);
+        this.pinnedClientTrust = StringUtils.defaultString(pinnedClientTrust);
     }
 
     public String getServer() {
@@ -99,5 +93,9 @@ public class CommandLineOptions {
 
     public String getCipherSuites() {
         return cipherSuites;
+    }
+
+    public String getPinnedClientTrust() {
+        return pinnedClientTrust;
     }
 }

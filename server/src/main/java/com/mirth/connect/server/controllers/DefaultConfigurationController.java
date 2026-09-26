@@ -23,6 +23,7 @@ import java.nio.charset.Charset;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.MessageDigest;
 import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
@@ -36,6 +37,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -196,6 +198,7 @@ public class DefaultConfigurationController extends ConfigurationController {
     private static final String XSTREAM_ALLOW_TYPE_HIERARCHIES = "xstream.allowtypehierarchies";
 
     private static final String DEFAULT_STOREPASS = "81uWxplDtB";
+    private static final String SERVER_CERTIFICATE_ALIAS = "mirthconnect";
 
     // singleton pattern
     private static ConfigurationController instance = null;
@@ -1511,15 +1514,29 @@ public class DefaultConfigurationController extends ConfigurationController {
         }
     }
 
+    @Override
+    public String getServerCertificateThumbprint() throws Exception {
+        KeyStore keyStore = KeyStore.getInstance(mirthConfig.getString("keystore.type", "JCEKS"));
+
+        try (FileInputStream keyStoreInputStream = new FileInputStream(new File(mirthConfig.getString("keystore.path")))) {
+            keyStore.load(keyStoreInputStream, mirthConfig.getString("keystore.storepass").toCharArray());
+        }
+
+        Certificate certificate = keyStore.getCertificate(SERVER_CERTIFICATE_ALIAS);
+        if (certificate == null) {
+            throw new IllegalStateException("Certificate alias not found in keystore: " + SERVER_CERTIFICATE_ALIAS);
+        }
+
+        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(certificate.getEncoded()));
+    }
+
     /**
      * Checks for an existing certificate to use for secure communication between the server and
      * client. If no certficate exists, this will generate a new one.
      * 
      */
     private void generateDefaultCertificate(Provider provider, KeyStore keyStore, char[] keyPassword) throws Exception {
-        final String certificateAlias = "mirthconnect";
-
-        if (!keyStore.containsAlias(certificateAlias)) {
+        if (!keyStore.containsAlias(SERVER_CERTIFICATE_ALIAS)) {
             // Common CA and SSL cert attributes
             Date startDate = new Date(); // time from which certificate is valid
             Date expiryDate = DateUtils.addYears(startDate, 50); // time after which certificate is not valid
@@ -1553,7 +1570,7 @@ public class DefaultConfigurationController extends ConfigurationController {
             logger.debug("generated new certificate with serial number: " + ((X509Certificate) sslCert).getSerialNumber());
 
             // add the generated SSL cert to the keystore using the key password
-            keyStore.setKeyEntry(certificateAlias, sslKeyPair.getPrivate(), keyPassword, new Certificate[] {
+            keyStore.setKeyEntry(SERVER_CERTIFICATE_ALIAS, sslKeyPair.getPrivate(), keyPassword, new Certificate[] {
                     sslCert });
         } else {
             logger.debug("found certificate in keystore");

@@ -50,6 +50,7 @@ import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.server.controllers.ExtensionController;
 import com.mirth.connect.server.tools.ClassPathResource;
+import com.mirth.connect.server.util.PinnedClientTrustResolver;
 import com.mirth.connect.server.util.ResourceUtil;
 import com.mirth.connect.util.MirthSSLUtil;
 
@@ -57,6 +58,7 @@ public class WebStartServlet extends HttpServlet {
     private Logger logger = LogManager.getLogger(this.getClass());
     private ConfigurationController configurationController = ControllerFactory.getFactory().createConfigurationController();
     private ExtensionController extensionController = ControllerFactory.getFactory().createExtensionController();
+    private final PinnedClientTrustResolver pinnedClientTrustResolver = new PinnedClientTrustResolver();
 
     /*
      * Override last modified time to always be modified so it updates changes to JNLP.
@@ -276,6 +278,17 @@ public class WebStartServlet extends HttpServlet {
             Element cipherSuitesArgumentElement = document.createElement("argument");
             cipherSuitesArgumentElement.setTextContent(StringUtils.join(cipherSuites, ','));
             applicationDescElement.appendChild(cipherSuitesArgumentElement);
+        }
+
+        String pinnedClientTrust = pinnedClientTrustResolver.resolve(mirthProperties, configurationController::getServerCertificateThumbprint);
+        if (StringUtils.isNotBlank(pinnedClientTrust)) {
+            Element pinnedClientTrustArgumentElement = document.createElement("argument");
+            pinnedClientTrustArgumentElement.setTextContent("-trust");
+            applicationDescElement.appendChild(pinnedClientTrustArgumentElement);
+
+            Element pinnedClientTrustValueArgumentElement = document.createElement("argument");
+            pinnedClientTrustValueArgumentElement.setTextContent(pinnedClientTrust);
+            applicationDescElement.appendChild(pinnedClientTrustValueArgumentElement);
         }
 
         return document;

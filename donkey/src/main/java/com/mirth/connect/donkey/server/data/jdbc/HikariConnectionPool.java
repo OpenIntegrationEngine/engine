@@ -28,7 +28,7 @@ public class HikariConnectionPool implements ConnectionPool {
         dataSource.setJdbcUrl(url);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
-        dataSource.setConnectionTimeout(0);
+        dataSource.setConnectionTimeout(30000);
         dataSource.setAutoCommit(false);
         dataSource.setMaximumPoolSize(maxConnections);
         dataSource.setMinimumIdle(0);

@@ -13,6 +13,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,14 @@ import static org.mockito.Mockito.when;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.lang.reflect.Field;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -30,6 +39,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.mirth.connect.donkey.model.message.ConnectorMessage;
 import com.mirth.connect.donkey.model.message.MessageContent;
+import com.mirth.connect.donkey.server.channel.MessageTelemetry;
 import com.mirth.connect.model.codetemplates.ContextType;
 import com.mirth.connect.server.builders.JavaScriptBuilder;
 import com.mirth.connect.server.controllers.CodeTemplateController;
@@ -152,6 +162,105 @@ public class JavaScriptUtilTest {
             assertEquals("processed", result);
         } finally {
             CompiledScriptCache.getInstance().removeCompiledScript(scriptId);
+        }
+    }
+
+    @Test
+    public void telemetryContextTransfersThroughActualJavaScriptExecutorAndRestoresAfterFailure() throws Exception {
+        withTelemetryWorker((context, worker) -> {
+            worker.submit(() -> context.set("worker prior")).get(5, TimeUnit.SECONDS);
+            context.set("source context");
+            assertEquals("source context", JavaScriptUtil.execute(telemetryTask(() -> {
+                assertTrue(Thread.currentThread() instanceof MirthJavaScriptThread);
+                return context.get();
+            })));
+            RuntimeException original = new RuntimeException("script failure");
+            try {
+                JavaScriptUtil.execute(telemetryTask(() -> {
+                    assertEquals("source context", context.get());
+                    throw original;
+                }));
+                org.junit.Assert.fail("script must fail");
+            } catch (JavaScriptExecutorException failure) { assertSame(original, failure.getCause()); }
+            assertEquals("worker prior", worker.submit(context::get).get(5, TimeUnit.SECONDS));
+            assertEquals("source context", context.get());
+        });
+    }
+
+    @Test
+    public void interruptedScriptCallerLeavesRestorationOnScriptWorker() throws Exception {
+        withTelemetryWorker((context, worker) -> {
+            worker.submit(() -> context.set("worker prior")).get(5, TimeUnit.SECONDS);
+            CountDownLatch started = new CountDownLatch(1), finished = new CountDownLatch(1);
+            AtomicReference<Throwable> unexpected = new AtomicReference<>();
+            Thread caller = new Thread(() -> {
+                context.set("interrupted request");
+                try {
+                    JavaScriptUtil.execute(telemetryTask(() -> {
+                        assertEquals("interrupted request", context.get());
+                        started.countDown();
+                        new CountDownLatch(1).await();
+                        return null;
+                    }));
+                    unexpected.set(new AssertionError("expected caller interruption"));
+                } catch (InterruptedException expected) {
+                    if (!Thread.currentThread().isInterrupted()) unexpected.set(new AssertionError("interrupt flag cleared"));
+                } catch (Throwable failure) { unexpected.set(failure); }
+                finally { finished.countDown(); }
+            }, "telemetry-script-caller");
+            try {
+                caller.start();
+                assertTrue(started.await(5, TimeUnit.SECONDS));
+                caller.interrupt();
+                assertTrue(finished.await(5, TimeUnit.SECONDS));
+                assertNull(unexpected.get());
+                assertEquals("worker prior", worker.submit(context::get).get(5, TimeUnit.SECONDS));
+            } finally {
+                caller.interrupt();
+                caller.join(5000);
+                assertFalse(caller.isAlive());
+            }
+        });
+    }
+
+    private <T> JavaScriptTask<T> telemetryTask(Callable<T> body) {
+        return new JavaScriptTask<>(contextFactory(), "Telemetry test") {
+            @Override public T doCall() throws Exception { return body.call(); }
+        };
+    }
+
+    @FunctionalInterface
+    private interface TelemetryScenario { void run(ThreadLocal<String> context, ExecutorService worker) throws Exception; }
+
+    private void withTelemetryWorker(TelemetryScenario scenario) throws Exception {
+        Field field = JavaScriptUtil.class.getDeclaredField("executor");
+        field.setAccessible(true);
+        ExecutorService priorExecutor = (ExecutorService) field.get(null);
+        ExecutorService worker = Executors.newSingleThreadExecutor(new MirthJavaScriptThreadFactory());
+        ThreadLocal<String> context = new ThreadLocal<>();
+        AtomicReference<String> scopeError = new AtomicReference<>();
+        field.set(null, worker);
+        try (AutoCloseable registration = MessageTelemetry.install(new MessageTelemetry.Provider() {
+            public MessageTelemetry.Observation start(MessageTelemetry.Stage stage, ConnectorMessage message) { return null; }
+            public Supplier<MessageTelemetry.Observation> capture() {
+                String captured = context.get();
+                return () -> {
+                    String previous = context.get();
+                    Thread owner = Thread.currentThread();
+                    context.set(captured);
+                    return () -> {
+                        if (Thread.currentThread() != owner) scopeError.set("scope closed on another thread");
+                        context.set(previous);
+                    };
+                };
+            }
+        })) {
+            scenario.run(context, worker);
+            assertNull(scopeError.get());
+        } finally {
+            field.set(null, priorExecutor);
+            worker.shutdownNow();
+            assertTrue(worker.awaitTermination(5, TimeUnit.SECONDS));
         }
     }
 }

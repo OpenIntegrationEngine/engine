@@ -12,6 +12,7 @@ package com.mirth.connect.donkey.test.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.donkey.model.message.RawMessage;
 import com.mirth.connect.donkey.server.ConnectorTaskException;
 import com.mirth.connect.donkey.server.channel.ChannelException;
@@ -19,7 +20,7 @@ import com.mirth.connect.donkey.server.channel.DispatchResult;
 import com.mirth.connect.donkey.server.channel.SourceConnector;
 
 public class TestSourceConnector extends SourceConnector {
-    protected TestConnectorProperties connectorProperties;
+    protected ConnectorProperties connectorProperties;
     private List<DispatchResult> recoveredDispatchResults = new ArrayList<DispatchResult>();
     private boolean isDeployed = false;
     private List<Long> messageIds = new ArrayList<Long>();
@@ -38,7 +39,7 @@ public class TestSourceConnector extends SourceConnector {
 
     @Override
     public void onDeploy() {
-        this.connectorProperties = (TestConnectorProperties) getConnectorProperties();
+        this.connectorProperties = getConnectorProperties();
         isDeployed = true;
     }
 

@@ -333,50 +333,60 @@ public class DefaultUserController extends UserController {
             LoginStatus loginStatus = null;
 
             if (authorized) {
+                long currentTime = System.currentTimeMillis();
+                String changeReason = null;
+
                 // If password expiration is enabled, do checks now
-                if (passwordRequirements.getExpiration() > 0) {
-                    long passwordTime = credentials.getPasswordDate().getTimeInMillis();
-                    long currentTime = System.currentTimeMillis();
+                if ((passwordRequirements.getExpiration() > 0) 
+                    && loginRequirementsChecker.isPasswordExpired(credentials.getPasswordDate().getTimeInMillis(), currentTime)) {
+                    changeReason = "Your password has expired.";
+                } else {
+                    // Check if it meets the current requirements
+                    List<String> requirementFailures = PasswordRequirementsChecker.getInstance().doesPasswordMeetRequirements(null, plainPassword, passwordRequirements);
 
-                    // If the password is expired, do grace period checks
-                    if (loginRequirementsChecker.isPasswordExpired(passwordTime, currentTime)) {
-                        // Let 0 be infinite grace period, -1 be no grace period
-                        if (passwordRequirements.getGracePeriod() == 0) {
-                            loginStatus = new LoginStatus(LoginStatus.Status.SUCCESS_GRACE_PERIOD, "Your password has expired. Please change your password now.", validUser.getUsername());
-                        } else if (passwordRequirements.getGracePeriod() > 0) {
-                            // If there has never been a grace time, start it now
-                            long gracePeriodStartTime;
-                            if (validUser.getGracePeriodStart() == null) {
-                                gracePeriodStartTime = currentTime;
+                    if (requirementFailures != null) {
+                        changeReason = "Your password does not meet requirements: " + StringUtils.join(requirementFailures, "; ") + ".";
+                    }
+                }
 
-                                Map<String, Object> gracePeriodMap = new HashMap<String, Object>();
-                                gracePeriodMap.put("id", validUser.getId());
-                                gracePeriodMap.put("gracePeriodStart", Calendar.getInstance());
+                // If a change is required, handle grace period checks
+                if (changeReason != null) {
+                    // Let 0 be infinite grace period, -1 be no grace period
+                    if (passwordRequirements.getGracePeriod() == 0) {
+                        loginStatus = new LoginStatus(LoginStatus.Status.SUCCESS_GRACE_PERIOD, changeReason + " Please change your password now.", validUser.getUsername());
+                    } else if (passwordRequirements.getGracePeriod() > 0) {
+                        // If there has never been a grace time, start it now
+                        long gracePeriodStartTime;
+                        if (validUser.getGracePeriodStart() == null) {
+                            gracePeriodStartTime = currentTime;
 
-                                SqlConfig.getInstance().getSqlSessionManager().update("User.startGracePeriod", gracePeriodMap);
-                            } else {
-                                gracePeriodStartTime = validUser.getGracePeriodStart().getTimeInMillis();
-                            }
+                            Map<String, Object> gracePeriodMap = new HashMap<String, Object>();
+                            gracePeriodMap.put("id", validUser.getId());
+                            gracePeriodMap.put("gracePeriodStart", Calendar.getInstance());
 
-                            long graceTimeRemaining = loginRequirementsChecker.getGraceTimeRemaining(gracePeriodStartTime, currentTime);
-                            if (graceTimeRemaining > 0) {
-                                loginStatus = new LoginStatus(LoginStatus.Status.SUCCESS_GRACE_PERIOD, "Your password has expired. You are required to change your password in the next " + loginRequirementsChecker.getPrintableGraceTimeRemaining(graceTimeRemaining) + ".", validUser.getUsername());
-                            }
+                            SqlConfig.getInstance().getSqlSessionManager().update("User.startGracePeriod", gracePeriodMap);
+                        } else {
+                            gracePeriodStartTime = validUser.getGracePeriodStart().getTimeInMillis();
                         }
 
-                        // If there is no grace period or it has passed, FAIL_EXPIRED
-                        if (loginStatus == null) {
-                            loginStatus = new LoginStatus(LoginStatus.Status.FAIL_EXPIRED, "Your password has expired. Please contact an administrator to have your password reset.");
+                        long graceTimeRemaining = loginRequirementsChecker.getGraceTimeRemaining(gracePeriodStartTime, currentTime);
+                        if (graceTimeRemaining > 0) {
+                            loginStatus = new LoginStatus(LoginStatus.Status.SUCCESS_GRACE_PERIOD, changeReason + " You are required to change your password in the next " + loginRequirementsChecker.getPrintableGraceTimeRemaining(graceTimeRemaining) + ".", validUser.getUsername());
                         }
+                    }
 
-                        /*
-                         * Reset the user's grace period if it isn't being used but one was
-                         * previously set. This should only happen if a user is in a grace period
-                         * before grace periods are disabled.
-                         */
-                        if ((passwordRequirements.getGracePeriod() <= 0) && (validUser.getGracePeriodStart() != null)) {
-                            SqlConfig.getInstance().getSqlSessionManager().update("User.clearGracePeriod", validUser.getId());
-                        }
+                    // If there is no grace period or it has passed, FAIL_EXPIRED
+                    if (loginStatus == null) {
+                        loginStatus = new LoginStatus(LoginStatus.Status.FAIL_EXPIRED, changeReason + " Please contact an administrator to have your password reset.");
+                    }
+
+                    /*
+                     * Reset the user's grace period if it isn't being used but one was
+                     * previously set. This should only happen if a user is in a grace period
+                     * before grace periods are disabled.
+                     */
+                    if ((passwordRequirements.getGracePeriod() <= 0) && (validUser.getGracePeriodStart() != null)) {
+                        SqlConfig.getInstance().getSqlSessionManager().update("User.clearGracePeriod", validUser.getId());
                     }
                 }
                 // End of password expiration and grace period checks

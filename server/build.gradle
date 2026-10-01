@@ -9,8 +9,9 @@ import java.text.SimpleDateFormat
 dependencies {
     implementation libs.bundles.server.main
     implementation libs.bundles.server.extensions
-    // classified artifact; version catalogs cannot express classifiers
-    implementation 'io.netty:netty-transport-native-epoll:4.1.119.Final:linux-x86_64'
+    // classified artifact: the catalog entry carries the version, the
+    // classifier is selected here
+    implementation(variantOf(libs.netty.transport.native.epoll) { classifier('linux-x86_64') })
     testImplementation libs.bundles.server.test
 }
 

@@ -10,6 +10,7 @@
 package com.mirth.connect.server.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,11 +25,18 @@ import java.io.File;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.security.KeyStore;
+import java.security.Provider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import javax.xml.XMLConstants;
 import javax.xml.transform.Source;
 import javax.xml.transform.TransformerFactory;
@@ -36,6 +44,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.io.FileUtils;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.invocation.Invocation;
@@ -46,6 +55,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.mirth.connect.client.core.ControllerException;
 import com.mirth.connect.model.DriverInfo;
+import com.mirth.connect.model.EncryptionSettings;
 
 public class DefaultConfigurationControllerTest {
 
@@ -273,6 +283,114 @@ public class DefaultConfigurationControllerTest {
 			exceptionCaught = true;
 		}
     	assertTrue(exceptionCaught);
+    }
+
+    /*
+     * The following tests cover the keystore "dirty" tracking added so that initializeSecuritySettings()
+     * only rewrites the keystore file when something actually changed. configureEncryption() and
+     * generateDefaultCertificate() are private, so they are exercised via reflection; both live in the
+     * same package as this test. Each returns true only when it mutated the keystore.
+     */
+
+    @Test
+    public void configureEncryption_returnsTrue_andStoresKey_whenKeyMissing() throws Exception {
+        setEncryptionConfig(new EncryptionSettings(new Properties()));
+
+        Provider provider = new BouncyCastleProvider();
+        KeyStore keyStore = newEmptyKeyStore();
+        char[] keyPassword = KEYSTORE_PASSWORD;
+
+        assertFalse(keyStore.containsAlias(DefaultConfigurationController.SECRET_KEY_ALIAS));
+
+        boolean dirtied = invokeConfigureEncryption(provider, keyStore, keyPassword);
+
+        assertTrue("A newly generated encryption key should mark the keystore dirty", dirtied);
+        assertTrue("The encryption key should now be present in the keystore", keyStore.containsAlias(DefaultConfigurationController.SECRET_KEY_ALIAS));
+    }
+
+    @Test
+    public void configureEncryption_returnsFalse_whenKeyAlreadyPresent() throws Exception {
+        setEncryptionConfig(new EncryptionSettings(new Properties()));
+
+        Provider provider = new BouncyCastleProvider();
+        KeyStore keyStore = newEmptyKeyStore();
+        char[] keyPassword = KEYSTORE_PASSWORD;
+
+        // Seed the keystore with an existing secret key so the "found" branch is taken.
+        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+        keyGenerator.init(128);
+        SecretKey existingKey = keyGenerator.generateKey();
+        keyStore.setEntry(DefaultConfigurationController.SECRET_KEY_ALIAS, new KeyStore.SecretKeyEntry(existingKey), new KeyStore.PasswordProtection(keyPassword));
+
+        boolean dirtied = invokeConfigureEncryption(provider, keyStore, keyPassword);
+
+        assertFalse("Reusing an existing encryption key should not mark the keystore dirty", dirtied);
+    }
+
+    @Test
+    public void generateDefaultCertificate_returnsTrue_andStoresCert_whenCertMissing() throws Exception {
+        Provider provider = new BouncyCastleProvider();
+        KeyStore keyStore = newEmptyKeyStore();
+        char[] keyPassword = KEYSTORE_PASSWORD;
+
+        assertFalse(keyStore.containsAlias(CERTIFICATE_ALIAS));
+
+        boolean dirtied = invokeGenerateDefaultCertificate(provider, keyStore, keyPassword);
+
+        assertTrue("A newly generated certificate should mark the keystore dirty", dirtied);
+        assertTrue("The certificate should now be present in the keystore", keyStore.containsAlias(CERTIFICATE_ALIAS));
+    }
+
+    @Test
+    public void generateDefaultCertificate_returnsFalse_whenCertAlreadyPresent() throws Exception {
+        Provider provider = new BouncyCastleProvider();
+        KeyStore keyStore = newEmptyKeyStore();
+        char[] keyPassword = KEYSTORE_PASSWORD;
+
+        // First call generates and stores the certificate.
+        assertTrue(invokeGenerateDefaultCertificate(provider, keyStore, keyPassword));
+
+        // Second call should find the existing certificate and leave the keystore untouched.
+        boolean dirtied = invokeGenerateDefaultCertificate(provider, keyStore, keyPassword);
+
+        assertFalse("Reusing an existing certificate should not mark the keystore dirty", dirtied);
+    }
+
+    private static final char[] KEYSTORE_PASSWORD = "testpass".toCharArray();
+    private static final String CERTIFICATE_ALIAS = "mirthconnect";
+
+    private KeyStore newEmptyKeyStore() throws Exception {
+        KeyStore keyStore = KeyStore.getInstance("JCEKS");
+        keyStore.load(null, KEYSTORE_PASSWORD);
+        return keyStore;
+    }
+
+    private void setEncryptionConfig(EncryptionSettings encryptionConfig) throws Exception {
+        Field field = DefaultConfigurationController.class.getDeclaredField("encryptionConfig");
+        field.setAccessible(true);
+        field.set(null, encryptionConfig);
+    }
+
+    private boolean invokeConfigureEncryption(Provider provider, KeyStore keyStore, char[] keyPassword) throws Exception {
+        return invokePrivateDirtyMethod("configureEncryption", provider, keyStore, keyPassword);
+    }
+
+    private boolean invokeGenerateDefaultCertificate(Provider provider, KeyStore keyStore, char[] keyPassword) throws Exception {
+        return invokePrivateDirtyMethod("generateDefaultCertificate", provider, keyStore, keyPassword);
+    }
+
+    private boolean invokePrivateDirtyMethod(String methodName, Provider provider, KeyStore keyStore, char[] keyPassword) throws Exception {
+        Method method = DefaultConfigurationController.class.getDeclaredMethod(methodName, Provider.class, KeyStore.class, char[].class);
+        method.setAccessible(true);
+        try {
+            return (boolean) method.invoke(new DefaultConfigurationController(), provider, keyStore, keyPassword);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof Exception) {
+                throw (Exception) cause;
+            }
+            throw e;
+        }
     }
 
     private void assertDefaultDrivers(List<DriverInfo> drivers, boolean includeODBC) {

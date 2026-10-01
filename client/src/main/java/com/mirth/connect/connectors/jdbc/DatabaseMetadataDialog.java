@@ -564,7 +564,7 @@ public class DatabaseMetadataDialog extends MirthDialog {
         Set<String> tableNamePatterns = new HashSet<String>(Arrays.asList(databaseConnectionInfo.getTableNamePatternExpression().trim().split("[, ]+")));
         try {
             metaDataWorkerId = UUID.randomUUID().toString();
-            parentConnector.getServlet(DatabaseConnectorServletInterface.class, "Retrieving tables...", "Could not retrieve database metadata.  Please ensure that your driver, URL, username, and password are correct.\n\n", handler, metaDataWorkerId).getTables(parent.channelEditPanel.currentChannel.getId(), parent.channelEditPanel.currentChannel.getName(), databaseConnectionInfo.getDriver(), databaseConnectionInfo.getUrl(), databaseConnectionInfo.getUsername(), databaseConnectionInfo.getPassword(), tableNamePatterns, databaseConnectionInfo.getSelectLimit(), databaseConnectionInfo.getResourceIds());
+            parentConnector.getServlet(DatabaseConnectorServletInterface.class, "Retrieving tables...", "Could not retrieve database metadata.  Please ensure that your driver, URL, username, and password are correct.\n\n", handler, metaDataWorkerId).getTables(parent.channelEditPanel.currentChannel.getId(), parent.channelEditPanel.currentChannel.getName(), databaseConnectionInfo.getDriver(), databaseConnectionInfo.getUrl(), databaseConnectionInfo.getUsername(), databaseConnectionInfo.getPassword(), tableNamePatterns, databaseConnectionInfo.getResourceIds());
         } catch (ClientException e) {
             // Should not happen
         }

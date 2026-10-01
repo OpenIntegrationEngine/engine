@@ -96,7 +96,7 @@ class DatabaseMetadataTest {
         SortedSet<Table> tables = SharedServer.get()
                 .servlet(DatabaseConnectorServletInterface.class)
                 .getTables("smoketest", "smoketest", HarnessConfig.DB_DRIVER, HarnessConfig.DB_URL,
-                        HarnessConfig.DB_USERNAME, HarnessConfig.DB_PASSWORD, patterns, null, Collections.emptySet());
+                        HarnessConfig.DB_USERNAME, HarnessConfig.DB_PASSWORD, patterns, Collections.emptySet());
 
         return tables == null ? new TreeSet<Table>() : tables;
     }

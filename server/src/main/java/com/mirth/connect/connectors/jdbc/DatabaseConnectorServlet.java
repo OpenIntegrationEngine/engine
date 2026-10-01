@@ -40,10 +40,7 @@ public class DatabaseConnectorServlet extends MirthServlet implements DatabaseCo
     }
 
     @Override
-    public SortedSet<Table> getTables(String channelId, String channelName, String driver, String url, String username, String password, Set<String> tableNamePatterns, String selectLimit, Set<String> resourceIds) {
-        // selectLimit is deprecated and ignored for security reasons. Kept for backcompat.
-        selectLimit = null;
-
+    public SortedSet<Table> getTables(String channelId, String channelName, String driver, String url, String username, String password, Set<String> tableNamePatterns, Set<String> resourceIds) {
         CustomDriver customDriver = null;
         Connection connection = null;
         try {

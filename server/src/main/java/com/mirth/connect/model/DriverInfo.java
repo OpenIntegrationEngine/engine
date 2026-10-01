@@ -23,6 +23,10 @@ public class DriverInfo implements Serializable {
     private String className;
     private String name;
     private String template;
+    /**
+     * @deprecated Unused. Retained so that previously serialized driver lists still deserialize.
+     */
+    @Deprecated
     private String selectLimit;
     private List<String> alternativeClassNames;
 
@@ -30,28 +34,43 @@ public class DriverInfo implements Serializable {
 
     }
 
-    public DriverInfo(String name, String className, String template, String selectLimit) {
-        this(name, className, template, selectLimit, new ArrayList<String>());
+    public DriverInfo(String name, String className, String template) {
+        this(name, className, template, new ArrayList<String>());
     }
 
-    public DriverInfo(String name, String className, String template, String selectLimit, List<String> alternativeClassNames) {
+    public DriverInfo(String name, String className, String template, List<String> alternativeClassNames) {
         this.name = name;
         this.className = className;
         this.template = template;
-        this.selectLimit = selectLimit;
         this.alternativeClassNames = alternativeClassNames;
+    }
+
+    /**
+     * @deprecated selectLimit is unused. Use {@link #DriverInfo(String, String, String)}.
+     */
+    @Deprecated
+    public DriverInfo(String name, String className, String template, String selectLimit) {
+        this(name, className, template);
+    }
+
+    /**
+     * @deprecated selectLimit is unused. Use {@link #DriverInfo(String, String, String, List)}.
+     */
+    @Deprecated
+    public DriverInfo(String name, String className, String template, String selectLimit, List<String> alternativeClassNames) {
+        this(name, className, template, alternativeClassNames);
     }
 
     public static List<DriverInfo> getDefaultDrivers() {
         List<DriverInfo> drivers = new ArrayList<DriverInfo>();
 
-        drivers.add(new DriverInfo("MySQL", "com.mysql.cj.jdbc.Driver", "jdbc:mysql://host:port/dbname", "SELECT * FROM ? LIMIT 1", new ArrayList<String>(Arrays.asList(new String[] {
+        drivers.add(new DriverInfo("MySQL", "com.mysql.cj.jdbc.Driver", "jdbc:mysql://host:port/dbname", new ArrayList<String>(Arrays.asList(new String[] {
                 "com.mysql.jdbc.Driver" }))));
-        drivers.add(new DriverInfo("Oracle", "oracle.jdbc.driver.OracleDriver", "jdbc:oracle:thin:@host:port:dbname", "SELECT * FROM ? WHERE ROWNUM < 2"));
-        drivers.add(new DriverInfo("PostgreSQL", "org.postgresql.Driver", "jdbc:postgresql://host:port/dbname", "SELECT * FROM ? LIMIT 1"));
-        drivers.add(new DriverInfo("SQL Server/Sybase (jTDS)", "net.sourceforge.jtds.jdbc.Driver", "jdbc:jtds:sqlserver://host:port/dbname", "SELECT TOP 1 * FROM ?"));
-        drivers.add(new DriverInfo("Microsoft SQL Server", "com.microsoft.sqlserver.jdbc.SQLServerDriver", "jdbc:sqlserver://host:port;databaseName=dbname", "SELECT TOP 1 * FROM ?"));
-        drivers.add(new DriverInfo("SQLite", "org.sqlite.JDBC", "jdbc:sqlite:dbfile.db", "SELECT * FROM ? LIMIT 1"));
+        drivers.add(new DriverInfo("Oracle", "oracle.jdbc.driver.OracleDriver", "jdbc:oracle:thin:@host:port:dbname"));
+        drivers.add(new DriverInfo("PostgreSQL", "org.postgresql.Driver", "jdbc:postgresql://host:port/dbname"));
+        drivers.add(new DriverInfo("SQL Server/Sybase (jTDS)", "net.sourceforge.jtds.jdbc.Driver", "jdbc:jtds:sqlserver://host:port/dbname"));
+        drivers.add(new DriverInfo("Microsoft SQL Server", "com.microsoft.sqlserver.jdbc.SQLServerDriver", "jdbc:sqlserver://host:port;databaseName=dbname"));
+        drivers.add(new DriverInfo("SQLite", "org.sqlite.JDBC", "jdbc:sqlite:dbfile.db"));
 
         return drivers;
     }
@@ -80,10 +99,18 @@ public class DriverInfo implements Serializable {
         this.template = template;
     }
 
+    /**
+     * @deprecated Unused.
+     */
+    @Deprecated
     public String getSelectLimit() {
         return selectLimit;
     }
 
+    /**
+     * @deprecated Unused.
+     */
+    @Deprecated
     public void setSelectLimit(String selectLimit) {
         this.selectLimit = selectLimit;
     }
@@ -103,7 +130,6 @@ public class DriverInfo implements Serializable {
         builder.append("name=" + getName() + ", ");
         builder.append("className=" + getClassName() + ", ");
         builder.append("template=" + getTemplate() + ", ");
-        builder.append("selectLimit=" + getSelectLimit() + ", ");
         builder.append("alternativeClassNames=" + getAlternativeClassNames());
         builder.append("]");
         return builder.toString();
@@ -111,6 +137,6 @@ public class DriverInfo implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
+        return EqualsBuilder.reflectionEquals(this, obj, "selectLimit");
     }
 }

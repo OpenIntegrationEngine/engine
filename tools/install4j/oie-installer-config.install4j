@@ -437,6 +437,19 @@ return true;
             </formComponents>
           </screen>
           <screen id="20" beanClass="com.install4j.runtime.beans.screens.FinishedScreen" styleId="7" rollbackBarrierExitCode="0" finishScreen="true">
+            <actions>
+              <action id="169" beanClass="com.install4j.runtime.beans.actions.desktop.ShowFileAction" rollbackBarrierExitCode="0" errorMessage="">
+                <serializedBean>
+                  <property name="description" type="string">Show post-installation next steps</property>
+                  <property name="file">
+                    <object class="com.install4j.api.beans.ExternalFile">
+                      <string>${compiler:installer:mediaRoot}/tools/install4j/post-install-next-steps.html</string>
+                    </object>
+                  </property>
+                </serializedBean>
+                <condition>!context.isConsole()</condition>
+              </action>
+            </actions>
             <formComponents>
               <formComponent id="21" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetBottom="10">
                 <serializedBean>

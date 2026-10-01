@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Chris Gibson <cgibson@outlook.com>
+
+package com.mirth.connect.client.core.api.servlets;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import com.mirth.connect.client.core.ClientException;
+import com.mirth.connect.client.core.api.BaseServletInterface;
+import com.mirth.connect.client.core.api.MirthOperation;
+import com.mirth.connect.client.core.api.Param;
+
+/**
+ * JavaScript utilities the script editors need — script validation — exposed over REST so a
+ * browser client can use the engine's own Rhino compiler (the same one the Swing client uses
+ * in-process) instead of shipping its own. Takes a raw script body, requires only a valid
+ * session, and is not audited (editor-support calls, hit frequently). (Formatting is done
+ * client-side by the web admin with js-beautify, so there is no pretty-print endpoint.)
+ */
+@Path("/javascript")
+@Tag(name = "JavaScript")
+@Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+public interface JavaScriptServletInterface extends BaseServletInterface {
+
+    @POST
+    @Path("/_validate")
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Validates a JavaScript script with the engine's Rhino compiler. Returns { \"error\": <message|null> }.")
+    @MirthOperation(name = "validateScript", display = "Validate JavaScript", auditable = false)
+    public Response validateScript(@Param("script") String script) throws ClientException;
+}

@@ -3884,6 +3884,9 @@ public class Frame extends JXFrame {
     }
 
     public void doExportMessages() {
+        if (!messageTasks.getContentPane().getComponent(3).isVisible()) {
+            return;
+        }
         if (activeBrowser == enhancedMessageBrowser) {
             enhancedMessageExportDialog.setEncryptor(mirthClient.getEncryptor());
             enhancedMessageExportDialog.setMessageFilter(activeBrowser.getMessageFilter());
@@ -4007,6 +4010,9 @@ public class Frame extends JXFrame {
     }
 
     public void doRemoveFilteredMessages() {
+        if (!messageTasks.getContentPane().getComponent(5).isVisible()) {
+            return;
+        }
         if (alertOption(this, "<html><font color=\"red\"><b>Warning:</b></font> This will remove <b>all</b> results for the current search criteria,<br/>including those not listed on the current page. To see how many messages will<br/>be removed, close this dialog and click the Count button in the upper-right.<br/><font size='1'><br/></font><font color=\"red\"><b>Warning:</b></font> Removing a Source message will remove all of its destinations.<br/><font size='1'><br/></font>Are you sure you would like to remove all messages that match<br/>the current search criteria (including QUEUED) in this channel?<br/>Channel must be stopped for unfinished messages to be removed.</html>")) {
             if (userPreferences.getBoolean("showReprocessRemoveMessagesWarning", true)) {
                 String result = DisplayUtil.showInputDialog(this, "<html>This will remove all messages that match the current search criteria.<br/>To see how many messages will be removed, close this dialog and<br/>click the Count button in the upper-right.<br><font size='1'><br></font>Type REMOVEALL and click the OK button to continue.</html>", "Remove Results", JOptionPane.WARNING_MESSAGE);
@@ -4016,13 +4022,18 @@ public class Frame extends JXFrame {
                 }
             }
 
+            if (!messageTasks.getContentPane().getComponent(5).isVisible()) {
+                return;
+            }
+            final String channelId = activeBrowser.getChannelId();
+            final MessageFilter messageFilter = activeBrowser.getMessageFilter();
             final String workingId = startWorking("Removing messages...");
 
             SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
 
                 public Void doInBackground() {
                     try {
-                        mirthClient.removeMessages(activeBrowser.getChannelId(), activeBrowser.getMessageFilter());
+                        mirthClient.removeMessages(channelId, messageFilter);
                     } catch (ClientException e) {
                         if (e instanceof RequestAbortedException) {
                             // The client is no longer waiting for the delete request
@@ -4088,6 +4099,9 @@ public class Frame extends JXFrame {
     }
 
     public void doReprocessFilteredMessages() {
+        if (!messageTasks.getContentPane().getComponent(7).isVisible()) {
+            return;
+        }
         doReprocess(activeBrowser.getMessageFilter(), null, null, true);
     }
 

@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
  * Smoke tests for the packaged command-line client, run as a child process against the
  * live server.
  *
- * <p>Assertions are on output rather than on the exit code: the CLI exits 0 whether or
- * not it could log in or run the statements it was given.
+ * <p>The exit code reflects connection and login failures, but not a statement that fails
+ * inside a script, so successful runs also assert on output.
  */
 @DisplayName("Command-line client")
 class CommandLineInterfaceTest {
@@ -64,7 +64,8 @@ class CommandLineInterfaceTest {
 
         assertFalse(result.output().contains("Server @ "),
                 () -> "the CLI reported a connection it could not have made: " + result);
-        assertTrue(result.output().contains("ClientException"),
+        assertEquals(69, result.exitCode(), () -> "expected EX_UNAVAILABLE: " + result);
+        assertTrue(result.output().contains("Could not communicate with server."),
                 () -> "the CLI did not report why it could not connect: " + result);
     }
 
@@ -86,7 +87,7 @@ class CommandLineInterfaceTest {
         assertTrue(result.output().contains(HarnessConfig.USERNAME),
                 () -> "user listing omits " + HarnessConfig.USERNAME + ": " + result);
 
-        // A failed statement prints "Error: ..." and still exits 0.
+        // A failed statement prints "Error: ..." and does not change the exit code.
         assertFalse(result.output().contains("Error:"),
                 () -> "a statement failed: " + result);
     }

@@ -46,10 +46,13 @@ class CommandLineInterfaceTest {
 
         CommandLineClient.Result result = CommandLineClient.runScript("status");
 
+        assertEquals(0, result.exitCode(), () -> "the CLI did not exit cleanly: " + result);
         assertTrue(result.output().contains("Server @ " + HarnessConfig.BASE_URL + " (" + version + ")"),
                 () -> "the CLI did not report a connection to " + HarnessConfig.BASE_URL
                         + " running " + version + ": " + result);
-        // Printed only after a successful logout.
+        // A failed logout prints "Error: ..." and then "Disconnected from server." anyway.
+        assertFalse(result.output().contains("Error:"),
+                () -> "the CLI reported an error, such as a failed logout: " + result);
         assertTrue(result.output().contains("Disconnected from server."),
                 () -> "the CLI did not disconnect cleanly: " + result);
     }
@@ -75,6 +78,7 @@ class CommandLineInterfaceTest {
         CommandLineClient.Result result =
                 CommandLineClient.runScript("status", "channel list", "user list");
 
+        assertEquals(0, result.exitCode(), () -> "the CLI did not exit cleanly: " + result);
         assertTrue(result.output().contains("Server @ " + HarnessConfig.BASE_URL),
                 () -> "the CLI never reported a connection: " + result);
 
@@ -87,8 +91,10 @@ class CommandLineInterfaceTest {
         assertTrue(result.output().contains(HarnessConfig.USERNAME),
                 () -> "user listing omits " + HarnessConfig.USERNAME + ": " + result);
 
-        // A failed statement prints "Error: ..." and does not change the exit code.
+        // A failed statement prints "Error: ..." or a stack trace, and does not change the exit code.
         assertFalse(result.output().contains("Error:"),
                 () -> "a statement failed: " + result);
+        assertFalse(result.output().contains("Exception"),
+                () -> "a statement threw: " + result);
     }
 }

@@ -645,6 +645,8 @@ public class FileReceiverTest {
             connectorProperties.setFileSizeMaximum(fileSizeMaximum);
         }
         connectorProperties.setBinary(fileTypeBinary);
+        // Tests poll manually, so keep start() from scheduling background polls that add extra messages
+        connectorProperties.getPollConnectorProperties().setPollingFrequency(Integer.MAX_VALUE);
         receiver.setConnectorProperties(connectorProperties);
 
         FileConnector fileConnector = mock(FileConnector.class);

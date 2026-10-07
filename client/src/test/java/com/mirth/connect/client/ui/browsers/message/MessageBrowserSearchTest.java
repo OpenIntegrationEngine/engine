@@ -357,12 +357,14 @@ public class MessageBrowserSearchTest {
         CountDownLatch countEntered = new CountDownLatch(1);
         CountDownLatch countRelease = releaseLatch();
         CountDownLatch countFinished = new CountDownLatch(1);
+        Thread[] countThread = new Thread[1];
         CountDownLatch capEntered = new CountDownLatch(1);
         CountDownLatch capRelease = releaseLatch();
         PaginatedMessageList oldMessages = mock(PaginatedMessageList.class);
         browser.messages = oldMessages;
         browser.messageFilter = new MessageFilter();
         when(client.getMessageCount(eq("channel-a"), any(MessageFilter.class))).thenAnswer(i -> {
+            countThread[0] = Thread.currentThread();
             countEntered.countDown();
             while (countRelease.getCount() != 0) {
                 try {
@@ -371,12 +373,9 @@ public class MessageBrowserSearchTest {
                     // An HTTP request can finish after cancellation.
                 }
             }
+            countFinished.countDown();
             return 21L;
         });
-        doAnswer(i -> {
-            countFinished.countDown();
-            return null;
-        }).when(oldMessages).setItemCount(21L);
         when(client.getMaxMessageId("channel-b")).thenAnswer(i -> {
             capEntered.countDown();
             assertTrue(capRelease.await(10, TimeUnit.SECONDS));
@@ -403,6 +402,8 @@ public class MessageBrowserSearchTest {
         awaitCompletion("working-2");
         countRelease.countDown();
         await(countFinished);
+        awaitBackgroundReturn(countThread[0]);
+        verify(oldMessages, never()).setItemCount(any());
         assertNull(browser.messages.getItemCount());
         assertEquals(Long.valueOf(83), browser.messageFilter.getMaxMessageId());
     }
@@ -593,6 +594,153 @@ public class MessageBrowserSearchTest {
         verify(browser).getMessageCount();
         verify(client, never()).getMessageCount(anyString(), any(MessageFilter.class));
         assertEquals(Long.valueOf(21), browser.messages.getItemCount());
+    }
+
+    @Test
+    public void failedPageHidesResultActionsAndClearsOldRows() throws Exception {
+        preparePreviousResults();
+        put("isChannelDeployed", true);
+        when(client.getMaxMessageId("channel-a")).thenReturn(41L);
+        when(client.getMessages(eq("channel-a"), any(MessageFilter.class), anyBoolean(), anyInt(), anyInt()))
+                .thenThrow(new ClientException("Page unavailable"));
+        doCallRealMethod().when(browser).loadPageNumber(anyInt());
+        SwingUtilities.invokeAndWait(browser::runSearch);
+        awaitCompletion("working-1");
+        awaitCompletion("working-2");
+        SwingUtilities.invokeAndWait(() -> {
+            assertTrue(search.isEnabled());
+            assertSearchTasksVisible(false);
+            parent.doRemoveFilteredMessages();
+            parent.doExportMessages();
+            parent.doReprocessFilteredMessages();
+        });
+        verify((MessageBrowserTableModel) get("tableModel")).clear();
+        verify(parent, never()).alertOption(any(), anyString());
+        verify(client, never()).removeMessages(anyString(), any(MessageFilter.class));
+    }
+
+    @Test
+    public void overflowingIdRestoresPreviousFilterAndAllowsRetry() throws Exception {
+        MessageFilter previous = preparePreviousResults();
+        doAnswer(i -> {
+            ((MessageFilter) i.getArgument(0)).setMinMessageId(Long.parseLong("9999999999999999999"));
+            return null;
+        }).when(browser.advancedSearchPopup).applySelectionsToFilter(any(MessageFilter.class));
+        SwingUtilities.invokeAndWait(browser::runSearch);
+        SwingUtilities.invokeAndWait(() -> {
+            assertTrue(search.isEnabled());
+            assertSame(previous, browser.getMessageFilter());
+        });
+        verify(client, never()).getMaxMessageId(anyString());
+        verify(parent).alertError(parent, "Invalid numeric search value.");
+        doAnswer(i -> {
+            ((MessageFilter) i.getArgument(0)).setMinMessageId(Long.parseLong("123"));
+            return null;
+        }).when(browser.advancedSearchPopup).applySelectionsToFilter(any(MessageFilter.class));
+        when(client.getMaxMessageId("channel-a")).thenReturn(41L);
+        SwingUtilities.invokeAndWait(browser::runSearch);
+        awaitCompletion("working-1");
+        assertEquals(Long.valueOf(123), browser.messageFilter.getMinMessageId());
+        verify(browser).loadPageNumber(1);
+    }
+
+    @Test
+    public void deletionRefreshDuringCountCancelsCountAndReloadsPage() throws Exception {
+        preparePreviousResults();
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch release = releaseLatch();
+        doAnswer(i -> {
+            entered.countDown();
+            assertTrue(release.await(10, TimeUnit.SECONDS));
+            return 21L;
+        }).when(browser).getMessageCount();
+        Method count = MessageBrowser.class.getDeclaredMethod("countButtonActionPerformed", java.awt.event.ActionEvent.class);
+        count.setAccessible(true);
+        SwingUtilities.invokeAndWait(() -> {
+            try {
+                count.invoke(browser, new Object[] { null });
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        await(entered);
+        SwingWorker<?, ?> counting = (SwingWorker<?, ?>) get("worker");
+        CountDownLatch pageRelease = releaseLatch();
+        doCallRealMethod().when(browser).loadPageNumber(anyInt());
+        when(client.getMessages(eq("channel-a"), any(MessageFilter.class), anyBoolean(), anyInt(), anyInt()))
+                .thenAnswer(i -> {
+                    assertTrue(pageRelease.await(10, TimeUnit.SECONDS));
+                    return Collections.emptyList();
+                });
+        SwingUtilities.invokeAndWait(() -> browser.refresh(1, true));
+        verify(browser).clearCache();
+        verify(browser).loadPageNumber(1);
+        assertTrue(counting.isCancelled());
+        release.countDown();
+        awaitCompletion("working-1");
+        pageRelease.countDown();
+        awaitCompletion("working-2");
+    }
+
+    @Test
+    public void cancelledCountDoesNotOverwriteRefreshedPage() throws Exception {
+        preparePreviousResults();
+        CountDownLatch countEntered = new CountDownLatch(1);
+        CountDownLatch countRelease = releaseLatch();
+        CountDownLatch countReturned = new CountDownLatch(1);
+        Thread[] countThread = new Thread[1];
+        doAnswer(i -> {
+            countThread[0] = Thread.currentThread();
+            countEntered.countDown();
+            while (countRelease.getCount() != 0) {
+                try {
+                    assertTrue(countRelease.await(10, TimeUnit.SECONDS));
+                } catch (InterruptedException e) {
+                    // The server can finish responding after cancellation.
+                }
+            }
+            countReturned.countDown();
+            return 21L;
+        }).when(browser).getMessageCount();
+        Method count = MessageBrowser.class.getDeclaredMethod("countButtonActionPerformed", java.awt.event.ActionEvent.class);
+        count.setAccessible(true);
+        SwingUtilities.invokeAndWait(() -> {
+            try {
+                count.invoke(browser, new Object[] { null });
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        await(countEntered);
+        doCallRealMethod().when(browser).loadPageNumber(anyInt());
+        when(client.getMessages(eq("channel-a"), any(MessageFilter.class), anyBoolean(), anyInt(), anyInt()))
+                .thenReturn(Collections.emptyList());
+        SwingUtilities.invokeAndWait(() -> browser.refresh(1, true));
+        awaitCompletion("working-2");
+        assertEquals(Long.valueOf(0), browser.messages.getItemCount());
+        countRelease.countDown();
+        await(countReturned);
+        awaitBackgroundReturn(countThread[0]);
+        assertEquals(Long.valueOf(0), browser.messages.getItemCount());
+    }
+
+    private void awaitBackgroundReturn(Thread thread) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (true) {
+            boolean running = false;
+            for (StackTraceElement frame : thread.getStackTrace()) {
+                if (frame.getClassName().startsWith(MessageBrowser.class.getName() + "$")
+                        && frame.getMethodName().equals("doInBackground")) {
+                    running = true;
+                    break;
+                }
+            }
+            if (!running) {
+                return;
+            }
+            assertTrue("Background request did not return", System.nanoTime() < deadline);
+            Thread.sleep(1);
+        }
     }
 
     private MessageFilter preparePreviousResults() throws Exception {

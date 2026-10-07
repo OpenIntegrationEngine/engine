@@ -168,6 +168,7 @@ public class MessageBrowser extends javax.swing.JPanel {
     protected Set<String> defaultVisibleColumns;
     // Worker used for preparing a search, loading a page, and counting messages
     private SwingWorker<?, Void> worker;
+    private boolean counting;
     private Logger logger = LogManager.getLogger(this.getClass());
     private ExecutorService executor;
     private List<Future<Void>> prettyPrintWorkers = new ArrayList<Future<Void>>();
@@ -727,7 +728,12 @@ public class MessageBrowser extends javax.swing.JPanel {
             }
         }
 
-        advancedSearchPopup.applySelectionsToFilter(messageFilter);
+        try {
+            advancedSearchPopup.applySelectionsToFilter(messageFilter);
+        } catch (NumberFormatException e) {
+            parent.alertError(parent, "Invalid numeric search value.");
+            return false;
+        }
         selectedMetaDataIds = messageFilter.getIncludedMetaDataIds();
 
         if (recentFilterStore != null && !messageFilter.isEmpty()) {
@@ -741,6 +747,7 @@ public class MessageBrowser extends javax.swing.JPanel {
     private void cancelSearchWorker() {
         SwingWorker<?, Void> previousWorker = worker;
         worker = null;
+        counting = false;
         if (previousWorker != null && !previousWorker.isDone()) {
             parent.mirthClient.getServerConnection().abort(getAbortOperations());
             previousWorker.cancel(true);
@@ -918,7 +925,7 @@ public class MessageBrowser extends javax.swing.JPanel {
                     foundItems = pageMessages.loadPageNumber(pageNumber);
                 } catch (Throwable t) { // catch Throwable in case the client runs out of memory
 
-                    if (t.getMessage().contains("Java heap space")) {
+                    if (StringUtils.contains(t.getMessage(), "Java heap space")) {
                         parent.alertError(parent, "There was an out of memory error when trying to retrieve messages.\nIncrease your heap size or decrease your page size and search again.");
                     } else if (t instanceof RequestAbortedException) {
                         // The client is no longer waiting for the search request
@@ -969,6 +976,10 @@ public class MessageBrowser extends javax.swing.JPanel {
                     if (enableCountButton) {
                         countButton.setEnabled(true);
                     }
+                } else if (worker == this) {
+                    deselectRows();
+                    tableModel.clear();
+                    messages = null;
                 }
                 if (worker == this) {
                     worker = null;
@@ -1028,7 +1039,7 @@ public class MessageBrowser extends javax.swing.JPanel {
      * needed
      */
     public void refresh(Integer page, boolean clearCache) {
-        if (!filterButton.isEnabled() || !hasPreparedSearch()) {
+        if ((!filterButton.isEnabled() && !counting) || !hasPreparedSearch()) {
             return;
         }
         if (clearCache) {
@@ -3105,13 +3116,15 @@ public class MessageBrowser extends javax.swing.JPanel {
         disableSearchControls();
         final MessageBrowser messageBrowser = this;
         final PaginatedMessageList countMessages = messages;
+        counting = true;
 
         worker = new SwingWorker<Void, Void>() {
             private Exception e;
+            private Long itemCount;
 
             public Void doInBackground() {
                 try {
-                    countMessages.setItemCount(getMessageCount());
+                    itemCount = getMessageCount();
                 } catch (ClientException e) {
                     if (e instanceof RequestAbortedException) {
                         // The client is no longer waiting for the count request
@@ -3130,6 +3143,7 @@ public class MessageBrowser extends javax.swing.JPanel {
                         countButton.setEnabled(true);
                         parent.alertThrowable(messageBrowser, e);
                     } else {
+                        countMessages.setItemCount(itemCount);
                         updatePagination();
                         countButton.setEnabled(false);
                     }
@@ -3137,6 +3151,7 @@ public class MessageBrowser extends javax.swing.JPanel {
 
                 if (worker == this) {
                     worker = null;
+                    counting = false;
                     filterButton.setEnabled(true);
                     updateSearchTasks();
                 }

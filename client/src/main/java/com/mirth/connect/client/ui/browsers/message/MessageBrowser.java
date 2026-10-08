@@ -166,9 +166,10 @@ public class MessageBrowser extends javax.swing.JPanel {
     private JPopupMenu attachmentPopupMenu;
     protected TreeMap<Integer, String> columnMap;
     protected Set<String> defaultVisibleColumns;
-    // Worker used for preparing a search, loading a page, and counting messages
-    private SwingWorker<?, Void> worker;
-    private boolean counting;
+    // Worker used for loading a page and counting the total number of messages
+    private SwingWorker<Void, Void> worker;
+    // Worker used for getting the maximum message ID of a search that does not set one
+    private SwingWorker<Long, Void> maxMessageIdWorker;
     private Logger logger = LogManager.getLogger(this.getClass());
     private ExecutorService executor;
     private List<Future<Void>> prettyPrintWorkers = new ArrayList<Future<Void>>();
@@ -290,8 +291,9 @@ public class MessageBrowser extends javax.swing.JPanel {
             public void ancestorRemoved(AncestorEvent event) {
                 // Stop waiting for message browser requests when the message browser 
                 // is no longer being displayed
-                cancelSearchWorker();
                 parent.mirthClient.getServerConnection().abort(getAbortOperations());
+                // A search that is still waiting for its maximum message ID is dropped
+                maxMessageIdWorker = null;
                 // Clear the message cache when leaving the message browser.
                 parent.messageBrowser.clearCache();
                 // Clear the table selection to prevent the selection listener from triggering multiple times while the model is being cleared
@@ -319,7 +321,9 @@ public class MessageBrowser extends javax.swing.JPanel {
     }
     
     public void loadChannel(MessageBrowserChannelModel channelModel) {
-        cancelSearchWorker();
+        // A search that was still waiting for its maximum message ID belongs to the previous channel
+        maxMessageIdWorker = null;
+
     	String channelId = channelModel.getChannelId();
     	String channelName = channelModel.getChannelName();
     	Map<Integer, String> connectors = channelModel.getConnectors();
@@ -399,7 +403,6 @@ public class MessageBrowser extends javax.swing.JPanel {
         messageTreeTable.restoreColumnPreferences();
 
         isChannelMessagesPanelFirstLoadSearch = true;
-        filterButton.setEnabled(true);
         runSearch();
         isChannelMessagesPanelFirstLoadSearch = false;
     }
@@ -728,13 +731,7 @@ public class MessageBrowser extends javax.swing.JPanel {
             }
         }
 
-        try {
-            advancedSearchPopup.applySelectionsToFilter(messageFilter);
-        } catch (NumberFormatException e) {
-            parent.alertError(parent, "Invalid numeric search value.");
-            return false;
-        }
-        selectedMetaDataIds = messageFilter.getIncludedMetaDataIds();
+        advancedSearchPopup.applySelectionsToFilter(messageFilter);
 
         if (recentFilterStore != null && !messageFilter.isEmpty()) {
             recentFilterStore.addRecentFilter(messageFilter);
@@ -744,133 +741,109 @@ public class MessageBrowser extends javax.swing.JPanel {
         return true;
     }
 
-    private void cancelSearchWorker() {
-        SwingWorker<?, Void> previousWorker = worker;
-        worker = null;
-        counting = false;
-        if (previousWorker != null && !previousWorker.isDone()) {
-            parent.mirthClient.getServerConnection().abort(getAbortOperations());
-            previousWorker.cancel(true);
-        }
-    }
-
-    private boolean hasPreparedSearch() {
-        return messages != null && messageFilter != null && messageFilter.getMaxMessageId() != null
-                && messageFilter == messages.getMessageFilter() && channelId.equals(messages.getChannelId());
-    }
-
-    private void updateSearchTasks() {
-        boolean ready = filterButton.isEnabled() && hasPreparedSearch();
-        parent.setVisibleTasks(parent.messageTasks, parent.messagePopupMenu, 0, 0, ready);
-        parent.setVisibleTasks(parent.messageTasks, parent.messagePopupMenu, 3, 3, ready);
-        parent.setVisibleTasks(parent.messageTasks, parent.messagePopupMenu, 5, 5, ready);
-        parent.setVisibleTasks(parent.messageTasks, parent.messagePopupMenu, 7, 7, ready && isChannelDeployed);
-    }
-
-    private void disableSearchControls() {
-        filterButton.setEnabled(false);
-        nextPageButton.setEnabled(false);
-        previousPageButton.setEnabled(false);
-        countButton.setEnabled(false);
-        pageGoButton.setEnabled(false);
-        updateSearchTasks();
-    }
-
     protected void runSearch() {
-        if (!filterButton.isEnabled()) {
+        // A search that is waiting for its maximum message ID is the one that runs
+        if (maxMessageIdWorker != null) {
             return;
         }
-        final MessageFilter previousFilter = messageFilter;
-        final PaginatedMessageList previousMessages = messages;
-        final List<Integer> previousMetaDataIds = selectedMetaDataIds;
-        filterButton.setEnabled(false);
+
+        MessageFilter listedFilter = messageFilter;
         if (!generateMessageFilter()) {
-            messageFilter = previousFilter;
-            selectedMetaDataIds = previousMetaDataIds;
-            filterButton.setEnabled(true);
             return;
         }
-        disableSearchControls();
 
-        final String searchChannelId = channelId;
-        final MessageFilter searchFilter = messageFilter;
-        final Long maxMessageId = searchFilter.getMaxMessageId();
-        final boolean initialSearch = isChannelMessagesPanelFirstLoadSearch;
-        final String workingId = parent.startWorking("Preparing search...");
+        // To keep page results consistent, the search is "capped" to the most
+        // recent message that has been received by the channel.
+        if (messageFilter.getMaxMessageId() == null) {
+            if (isChannelMessagesPanelFirstLoadSearch) {
+                // Nothing is listed yet, so there is nothing to keep usable while waiting
+                try {
+                    messageFilter.setMaxMessageId(parent.mirthClient.getMaxMessageId(channelId));
+                } catch (ClientException e) {
+                    parent.alertThrowable(parent, e);
+                    return;
+                }
+            } else {
+                requestMaxMessageId(listedFilter);
+                return;
+            }
+        }
 
-        worker = new SwingWorker<Long, Void>() {
+        startSearch();
+    }
+
+    /**
+     * Gets the maximum message ID without blocking the event dispatch thread, and then starts the
+     * search. The results that are listed keep their filter until the search starts, so the
+     * commands that use it still act on what is shown.
+     */
+    private void requestMaxMessageId(MessageFilter listedFilter) {
+        final MessageFilter filter = messageFilter;
+        messageFilter = listedFilter;
+
+        final String workingId = parent.startWorking("Getting the newest message ID...");
+        final String channelId = this.channelId;
+
+        maxMessageIdWorker = new SwingWorker<Long, Void>() {
             @Override
             protected Long doInBackground() throws Exception {
-                // Cap the search to keep page results consistent.
-                return maxMessageId != null ? maxMessageId : parent.mirthClient.getMaxMessageId(searchChannelId);
+                return parent.mirthClient.getMaxMessageId(channelId);
             }
 
             @Override
             protected void done() {
-                boolean configured = false;
+                parent.stopWorking(workingId);
+
+                // Loading a channel or leaving the message browser drops the search
+                if (maxMessageIdWorker != this) {
+                    return;
+                }
+                maxMessageIdWorker = null;
+
                 try {
-                    if (worker != this || isCancelled() || messageFilter != searchFilter || !searchChannelId.equals(channelId)) {
-                        return;
-                    }
-                    searchFilter.setMaxMessageId(get());
-                    updateFilterButtonFont(Font.PLAIN);
-
-                    try {
-                        configurePaginatedMessageList();
-                        configured = true;
-                    } catch (NumberFormatException e) {
-                        parent.alertError(parent, "Invalid page size.");
-                        return;
-                    } catch (Exception e) {
-                        parent.alertError(parent, "Error configuring paginated message list: " + e.getMessage());
-                        return;
-                    }
-
-                    countButton.setVisible(true);
-                    clearCache();
-                    loadPageNumber(1);
-
-                    lastSearchCriteria.setText(searchFilter.toDisplayString(connectors, "\n", /* includeEmptyCriteria: */ true));
-                    if (!initialSearch) {
-                        auditSearch();
-                    }
+                    filter.setMaxMessageId(get());
                 } catch (ExecutionException e) {
-                    if (!(e.getCause() instanceof RequestAbortedException)) {
-                        parent.alertThrowable(parent, e.getCause());
-                    }
+                    parent.alertThrowable(parent, e.getCause());
+                    return;
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    parent.alertThrowable(parent, e);
-                } finally {
-                    if (worker == this) {
-                        worker = null;
-                        if (!configured) {
-                            boolean sameChannel = previousMessages == null || searchChannelId.equals(previousMessages.getChannelId());
-                            messageFilter = sameChannel ? previousFilter : null;
-                            messages = sameChannel ? previousMessages : null;
-                            selectedMetaDataIds = previousMetaDataIds;
-                        }
-                        filterButton.setEnabled(true);
-                        if (!configured && hasPreparedSearch()) {
-                            updatePagination();
-                            countButton.setEnabled(messages.getItemCount() == null);
-                        }
-                        updateSearchTasks();
-                    }
-                    parent.stopWorking(workingId);
+                    return;
                 }
+
+                messageFilter = filter;
+                startSearch();
             }
         };
-        worker.execute();
+        maxMessageIdWorker.execute();
     }
 
+    private void startSearch() {
+        selectedMetaDataIds = messageFilter.getIncludedMetaDataIds();
+        updateFilterButtonFont(Font.PLAIN);
+
+        try {
+            configurePaginatedMessageList();
+        } catch (NumberFormatException e) {
+            parent.alertError(parent, "Invalid page size.");
+            return;
+        } catch (Exception e) {
+            parent.alertError(parent, "Error configuring paginated message list: " + e.getMessage());
+        }
+
+        countButton.setVisible(true);
+        clearCache();
+        loadPageNumber(1);
+
+        lastSearchCriteria.setText(messageFilter.toDisplayString(connectors, "\n", /* includeEmptyCriteria: */ true));
+        auditSearch();
+    }
+    
     protected void configurePaginatedMessageList() throws Exception {
-        PaginatedMessageList searchMessages = new PaginatedMessageList();
-        searchMessages.setClient(parent.mirthClient);
-        searchMessages.setChannelId(channelId);
-        searchMessages.setMessageFilter(messageFilter);
-        searchMessages.setPageSize(Integer.parseInt(pageSizeField.getText()));
-        messages = searchMessages;
+    	messages = new PaginatedMessageList();
+        messages.setClient(parent.mirthClient);
+        messages.setChannelId(channelId);
+        messages.setMessageFilter(messageFilter);
+        messages.setPageSize(Integer.parseInt(pageSizeField.getText()));
     }
     
     protected void auditSearch() {
@@ -908,9 +881,16 @@ public class MessageBrowser extends javax.swing.JPanel {
     public void loadPageNumber(final int pageNumber) {
         final String workingId = parent.startWorking("Loading page...");
 
-        cancelSearchWorker();
-        disableSearchControls();
-        final PaginatedMessageList pageMessages = messages;
+        if (worker != null && !worker.isDone()) {
+            parent.mirthClient.getServerConnection().abort(getAbortOperations());
+            worker.cancel(true);
+        }
+
+        filterButton.setEnabled(false);
+        nextPageButton.setEnabled(false);
+        previousPageButton.setEnabled(false);
+        countButton.setEnabled(false);
+        pageGoButton.setEnabled(false);
 
         // Give focus to the message tree table since these buttons will lose focus. That way the user can also immediately use the arrow keys after a search.
         messageTreeTable.requestFocus();
@@ -922,10 +902,10 @@ public class MessageBrowser extends javax.swing.JPanel {
             public Void doInBackground() {
 
                 try {
-                    foundItems = pageMessages.loadPageNumber(pageNumber);
+                    foundItems = messages.loadPageNumber(pageNumber);
                 } catch (Throwable t) { // catch Throwable in case the client runs out of memory
 
-                    if (StringUtils.contains(t.getMessage(), "Java heap space")) {
+                    if (t.getMessage().contains("Java heap space")) {
                         parent.alertError(parent, "There was an out of memory error when trying to retrieve messages.\nIncrease your heap size or decrease your page size and search again.");
                     } else if (t instanceof RequestAbortedException) {
                         // The client is no longer waiting for the search request
@@ -939,7 +919,7 @@ public class MessageBrowser extends javax.swing.JPanel {
             }
 
             public void done() {
-                if (worker == this && !isCancelled()) {
+                if (!isCancelled()) {
                     boolean enableCountButton = (messages.getItemCount() == null);
 
                     deselectRows();
@@ -976,16 +956,8 @@ public class MessageBrowser extends javax.swing.JPanel {
                     if (enableCountButton) {
                         countButton.setEnabled(true);
                     }
-                } else if (worker == this) {
-                    deselectRows();
-                    tableModel.clear();
-                    messages = null;
                 }
-                if (worker == this) {
-                    worker = null;
-                    filterButton.setEnabled(true);
-                    updateSearchTasks();
-                }
+                filterButton.setEnabled(true);
                 parent.stopWorking(workingId);
             }
         };
@@ -1039,9 +1011,6 @@ public class MessageBrowser extends javax.swing.JPanel {
      * needed
      */
     public void refresh(Integer page, boolean clearCache) {
-        if ((!filterButton.isEnabled() && !counting) || !hasPreparedSearch()) {
-            return;
-        }
         if (clearCache) {
             clearCache();
         }
@@ -1680,7 +1649,7 @@ public class MessageBrowser extends javax.swing.JPanel {
     
     protected void taskPaneWhenClearingDescription() {
         parent.setVisibleTasks(parent.messageTasks, parent.messagePopupMenu, 6, -1, false);
-        parent.setVisibleTasks(parent.messageTasks, parent.messagePopupMenu, 7, 7, isChannelDeployed && filterButton.isEnabled() && hasPreparedSearch());
+        parent.setVisibleTasks(parent.messageTasks, parent.messagePopupMenu, 7, 7, isChannelDeployed);
     }
 
     public Message getSelectedMessage() {
@@ -1940,7 +1909,6 @@ public class MessageBrowser extends javax.swing.JPanel {
     protected void taskPaneWhenSelectingMessages() {
         parent.setVisibleTasks(parent.messageTasks, parent.messagePopupMenu, 6, 6, true);
         parent.setVisibleTasks(parent.messageTasks, parent.messagePopupMenu, 7, -1, isChannelDeployed);
-        updateSearchTasks();
     }
 
     /**
@@ -3112,19 +3080,23 @@ public class MessageBrowser extends javax.swing.JPanel {
 
     private void countButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_countButtonActionPerformed
         final String workingId = parent.startWorking("Counting search result size...");
-        cancelSearchWorker();
-        disableSearchControls();
+        filterButton.setEnabled(false);
+        nextPageButton.setEnabled(false);
+        previousPageButton.setEnabled(false);
+        countButton.setEnabled(false);
+        pageGoButton.setEnabled(false);
         final MessageBrowser messageBrowser = this;
-        final PaginatedMessageList countMessages = messages;
-        counting = true;
+
+        if (worker != null && !worker.isDone()) {
+            worker.cancel(true);
+        }
 
         worker = new SwingWorker<Void, Void>() {
             private Exception e;
-            private Long itemCount;
 
             public Void doInBackground() {
                 try {
-                    itemCount = getMessageCount();
+                    messages.setItemCount(getMessageCount());
                 } catch (ClientException e) {
                     if (e instanceof RequestAbortedException) {
                         // The client is no longer waiting for the count request
@@ -3138,23 +3110,17 @@ public class MessageBrowser extends javax.swing.JPanel {
             }
 
             public void done() {
-                if (worker == this && !isCancelled()) {
+                if (!isCancelled()) {
                     if (e != null) {
                         countButton.setEnabled(true);
                         parent.alertThrowable(messageBrowser, e);
                     } else {
-                        countMessages.setItemCount(itemCount);
                         updatePagination();
                         countButton.setEnabled(false);
                     }
+                    filterButton.setEnabled(true);
                 }
 
-                if (worker == this) {
-                    worker = null;
-                    counting = false;
-                    filterButton.setEnabled(true);
-                    updateSearchTasks();
-                }
                 parent.stopWorking(workingId);
             }
         };

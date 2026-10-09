@@ -211,7 +211,7 @@ mimepull = { module = "org.jvnet.mimepull:mimepull", version = "1.9.7" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 mockito-inline = { module = "org.mockito:mockito-inline", version.ref = "mockito" }
 mssql-jdbc = { module = "com.microsoft.sqlserver:mssql-jdbc", version = "10.2.4.jre11" }
-mybatis = { module = "org.mybatis:mybatis", version = "3.1.1" }
+mybatis = { module = "org.mybatis:mybatis", version = "3.5.6" }
 mysql-connector-j = { module = "com.mysql:mysql-connector-j", version = "8.4.0" }
 netty-buffer = { module = "io.netty:netty-buffer", version.ref = "netty" }
 netty-codec = { module = "io.netty:netty-codec", version.ref = "netty" }

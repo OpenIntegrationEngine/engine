@@ -33,6 +33,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import com.mirth.connect.server.extprops.DropInProperties;
 import com.mirth.connect.server.extprops.ExtensionStatuses;
 import com.mirth.connect.server.extprops.LoggerWrapper;
 
@@ -77,6 +78,7 @@ public class MirthLauncher {
 
             try (FileInputStream inputStream = new FileInputStream(new File(MIRTH_PROPERTIES_FILE))) {
                 mirthProperties.load(inputStream);
+                DropInProperties.load(mirthProperties, new File(MIRTH_PROPERTIES_FILE + ".d"), logger);
                 includeCustomLib = mirthProperties.getProperty(PROPERTY_INCLUDE_CUSTOM_LIB);
                 createAppdataDir(mirthProperties);
             } catch (Exception e) {

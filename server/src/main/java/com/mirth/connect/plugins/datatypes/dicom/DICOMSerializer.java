@@ -122,6 +122,31 @@ public class DICOMSerializer implements IMessageSerializer {
                 }
             }
 
+            /*
+             * dcm4che2's XML round trip is asymmetric for sequences read from implicit-VR private
+             * tags: SAXWriter emits the wire VR (vr="UN" len="-1") with structured <item>
+             * children, but ContentHandlerAdapter only enters its sequence state for vr="SQ" and
+             * otherwise expects fragments, throwing IllegalStateException("state:EXPECT_FRAG")
+             * when a dataset item arrives. DicomInputStream already treats such elements as SQ in
+             * memory, so present them to the parser the same way. Only items holding renamed
+             * <attr> children mark a dataset sequence; fragment containers (encapsulated pixel
+             * data, whose items hold only base64/hex text) are left untouched.
+             */
+            if (items != null) {
+                for (int i = 0; i < items.getLength(); i++) {
+                    Node itemNode = items.item(i);
+                    Node parentNode = itemNode.getParentNode();
+
+                    if (parentNode instanceof Element && hasAttrElementChild(itemNode)) {
+                        Element parentElement = (Element) parentNode;
+
+                        if (parentElement.hasAttribute("vr") && !parentElement.getAttribute("vr").equals("SQ")) {
+                            parentElement.setAttribute("vr", "SQ");
+                        }
+                    }
+                }
+            }
+
             // find the charset
             String charset = null;
             Element charsetElement = (Element) document.getElementsByTagName("tag00080005").item(0);
@@ -207,6 +232,16 @@ public class DICOMSerializer implements IMessageSerializer {
                 document.renameNode(node, null, "tag" + tag);
             }
         }
+    }
+
+    private boolean hasAttrElementChild(Node node) {
+        for (Node child = node.getFirstChild(); child != null; child = child.getNextSibling()) {
+            if (child.getNodeType() == Node.ELEMENT_NODE && child.getNodeName().equals("attr")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void renameTagToAttr(Document document, Node node) throws DOMException {

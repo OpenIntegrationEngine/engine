@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
-import java.util.jar.JarFile;
+import java.util.function.Predicate;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -31,7 +31,7 @@ import org.apache.commons.io.filefilter.NameFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
+import org.w3c.dom.Node;
 
 import com.mirth.connect.server.extprops.ExtensionStatuses;
 import com.mirth.connect.server.extprops.LoggerWrapper;
@@ -49,7 +49,6 @@ public class MirthLauncher {
     private static LoggerWrapper logger;
 
     public static void main(String[] args) {
-        JarFile mirthClientCoreJarFile = null;
         try {
             Log4jMigrations.migrateConfiguration(new File(LOG4J_PROPERTIES_FILE));
 
@@ -100,14 +99,8 @@ public class MirthLauncher {
 
             ManifestEntry[] manifest = manifestList.toArray(new ManifestEntry[manifestList.size()]);
 
-            // Get the current server version
-            mirthClientCoreJarFile = new JarFile(mirthClientCoreJar.getName());
-            Properties versionProperties = new Properties();
-            versionProperties.load(mirthClientCoreJarFile.getInputStream(mirthClientCoreJarFile.getJarEntry("version.properties")));
-            String currentVersion = versionProperties.getProperty("mirth.version");
-
             addManifestToClasspath(manifest, classpathUrls);
-            addExtensionsToClasspath(classpathUrls, currentVersion);
+            addExtensionsToClasspath(classpathUrls, new File(EXTENSIONS_DIR), ExtensionStatuses.getInstance()::isEnabled);
             URLClassLoader classLoader = new URLClassLoader(classpathUrls.toArray(new URL[classpathUrls.size()]), Thread.currentThread().getContextClassLoader());
             Class<?> mirthClass = classLoader.loadClass("com.mirth.connect.server.Mirth");
             Thread mirthThread = (Thread) mirthClass.newInstance();
@@ -115,14 +108,6 @@ public class MirthLauncher {
             mirthThread.start();
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if (mirthClientCoreJarFile != null) {
-                    mirthClientCoreJarFile.close();
-                }
-            } catch (IOException e) {
-                logger.error("Error closing mirthClientCoreJarFile.", e);
-            }
         }
     }
 
@@ -228,77 +213,66 @@ public class MirthLauncher {
         }
     }
 
-    private static void addExtensionsToClasspath(List<URL> urls, String currentVersion) throws Exception {
+    // Compatibility is checked by ExtensionLoader using the engine's metadata serializer.
+    static void addExtensionsToClasspath(List<URL> urls, File extensionPath, Predicate<String> enabled) {
         FileFilter extensionFileFilter = new NameFileFilter(new String[] { "plugin.xml",
                 "source.xml", "destination.xml" }, IOCase.INSENSITIVE);
-        FileFilter directoryFilter = FileFilterUtils.directoryFileFilter();
-        File extensionPath = new File(EXTENSIONS_DIR);
-
-        ExtensionStatuses extensionStatuses = ExtensionStatuses.getInstance();
-
-        if (extensionPath.exists() && extensionPath.isDirectory()) {
-            File[] directories = extensionPath.listFiles(directoryFilter);
-
-            for (File directory : directories) {
-                File[] extensionFiles = directory.listFiles(extensionFileFilter);
-
-                for (File extensionFile : extensionFiles) {
-                    try {
-                		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-                		dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-                		Document document = dbf.newDocumentBuilder().parse(extensionFile);
-                		Element rootElement = document.getDocumentElement();
-
-                        boolean enabled = extensionStatuses.isEnabled(rootElement.getElementsByTagName("name").item(0).getTextContent());
-                        boolean compatible = isExtensionCompatible(rootElement.getElementsByTagName("mirthVersion").item(0).getTextContent(), currentVersion);
-
-                        // Only add libraries from extensions that are not disabled and are compatible with the current version
-                        if (enabled && compatible) {
-                            NodeList libraries = rootElement.getElementsByTagName("library");
-
-                            for (int i = 0; i < libraries.getLength(); i++) {
-                                Element libraryElement = (Element) libraries.item(i);
-                                String type = libraryElement.getAttribute("type");
-
-                                if (type.equalsIgnoreCase("server") || type.equalsIgnoreCase("shared")) {
-                                    File pathFile = new File(directory, libraryElement.getAttribute("path"));
-
-                                    if (pathFile.exists()) {
-                                        logger.trace("adding library to classpath: " + pathFile.getAbsolutePath());
-                                        urls.add(pathFile.toURI().toURL());
-                                    } else {
-                                        logger.error("could not locate library: " + pathFile.getAbsolutePath());
-                                    }
-                                }
+        File[] directories = extensionPath.listFiles(File::isDirectory);
+        if (directories == null) {
+            logger.warn("no extensions found");
+            return;
+        }
+        for (File directory : directories) {
+            if ("install_temp".equals(directory.getName()) || directory.getName().startsWith(".install-")) {
+                continue;
+            }
+            File[] extensionFiles = directory.listFiles(extensionFileFilter);
+            if (extensionFiles == null) {
+                continue;
+            }
+            for (File extensionFile : extensionFiles) {
+                try {
+                    DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                    dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+                    Document document = dbf.newDocumentBuilder().parse(extensionFile);
+                    Element root = document.getDocumentElement();
+                    String name = getExtensionName(root);
+                    if (name == null || name.trim().isEmpty()) {
+                        throw new IllegalArgumentException("Extension metadata must declare a name");
+                    }
+                    if (!enabled.test(name)) {
+                        continue;
+                    }
+                    for (Node child = root.getFirstChild(); child != null; child = child.getNextSibling()) {
+                        if (!(child instanceof Element) || !"library".equals(child.getNodeName())) {
+                            continue;
+                        }
+                        Element library = (Element) child;
+                        String type = library.getAttribute("type");
+                        if (type.equalsIgnoreCase("server") || type.equalsIgnoreCase("shared")) {
+                            File pathFile = new File(directory, library.getAttribute("path"));
+                            if (pathFile.exists()) {
+                                logger.trace("adding library to classpath: " + pathFile.getAbsolutePath());
+                                urls.add(pathFile.toURI().toURL());
+                            } else {
+                                logger.error("could not locate library: " + pathFile.getAbsolutePath());
                             }
                         }
-                    } catch (Exception e) {
-                        logger.error("failed to parse extension metadata: " + extensionFile.getAbsolutePath(), e);
                     }
+                } catch (Exception e) {
+                    logger.error("failed to parse extension metadata: " + extensionFile.getAbsolutePath(), e);
                 }
             }
-        } else {
-            logger.warn("no extensions found");
         }
     }
 
-    private static boolean isExtensionCompatible(String extensionVersion, String currentVersion) {
-        if (extensionVersion != null) {
-            String[] extensionMirthVersions = extensionVersion.split(",");
-
-            // If there is no build version, just use the patch version
-            if (currentVersion.split("\\.").length == 4) {
-                currentVersion = currentVersion.substring(0, currentVersion.lastIndexOf('.'));
-            }
-
-            for (int i = 0; i < extensionMirthVersions.length; i++) {
-                if (extensionMirthVersions[i].trim().equals(currentVersion)) {
-                    return true;
-                }
+    private static String getExtensionName(Element metadata) {
+        for (Node child = metadata.getFirstChild(); child != null; child = child.getNextSibling()) {
+            if (child instanceof Element && "name".equals(child.getNodeName())) {
+                return child.getTextContent();
             }
         }
-
-        return false;
+        return null;
     }
 
     private static void createAppdataDir(Properties mirthProperties) {

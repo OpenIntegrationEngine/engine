@@ -15,6 +15,7 @@ import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import com.mirth.connect.client.core.ExtensionDependency;
 import com.mirth.connect.client.core.Version;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamAsAttribute;
@@ -27,6 +28,7 @@ public abstract class MetaData {
     private String name;
     private String author;
     private String mirthVersion;
+    private List<ExtensionDependency> dependencies;
     private String pluginVersion;
     private String url;
     private String description;
@@ -70,6 +72,14 @@ public abstract class MetaData {
 
     public void setMirthVersion(String mirthVersion) {
         this.mirthVersion = mirthVersion;
+    }
+
+    public List<ExtensionDependency> getDependencies() {
+        return dependencies;
+    }
+
+    public void setDependencies(List<ExtensionDependency> dependencies) {
+        this.dependencies = dependencies;
     }
 
     public String getPluginVersion() {

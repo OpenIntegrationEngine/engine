@@ -63,6 +63,13 @@ public class FilterTransformerExecutor {
      * @throws InterruptedException
      */
     public void processConnectorMessage(ConnectorMessage connectorMessage) throws InterruptedException, DonkeyException {
+        try (var observation = MessageTelemetry.start(MessageTelemetry.Stage.TRANSFORM, connectorMessage)) {
+            try { transformMessage(connectorMessage); }
+            catch (InterruptedException | DonkeyException | RuntimeException | Error failure) { observation.failed(failure); throw failure; }
+        }
+    }
+
+    private void transformMessage(ConnectorMessage connectorMessage) throws InterruptedException, DonkeyException {
         ThreadUtils.checkInterruptedStatus();
         String content;
         String encodedContent;

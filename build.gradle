@@ -12,7 +12,7 @@
  * write the Ant-Version manifest attribute.
  *
  * Dependencies resolve from Maven Central via gradle/libs.versions.toml;
- * every coordinate was SHA-1 matched to the previously vendored jar,
+ * every coordinate was matched to the previously vendored jar,
  * resolution is non-transitive so the artifact set stays exactly the
  * audited set, and gradle/verification-metadata.xml enforces checksums
  * on every resolution. The
@@ -154,6 +154,16 @@ subprojects {
 
     repositories {
         mavenCentral()
+        // dcm4che 2.x is published only to the dcm4che.org repository.
+        exclusiveContent {
+            forRepository {
+                maven { url = 'https://www.dcm4che.org/maven2/' }
+            }
+            filter {
+                includeGroup 'dcm4che'
+                includeGroup 'dcm4che.tool'
+            }
+        }
     }
 
     java {

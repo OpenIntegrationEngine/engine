@@ -8,6 +8,12 @@
 # gradle/verification-metadata.xml enforces checksums (regenerate it with
 # a cold cache after any change here, see CONTRIBUTING.md), and
 # gradle/vendored-layout.json places each artifact in the distribution.
+#
+# Exceptions: autocomplete, hapi-base, hapi-structures-v21 to v26, jtds,
+# languagesupport, rsyntaxtextarea and sqlite-jdbc hold the same entries
+# as the vendored jars in different zip packaging (sqlite-jdbc's
+# manifest also orders its OSGi headers differently).
+# dcm4che comes from the dcm4che.org repository.
 
 [versions]
 # Shared by artifacts released together; bump the whole family at once.
@@ -15,6 +21,7 @@ asm = "9.6"
 awssdk = "2.15.28"
 bouncycastle = "1.78.1"
 byte-buddy = "1.14.13"
+dcm4che = "2.0.29"
 derby = "10.10.2.0"
 flying-saucer = "9.0.1"
 hapi = "2.3"
@@ -96,12 +103,19 @@ commons-net = { module = "commons-net:commons-net", version = "3.9.0" }
 commons-pool2 = { module = "org.apache.commons:commons-pool2", version = "2.3" }
 commons-text = { module = "org.apache.commons:commons-text", version = "1.15.0" }
 commons-vfs2 = { module = "org.apache.commons:commons-vfs2", version = "2.10.0" }
+dcm4che-core = { module = "dcm4che:dcm4che-core", version.ref = "dcm4che" }
+dcm4che-filecache = { module = "dcm4che:dcm4che-filecache", version.ref = "dcm4che" }
+dcm4che-net = { module = "dcm4che:dcm4che-net", version.ref = "dcm4che" }
+dcm4che-tool-dcmrcv = { module = "dcm4che.tool:dcm4che-tool-dcmrcv", version.ref = "dcm4che" }
+dcm4che-tool-dcmsnd = { module = "dcm4che.tool:dcm4che-tool-dcmsnd", version.ref = "dcm4che" }
 derby = { module = "org.apache.derby:derby", version.ref = "derby" }
 derbytools = { module = "org.apache.derby:derbytools", version.ref = "derby" }
 ecj = { module = "org.eclipse.jdt:ecj", version = "3.19.0" }
 error-prone-annotations = { module = "com.google.errorprone:error_prone_annotations", version = "2.3.4" }
 failureaccess = { module = "com.google.guava:failureaccess", version = "1.0.1" }
 fastinfoset = { module = "com.sun.xml.fastinfoset:FastInfoset", version = "1.2.13" }
+fifesoft-autocomplete = { module = "com.fifesoft:autocomplete", version = "2.5.4" }
+fifesoft-languagesupport = { module = "com.fifesoft:languagesupport", version = "2.5.6" }
 flying-saucer-core = { module = "org.xhtmlrenderer:flying-saucer-core", version.ref = "flying-saucer" }
 flying-saucer-pdf = { module = "org.xhtmlrenderer:flying-saucer-pdf", version.ref = "flying-saucer" }
 fontbox = { module = "org.apache.pdfbox:fontbox", version.ref = "pdfbox" }
@@ -113,6 +127,15 @@ gmbal-api-only = { module = "org.glassfish.gmbal:gmbal-api-only", version = "3.1
 guava = { module = "com.google.guava:guava", version = "32.0.1-jre" }
 guice = { module = "com.google.inject:guice", version = "4.1.0" }
 hamcrest = { module = "org.hamcrest:hamcrest", version = "2.2" }
+hapi-base = { module = "ca.uhn.hapi:hapi-base", version.ref = "hapi" }
+hapi-structures-v21 = { module = "ca.uhn.hapi:hapi-structures-v21", version.ref = "hapi" }
+hapi-structures-v22 = { module = "ca.uhn.hapi:hapi-structures-v22", version.ref = "hapi" }
+hapi-structures-v23 = { module = "ca.uhn.hapi:hapi-structures-v23", version.ref = "hapi" }
+hapi-structures-v231 = { module = "ca.uhn.hapi:hapi-structures-v231", version.ref = "hapi" }
+hapi-structures-v24 = { module = "ca.uhn.hapi:hapi-structures-v24", version.ref = "hapi" }
+hapi-structures-v25 = { module = "ca.uhn.hapi:hapi-structures-v25", version.ref = "hapi" }
+hapi-structures-v251 = { module = "ca.uhn.hapi:hapi-structures-v251", version.ref = "hapi" }
+hapi-structures-v26 = { module = "ca.uhn.hapi:hapi-structures-v26", version.ref = "hapi" }
 hapi-structures-v27 = { module = "ca.uhn.hapi:hapi-structures-v27", version.ref = "hapi" }
 hapi-structures-v28 = { module = "ca.uhn.hapi:hapi-structures-v28", version.ref = "hapi" }
 hapi-structures-v281 = { module = "ca.uhn.hapi:hapi-structures-v281", version.ref = "hapi" }
@@ -198,6 +221,7 @@ joda-time = { module = "joda-time:joda-time", version = "2.9.9" }
 jsch = { module = "com.github.mwiede:jsch", version = "2.27.7" }
 jsr181-api = { module = "javax.jws:jsr181-api", version = "1.0-MR1" }
 jsr305 = { module = "com.google.code.findbugs:jsr305", version = "3.0.2" }
+jtds = { module = "net.sourceforge.jtds:jtds", version = "1.3.1" }
 junit = { module = "junit:junit", version = "4.13.1" }
 junit-platform-console-standalone = { module = "org.junit.platform:junit-platform-console-standalone", version = "1.11.4" }
 libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version = "8.12.50" }
@@ -239,10 +263,12 @@ quartz = { module = "org.quartz-scheduler:quartz", version = "2.3.2" }
 reactive-streams = { module = "org.reactivestreams:reactive-streams", version = "1.0.3" }
 reflections = { module = "org.reflections:reflections", version = "0.9.10" }
 rhino = { module = "org.mozilla:rhino", version = "1.7.13" }
+rsyntaxtextarea = { module = "com.fifesoft:rsyntaxtextarea", version = "2.5.6" }
 saaj-impl = { module = "com.sun.xml.messaging.saaj:saaj-impl", version = "1.4.0" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-log4j12 = { module = "org.slf4j:slf4j-log4j12", version.ref = "slf4j" }
 snakeyaml = { module = "org.yaml:snakeyaml", version = "2.5" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version = "3.43.2.1" }
 stax-ex = { module = "org.jvnet.staxex:stax-ex", version = "1.8" }
 staxon = { module = "de.odysseus.staxon:staxon", version = "1.3" }
 streambuffer = { module = "com.sun.xml.stream.buffer:streambuffer", version = "1.5.4" }
@@ -282,7 +308,18 @@ client-main = [
     "commons-pool2",
     "commons-text",
     "commons-vfs2",
+    "fifesoft-autocomplete",
+    "fifesoft-languagesupport",
     "guava",
+    "hapi-base",
+    "hapi-structures-v21",
+    "hapi-structures-v22",
+    "hapi-structures-v23",
+    "hapi-structures-v231",
+    "hapi-structures-v24",
+    "hapi-structures-v25",
+    "hapi-structures-v251",
+    "hapi-structures-v26",
     "hapi-structures-v27",
     "hapi-structures-v28",
     "hapi-structures-v281",
@@ -323,6 +360,7 @@ client-main = [
     "quartz",
     "reflections",
     "rhino",
+    "rsyntaxtextarea",
     "slf4j-api",
     "slf4j-log4j12",
     "staxon",
@@ -412,6 +450,7 @@ donkey-main = [
     "j2objc-annotations",
     "javassist",
     "jsr305",
+    "jtds",
     "listenablefuture",
     "log4j-1-2-api",
     "log4j-api",
@@ -448,6 +487,11 @@ generator-main = [
     "velocity-engine-core",
 ]
 server-extensions = [
+    "dcm4che-core",
+    "dcm4che-filecache",
+    "dcm4che-net",
+    "dcm4che-tool-dcmrcv",
+    "dcm4che-tool-dcmsnd",
     "flying-saucer-core",
     "flying-saucer-pdf",
     "fontbox",
@@ -523,6 +567,15 @@ server-main = [
     "glassfish-management-api",
     "gmbal-api-only",
     "guice",
+    "hapi-base",
+    "hapi-structures-v21",
+    "hapi-structures-v22",
+    "hapi-structures-v23",
+    "hapi-structures-v231",
+    "hapi-structures-v24",
+    "hapi-structures-v25",
+    "hapi-structures-v251",
+    "hapi-structures-v26",
     "hapi-structures-v27",
     "hapi-structures-v28",
     "hapi-structures-v281",
@@ -595,6 +648,7 @@ server-main = [
     "joda-time",
     "jsch",
     "jsr181-api",
+    "jtds",
     "log4j-1-2-api",
     "log4j-api",
     "log4j-core",
@@ -624,6 +678,7 @@ server-main = [
     "rhino",
     "saaj-impl",
     "snakeyaml",
+    "sqlite-jdbc",
     "stax-ex",
     "staxon",
     "streambuffer",

@@ -383,18 +383,22 @@ public class MessageBrowserAdvancedFilter extends MirthDialog {
         } else {
             for (int i = 0; i < rowCount; i++) {
                 String metaDataName = (String) model.getValueAt(i, 0);
-                String operator = ((MetaDataSearchOperator) model.getValueAt(i, 1)).toFullString();
+                MetaDataSearchOperator operator = (MetaDataSearchOperator) model.getValueAt(i, 1);
                 String searchText = (String) model.getValueAt(i, 2);
                 Boolean ignoreCase = (Boolean) model.getValueAt(i, 3);
+                MetaDataColumn column = cachedMetaDataColumns.get(metaDataName);
 
-                if (StringUtils.isNotEmpty(searchText)) {
-                    MetaDataColumn column = cachedMetaDataColumns.get(metaDataName);
-                    metaDataSearch.add(new MetaDataSearchElement(metaDataName, operator, column.getType().castValue(searchText), ignoreCase));
+                if (shouldIncludeMetaDataSearch(column.getType(), operator, searchText)) {
+                    metaDataSearch.add(new MetaDataSearchElement(metaDataName, operator.toFullString(), column.getType().castValue(searchText), ignoreCase));
                 }
             }
 
             return metaDataSearch;
         }
+    }
+
+    static boolean shouldIncludeMetaDataSearch(MetaDataColumnType columnType, MetaDataSearchOperator operator, String searchText) {
+        return StringUtils.isNotEmpty(searchText) || (columnType == MetaDataColumnType.STRING && (operator == MetaDataSearchOperator.EQUAL || operator == MetaDataSearchOperator.NOT_EQUAL));
     }
 
     @Override

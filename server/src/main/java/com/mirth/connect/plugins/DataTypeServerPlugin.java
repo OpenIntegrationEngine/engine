@@ -25,6 +25,7 @@ import com.mirth.connect.model.datatype.ResponseValidationProperties;
 import com.mirth.connect.model.datatype.SerializationProperties;
 import com.mirth.connect.model.datatype.SerializerProperties;
 import com.mirth.connect.model.transmission.TransmissionModeProperties;
+import com.mirth.connect.model.util.MessageVocabulary;
 import com.mirth.connect.server.message.DefaultAutoResponder;
 import com.mirth.connect.server.message.DefaultResponseValidator;
 
@@ -89,5 +90,15 @@ public abstract class DataTypeServerPlugin implements ServerPlugin {
      */
     public ResponseValidator getResponseValidator(SerializationProperties serializationProperties, ResponseValidationProperties responseValidationProperties) {
         return new DefaultResponseValidator();
+    }
+
+    /**
+     * Get the message vocabulary for this data type — element descriptions used to annotate a
+     * message tree (the same text the Swing client shows). {@code version} and {@code type} come
+     * from the serializer's message metadata (mirth_version / mirth_type). Returns null for data
+     * types with no vocabulary (the default); types that have one override this.
+     */
+    public MessageVocabulary getVocabulary(String version, String type) {
+        return null;
     }
 }

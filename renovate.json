@@ -2,7 +2,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
-    "schedule:monthly"
+    "schedule:monthly",
+    "helpers:pinGitHubActionDigests"
   ],
   "timezone": "America/New_York",
   "minimumReleaseAge": "14 days",
@@ -35,6 +36,14 @@
       ],
       "addLabels": [
         "docker"
+      ]
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "addLabels": [
+        "github actions"
       ]
     },
     {

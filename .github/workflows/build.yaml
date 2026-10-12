@@ -21,7 +21,7 @@ jobs:
       configurations: ${{ steps.configurations.outputs.names }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: List smoke-test configurations
         id: configurations
@@ -30,10 +30,10 @@ jobs:
           echo "names=$names" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Expose GitHub Actions runtime for buildx cache
-        uses: crazy-max/ghaction-github-runtime@v3
+        uses: crazy-max/ghaction-github-runtime@v4
 
       - name: Build and run tests
         run: |
@@ -51,7 +51,7 @@ jobs:
         run: tar czf openintegrationengine.tar.gz -C docker-build-output/app/server setup --transform 's|^setup|openintegrationengine/|'
 
       - name: Create artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: oie-build
           path: openintegrationengine.tar.gz
@@ -67,7 +67,7 @@ jobs:
 
       - name: Upload Test Results
         if: (!cancelled())
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Test Results (unit)
           path: |
@@ -83,13 +83,13 @@ jobs:
         configuration: ${{ fromJSON(needs.build.outputs.configurations) }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Expose GitHub Actions runtime for buildx cache
-        uses: crazy-max/ghaction-github-runtime@v3
+        uses: crazy-max/ghaction-github-runtime@v4
 
       # Read-only: the build job populates this cache, and concurrent writers
       # from the matrix would just fight over the same scope.
@@ -100,7 +100,7 @@ jobs:
 
       - name: Upload Test Results
         if: (!cancelled())
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Test Results (${{ matrix.configuration }})
           path: |
@@ -113,12 +113,12 @@ jobs:
 
     steps:
       - name: Upload Event File
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Event File
           path: ${{ github.event_path }}
       - name: Merge Test Results
-        uses: actions/upload-artifact/merge@v4
+        uses: actions/upload-artifact/merge@v7
         with:
           name: Test Results
           pattern: Test Results (*)

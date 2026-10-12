@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<install4j version="11.0.3" transformSequenceNumber="11">
-  <application name="Open Integration Engine" applicationId="4145-9206-7630-8076" mediaDir="${compiler:installer:mediaRoot}/server/build" shortName="oie" publisher="Open Integration Engine Project" publisherWeb="https://openintegrationengine.com" version="4.6.0" backupOnSave="true" autoSave="true" macVolumeId="88477e584eb462ba" javaMinVersion="17" javaMaxVersion="25">
+<install4j version="13.1.1" transformSequenceNumber="13">
+  <application name="Open Integration Engine - NovaMap Edition" applicationId="4326-7195-5738-7648" mediaDir="${compiler:installer:mediaRoot}/server/build" shortName="oie-nova" publisher="NovaMap Health Limited" publisherWeb="https://www.novamap.health" version="4.6.0" backupOnSave="true" autoSave="true" macVolumeId="737bdef6aa037299" javaMinVersion="17" javaMaxVersion="25">
     <variables>
       <variable name="installer:mediaRoot" value="../../../engine" />
     </variables>
@@ -20,7 +20,7 @@
           <entry location="conf" />
         </exclude>
       </dirEntry>
-      <dirEntry mountPoint="24" file="${compiler:installer:mediaRoot}/server/setup" overwriteMode="0" uninstallMode="1" overrideOverwriteMode="true" overrideUninstallMode="true">
+      <dirEntry mountPoint="24" file="${compiler:installer:mediaRoot}/server/setup" overwriteMode="never" uninstallMode="never" overrideOverwriteMode="true" overrideUninstallMode="true">
         <exclude>
           <entry location="server-lib" />
           <entry location="webapps" />
@@ -38,6 +38,9 @@
           <entry location="logs" />
           <entry location="oieservice.vmoptions" />
           <entry location="client-lib" />
+          <entry location="configure-from-env" />
+          <entry location="oieserver" />
+          <entry location="oieserver.ps1" />
         </exclude>
       </dirEntry>
     </entries>
@@ -45,42 +48,24 @@
   <launchers>
     <launcher name="Open Integration Engine Service" id="25">
       <executable name="${compiler:sys.shortName}service" iconSet="true" executableDir="." redirectStderr="false" executableMode="service" singleInstance="true" globalSingleInstance="true" />
-      <java mainClass="com.mirth.connect.server.launcher.MirthLauncher">
+      <java mainClass="com.mirth.connect.server.launcher.MirthLauncher" vmParameters="-include-options oieservice.vmoptions">
         <classPath>
           <archive location="mirth-server-launcher.jar" failOnError="false" />
         </classPath>
       </java>
-      <vmOptionsFile mode="none" overwriteMode="5">
-        <content>#
-# Do not modify this file! It may get overwritten in an update. Please put all custom
-# options in custom.vmoptions
-#
--server
--Xmx256m
--Djava.awt.headless=true
--Dapple.awt.UIElement=true</content>
-      </vmOptionsFile>
+      <vmOptionsFile mode="none" />
       <iconImageFiles>
         <file path="${compiler:installer:mediaRoot}/../governance/branding/icons/oie_logo_only_white_background_128x128.png" />
       </iconImageFiles>
     </launcher>
     <launcher name="Open Integration Engine Server" id="39" excludeFromMenu="true">
       <executable name="${compiler:sys.shortName}server" iconSet="true" executableDir="." redirectStderr="false" executableMode="console" singleInstance="true" globalSingleInstance="true" />
-      <java mainClass="com.mirth.connect.server.launcher.MirthLauncher">
+      <java mainClass="com.mirth.connect.server.launcher.MirthLauncher" vmParameters="-include-options oieserver.vmoptions">
         <classPath>
           <archive location="mirth-server-launcher.jar" failOnError="false" />
         </classPath>
       </java>
-      <vmOptionsFile mode="none" overwriteMode="5">
-        <content>#
-# Do not modify this file! It may get overwritten in an update. Please put all custom
-# options in custom.vmoptions
-#
--server
--Xmx256m
--Djava.awt.headless=true
--Dapple.awt.UIElement=true</content>
-      </vmOptionsFile>
+      <vmOptionsFile mode="none" />
       <iconImageFiles>
         <file path="${compiler:installer:mediaRoot}/../governance/branding/icons/oie_logo_only_white_background_128x128.png" />
       </iconImageFiles>
@@ -133,9 +118,9 @@
                   <property name="obtainIfAdminMac" type="boolean" value="true" />
                   <property name="obtainIfNormalMac" type="boolean" value="true" />
                   <property name="obtainIfNormalWin" type="boolean" value="true" />
-                  <property name="updateInstallationDirectory" type="boolean" value="false" />
                 </serializedBean>
               </action>
+              <action id="168" beanClass="com.install4j.runtime.beans.actions.control.SetInstallationDirectoryAction" actionElevationType="none" />
             </actions>
           </screen>
         </startup>
@@ -207,7 +192,7 @@
                     <element index="0">sys.installationDir</element>
                   </property>
                 </serializedBean>
-                <condition>context.getBooleanVariable("sys.confirmedUpdateInstallation")</condition>
+                <condition>context.getBooleanVariable("sys.streamlinedInstallation")</condition>
               </action>
             </actions>
             <formComponents>
@@ -228,9 +213,12 @@ return console.askOkCancel(message, true);
                   </property>
                 </serializedBean>
               </formComponent>
-              <formComponent id="5" beanClass="com.install4j.runtime.beans.formcomponents.UpdateAlertComponent" useExternalParametrization="true" externalParametrizationName="Update Alert" externalParametrizationMode="include">
+              <formComponent id="5" beanClass="com.install4j.runtime.beans.formcomponents.StreamlinedInstallationChooserComponent" useExternalParametrization="true" externalParametrizationName="Update Alert" externalParametrizationMode="include">
+                <serializedBean>
+                  <property name="streamlinedInstallationStrategy" type="enum" class="com.install4j.runtime.beans.formcomponents.StreamlinedInstallationStrategy" value="UPDATE_ONLY" />
+                </serializedBean>
                 <externalParametrizationPropertyNames>
-                  <propertyName>updateCheck</propertyName>
+                  <propertyName>streamlinedInstallationStrategy</propertyName>
                 </externalParametrizationPropertyNames>
               </formComponent>
               <formComponent id="6" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetTop="20">
@@ -344,7 +332,7 @@ return true;
             </formComponents>
           </screen>
           <screen id="8" beanClass="com.install4j.runtime.beans.screens.InstallationDirectoryScreen" rollbackBarrierExitCode="0">
-            <condition>!context.getBooleanVariable("sys.confirmedUpdateInstallation")</condition>
+            <condition>!context.getBooleanVariable("sys.streamlinedInstallation")</condition>
             <actions>
               <action id="11" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" rollbackBarrierExitCode="0" multiExec="true">
                 <serializedBean>
@@ -410,9 +398,10 @@ return true;
                   </property>
                 </serializedBean>
               </action>
-              <action id="18" beanClass="com.install4j.runtime.beans.actions.desktop.CreateProgramGroupAction" actionElevationType="elevated" rollbackBarrierExitCode="0">
+              <action id="18" beanClass="com.install4j.runtime.beans.actions.desktop.CreateDefaultStartMenuEntriesAction" actionElevationType="elevated" rollbackBarrierExitCode="0">
                 <serializedBean>
-                  <property name="uninstallerMenuName" type="string">${i18n:UninstallerMenuEntry(${compiler:sys.fullName})}</property>
+                  <property name="folderName" type="string">${installer:sys.programGroupName}</property>
+                  <property name="linkDirectory" type="string">${installer:sys.symlinkDir}</property>
                 </serializedBean>
                 <condition>!context.getBooleanVariable("sys.programGroupDisabled")</condition>
               </action>
@@ -578,23 +567,6 @@ return console.askYesNo(message, true);
                   <property name="bottom" type="boolean" value="true" />
                 </object>
               </property>
-              <property name="imageEdgeBackgroundColor">
-                <object class="com.install4j.runtime.beans.LightOrDarkColor">
-                  <object class="java.awt.Color">
-                    <int>25</int>
-                    <int>143</int>
-                    <int>220</int>
-                    <int>255</int>
-                  </object>
-                  <object class="java.awt.Color">
-                    <int>0</int>
-                    <int>74</int>
-                    <int>151</int>
-                    <int>255</int>
-                  </object>
-                </object>
-              </property>
-              <property name="imageEdgeBorder" type="boolean" value="true" />
               <property name="imageFile">
                 <object class="com.install4j.api.beans.ExternalFile">
                   <string>${compiler:sys.install4jHome}/resource/styles/wizard.png</string>
@@ -608,13 +580,34 @@ return console.askYesNo(message, true);
                   <int>10</int>
                 </object>
               </property>
+              <property name="imageEdgeBackgroundColor">
+                <object class="com.install4j.runtime.beans.LightOrDarkColor">
+                  <object class="java.awt.Color">
+                    <int>27</int>
+                    <int>143</int>
+                    <int>220</int>
+                    <int>255</int>
+                  </object>
+                  <object class="java.awt.Color">
+                    <int>0</int>
+                    <int>73</int>
+                    <int>150</int>
+                    <int>255</int>
+                  </object>
+                </object>
+              </property>
             </serializedBean>
             <beans>
               <formComponent id="9" beanClass="com.install4j.runtime.beans.styles.ScreenTitleComponent" insetTop="0">
                 <serializedBean>
-                  <property name="labelFontSizePercent" type="int" value="130" />
-                  <property name="labelFontStyle" type="enum" class="com.install4j.runtime.beans.formcomponents.FontStyle" value="BOLD" />
-                  <property name="labelFontType" type="enum" class="com.install4j.runtime.beans.formcomponents.FontType" value="DERIVED" />
+                  <property name="labelWidgetStyleId" type="null" />
+                  <property name="labelWidgetStyle">
+                    <property name="fontDescriptor">
+                      <property name="fontType" type="enum" class="com.install4j.runtime.beans.formcomponents.FontType" value="DERIVED" />
+                      <property name="fontSizePercent" type="int" value="130" />
+                      <property name="fontStyle" type="enum" class="com.install4j.runtime.beans.formcomponents.FontStyle" value="BOLD" />
+                    </property>
+                  </property>
                 </serializedBean>
               </formComponent>
               <formComponent id="10" beanClass="com.install4j.runtime.beans.formcomponents.SeparatorComponent" />
@@ -692,8 +685,13 @@ return console.askYesNo(message, true);
                 <beans>
                   <formComponent name="Title" id="16" beanClass="com.install4j.runtime.beans.styles.ScreenTitleComponent">
                     <serializedBean>
-                      <property name="labelFontStyle" type="enum" class="com.install4j.runtime.beans.formcomponents.FontStyle" value="BOLD" />
-                      <property name="labelFontType" type="enum" class="com.install4j.runtime.beans.formcomponents.FontType" value="DERIVED" />
+                      <property name="labelWidgetStyleId" type="null" />
+                      <property name="labelWidgetStyle">
+                        <property name="fontDescriptor">
+                          <property name="fontType" type="enum" class="com.install4j.runtime.beans.formcomponents.FontType" value="DERIVED" />
+                          <property name="fontStyle" type="enum" class="com.install4j.runtime.beans.formcomponents.FontStyle" value="BOLD" />
+                        </property>
+                      </property>
                     </serializedBean>
                   </formComponent>
                   <formComponent name="Subtitle" id="17" beanClass="com.install4j.runtime.beans.styles.ScreenTitleComponent" insetLeft="8">
@@ -758,9 +756,12 @@ return console.askYesNo(message, true);
         </beans>
       </group>
     </styles>
+    <widgetStyles defaultWidgetStyleId="112">
+      <widgetStyle name="Standard" id="112" beanClass="com.install4j.runtime.beans.widgets.WidgetStyleCollection" />
+    </widgetStyles>
   </installerGui>
   <mediaSets>
-    <windows name="Windows x64" id="27" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" installDir="OpenIntegrationEngine" architecture="64">
+    <windows name="Windows x64" id="27" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" installDir="OpenIntegrationEngineNovaMap" architecture="64">
       <excludedLaunchers>
         <launcher id="56" />
       </excludedLaunchers>
@@ -772,7 +773,7 @@ return console.askYesNo(message, true);
       </excludedLaunchers>
       <jreBundle usePack200="false" jreBundleSource="none" />
     </unixInstaller>
-    <macosFolder name="macOS Folder - ARM" id="43" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-aarch" installDir="OpenIntegrationEngine">
+    <macosFolder name="macOS Folder - ARM" id="43" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-aarch" installDir="OpenIntegrationEngineNovaMap">
       <excludedLaunchers>
         <launcher id="56" />
       </excludedLaunchers>
@@ -787,19 +788,19 @@ return console.askYesNo(message, true);
       </exclude>
       <jreBundle jreBundleSource="none" />
     </unixArchive>
-    <macosFolder name="macOS Folder - Intel" id="116" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-x86" installDir="OpenIntegrationEngine" architecture="amd64">
+    <macosFolder name="macOS Folder - Intel" id="116" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-x86" installDir="OpenIntegrationEngineNovaMap" architecture="amd64">
       <excludedLaunchers>
         <launcher id="56" />
       </excludedLaunchers>
       <jreBundle usePack200="false" jreBundleSource="none" />
     </macosFolder>
-    <windows name="Windows ARM" id="119" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" installDir="OpenIntegrationEngine" architecture="arm64">
+    <windows name="Windows ARM" id="119" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" installDir="OpenIntegrationEngineNovaMap" architecture="arm64">
       <excludedLaunchers>
         <launcher id="56" />
       </excludedLaunchers>
       <jreBundle jreBundleSource="none" />
     </windows>
-    <windows name="Windows x64-with-JRE" id="121" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-with-JRE" installDir="OpenIntegrationEngine" architecture="64">
+    <windows name="Windows x64-with-JRE" id="121" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-with-JRE" installDir="OpenIntegrationEngineNovaMap" architecture="64">
       <excludedLaunchers>
         <launcher id="56" />
       </excludedLaunchers>
@@ -811,19 +812,19 @@ return console.askYesNo(message, true);
       </excludedLaunchers>
       <jreBundle usePack200="false" />
     </unixInstaller>
-    <macosFolder name="macOS Folder - ARM-with-JRE" id="130" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-aarch-with-JRE" installDir="OpenIntegrationEngine">
+    <macosFolder name="macOS Folder - ARM-with-JRE" id="130" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-aarch-with-JRE" installDir="OpenIntegrationEngineNovaMap">
       <excludedLaunchers>
         <launcher id="56" />
       </excludedLaunchers>
       <jreBundle usePack200="false" />
     </macosFolder>
-    <macosFolder name="macOS Folder - Intel-with-JRE" id="133" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-x86-with-JRE" installDir="OpenIntegrationEngine" architecture="amd64">
+    <macosFolder name="macOS Folder - Intel-with-JRE" id="133" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-x86-with-JRE" installDir="OpenIntegrationEngineNovaMap" architecture="amd64">
       <excludedLaunchers>
         <launcher id="56" />
       </excludedLaunchers>
       <jreBundle usePack200="false" />
     </macosFolder>
-    <windows name="Windows ARM-with-JRE" id="136" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-with-JRE" installDir="OpenIntegrationEngine" architecture="arm64">
+    <windows name="Windows ARM-with-JRE" id="136" mediaFileName="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}-with-JRE" installDir="OpenIntegrationEngineNovaMap" architecture="arm64">
       <excludedLaunchers>
         <launcher id="56" />
       </excludedLaunchers>
@@ -835,7 +836,5 @@ return console.askYesNo(message, true);
       <jreBundle jreBundleSource="none" />
     </windowsArchive>
   </mediaSets>
-  <buildIds buildAll="false">
-    <mediaSet refId="136" />
-  </buildIds>
+  <buildIds buildAll="true" />
 </install4j>

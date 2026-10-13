@@ -1271,6 +1271,17 @@ public class DefaultConfigurationController extends ConfigurationController {
                     logger.debug("found and loaded keystore: " + keyStoreFile.toAbsolutePath().toString());
                 }
             } else {
+                /*
+                 * Earlier versions kept the keystore at ${dir.appdata}/keystore.jks. If that file is
+                 * still here, mirth.properties no longer points at it, and creating a new keystore
+                 * would generate a new encryption key, leaving anything already encrypted in the
+                 * database unreadable.
+                 */
+                Path legacyKeyStoreFile = Path.of(getApplicationDataDir(), "keystore.jks");
+                if (Files.exists(legacyKeyStoreFile)) {
+                    throw new IllegalStateException("Keystore " + keyStoreFile.toAbsolutePath() + " not found, but an existing keystore was found at " + legacyKeyStoreFile.toAbsolutePath() + ". Not creating a new keystore, because it would replace the encryption key. Set keystore.path, keystore.storepass, keystore.keypass and keystore.type in mirth.properties to match the existing keystore.");
+                }
+
                 keyStore.load(null, keyStorePassword);
                 logger.debug("keystore file not found, created new one");
                 FilePermissionUtil.createOwnerOnlyFile(keyStoreFile);

@@ -1,34 +1,36 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: Mitch Gaffigan <mitch@gaffigan.net>
+// SPDX-FileCopyrightText: 2026 Tony Germano <tony@germano.name>
 
 package com.mirth.connect.server.util;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.sun.jna.Platform;
+import com.sun.jna.platform.win32.Advapi32Util;
+import com.sun.jna.platform.win32.WinNT;
+import com.sun.security.auth.module.NTSystem;
 
 public class FilePermissionUtilTest {
 
+    // well-known SIDs, which unlike account names are the same in every Windows language
+    private static final String LOCAL_SYSTEM_SID = "S-1-5-18";
+    private static final String ADMINISTRATORS_SID = "S-1-5-32-544";
+
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
 
     @Test
     public void testPosixPermissions() throws Exception {
@@ -43,36 +45,22 @@ public class FilePermissionUtilTest {
     @Test
     public void testWindowsPermissions() throws Exception {
         assumeTrue("Test only applies on windows", Platform.isWindows());
-        assumeTrue("Test assumes english locale", System.getProperty("user.language").equals("en"));
         Path path = temporaryFolder.getRoot().toPath().resolve("keystore.p12");
 
         FilePermissionUtil.createOwnerOnlyFile(path);
-        var icaclsOutput = system("icacls", path.toAbsolutePath().toString());
-        assertContains(icaclsOutput, System.getProperty("user.name") + ":(F)");
-        assertContains(icaclsOutput, "BUILTIN\\Administrators:(F)");
-        assertContains(icaclsOutput, "NT AUTHORITY\\SYSTEM:(F)");
-        assertNotContains(icaclsOutput, "Everyone:");
-        assertNotContains(icaclsOutput, "Users:");
-        assertNotContains(icaclsOutput, "(I)" /* inherited permissions */);
-    }
 
-    private void assertContains(String output, String expected) {
-        assertTrue("Expected output to contain '" + expected + "' but was '" + output + "'", output.contains(expected));
-    }
+        Map<String, Integer> grants = new HashMap<String, Integer>();
+        for (WinNT.ACCESS_ACEStructure ace : Advapi32Util.getFileSecurity(path.toAbsolutePath().toString(), false)) {
+            assertEquals("ACE type for " + ace.getSidString(), WinNT.ACCESS_ALLOWED_ACE_TYPE, ace.AceType);
+            assertEquals("ACE for " + ace.getSidString() + " is inherited", 0, ace.AceFlags & WinNT.INHERITED_ACE);
+            grants.put(ace.getSidString(), ace.Mask);
+        }
 
-    private void assertNotContains(String output, String expected) {
-        assertFalse("Expected output to not contain '" + expected + "' but was '" + output + "'", output.contains(expected));
-    }
-
-    private String system(String command, String... arguments) throws Exception {
-        List<String> commandLine = new ArrayList<String>();
-        commandLine.add(command);
-        commandLine.addAll(Arrays.asList(arguments));
-
-        Process process = new ProcessBuilder(commandLine).redirectErrorStream(true).start();
-        String output = IOUtils.toString(process.getInputStream(), Charset.defaultCharset());
-
-        assertEquals(output, 0, process.waitFor());
-        return output;
+        // when running as LocalSystem, the current user and LocalSystem are the same entry
+        Map<String, Integer> expected = new HashMap<String, Integer>();
+        expected.put(new NTSystem().getUserSID(), WinNT.FILE_ALL_ACCESS);
+        expected.put(LOCAL_SYSTEM_SID, WinNT.FILE_ALL_ACCESS);
+        expected.put(ADMINISTRATORS_SID, WinNT.FILE_ALL_ACCESS);
+        assertEquals(expected, grants);
     }
 }

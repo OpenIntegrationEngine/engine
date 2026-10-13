@@ -1286,12 +1286,26 @@ public class DefaultConfigurationController extends ConfigurationController {
 
             // Entries are only ever added below, never replaced, so a change in size means the keystore changed
             int originalSize = keyStore.size();
+            boolean newEncryptionKey = !keyStore.containsAlias(SECRET_KEY_ALIAS);
 
             configureEncryption(provider, keyStore, keyPassword);
             generateDefaultCertificate(provider, keyStore, keyPassword);
 
             if (!Files.exists(keyStoreFile) || keyStore.size() != originalSize) {
-                storeKeyStore(keyStore, keyStoreFile, keyStorePassword);
+                try {
+                    storeKeyStore(keyStore, keyStoreFile, keyStorePassword);
+                } catch (Exception e) {
+                    /*
+                     * Anything encrypted with a key that was never saved could not be decrypted
+                     * after a restart, so don't leave the server, or the clients it sends its
+                     * encryption settings to, with one.
+                     */
+                    if (newEncryptionKey) {
+                        encryptor = null;
+                        encryptionConfig.setSecretKey(null);
+                    }
+                    throw e;
+                }
             }
         } catch (Exception e) {
             logger.error("Could not initialize security settings.", e);

@@ -5,9 +5,11 @@
 package com.mirth.connect.server.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -31,6 +33,22 @@ public class FilePermissionUtilTest {
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    @Test
+    public void testCreatesMissingParentDirectories() throws Exception {
+        Path path = temporaryFolder.getRoot().toPath().resolve("nested/keystore.p12");
+
+        FilePermissionUtil.createOwnerOnlyFile(path);
+
+        assertTrue(Files.exists(path));
+    }
+
+    @Test(expected = FileAlreadyExistsException.class)
+    public void testThrowsIfFileExists() throws Exception {
+        Path path = temporaryFolder.newFile("keystore.p12").toPath();
+
+        FilePermissionUtil.createOwnerOnlyFile(path);
+    }
 
     @Test
     public void testPosixPermissions() throws Exception {

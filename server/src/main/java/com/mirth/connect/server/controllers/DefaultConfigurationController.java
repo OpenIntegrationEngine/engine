@@ -1,11 +1,7 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: 2026 Mitch Gaffigan <mitch@gaffigan.net>
+// SPDX-FileCopyrightText: 2026 Tony Germano <tony@germano.name>
 
 package com.mirth.connect.server.controllers;
 
@@ -20,8 +16,10 @@ import java.io.Reader;
 import java.math.BigInteger;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -1284,18 +1282,49 @@ public class DefaultConfigurationController extends ConfigurationController {
 
                 keyStore.load(null, keyStorePassword);
                 logger.debug("keystore file not found, created new one");
-                FilePermissionUtil.createOwnerOnlyFile(keyStoreFile);
             }
+
+            // Entries are only ever added below, never replaced, so a change in size means the keystore changed
+            int originalSize = keyStore.size();
 
             configureEncryption(provider, keyStore, keyPassword);
             generateDefaultCertificate(provider, keyStore, keyPassword);
 
-            // write the keystore back to the file
-            try (OutputStream fos = Files.newOutputStream(keyStoreFile)) {
-                keyStore.store(fos, keyStorePassword);
+            if (!Files.exists(keyStoreFile) || keyStore.size() != originalSize) {
+                storeKeyStore(keyStore, keyStoreFile, keyStorePassword);
             }
         } catch (Exception e) {
             logger.error("Could not initialize security settings.", e);
+        }
+    }
+
+    /*
+     * Writes the keystore to a new owner-only temp file in the same directory and then moves it
+     * into place, so that a failure part way through never leaves a truncated or empty keystore
+     * behind, and the keystore is never readable by other users, even briefly.
+     */
+    private void storeKeyStore(KeyStore keyStore, Path keyStoreFile, char[] keyStorePassword) throws Exception {
+        // Replace the target of a symlink rather than the link itself
+        Path target = Files.isSymbolicLink(keyStoreFile) ? keyStoreFile.toRealPath() : keyStoreFile;
+        Path tempFile = target.resolveSibling(target.getFileName() + ".tmp");
+
+        // Remove a temp file left behind by a previous failed write
+        Files.deleteIfExists(tempFile);
+
+        try {
+            FilePermissionUtil.createOwnerOnlyFile(tempFile);
+
+            try (OutputStream os = Files.newOutputStream(tempFile)) {
+                keyStore.store(os, keyStorePassword);
+            }
+
+            try {
+                Files.move(tempFile, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(tempFile);
         }
     }
 

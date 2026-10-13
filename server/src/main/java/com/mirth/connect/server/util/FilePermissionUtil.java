@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: Mitch Gaffigan <mitch@gaffigan.net>
+// SPDX-FileCopyrightText: 2026 Tony Germano <tony@germano.name>
 
 package com.mirth.connect.server.util;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
@@ -19,11 +21,16 @@ public class FilePermissionUtil {
 
     private FilePermissionUtil() {}
 
-    /*
-     * Creates a file that only the account the server runs as, and whoever administers the machine,
-     * may read or write.
+    /**
+     * Creates a new file that only the account the server runs as, and whoever administers the
+     * machine, may read or write. The permissions are applied as part of the create itself, so the
+     * file is never briefly readable by anyone else.
+     *
+     * @param path The path of the file to create.
+     * @throws FileAlreadyExistsException If a file of that name already exists.
+     * @throws IOException If an I/O error occurs, or the permissions cannot be applied.
      */
-    public static void createOwnerOnlyFile(Path path) throws IOException {
+    public static void createOwnerOnlyFile(Path path) throws FileAlreadyExistsException, IOException {
         Path parent = path.toAbsolutePath().getParent();
 
         if (parent != null) {

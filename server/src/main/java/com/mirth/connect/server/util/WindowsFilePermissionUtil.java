@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mitch Gaffigan <mitch@gaffigan.net>
+
 package com.mirth.connect.server.util;
 
 import java.io.IOException;

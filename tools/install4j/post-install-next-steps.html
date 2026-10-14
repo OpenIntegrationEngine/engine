@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 2em;
+            background-color: white;
+            color: black;
+            max-width: 800px;
+        }
+        h1 {
+            color: #2c5aa0;
+            border-bottom: 2px solid #2c5aa0;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2c5aa0;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #333;
+            margin-top: 20px;
+        }
+        .platform-section {
+            background-color: #f5f5f5;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #2c5aa0;
+        }
+        code {
+            background-color: #e8e8e8;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .important {
+            background-color: #fff3cd;
+            padding: 12px;
+            border-left: 4px solid #ffc107;
+            margin: 15px 0;
+        }
+        .success {
+            background-color: #d4edda;
+            padding: 12px;
+            border-left: 4px solid #28a745;
+            margin: 15px 0;
+        }
+        ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        a {
+            color: #2c5aa0;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .command {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎉 Installation Complete - Next Steps</h1>
+    
+    <div class="success">
+        <strong>Congratulations!</strong> Open Integration Engine has been successfully installed on your system.
+    </div>
+    
+    <h2>📋 What's Next?</h2>
+    
+    <h3>Step 1: Start the Server</h3>
+    
+    <p>Depending on your operating system, follow these instructions to start the Open Integration Engine server:</p>
+    
+    <div class="platform-section">
+        <h3>🪟 Windows</h3>
+        <p><strong>Option A: Using the Service (Recommended)</strong></p>
+        <ul>
+            <li>The OIE service is installed and configured to start automatically</li>
+            <li>After installation completes, the service will start automatically</li>
+            <li>To manually manage the service:
+                <ul>
+                    <li>Open Services (<code>services.msc</code>) or use the Server Manager</li>
+                    <li>Find "Open Integration Engine Service"</li>
+                    <li>Right-click and select "Start", "Stop", or "Restart"</li>
+                </ul>
+            </li>
+        </ul>
+        
+        <p><strong>Option B: Using PowerShell/Command Line</strong></p>
+        <div class="command">sc start oieservice</div>
+        <p>Or navigate to the installation directory and run:</p>
+        <div class="command">.\oieserver.ps1</div>
+    </div>
+    
+    <div class="platform-section">
+        <h3>🍎 macOS</h3>
+        <p><strong>Using the Service (Recommended)</strong></p>
+        <ul>
+            <li>The OIE service is installed and configured to start automatically</li>
+            <li><strong>Important:</strong> A system reboot is required for the service to start automatically</li>
+            <li>Alternatively, you can start the server manually from the installation directory:</li>
+        </ul>
+        <div class="command">./oieserver</div>
+    </div>
+    
+    <div class="platform-section">
+        <h3>🐧 Linux</h3>
+        <p><strong>Option A: Using systemd (Recommended)</strong></p>
+        <ul>
+            <li>The OIE service is installed and configured to start automatically</li>
+            <li>To manually manage the service:</li>
+        </ul>
+        <div class="command">sudo systemctl start oieservice<br>sudo systemctl status oieservice</div>
+        
+        <p><strong>Option B: Manual Start</strong></p>
+        <p>Navigate to the installation directory and run:</p>
+        <div class="command">./oieserver</div>
+    </div>
+    
+    <h3>Step 2: Access the Administrator Console</h3>
+    
+    <p>Once the server is running, you can access the Administrator Console:</p>
+    
+    <ul>
+        <li><strong>Web Browser:</strong> Navigate to <a href="http://localhost:8080">http://localhost:8080</a></li>
+        <li>Click the <strong>"Launch Administrator"</strong> button</li>
+        <li>This will download and launch the administrator client application</li>
+    </ul>
+    
+    <div class="platform-section">
+        <h3>🖥️ Desktop Launcher (Windows)</h3>
+        <p>On Windows, you can also launch the Administrator directly from:</p>
+        <ul>
+            <li>Start Menu → Open Integration Engine → OIE Manager</li>
+            <li>Or run <code>oiemanager.exe</code> from the installation directory</li>
+        </ul>
+    </div>
+    
+    <div class="important">
+        <strong>⚠️ Default Credentials:</strong><br>
+        Username: <code>admin</code><br>
+        Password: <code>admin</code><br>
+        <br>
+        <strong>Please change these credentials immediately after your first login for security purposes!</strong>
+    </div>
+    
+    <h3>Step 3: Verify Installation</h3>
+    
+    <p>To confirm the server is running properly:</p>
+    <ol>
+        <li>Check that the server is listening on ports 8080 (HTTP) and 8443 (HTTPS)</li>
+        <li>Review the logs in the <code>logs</code> directory for any errors</li>
+        <li>Log in to the Administrator Console and verify you can access the Dashboard</li>
+    </ol>
+    
+    <h2>📁 Important Directories</h2>
+    
+    <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+        <tr style="background-color: #f5f5f5;">
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Directory</strong></td>
+            <td style="padding: 10px; border: 1px solid #ddd;"><strong>Purpose</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><code>conf/</code></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">Configuration files including <code>mirth.properties</code></td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><code>logs/</code></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">Server log files</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><code>appdata/</code></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">Application data and embedded database</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><code>extensions/</code></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">Installed plugins and connectors</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #ddd;"><code>custom-lib/</code></td>
+            <td style="padding: 10px; border: 1px solid #ddd;">Custom user libraries for channel scripts</td>
+        </tr>
+    </table>
+    
+    <h2>🔧 Configuration</h2>
+    
+    <p>Key configuration settings can be found in <code>conf/mirth.properties</code>:</p>
+    <ul>
+        <li><strong>Ports:</strong> Default HTTP (8080) and HTTPS (8443)</li>
+        <li><strong>Database:</strong> Embedded Derby by default</li>
+        <li><strong>Application data path:</strong> Configurable via <code>dir.appdata</code></li>
+    </ul>
+    
+    <div class="important">
+        <strong>Note:</strong> If you need to change configuration settings, stop the server first, edit the configuration files, and then restart the server.
+    </div>
+    
+    <h2>📚 Additional Resources</h2>
+    
+    <ul>
+        <li><strong>Website:</strong> <a href="https://openintegrationengine.org">https://openintegrationengine.org</a></li>
+        <li><strong>Documentation:</strong> <a href="https://github.com/OpenIntegrationEngine/engine">https://github.com/OpenIntegrationEngine/engine</a></li>
+        <li><strong>Discord Community:</strong> <a href="https://discord.gg/azdehW2Zrx">Join our Discord</a></li>
+        <li><strong>GitHub Releases:</strong> <a href="https://github.com/OpenIntegrationEngine/engine/releases">Latest Releases</a></li>
+        <li><strong>Docker Images:</strong> <a href="https://hub.docker.com/u/openintegrationengine">Docker Hub</a></li>
+    </ul>
+    
+    <h2>❓ Troubleshooting</h2>
+    
+    <h3>Server Won't Start?</h3>
+    <ul>
+        <li>Check the logs in the <code>logs/</code> directory for error messages</li>
+        <li>Ensure ports 8080 and 8443 are not already in use by another application</li>
+        <li>Verify that Java 17 or higher is properly installed and accessible</li>
+        <li>Check file permissions on the installation directory</li>
+    </ul>
+    
+    <h3>Can't Access Administrator Console?</h3>
+    <ul>
+        <li>Verify the server is running by checking the service status or logs</li>
+        <li>Ensure your firewall isn't blocking ports 8080 or 8443</li>
+        <li>Try accessing via IP address instead of localhost</li>
+        <li>Clear your browser cache and try again</li>
+    </ul>
+    
+    <h3>Need Help?</h3>
+    <ul>
+        <li>Join our <a href="https://discord.gg/azdehW2Zrx">Discord community</a> for real-time support</li>
+        <li>Check the <a href="https://github.com/OpenIntegrationEngine/engine/issues">GitHub Issues</a> for known problems</li>
+        <li>Review the complete documentation in the <code>docs/</code> directory</li>
+    </ul>
+    
+    <hr style="margin: 30px 0; border: none; border-top: 1px solid #ccc;">
+    
+    <p style="text-align: center; color: #666; font-size: 0.9em;">
+        Thank you for choosing Open Integration Engine!<br>
+        <a href="https://openintegrationengine.org">https://openintegrationengine.org</a>
+    </p>
+</body>
+</html>

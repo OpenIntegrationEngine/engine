@@ -6,6 +6,8 @@ We support the current minor version in regards to security updates. Versions ar
  
 ## Reporting a Vulnerability
  
-If this is a critical vulnerability that you would like to contact us confidentially, email us here:
+If this is a critical vulnerability that you would like to report confidentially, email the Eclipse Foundation Security Team:
  
-security@openintegrationengine.org
+security@eclipse-foundation.org
+ 
+Their vulnerability reporting process is described at https://www.eclipse.org/security/.

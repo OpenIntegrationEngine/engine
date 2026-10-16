@@ -262,7 +262,7 @@ velocity-engine-core = { module = "org.apache.velocity:velocity-engine-core", ve
 velocity-tools-generic = { module = "org.apache.velocity.tools:velocity-tools-generic", version = "3.1" }
 xmpbox = { module = "org.apache.pdfbox:xmpbox", version.ref = "pdfbox" }
 xpp3 = { module = "xpp3:xpp3", version = "1.1.4c" }
-xstream = { module = "com.thoughtworks.xstream:xstream", version = "1.4.20" }
+xstream = { module = "com.thoughtworks.xstream:xstream", version = "1.4.21" }
 
 [bundles]
 client-main = [

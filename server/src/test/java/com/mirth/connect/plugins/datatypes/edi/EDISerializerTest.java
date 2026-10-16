@@ -55,6 +55,13 @@ public class EDISerializerTest {
 	}
 
 	@Test
+	public void testFromXMLPadsMissingIsaElement() throws Exception {
+		// The whole <ISA.02> element is gone, not just empty
+		String xml = serializer.toXML(validX12).replace("<ISA.02><ISA.02.1>          </ISA.02.1></ISA.02>", "");
+		assertEquals(validX12, serializer.fromXML(xml));
+	}
+
+	@Test
 	public void testFromXMLPadsShortIsaValues() throws Exception {
 		String xml = serializer.toXML(validX12)
 				.replace("<ISA.06.1>SUBMITTERID    </ISA.06.1>", "<ISA.06.1>SUBMITTERID</ISA.06.1>")

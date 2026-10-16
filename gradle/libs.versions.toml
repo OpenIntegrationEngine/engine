@@ -137,7 +137,7 @@ jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations
 # regions (PropertyNamingStrategy.PASCAL_CASE_TO_CAMEL_CASE) still call,
 # failing at runtime with NoSuchMethodError/NoSuchFieldError. Upgrade
 # those callers first.
-jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version = "2.18.8" }
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version = "2.18.11" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-dataformat-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref = "jackson" }
 jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson" }

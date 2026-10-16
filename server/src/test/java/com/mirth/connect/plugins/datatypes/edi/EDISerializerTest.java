@@ -41,6 +41,51 @@ public class EDISerializerTest {
 		assertTrue(exceptionCaught);
 	}
 	
+	@Test
+	public void testFromXMLKeepsIsaFixedWidth() throws Exception {
+		String xml = serializer.toXML(validX12);
+		assertEquals(validX12, serializer.fromXML(xml));
+	}
+
+	@Test
+	public void testFromXMLPadsBlankIsaFields() throws Exception {
+		// A field of spaces can come back empty, e.g. after XmlUtil.prettyPrint
+		String xml = serializer.toXML(validX12).replace("<ISA.02.1>          </ISA.02.1>", "<ISA.02.1/>");
+		assertEquals(validX12, serializer.fromXML(xml));
+	}
+
+	@Test
+	public void testFromXMLPadsMissingIsaElement() throws Exception {
+		// The whole <ISA.02> element is gone, not just empty
+		String xml = serializer.toXML(validX12).replace("<ISA.02><ISA.02.1>          </ISA.02.1></ISA.02>", "");
+		assertEquals(validX12, serializer.fromXML(xml));
+	}
+
+	@Test
+	public void testFromXMLPadsShortIsaValues() throws Exception {
+		String xml = serializer.toXML(validX12)
+				.replace("<ISA.06.1>SUBMITTERID    </ISA.06.1>", "<ISA.06.1>SUBMITTERID</ISA.06.1>")
+				.replace("<ISA.13.1>000000001</ISA.13.1>", "<ISA.13.1>1</ISA.13.1>");
+		assertEquals(validX12, serializer.fromXML(xml));
+	}
+
+	@Test
+	public void testFromXMLPadsIsaValueSplitAcrossCharacters() throws Exception {
+		// SAX hands "S&amp;P" over in several characters() calls
+		String xml = serializer.toXML(validX12).replace("<ISA.06.1>SUBMITTERID    </ISA.06.1>", "<ISA.06.1>S&amp;P</ISA.06.1>");
+		assertEquals(validX12.replace("SUBMITTERID    ", "S&P            "), serializer.fromXML(xml));
+	}
+
+	@Test
+	public void testFromXMLPadsEveryIsa() throws Exception {
+		String twoInterchanges = validX12 + validX12;
+		String xml = serializer.toXML(twoInterchanges).replace("<ISA.02.1>          </ISA.02.1>", "<ISA.02.1/>");
+		assertEquals(twoInterchanges, serializer.fromXML(xml));
+	}
+
+	private static String validX12 = "ISA*00*          *00*          *ZZ*SUBMITTERID    *ZZ*PAYERID        *260330*1430*^*00501*000000001*0*T*:~"
+			+ "GS*HC*SUBMITTERID*PAYERID*20260330*1430*1*X*005010X222A1~";
+
 	private static String validXml =  "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\r\n"
 			+ "<foo><bar>bar</bar></foo>";
 	

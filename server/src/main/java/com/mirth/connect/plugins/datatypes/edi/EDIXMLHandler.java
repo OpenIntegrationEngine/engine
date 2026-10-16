@@ -32,6 +32,14 @@ public class EDIXMLHandler extends DefaultHandler {
 
     private StringBuilder output = new StringBuilder();
 
+    // The ISA segment is fixed width. Widths of ISA01 through ISA15; ISA16 is always one char.
+    private static final int[] ISA_FIELD_WIDTHS = { 2, 10, 2, 10, 2, 15, 2, 15, 6, 4, 1, 5, 9, 1, 1 };
+    private static final int ISA_CONTROL_NUMBER = 13;
+
+    private boolean inIsa = false;
+    private int elementId = 0;
+    private int elementStart = 0;
+
     public EDIXMLHandler() {
         super();
     }
@@ -63,6 +71,7 @@ public class EDIXMLHandler extends DefaultHandler {
         } else {
             if (currentLocation.equals(Location.DOCUMENT)) {
                 output.append(name);
+                inIsa = name.equals("ISA");
                 currentLocation = Location.SEGMENT;
                 lastInSubelement = false;
 
@@ -70,6 +79,7 @@ public class EDIXMLHandler extends DefaultHandler {
             } else if (currentLocation.equals(Location.SEGMENT)) {
                 String[] currentNameArray = StringUtils.split(name, ".");
                 int currentDelimeterCount = currentNameArray.length - 1;
+                elementId = 0;
 
                 if (currentDelimeterCount == 1) {
                     int previousId = 0;
@@ -82,12 +92,15 @@ public class EDIXMLHandler extends DefaultHandler {
 
                     for (int i = 1; i < (currentId - previousId); i++) {
                         output.append(elementDelimiter);
+                        padIsaElement(previousId + i, output.length());
                     }
 
                     previousSegmentNameArray = currentNameArray;
+                    elementId = currentId;
                 }
 
                 output.append(elementDelimiter);
+                elementStart = output.length();
                 currentLocation = Location.ELEMENT;
                 lastInSubelement = false;
 
@@ -127,9 +140,31 @@ public class EDIXMLHandler extends DefaultHandler {
             output.append(segmentDelimiter);
             currentLocation = Location.DOCUMENT;
         } else if (currentLocation.equals(Location.ELEMENT)) {
+            padIsaElement(elementId, elementStart);
             currentLocation = Location.SEGMENT;
         } else if (currentLocation.equals(Location.SUBELEMENT)) {
             currentLocation = Location.ELEMENT;
+        }
+    }
+
+    /*
+     * The XML may have lost the ISA padding (e.g. a field of spaces pretty-printed to an empty
+     * element, or a short value set in a transformer). Pad a short ISA element back so the ISA
+     * stays valid: the control number with leading zeros, the rest with trailing spaces. Longer
+     * values are left alone.
+     */
+    private void padIsaElement(int id, int start) {
+        if (!inIsa || id < 1 || id > ISA_FIELD_WIDTHS.length) {
+            return;
+        }
+
+        int missing = ISA_FIELD_WIDTHS[id - 1] - (output.length() - start);
+        if (missing > 0) {
+            if (id == ISA_CONTROL_NUMBER) {
+                output.insert(start, StringUtils.repeat('0', missing));
+            } else {
+                output.append(StringUtils.repeat(' ', missing));
+            }
         }
     }
 

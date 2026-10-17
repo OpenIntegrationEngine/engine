@@ -13,13 +13,20 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.mirth.connect.util.TcpUtil;
 
+import jdk.net.ExtendedSocketOptions;
+
 public class SocketUtil {
+
+    private static final Logger logger = LogManager.getLogger(SocketUtil.class);
 
     public static Socket createSocket(TcpConfiguration configuration) throws UnknownHostException, IOException {
         return createSocket(configuration, null);
@@ -65,6 +72,20 @@ public class SocketUtil {
 
     public static void connectSocket(Socket socket, String host, int port, int timeout) throws UnknownHostException, IOException {
         socket.connect(new InetSocketAddress(InetAddress.getByName(TcpUtil.getFixedHost(host)), port), timeout);
+    }
+
+    /** Set TCP keepalive options on a socket */
+    public static void setKeepAlive(Socket socket) throws SocketException {
+        socket.setKeepAlive(true);
+
+        try {
+            int keepAliveIdle = Integer.parseInt(System.getProperty("mirth.tcp.keepalive.idle", "120").trim());
+            if (keepAliveIdle > 0) {
+                socket.setOption(ExtendedSocketOptions.TCP_KEEPIDLE, keepAliveIdle);
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to set TCP keepalive options on socket.", e);
+        }
     }
 
     public static void closeSocket(Socket socket) throws IOException {

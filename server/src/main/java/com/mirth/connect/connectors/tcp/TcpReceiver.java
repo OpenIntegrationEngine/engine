@@ -1067,7 +1067,9 @@ public class TcpReceiver extends SourceConnector {
         socket.setReceiveBufferSize(bufferSize);
         socket.setSendBufferSize(bufferSize);
         socket.setSoTimeout(timeout);
-        socket.setKeepAlive(connectorProperties.isKeepConnectionOpen());
+        if (connectorProperties.isKeepConnectionOpen()) {
+            SocketUtil.setKeepAlive(socket);
+        }
         socket.setReuseAddress(true);
         socket.setTcpNoDelay(true);
     }

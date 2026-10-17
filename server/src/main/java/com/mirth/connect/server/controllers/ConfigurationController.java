@@ -9,6 +9,7 @@
 
 package com.mirth.connect.server.controllers;
 
+import java.io.InputStream;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -21,6 +22,7 @@ import org.apache.commons.configuration2.PropertiesConfiguration;
 import com.mirth.commons.encryption.Digester;
 import com.mirth.commons.encryption.Encryptor;
 import com.mirth.connect.client.core.ControllerException;
+import com.mirth.connect.client.core.PropertiesConfigurationUtil;
 import com.mirth.connect.model.ChannelDependency;
 import com.mirth.connect.model.ChannelMetadata;
 import com.mirth.connect.model.ChannelTag;
@@ -32,6 +34,8 @@ import com.mirth.connect.model.PublicServerSettings;
 import com.mirth.connect.model.ServerConfiguration;
 import com.mirth.connect.model.ServerSettings;
 import com.mirth.connect.model.UpdateSettings;
+import com.mirth.connect.server.extprops.DropInProperties;
+import com.mirth.connect.server.util.ResourceUtil;
 import com.mirth.connect.util.ConfigurationProperty;
 import com.mirth.connect.util.ConnectionTestResponse;
 
@@ -78,6 +82,32 @@ public abstract class ConfigurationController extends Controller {
      * Copies the current server configuration into the specified object.
      */
     public abstract void updatePropertiesConfiguration(PropertiesConfiguration config);
+
+    /**
+     * Returns the loaded mirth.properties configuration, with any conf/mirth.properties.d drop-in
+     * overrides applied. Server-side consumers should read from this shared copy rather than loading
+     * and merging the file themselves. The returned configuration is owned by the controller;
+     * consumers must treat it as read-only, as the controller writes to it during startup (for
+     * example, when it generates keystore passwords). This default loads on demand;
+     * DefaultConfigurationController overrides it to return the copy it already holds.
+     */
+    public PropertiesConfiguration getPropertiesConfiguration() {
+        try (InputStream is = ResourceUtil.getResourceStream(getClass(), "mirth.properties")) {
+            return DropInProperties.overlay(PropertiesConfigurationUtil.create(is), ResourceUtil.getMirthPropertiesDropInDirectory());
+        } catch (Exception e) {
+            return PropertiesConfigurationUtil.create();
+        }
+    }
+
+    /**
+     * Returns a message describing a fatal configuration problem that must prevent the server from
+     * starting, such as an unreadable conf/mirth.properties.d drop-in file, or null when
+     * configuration loaded cleanly. The default reports no error; DefaultConfigurationController
+     * overrides it.
+     */
+    public String getConfigurationLoadError() {
+        return null;
+    }
 
     /**
      * Returns the default encryptor.

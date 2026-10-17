@@ -33,6 +33,8 @@ import com.mirth.connect.donkey.model.message.ConnectorMessage;
 import com.mirth.connect.donkey.model.message.Message;
 import com.mirth.connect.donkey.model.message.RawMessage;
 import com.mirth.connect.server.controllers.ConfigurationController;
+import com.mirth.connect.server.extprops.DropInProperties;
+import com.mirth.connect.server.extprops.LoggerWrapper;
 import com.mirth.connect.server.transformers.InvalidTransformedDataException;
 import com.mirth.connect.server.userutil.AlertSender;
 import com.mirth.connect.server.userutil.Attachment;
@@ -44,6 +46,7 @@ import com.mirth.connect.server.userutil.SourceMap;
 import com.mirth.connect.server.userutil.VMRouter;
 import com.mirth.connect.server.util.GlobalChannelVariableStoreFactory;
 import com.mirth.connect.server.util.GlobalVariableStore;
+import com.mirth.connect.server.util.ResourceUtil;
 import com.mirth.connect.server.util.TemplateValueReplacer;
 import com.mirth.connect.userutil.ImmutableConnectorMessage;
 import com.mirth.connect.userutil.ImmutableMessage;
@@ -62,6 +65,7 @@ public class JavaScriptScopeUtil {
          * it in interpretive mode. See MIRTH-1627 for more information.
          */
         Properties properties = PropertyLoader.loadProperties("mirth");
+        DropInProperties.load(properties, ResourceUtil.getMirthPropertiesDropInDirectory(), new LoggerWrapper(logger));
 
         if (MapUtils.isNotEmpty(properties) && properties.containsKey("rhino.optimizationlevel")) {
             logger.debug("set Rhino context optimization level: " + rhinoOptimizationLevel);

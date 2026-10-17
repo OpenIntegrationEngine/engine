@@ -51,8 +51,7 @@ tests of the build scripts. When you change build logic (staging,
 packaging, jar definitions), confirm the change does not alter the
 product: build `server/setup` before and after, and compare the two
 trees. The [oie-build-parity](https://github.com/pacmano1/oie-build-parity)
-tooling does this at the archive-entry level (and can reproduce the
-original byte-identical comparison against the pre-Gradle Ant baseline).
+tooling does this at the archive-entry level.
 Only the changes you intended should appear.
 
 ### Run and debug

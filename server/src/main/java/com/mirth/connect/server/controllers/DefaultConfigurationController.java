@@ -728,7 +728,6 @@ public class DefaultConfigurationController extends ConfigurationController {
             String name = StringUtils.trimToEmpty(driverElement.getAttribute("name"));
             String className = StringUtils.trimToEmpty(driverElement.getAttribute("class"));
             String template = StringUtils.trimToEmpty(driverElement.getAttribute("template"));
-            String selectLimit = StringUtils.trimToEmpty(driverElement.getAttribute("selectLimit"));
             String alternativeClasses = StringUtils.trimToEmpty(driverElement.getAttribute("alternativeClasses"));
 
             if (StringUtils.isNoneBlank(name, className, template)) {
@@ -737,7 +736,7 @@ public class DefaultConfigurationController extends ConfigurationController {
                     alternativeClassNames.addAll(new ArrayList<String>(Arrays.asList(StringUtils.split(alternativeClasses, ','))));
                 }
 
-                DriverInfo driver = new DriverInfo(name, className, template, selectLimit, alternativeClassNames);
+                DriverInfo driver = new DriverInfo(name, className, template, alternativeClassNames);
                 logger.debug("Found database driver: " + driver);
                 drivers.add(driver);
             } else {

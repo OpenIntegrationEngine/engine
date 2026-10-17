@@ -1,0 +1,92 @@
+# Optional message telemetry bridge
+
+The engine exposes one optional `MessageTelemetry.Provider`. It owns no SDK, telemetry registry,
+queue carrier, exporter, configuration storage, or background thread. A plugin can use standard
+OpenTelemetry Context/Scope and propagators behind this neutral Java contract.
+
+`SOURCE` surrounds `Channel.process`, including preprocessing, source transformation, destination
+chains and synchronous postprocessing. `TRANSFORM`, `SEND`, and `RESPONSE` surround the existing
+shared filter/transformer, validated send, and response-transformer execution methods. The original
+method bodies, transaction boundaries and queue operations are retained. A source span's final
+source-message status is distinct from a destination's final status. Send/response observations
+also receive the actual returned response status before the caller applies queue status rules.
+
+`DESTINATION` surrounds each RECEIVED/PENDING connector in a destination chain and each non-null
+acquired or held queue attempt. Completed SENT traversal creates no destination observation.
+Start runs inside the existing DAO/queue cleanup boundary; finish runs after those cleanup
+attempts, including the fallback status-lock release if DAO or queue cleanup throws. Queue retry waiting and optional queued
+transformation are included. Immediate send retries stay inside their current destination scope;
+each later queue attempt creates a fresh scope. Internally caught pre-send, cleanup and interrupt
+failures are reported even if the message remains QUEUED. Existing DAO/queue failure behavior is
+retained; the hook does not repair an existing engine cleanup failure or invent successful sends.
+
+The provider receives the existing connector message, including its maps. It must not change
+message processing. The intended plugin-owned exceptions are private content-free ingress propagation data and
+publication of documented scalar propagation values in the channel map; that plugin behavior is not implemented by this bridge.
+
+`beforeStore(message, sourceMap)` is a resource-free ingress callback immediately before the
+source map is wrapped as read-only and the source connector/maps are first persisted. It may add
+private content-free propagation data while preserving all application entries. It must not open
+spans/scopes or require a later completion callback. The source message has its final identity,
+but its source map has not yet been assigned; use the explicit map argument. Message-id allocation,
+initial message insert/overwrite and failures before this point remain outside this observation.
+The callback does not create a propagation format, cache, queue claim or restart policy in the
+engine; those remain plugin responsibilities. Late map changes are not guaranteed to persist:
+RAW storage skips later source-map updates while retaining initial raw durability. A plugin must account for that mode explicitly.
+
+Capture occurs before submission to the destination-chain and JavaScript executors. The provider
+returns a resource-free context activator, not a replacement business task. The engine activates
+on the worker and invokes the original callable exactly once, restoring context in a lexical
+finally. Capture does not start a span or open a scope. Rejection and cancellation before start
+therefore require no telemetry cleanup. Cancelled running work closes its scope on its own thread.
+
+Ordinary callback failures, including linkage/assertion errors, are isolated and yield one fixed
+warning per installation, without exception/message content. A failed start/activation must clean
+up its own partial work before throwing; the engine cannot recover resources a provider never
+returned. VM errors and ThreadDeath propagate. An original engine fatal remains primary if its
+failure-notification callback also throws a fatal; the callback fatal is suppressed when possible.
+Java try-with-resources governs suppression at the existing detailed boundaries. Destination finish
+also handles deliberately caught engine failures: the first observed engine fatal remains primary
+for telemetry even when later DAO cleanup throws. Existing engine finally/catch behavior is preserved;
+the first callback fatal wins a later callback fatal, and identical errors cannot self-suppress.
+All observation cleanup occurs after the engine's original cleanup attempts. Closing a registration is idempotent
+and cannot detach a newer installation. Already captured context activates through its original
+provider; new stage observations inside that work select the current installation. The token
+neither drains nor shuts down provider resources.
+
+## Behavior matrix and evidence
+
+| Case | Required behavior | Evidence / remaining scope |
+| --- | --- | --- |
+| No provider | Same no-op observation and original callable; no per-message bridge allocation | `MessageTelemetryTest` identity checks plus direct fast-path inspection |
+| Duplicate install / repeated close / stale token | Reject overlap; old token never detaches replacement | Registration regression |
+| Ordinary start, capture, activation, status, failure, close errors | Business task/result/exception preserved; cleanup attempted | Bridge fault matrix and real-channel callback-failure fixture |
+| Fatal callbacks | VM error / ThreadDeath identity retained; original engine fatal wins a second failure-callback fatal; standard suppression on cleanup | Full six-surface fatal matrix and actual transformer regression |
+| Initial source-map preparation | Same ingress thread, before first map persistence; source keys then become read-only; ordinary callback failure preserves completion | Actual queued-source barrier/readback with both later-map storage and initial-raw-only storage; final SENT, plus default/registration/fatal controls |
+| Synchronous processing | Balanced source/destination/transform/send/response scopes; unchanged stored outcomes | Private Derby channel fixture |
+| Parallel destinations | Source context crosses worker submission; destination maps are separate | Two real destination chains, one worker and one inline |
+| Filter or source transformation error | Correct durable FILTERED/ERROR; no destination scopes | Private Derby negative paths |
+| Preprocessor/destination filter, transform, validator or response errors | Original handled failure and correct source/destination stored status | Actual channel negatives; checked response/transform failure identity |
+| Synchronous and queued destination retries | One scope per actual send; raw response and final status distinguished | Actual two-attempt retry cases with durable final SENT |
+| Queued transformation / held retry interruption | Detailed work belongs to the acquired destination; interruption records failure without inventing a second send | Actual queue-thread and stored QUEUED controls |
+| Completed SENT traversal / persisted PENDING | No scope for traversal; PENDING runs only destination/response scopes | Actual chain invocation and fresh Derby-loaded PENDING object |
+| Queue start fatal after acquisition | Existing queue cleanup permits real retry; no send for the failed start | Actual first-start ThreadDeath, subsequent single send and durable SENT |
+| Queue close fatal | Entry and status lock released before telemetry closes | Actual queue ownership/lock assertions and durable SENT |
+| DAO close failure with a held queue status lock | Fallback unlock precedes telemetry completion; existing queue disposition failure remains unchanged | Real DAO close followed by an injected failure; lock state asserted outside the callback |
+| Body fatal plus later DAO close and telemetry close failures | Coarse observation retains the first fatal; original engine catch/finally result retained | Actual queue and direct destination-chain composition, including a second fatal from DAO close |
+| Destination failed/close fatal combinations | First fatal identity retained; close attempted once, including identical error object | Dedicated finish-composition controls |
+| Source queue | Source scope starts on actual queue worker; normal completion | Private Derby queued-source fixture; parent continuity is a separate adapter concern |
+| Script worker success / failure / interrupt | Actual JavaScript executor transfers and restores context; original exception/cancellation semantics | Executor tests plus real Rhino execution, exception and infinite-loop cancellation |
+| Rejected / cancelled before start | No task execution or open telemetry scope | Controlled executor regressions |
+| Cancelled after start | Worker restores its own prior context | Bridge and JavaScript executor interruption tests |
+| Detach with captured task | Previously captured immutable context remains usable; new installation independent | Bridge detach/worker tests |
+| Fatal ingress preparation | Existing dispatch exception wrapping, rollback and process-lock cleanup; next message still completes | Actual source callback fatal before first connector insertion |
+| Partial provider start | Provider must restore any partial attachment before throwing | Explicit provider responsibility; adapter requires its own fault tests |
+| Channel-map propagation, incoming HTTP, unsampled parents | Standard W3C extraction/injection; runtime context independent of editable maps | Initial plugin slice proved; new destination/carrier integration pending |
+| Destination attempt parent; retries/refill/restart/nested channel/batch | Real queue/transaction behavior unchanged; documented parent policy | Further reduced-design integration pending; no durable carrier in this bridge |
+| Actual instrumented HTTP/JDBC | Dependency spans share the channel context without duplicates | Initial slice proved official library interoperability; current destination integration and deployed agent acceptance remain separate |
+| UI action-time config / retries / ambiguous writes | Explicit plugin-owned persistence and ownership guarantees | Configuration adaptation pending; old plugin cannot yet start on this engine |
+
+This is a reduced engine development slice, not a compatible plugin release or complete OTel acceptance.
+Performance must be measured on the final integrated reduced implementation; previous benchmarks
+of the large lifecycle SPI do not establish this bridge's overhead.

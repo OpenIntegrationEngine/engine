@@ -380,7 +380,15 @@ public class ServerMigrator extends Migrator {
             resultSet = statement.executeQuery("SELECT VERSION FROM SCHEMA_INFO");
 
             if (resultSet.next()) {
-                return Version.fromString(resultSet.getString(1));
+                String schemaVersion = resultSet.getString(1);
+                Version version = Version.fromString(schemaVersion);
+
+                // Returning null would run every migrator from V0 against an unknown schema
+                if (version == null) {
+                    throw new MigrationException("Database schema version \"" + schemaVersion + "\" is not recognized by this server (version " + Version.getLatest() + "). The database may have been created by a newer or different release. No migrations were run.");
+                }
+
+                return version;
             }
 
             return null;

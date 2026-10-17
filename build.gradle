@@ -179,18 +179,6 @@ subprojects {
         options.encoding = 'UTF-8'
         options.debug = true
     }
-    // Match Ant's javac invocation: -sourcepath defaults to srcdir, and
-    // annotation processors are discovered on the compile classpath
-    // (Gradle would otherwise pass -proc:none, which also changes the
-    // parameter-name metadata javac records for anonymous classes).
-    compileJava {
-        options.sourcepath = sourceSets.main.java.sourceDirectories
-        options.annotationProcessorPath = configurations.compileClasspath
-    }
-    compileTestJava {
-        options.sourcepath = sourceSets.test.java.sourceDirectories
-        options.annotationProcessorPath = configurations.testCompileClasspath
-    }
 
     // Legacy modules assemble their published archives explicitly. 
     // Newer modules use Gradle's normal JAR convention.

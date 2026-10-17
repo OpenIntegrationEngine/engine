@@ -45,12 +45,6 @@ def clientJar = tasks.register('clientJar', Jar) {
         include '*.properties'
         into 'com/mirth/connect/client/ui/components/rsta'
     }
-    from('src/main/resources/com/mirth/connect/client/ui/components/tag') {
-        include '*.html'
-        include '*.css'
-        include '*.js'
-        into 'com/mirth/connect/client/ui/components/tag'
-    }
 }
 
 // extension name -> package directory under the classes tree

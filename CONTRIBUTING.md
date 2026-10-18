@@ -38,6 +38,8 @@ The build is driven by Gradle through the included wrapper; no separate Gradle i
 ```
 On Windows use `gradlew.bat` instead of `./gradlew`. The assembled distribution lands in `server/setup`, the same location the previous Ant build used. For release artifacts, run a clean build: `./gradlew clean build dist`. Windows with SDKMan may generate an error about the file path being too long in the javadoc step, skip this by adding `-x :server:userApiJavadoc` to your Gradle command.
 
+By default the build compiles and runs the tests with any Java 17 JDK Gradle finds installed, including those installed by SDKMAN. To use Java 21 instead, add `-PjavaToolchain=21`, or put `javaToolchain=21` in `~/.gradle/gradle.properties`. The compiled output still targets Java 17. Gradle does not download JDKs, so the version you name must already be installed.
+
 Dependencies are pinned and checksum-verified. To change a dependency version: edit `gradle/libs.versions.toml`, then refresh the checksum metadata **with a cold dependency cache and CI's flags**:
 ```bash
 GRADLE_USER_HOME=$(mktemp -d) ./gradlew --write-verification-metadata sha256 build dist -PdisableSigning=true -Pcoverage=true

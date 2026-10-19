@@ -6,3 +6,4 @@
 -Xmx256m
 -Djava.awt.headless=true
 -Dapple.awt.UIElement=true
+-Dderby.stream.error.file=logs/derby.log

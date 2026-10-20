@@ -366,6 +366,19 @@ return true;
           </screen>
           <screen id="15" beanClass="com.install4j.runtime.beans.screens.InstallationScreen" rollbackBarrier="true" rollbackBarrierExitCode="0">
             <actions>
+              <action name="Default startServiceNow value for GUI installations" id="204" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction" rollbackBarrierExitCode="0">
+                <serializedBean>
+                  <property name="variableName" type="string">startServiceNow</property>
+                  <property name="script">
+                    <object class="com.install4j.api.beans.ScriptProperty">
+                      <property name="value" type="string">
+                        return Boolean.valueOf(!context.isUpdateInstallation()); // Saving value due to interaction with UninstallPreviousAction
+                      </property>
+                    </object>
+                  </property>
+                </serializedBean>
+                <condition>!context.isConsole() &amp;&amp; !context.isUnattended()</condition>
+              </action>
               <action id="169" beanClass="com.install4j.runtime.beans.actions.UninstallPreviousAction" actionElevationType="elevated" rollbackBarrierExitCode="0" />
               <action id="17" beanClass="com.install4j.runtime.beans.actions.InstallFilesAction" actionElevationType="elevated" rollbackBarrierExitCode="0" failureStrategy="quit" errorMessage="${i18n:FileCorrupted}">
                 <serializedBean>
@@ -399,6 +412,62 @@ return true;
               <formComponent id="16" beanClass="com.install4j.runtime.beans.formcomponents.ProgressComponent">
                 <serializedBean>
                   <property name="initialStatusMessage" type="string">${i18n:WizardPreparing}</property>
+                </serializedBean>
+              </formComponent>
+            </formComponents>
+          </screen>
+          <screen name="Start service" id="200" beanClass="com.install4j.runtime.beans.screens.FormScreen" rollbackBarrierExitCode="0">
+            <serializedBean>
+              <property name="title" type="string">Installation Successful</property>
+              <property name="subTitle" type="string">The service is installed and will run automatically on boot.</property>
+            </serializedBean>
+            <condition>!context.isConsole() &amp;&amp; !context.isUnattended()</condition>
+            <formComponents>
+              <formComponent id="201" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetBottom="10">
+                <serializedBean>
+                  <property name="labelText" type="string">The Open Integration Engine service has been installed and is configured to run automatically when the computer starts up.
+
+Would you like to start the service now?</property>
+                </serializedBean>
+              </formComponent>
+              <formComponent id="202" beanClass="com.install4j.runtime.beans.formcomponents.CheckboxComponent">
+                <serializedBean>
+                  <property name="checkboxText" type="string">Start the service now</property>
+                  <property name="initiallySelected" type="boolean" value="false" />
+                  <property name="variableName" type="string">startServiceNow</property>
+                </serializedBean>
+              </formComponent>
+            </formComponents>
+          </screen>
+          <screen name="Starting service" id="205" beanClass="com.install4j.runtime.beans.screens.CustomizableProgressScreen" rollbackBarrierExitCode="0">
+            <serializedBean>
+              <property name="title" type="string">Starting Service</property>
+              <property name="subTitle" type="string">Please wait...</property>
+            </serializedBean>
+            <condition>
+              context.getBooleanVariable("startServiceNow") // Skip screen altogether if startServiceNow is false
+            </condition>
+            <postActivation>
+              context.getWizardContext().setControlButtonVisible(ControlButtonType.NEXT, false);
+              context.getWizardContext().setControlButtonVisible(ControlButtonType.PREVIOUS, false);
+              context.goForward(1, true, true); // startServiceNow was true, start action automatically
+            </postActivation>
+            <actions>
+              <action id="206" beanClass="com.install4j.runtime.beans.actions.control.SetProgressAction" actionElevationType="none" rollbackBarrierExitCode="0">
+                <serializedBean>
+                  <property name="progressChangeType" type="enum" class="com.install4j.runtime.beans.actions.control.ProgressChangeType" value="SET_INDETERMINATE" />
+                </serializedBean>
+              </action>
+              <action id="203" beanClass="com.install4j.runtime.beans.actions.services.StartServiceAction" actionElevationType="elevated" rollbackBarrierExitCode="0" failureStrategy="continue">
+                <serializedBean>
+                  <property name="launcherId" type="string">25</property>
+                </serializedBean>
+              </action>
+            </actions>
+            <formComponents>
+              <formComponent id="207" beanClass="com.install4j.runtime.beans.formcomponents.ProgressComponent">
+                <serializedBean>
+                  <property name="initialStatusMessage" type="string">Starting the Open Integration Engine service...</property>
                 </serializedBean>
               </formComponent>
             </formComponents>

@@ -1492,6 +1492,8 @@ public class Channel implements Runnable {
         // Add the destination set to the source map
         sourceMap.put(Constants.DESTINATION_SET_KEY, destinationSet);
 
+        MessageTelemetry.beforeStore(sourceMessage, sourceMap);
+
         // The source map is read-only so we wrap it in an unmodifiable map
         sourceMessage.setSourceMap(Collections.unmodifiableMap(sourceMap));
 
@@ -1613,6 +1615,13 @@ public class Channel implements Runnable {
      * @throws InterruptedException
      */
     protected Message process(ConnectorMessage sourceMessage, boolean markAsProcessed) throws InterruptedException {
+        try (var observation = MessageTelemetry.start(MessageTelemetry.Stage.SOURCE, sourceMessage)) {
+            try { return processMessage(sourceMessage, markAsProcessed); }
+            catch (InterruptedException | RuntimeException | Error failure) { observation.failed(failure); throw failure; }
+        }
+    }
+
+    private Message processMessage(ConnectorMessage sourceMessage, boolean markAsProcessed) throws InterruptedException {
         ThreadUtils.checkInterruptedStatus();
         long messageId = sourceMessage.getMessageId();
 
@@ -1799,6 +1808,7 @@ public class Channel implements Runnable {
                     message.setChannelMap(new HashMap<String, Object>(sourceMessage.getChannelMap()));
                     message.setResponseMap(new HashMap<String, Object>(sourceMessage.getResponseMap()));
                     message.setRaw(raw);
+                    MessageTelemetry.copyDispatchContext(sourceMessage, message);
 
                     // store the new message, but we don't need to store the content because we will reference the source's encoded content
                     dao.insertConnectorMessage(message, storageSettings.isStoreMaps(), true);
@@ -1834,7 +1844,7 @@ public class Channel implements Runnable {
                     try {
                         DestinationChain chain = enabledChains.get(i);
                         chain.setName("Destination Chain Thread " + (i + 1) + " on " + name + " (" + channelId + ")");
-                        destinationChainTasks.add(channelExecutor.submit(chain));
+                        destinationChainTasks.add(channelExecutor.submit(MessageTelemetry.wrap(chain)));
                     } catch (RejectedExecutionException e) {
                         Thread.currentThread().interrupt();
                         throw new InterruptedException();

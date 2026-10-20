@@ -10,6 +10,7 @@
 package com.mirth.connect.plugins.datatypes.dicom;
 
 import com.mirth.connect.model.datatype.DataTypeDelegate;
+import com.mirth.connect.model.util.MessageVocabulary;
 import com.mirth.connect.plugins.DataTypeServerPlugin;
 
 public class DICOMDataTypeServerPlugin extends DataTypeServerPlugin {
@@ -29,6 +30,11 @@ public class DICOMDataTypeServerPlugin extends DataTypeServerPlugin {
     @Override
     protected DataTypeDelegate getDataTypeDelegate() {
         return dataTypeDelegate;
+    }
+
+    @Override
+    public MessageVocabulary getVocabulary(String version, String type) {
+        return new DICOMVocabulary(version, type);
     }
 
 }

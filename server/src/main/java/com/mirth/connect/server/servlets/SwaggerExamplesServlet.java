@@ -936,7 +936,7 @@ public class SwaggerExamplesServlet extends HttpServlet {
 	}
 	
 	private DriverInfo getDriverInfoExample() {
-	    DriverInfo driverInfo = new DriverInfo("PostgreSQL", "org.postgresql.Driver", "jdbc:postgresql://host:port/dbname", "SELECT * FROM ? LIMIT 1", new ArrayList<>());
+	    DriverInfo driverInfo = new DriverInfo("PostgreSQL", "org.postgresql.Driver", "jdbc:postgresql://host:port/dbname", new ArrayList<>());
 	    return driverInfo;
 	}
 	

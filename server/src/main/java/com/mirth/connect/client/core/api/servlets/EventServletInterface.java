@@ -66,7 +66,7 @@ public interface EventServletInterface extends BaseServletInterface {
 
     @POST
     @Path("/_search")
-    @Operation(summary = "Search for events by specific filter criteria.")
+    @Operation(operationId = "getEvents_1", summary = "Search for events by specific filter criteria.")
     @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
             @ExampleObject(name = "serverEventList", ref = "../apiexamples/server_event_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
@@ -84,7 +84,7 @@ public interface EventServletInterface extends BaseServletInterface {
 
     @GET
     @Path("/")
-    @Operation(summary = "Search for events by specific filter criteria.")
+    @Operation(operationId = "getEvents", summary = "Search for events by specific filter criteria.")
     @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
             @ExampleObject(name = "serverEventList", ref = "../apiexamples/server_event_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
@@ -108,7 +108,7 @@ public interface EventServletInterface extends BaseServletInterface {
 
     @POST
     @Path("/count/_search")
-    @Operation(summary = "Count number for events by specific filter criteria.")
+    @Operation(operationId = "getEventCount_1", summary = "Count number for events by specific filter criteria.")
     @MirthOperation(name = "getEventCount", display = "Get events results count", permission = Permissions.EVENTS_VIEW, auditable = false, abortable = true)
     @Produces({ MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN })
     public Long getEventCount(@Param("filter") @RequestBody(description = "The EventFilter object to use to query events by.", required = true, content = {
@@ -119,7 +119,7 @@ public interface EventServletInterface extends BaseServletInterface {
 
     @GET
     @Path("/count")
-    @Operation(summary = "Count number for events by specific filter criteria.")
+    @Operation(operationId = "getEventCount", summary = "Count number for events by specific filter criteria.")
     @MirthOperation(name = "getEventCount", display = "Get events results count", permission = Permissions.EVENTS_VIEW, auditable = false, abortable = true)
     @Produces({ MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN })
     public Long getEventCount(// @formatter:off

@@ -62,7 +62,7 @@ public interface MessageServletInterface extends BaseServletInterface {
     @POST
     @Path("/{channelId}/messages")
     @Consumes(MediaType.TEXT_PLAIN)
-    @Operation(summary = "Processes a new message through a channel.")
+    @Operation(operationId = "processMessage", summary = "Processes a new message through a channel.")
     @ApiResponse(content = {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "long", ref = "../apiexamples/long_xml") }),
@@ -81,7 +81,7 @@ public interface MessageServletInterface extends BaseServletInterface {
 
     @POST
     @Path("/{channelId}/messagesWithObj")
-    @Operation(summary = "Processes a new message through a channel, using the RawMessage object.")
+    @Operation(operationId = "processMessage_1", summary = "Processes a new message through a channel, using the RawMessage object.")
     @ApiResponse(content = {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "long", ref = "../apiexamples/long_xml") }),
@@ -255,7 +255,7 @@ public interface MessageServletInterface extends BaseServletInterface {
 
     @POST
     @Path("/{channelId}/messages/count/_search")
-    @Operation(summary = "Count number for messages by specific filter criteria.")
+    @Operation(operationId = "getMessageCount_1", summary = "Count number for messages by specific filter criteria.")
     @ApiResponse(content = {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "messageCount", ref = "../apiexamples/long_xml") }),
@@ -273,7 +273,7 @@ public interface MessageServletInterface extends BaseServletInterface {
     
     @GET
     @Path("/{channelId}/messages/count")
-    @Operation(summary="Count number for messages by specific filter criteria.")
+    @Operation(operationId = "getMessageCount", summary="Count number for messages by specific filter criteria.")
     @ApiResponse(content = {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "messageCount", ref = "../apiexamples/long_xml") }),
@@ -322,7 +322,7 @@ public interface MessageServletInterface extends BaseServletInterface {
 
     @POST
     @Path("/{channelId}/messages/_reprocessWithFilter")
-    @Operation(summary = "Reprocesses messages through a channel filtering with a MessageFilter.")
+    @Operation(operationId = "reprocessMessages_1", summary = "Reprocesses messages through a channel filtering with a MessageFilter.")
     @MirthOperation(name = "reprocessMessages", display = "Reprocess messages", permission = Permissions.MESSAGES_REPROCESS_RESULTS, type = ExecuteType.ASYNC)
     public void reprocessMessages(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
@@ -339,7 +339,7 @@ public interface MessageServletInterface extends BaseServletInterface {
     @POST
     @Path("/{channelId}/messages/_reprocess")
     @Consumes("")
-    @Operation(summary = "Reprocesses messages through a channel by specific filter criteria.")
+    @Operation(operationId = "reprocessMessages", summary = "Reprocesses messages through a channel by specific filter criteria.")
     @MirthOperation(name = "reprocessMessages", display = "Reprocess messages", permission = Permissions.MESSAGES_REPROCESS_RESULTS, type = ExecuteType.ASYNC)
     public void reprocessMessages(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
@@ -467,7 +467,7 @@ public interface MessageServletInterface extends BaseServletInterface {
 
     @DELETE
     @Path("/{channelId}/messages/_removeAll")
-    @Operation(summary = "Removes all messages for the specified channel.")
+    @Operation(operationId = "removeAllMessages_1", summary = "Removes all messages for the specified channel.")
     @MirthOperation(name = "removeAllMessages", display = "Remove all messages", permission = Permissions.MESSAGES_REMOVE_ALL)
     public void removeAllMessages(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @PathParam("channelId") String channelId,
@@ -477,7 +477,7 @@ public interface MessageServletInterface extends BaseServletInterface {
 
     @DELETE
     @Path("/_removeAllMessages")
-    @Operation(summary = "Removes all messages for multiple specified channels.")
+    @Operation(operationId = "removeAllMessages", summary = "Removes all messages for multiple specified channels.")
     @MirthOperation(name = "removeAllMessages", display = "Remove all messages", permission = Permissions.MESSAGES_REMOVE_ALL)
     public void removeAllMessages(// @formatter:off
             @Param("channelIds") @Parameter(description = "The IDs of the channels.", required = true) @QueryParam("channelId") Set<String> channelIds,

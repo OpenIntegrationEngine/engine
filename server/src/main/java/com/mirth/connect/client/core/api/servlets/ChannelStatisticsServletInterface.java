@@ -47,7 +47,7 @@ public interface ChannelStatisticsServletInterface extends BaseServletInterface 
 
     @GET
     @Path("/statistics")
-    @Operation(summary = "Returns the Statistics for all channels.")
+    @Operation(operationId = "getStatistics", summary = "Returns the Statistics for all channels.")
     @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
             @ExampleObject(name = "channel_statistics_list", ref = "../apiexamples/channel_statistics_list_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
@@ -80,7 +80,7 @@ public interface ChannelStatisticsServletInterface extends BaseServletInterface 
 
     @GET
     @Path("/{channelId}/statistics")
-    @Operation(summary = "Returns the Statistics for the channel with the specified id.")
+    @Operation(operationId = "getStatistics_1", summary = "Returns the Statistics for the channel with the specified id.")
     @ApiResponse(content = { @Content(mediaType = MediaType.APPLICATION_XML, examples = {
             @ExampleObject(name = "channel_statistics", ref = "../apiexamples/channel_statistics_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {

@@ -193,8 +193,9 @@
             <actions>
               <action id="7" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" rollbackBarrierExitCode="0" multiExec="true">
                 <serializedBean>
-                  <property name="excludedVariables" type="array" elementType="string" length="1">
+                  <property name="excludedVariables" type="array" elementType="string" length="2">
                     <element index="0">sys.installationDir</element>
+                    <element index="1">startServiceNow</element>
                   </property>
                 </serializedBean>
                 <condition>context.getBooleanVariable("sys.streamlinedInstallation")</condition>
@@ -313,8 +314,9 @@ return true;
             <actions>
               <action id="11" beanClass="com.install4j.runtime.beans.actions.misc.LoadResponseFileAction" rollbackBarrierExitCode="0" multiExec="true">
                 <serializedBean>
-                  <property name="excludedVariables" type="array" elementType="string" length="1">
+                  <property name="excludedVariables" type="array" elementType="string" length="2">
                     <element index="0">sys.installationDir</element>
+                    <element index="1">startServiceNow</element>
                   </property>
                 </serializedBean>
                 <condition>context.getVariable("sys.responseFile") == null</condition>
@@ -366,19 +368,6 @@ return true;
           </screen>
           <screen id="15" beanClass="com.install4j.runtime.beans.screens.InstallationScreen" rollbackBarrier="true" rollbackBarrierExitCode="0">
             <actions>
-              <action name="Default startServiceNow value for GUI installations" id="204" beanClass="com.install4j.runtime.beans.actions.control.SetVariableAction" rollbackBarrierExitCode="0">
-                <serializedBean>
-                  <property name="variableName" type="string">startServiceNow</property>
-                  <property name="script">
-                    <object class="com.install4j.api.beans.ScriptProperty">
-                      <property name="value" type="string">
-                        return Boolean.valueOf(!context.isUpdateInstallation()); // Saving value due to interaction with UninstallPreviousAction
-                      </property>
-                    </object>
-                  </property>
-                </serializedBean>
-                <condition>!context.isConsole() &amp;&amp; !context.isUnattended()</condition>
-              </action>
               <action id="169" beanClass="com.install4j.runtime.beans.actions.UninstallPreviousAction" actionElevationType="elevated" rollbackBarrierExitCode="0" />
               <action id="17" beanClass="com.install4j.runtime.beans.actions.InstallFilesAction" actionElevationType="elevated" rollbackBarrierExitCode="0" failureStrategy="quit" errorMessage="${i18n:FileCorrupted}">
                 <serializedBean>
@@ -458,9 +447,27 @@ Would you like to start the service now?</property>
                   <property name="progressChangeType" type="enum" class="com.install4j.runtime.beans.actions.control.ProgressChangeType" value="SET_INDETERMINATE" />
                 </serializedBean>
               </action>
-              <action id="203" beanClass="com.install4j.runtime.beans.actions.services.StartServiceAction" actionElevationType="elevated" rollbackBarrierExitCode="0" failureStrategy="continue">
+              <action name="Start service and record result" id="203" beanClass="com.install4j.runtime.beans.actions.control.RunScriptAction" actionElevationType="elevated" rollbackBarrierExitCode="0" failureStrategy="continue">
                 <serializedBean>
-                  <property name="launcherId" type="string">25</property>
+                  <property name="script">
+                    <object class="com.install4j.api.beans.ScriptProperty">
+                      <property name="value" type="string">
+                        com.install4j.runtime.beans.actions.services.StartServiceAction startAction =
+                            new com.install4j.runtime.beans.actions.services.StartServiceAction();
+                        startAction.setLauncherId("25");
+                        startAction.init(context);
+                        boolean succeeded = false;
+                        try {
+                          succeeded = startAction.execute(context);
+                        } catch (Exception e) {
+                          com.install4j.api.Util.log(e);
+                          succeeded = false;
+                        }
+                        context.setVariable("serviceStartSucceeded", Boolean.valueOf(succeeded));
+                        return true;
+                      </property>
+                    </object>
+                  </property>
                 </serializedBean>
               </action>
             </actions>
@@ -474,9 +481,33 @@ Would you like to start the service now?</property>
           </screen>
           <screen id="20" beanClass="com.install4j.runtime.beans.screens.FinishedScreen" styleId="7" rollbackBarrierExitCode="0" finishScreen="true">
             <formComponents>
-              <formComponent id="21" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetBottom="10">
+              <formComponent name="Finish message - service not started" id="208" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetBottom="10">
                 <serializedBean>
-                  <property name="labelText" type="string">${form:finishedMessage}</property>
+                  <property name="labelText" type="string">The Open Integration Engine service is installed and will start automatically when the computer boots.
+
+The service was not started during installation.</property>
+                </serializedBean>
+                <visibilityScript>!context.getBooleanVariable("startServiceNow")</visibilityScript>
+              </formComponent>
+              <formComponent name="Finish message - service start succeeded" id="209" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetBottom="10">
+                <serializedBean>
+                  <property name="labelText" type="string">The Open Integration Engine service has been initiated.
+
+If the server does not come online, please check the logs in the installation directory for errors.</property>
+                </serializedBean>
+                <visibilityScript>context.getBooleanVariable("startServiceNow") &amp;&amp; context.getBooleanVariable("serviceStartSucceeded")</visibilityScript>
+              </formComponent>
+              <formComponent name="Finish message - service start failed" id="210" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetBottom="10">
+                <serializedBean>
+                  <property name="labelText" type="string">The Open Integration Engine service could not be started.
+
+Please check the service status in your operating system's service manager and review the server logs in the installation directory for errors.</property>
+                </serializedBean>
+                <visibilityScript>context.getBooleanVariable("startServiceNow") &amp;&amp; !context.getBooleanVariable("serviceStartSucceeded")</visibilityScript>
+              </formComponent>
+              <formComponent name="Documentation link" id="211" beanClass="com.install4j.runtime.beans.formcomponents.MultilineHtmlLabelComponent" insetTop="10">
+                <serializedBean>
+                  <property name="labelHtml" type="string">Visit the &lt;a href="https://docs.openintegrationengine.org"&gt;official documentation website&lt;/a&gt; for more information.</property>
                 </serializedBean>
               </formComponent>
             </formComponents>

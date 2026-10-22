@@ -263,7 +263,7 @@ subprojects {
 
     if (rootProject.coverageEnabled) {
         apply plugin: 'jacoco'
-        jacoco { toolVersion = '0.8.8' }
+        jacoco { toolVersion = '0.8.15' }
         tasks.withType(Test).configureEach { finalizedBy tasks.named('jacocoTestReport') }
         tasks.named('jacocoTestReport') {
             reports.xml.required = true

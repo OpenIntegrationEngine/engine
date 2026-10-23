@@ -499,7 +499,7 @@ If the server does not come online, please check the logs in the installation di
               </formComponent>
               <formComponent name="Finish message - service start failed" id="210" beanClass="com.install4j.runtime.beans.formcomponents.MultilineLabelComponent" insetBottom="10">
                 <serializedBean>
-                  <property name="labelText" type="string">The Open Integration Engine service could not be started.
+                  <property name="labelText" type="string">The Open Integration Engine was successfully installed, but the service could not be started.
 
 Please check the service status in your operating system's service manager and review the server logs in the installation directory for errors.</property>
                 </serializedBean>

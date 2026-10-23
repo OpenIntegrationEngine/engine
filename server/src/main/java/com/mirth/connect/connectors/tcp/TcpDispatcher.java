@@ -376,7 +376,7 @@ public class TcpDispatcher extends DestinationConnector {
                     socket.setReceiveBufferSize(bufferSize);
                     socket.setSendBufferSize(bufferSize);
                     socket.setSoTimeout(responseTimeout);
-                    socket.setKeepAlive(tcpDispatcherProperties.isKeepConnectionOpen());
+                    SocketUtil.setKeepAlive(socket, tcpDispatcherProperties.isKeepConnectionOpen());
 
                     eventController.dispatchEvent(new ConnectorCountEvent(getChannelId(), getMetaDataId(), getDestinationName(), ConnectionStatusEventType.CONNECTED, SocketUtil.getLocalAddress(socket) + " -> " + SocketUtil.getInetAddress(socket), true));
                 }
@@ -810,7 +810,7 @@ public class TcpDispatcher extends DestinationConnector {
         socket.setReceiveBufferSize(bufferSize);
         socket.setSendBufferSize(bufferSize);
         socket.setSoTimeout(responseTimeout);
-        socket.setKeepAlive(true);
+        SocketUtil.setKeepAlive(socket, true);
         socket.setReuseAddress(true);
         socket.setTcpNoDelay(true);
     }

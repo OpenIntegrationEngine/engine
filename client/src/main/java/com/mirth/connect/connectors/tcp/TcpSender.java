@@ -440,7 +440,7 @@ public class TcpSender extends ConnectorSettingsPanel implements ActionListener 
         keepConnectionOpenYesRadio.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         keepConnectionOpenGroup.add(keepConnectionOpenYesRadio);
         keepConnectionOpenYesRadio.setText("Yes");
-        keepConnectionOpenYesRadio.setToolTipText("<html>Select Yes to keep the connection to the host open across multiple messages.<br>Select No to immediately the close the connection to the host after sending each message.</html>");
+        keepConnectionOpenYesRadio.setToolTipText("<html>Select Yes to keep the connection to the host open across multiple messages.<br>Select No to immediately the close the connection to the host after sending each message.<br><br>With Yes, TCP keepalive probes start after the connection has been idle for 120 seconds,<br>or for the server's OS keepalive time if that is lower. The server's oie.tcp.keepalive.idle<br>system property changes the 120 seconds.</html>");
         keepConnectionOpenYesRadio.setMargin(new Insets(0, 0, 0, 0));
         keepConnectionOpenYesRadio.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
@@ -452,7 +452,7 @@ public class TcpSender extends ConnectorSettingsPanel implements ActionListener 
         keepConnectionOpenNoRadio.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         keepConnectionOpenGroup.add(keepConnectionOpenNoRadio);
         keepConnectionOpenNoRadio.setText("No");
-        keepConnectionOpenNoRadio.setToolTipText("<html>Select Yes to keep the connection to the host open across multiple messages.<br>Select No to immediately the close the connection to the host after sending each message.</html>");
+        keepConnectionOpenNoRadio.setToolTipText("<html>Select Yes to keep the connection to the host open across multiple messages.<br>Select No to immediately the close the connection to the host after sending each message.<br><br>With Yes, TCP keepalive probes start after the connection has been idle for 120 seconds,<br>or for the server's OS keepalive time if that is lower. The server's oie.tcp.keepalive.idle<br>system property changes the 120 seconds.</html>");
         keepConnectionOpenNoRadio.setMargin(new Insets(0, 0, 0, 0));
         keepConnectionOpenNoRadio.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {

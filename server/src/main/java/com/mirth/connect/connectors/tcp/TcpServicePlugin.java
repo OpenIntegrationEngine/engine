@@ -25,7 +25,9 @@ public class TcpServicePlugin implements ServicePlugin {
     }
 
     @Override
-    public void start() {}
+    public void start() {
+        SocketUtil.init();
+    }
 
     @Override
     public void stop() {}

@@ -22,6 +22,14 @@
 #
 # Any lines which do not match the special directives above will be passed through directly as
 # arguments to the java binary.
+#
+# Engine options set with -D:
+#
+# -Doie.tcp.keepalive.idle=<seconds>
+#     : seconds a TCP connection with keepalive enabled can sit idle before the first
+#     : keepalive probe is sent. Defaults to 120, which keeps idle connections alive
+#     : through NAT devices and load balancers. Only lowers the OS default; a lower OS
+#     : setting is kept. 0 or less always uses the OS default.
 
 
 

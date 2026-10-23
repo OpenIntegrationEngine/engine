@@ -505,7 +505,7 @@ public class TcpListener extends ConnectorSettingsPanel implements ActionListene
         receiveTimeoutField.setToolTipText("The amount of time, in milliseconds, to wait without receiving a message before closing a connection.");
         bufferSizeField.setToolTipText("<html>Use larger values for larger messages, and smaller values <br>for smaller messages. Generally, the default value is fine.</html>");
 
-        toolTipText = "<html>Select No to close the listening socket after a received message has finished processing.<br/>Otherwise the socket will remain open until the sending system closes it. In that case,<br/>messages will only be processed if data is received and either the receive timeout is reached,<br/>the client closes the socket, or an end of message byte sequence has been detected.</html>";
+        toolTipText = "<html>Select No to close the listening socket after a received message has finished processing.<br/>Otherwise the socket will remain open until the sending system closes it. In that case,<br/>messages will only be processed if data is received and either the receive timeout is reached,<br/>the client closes the socket, or an end of message byte sequence has been detected.<br/><br/>With Yes, TCP keepalive probes start after the connection has been idle for 120 seconds,<br/>or for the server's OS keepalive time if that is lower. The server's oie.tcp.keepalive.idle<br/>system property changes the 120 seconds.</html>";
         keepConnectionOpenYesRadio.setToolTipText(toolTipText);
         keepConnectionOpenNoRadio.setToolTipText(toolTipText);
 

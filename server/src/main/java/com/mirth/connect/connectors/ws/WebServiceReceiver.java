@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.ws.Binding;
@@ -163,7 +164,7 @@ public class WebServiceReceiver extends SourceConnector {
         }
 
         // Allow more than the channel processing threads so WDSL requests can be accepted even if all processing threads are busy
-        executor = Executors.newFixedThreadPool(processingThreads + 4);
+        executor = createExecutor(processingThreads + 4, WebServiceReceiver.class.getClassLoader());
         server.setExecutor(executor);
         server.start();
 
@@ -227,6 +228,22 @@ public class WebServiceReceiver extends SourceConnector {
         }
 
         eventController.dispatchEvent(new ConnectionStatusEvent(getChannelId(), getMetaDataId(), getSourceName(), ConnectionStatusEventType.IDLE));
+    }
+
+    /*
+     * The HttpServer creates request worker threads from its dispatcher thread, so they inherit the
+     * dispatcher's context classloader. Since JDK 19 that is the system classloader, which cannot
+     * see server-lib, and lookups through the context classloader (e.g. the SAAJ implementation)
+     * fail. Give the worker threads the given classloader explicitly instead.
+     */
+    static ExecutorService createExecutor(int threads, ClassLoader contextClassLoader) {
+        ThreadFactory defaultThreadFactory = Executors.defaultThreadFactory();
+
+        return Executors.newFixedThreadPool(threads, runnable -> {
+            Thread thread = defaultThreadFactory.newThread(runnable);
+            thread.setContextClassLoader(contextClassLoader);
+            return thread;
+        });
     }
 
     @Override

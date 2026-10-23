@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 1em; background-color: white; color: black;">
-  <h1 style="color: black;">Open Integration Engine ${compiler:sys.version}</h1>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 1em; background-color: #46494B; color: #DDDDDD;">
+  <h1 style="color: #DDDDDD;">Open Integration Engine ${compiler:sys.version}</h1>
   <p>
     This installer sets up a fully functional version of the engine with minimal user input,
     or upgrades an existing installation.
@@ -9,15 +9,15 @@
   </p>
   <h2>Notes</h2>
   <ul>
-    <li>Native services are installed for all supported platforms and are configured to start automatically.</li>
-    <li><strong>macOS users:</strong> A reboot will automatically start the service.</li>
+    <li>Native services are installed for all supported platforms and are configured to start automatically on boot.</li>
+    <li>An option will be provided to start the service immediately after installation.</li>
     <li>
       A new installation uses the default configuration files in the conf directory;
       the installer does not prompt for customization.
       This includes ports (default: 8080 and 8443), log and app data paths, and password requirements.
     </li>
     <li>
-      An upgrade replaces the program files from the previous installation.
+      An upgrade replaces the program files after uninstalling the previous installation.
       Files in the conf directory are kept and are not updated with new defaults.
       Directories created at runtime, such as appdata, are also kept.
     </li>

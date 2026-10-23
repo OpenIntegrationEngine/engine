@@ -41,16 +41,6 @@ def syncDonkeyLibs = tasks.register('syncDonkeyLibs', Sync) {
 
 compileJava.dependsOn syncDonkeyLibs
 
-compileTestJava {
-    options.compilerArgs += [
-        '--add-modules=java.sql.rowset',
-        '--add-exports=java.sql.rowset/com.sun.rowset=ALL-UNNAMED',
-        '--add-exports=java.base/com.sun.crypto.provider=ALL-UNNAMED',
-        '--add-exports=java.base/sun.security.provider=ALL-UNNAMED',
-    ]
-}
-
-
 def generateVersionProperties = tasks.register('generateVersionProperties') {
     description = 'Generates version.properties (embedded in mirth-client-core.jar).'
     def outFile = file('version.properties')

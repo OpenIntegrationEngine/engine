@@ -84,8 +84,7 @@
     {
       "groupName": "netty",
       "matchPackageNames": [
-        "io.netty*",
-        "com.typesafe.netty*"
+        "io.netty*"
       ]
     },
     {

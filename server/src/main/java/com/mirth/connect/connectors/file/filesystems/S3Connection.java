@@ -157,6 +157,9 @@ public class S3Connection implements FileSystemConnection {
     S3Client client;
     StsClient sts;
     int stsDuration;
+    // Set by the File Writer for each message. schemeProps belongs to the message that created
+    // the pool and is shared by every connection in it, so per-message headers can't go there.
+    Map<String, List<String>> customHeaders;
 
     public S3Connection(FileSystemConnectionOptions fileSystemOptions, int timeout) throws Exception {
         this.fileSystemOptions = fileSystemOptions;
@@ -271,11 +274,16 @@ public class S3Connection implements FileSystemConnection {
         return ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).delimiter(DELIMITER);
     }
 
+    public void setCustomHeaders(Map<String, List<String>> customHeaders) {
+        this.customHeaders = customHeaders;
+    }
+
     Map<String, String> getCustomHeaders() {
         Map<String, String> headers = new HashMap<String, String>();
+        Map<String, List<String>> source = customHeaders != null ? customHeaders : schemeProps.getCustomHeaders();
 
-        if (MapUtils.isNotEmpty(schemeProps.getCustomHeaders())) {
-            for (Entry<String, List<String>> entry : schemeProps.getCustomHeaders().entrySet()) {
+        if (MapUtils.isNotEmpty(source)) {
+            for (Entry<String, List<String>> entry : source.entrySet()) {
                 for (String value : entry.getValue()) {
                     headers.put(entry.getKey(), value);
                 }

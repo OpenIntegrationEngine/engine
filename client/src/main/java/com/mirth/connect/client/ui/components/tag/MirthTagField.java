@@ -254,9 +254,9 @@ public class MirthTagField extends JPanel {
                     return;
                 }
 
-                // A click outside the chips goes back to adding tags at the end.
-                if (!editing && !(evt.getComponent() instanceof TagChip)) {
-                    moveEditor(tokens.size());
+                // A click between chips, or past the last one, puts the editor in the nearest gap.
+                if (!editing && isEnabled() && !(evt.getComponent() instanceof TagChip)) {
+                    moveEditor(editorIndexAt(SwingUtilities.convertPoint(evt.getComponent(), evt.getPoint(), chipRow).x));
                 }
                 editor.requestFocusInWindow();
             }
@@ -638,6 +638,19 @@ public class MirthTagField extends JPanel {
                 }
             }
         });
+    }
+
+    /** The editor position nearest to x in the row: after every chip whose middle is left of x. */
+    private int editorIndexAt(int x) {
+        int index = 0;
+
+        for (Component component : chipRow.getComponents()) {
+            if (component instanceof TagChip && component.getX() + component.getWidth() / 2 < x) {
+                index++;
+            }
+        }
+
+        return index;
     }
 
     private void moveEditor(int index) {

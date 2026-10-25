@@ -23,10 +23,12 @@ import net.miginfocom.swing.MigLayout;
  * A single rounded tag "chip" with a delete affordance. Used by {@link MirthTagField}.
  */
 public class TagChip extends JPanel {
-    private static final Font FONT = new Font("Tahoma", Font.PLAIN, 11);
+    /** Also used by {@link MirthTagField}'s editor, so typed text looks like the chips. */
+    static final Font FONT = new Font("Tahoma", Font.PLAIN, 11);
     private static final Font CLOSE_FONT = new Font("Tahoma", Font.BOLD, 12);
     private static final int HEIGHT = 20;
-    private static final int ARC = 6;
+    /** Also used by {@link MirthTagField}'s edit mode outline. */
+    static final int ARC = 6;
     private static final float OPACITY = 0.9f;
     private static final Color BORDER_COLOR = new Color(0xD9, 0xD9, 0xD9);
 

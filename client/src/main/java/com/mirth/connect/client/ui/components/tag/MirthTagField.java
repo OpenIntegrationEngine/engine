@@ -4,14 +4,18 @@
 
 package com.mirth.connect.client.ui.components.tag;
 
+import java.awt.AWTEvent;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Insets;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Toolkit;
+import java.awt.event.AWTEventListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
@@ -20,6 +24,8 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +41,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.JViewport;
 import javax.swing.KeyStroke;
 import javax.swing.Scrollable;
 import javax.swing.SwingUtilities;
@@ -86,6 +93,13 @@ public class MirthTagField extends JPanel {
     private static final String EDITOR_CONSTRAINTS = "";
     /** While it shows its prompt, the editor takes up the rest of the row. */
     private static final String PROMPT_EDITOR_CONSTRAINTS = "growx, pushx, w 60::";
+    /** The scroll amount the toolkits report for one step of the wheel. */
+    private static final int WHEEL_SCROLL_AMOUNT = 3;
+    /**
+     * The X11 toolkit reports horizontal scrolling (X buttons 6 and 7) as presses of mouse buttons 4
+     * and 5 instead of as wheel events. On other toolkits those buttons are back and forward.
+     */
+    private static final boolean X11_HORIZONTAL_SCROLL_BUTTONS = "sun.awt.X11.XToolkit".equals(Toolkit.getDefaultToolkit().getClass().getName());
     /** Room after the text for the caret. */
     private static final int CARET_ROOM = 2;
 
@@ -172,6 +186,20 @@ public class MirthTagField extends JPanel {
     private Border editingBorder;
     private IconButton clearButton;
     private MouseAdapter focusEditorAdapter;
+    /** Installed while the field is displayable, on X11 only. */
+    private final AWTEventListener horizontalScrollButtonListener = new AWTEventListener() {
+        @Override
+        public void eventDispatched(AWTEvent event) {
+            MouseEvent evt = (MouseEvent) event;
+            int button = evt.getButton();
+
+            if (evt.getID() == MouseEvent.MOUSE_PRESSED && (button == 4 || button == 5) && SwingUtilities.isDescendingFrom(evt.getComponent(), scrollPane)) {
+                // Only marks the press as handled; Swing's mouse listeners still receive it.
+                evt.consume();
+                scrollChipsBy((button == 4 ? -1 : 1) * WHEEL_SCROLL_AMOUNT);
+            }
+        }
+    };
 
     private AutoCompletionProvider provider;
     private AutoCompletionDelegate completionDelegate;
@@ -222,6 +250,10 @@ public class MirthTagField extends JPanel {
         focusEditorAdapter = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent evt) {
+                if (!SwingUtilities.isLeftMouseButton(evt)) {
+                    return;
+                }
+
                 // A click outside the chips goes back to adding tags at the end.
                 if (!editing && !(evt.getComponent() instanceof TagChip)) {
                     moveEditor(tokens.size());
@@ -245,6 +277,13 @@ public class MirthTagField extends JPanel {
         scrollPane.setViewportBorder(null);
         scrollPane.getViewport().setBackground(UIConstants.BACKGROUND_COLOR);
         scrollPane.getViewport().addMouseListener(focusEditorAdapter);
+        scrollPane.setWheelScrollingEnabled(false);
+        scrollPane.addMouseWheelListener(new MouseWheelListener() {
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent evt) {
+                scrollChips(evt);
+            }
+        });
 
         clearButton = new IconButton();
         clearButton.setIcon(UIConstants.ICON_X);
@@ -616,6 +655,34 @@ public class MirthTagField extends JPanel {
         scrollEditorToVisible();
     }
 
+    /**
+     * With no scrollbar to show, the wheel (or a sideways trackpad swipe, which arrives with Shift
+     * held) scrolls the chips horizontally. While they fit, the event goes on to the components
+     * around the field, so an enclosing scroll pane still scrolls.
+     */
+    private void scrollChips(MouseWheelEvent evt) {
+        if (scrollChipsBy(evt.getPreciseWheelRotation() * evt.getScrollAmount())) {
+            evt.consume();
+        } else {
+            dispatchEvent(SwingUtilities.convertMouseEvent(scrollPane, evt, this));
+        }
+    }
+
+    /** Scrolls the chips by a number of scroll units, returning false when they all fit. */
+    private boolean scrollChipsBy(double units) {
+        JViewport viewport = scrollPane.getViewport();
+        int overflow = chipRow.getWidth() - viewport.getWidth();
+
+        if (overflow <= 0) {
+            return false;
+        }
+
+        Point position = viewport.getViewPosition();
+        position.x = (int) Math.max(0, Math.min(overflow, Math.round(position.x + units * SCROLL_INCREMENT)));
+        viewport.setViewPosition(position);
+        return true;
+    }
+
     private void scrollEditorToVisible() {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -674,6 +741,21 @@ public class MirthTagField extends JPanel {
         for (FilterCompletion tag : tags) {
             provider.addCompletion(new TagCompletion(provider, tag.getName(), tag.getType(), tag.getBackgroundColor(), tag.getIcon()));
         }
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+
+        if (X11_HORIZONTAL_SCROLL_BUTTONS) {
+            Toolkit.getDefaultToolkit().addAWTEventListener(horizontalScrollButtonListener, AWTEvent.MOUSE_EVENT_MASK);
+        }
+    }
+
+    @Override
+    public void removeNotify() {
+        Toolkit.getDefaultToolkit().removeAWTEventListener(horizontalScrollButtonListener);
+        super.removeNotify();
     }
 
     @Override

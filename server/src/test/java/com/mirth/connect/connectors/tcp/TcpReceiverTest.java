@@ -12,16 +12,15 @@ import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.donkey.server.ConnectorTaskException;
 import com.mirth.connect.donkey.server.channel.Channel;
 import com.mirth.connect.donkey.server.event.EventDispatcher;
 import com.mirth.connect.donkey.server.message.DataType;
+import com.mirth.connect.donkey.testing.StaticOverride;
 import com.mirth.connect.plugins.DataTypeServerPlugin;
 import com.mirth.connect.plugins.TransmissionModeProvider;
 import com.mirth.connect.plugins.datatypes.hl7v2.HL7v2DataTypeServerPlugin;
@@ -32,6 +31,8 @@ import com.mirth.connect.server.controllers.EventController;
 import com.mirth.connect.server.controllers.ExtensionController;
 
 public class TcpReceiverTest {
+
+    private static StaticOverride factoryOverride;
 	
 	private static final String TEST_CHANNEL_ID = UUID.randomUUID().toString();
 	private static final String TEST_SERVER_ID = UUID.randomUUID().toString();
@@ -62,14 +63,14 @@ public class TcpReceiverTest {
         when(extensionController.getDataTypePlugins()).thenReturn(dataTypePlugins);
         when(controllerFactory.createExtensionController()).thenReturn(extensionController);
         
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = StaticOverride.install(ControllerFactory.class, "factory", controllerFactory);
+	}
+
+	@AfterClass
+	public static void restoreControllerFactory() {
+		if (factoryOverride != null) {
+			factoryOverride.close();
+		}
 	}
 
 	@After
@@ -184,4 +185,5 @@ public class TcpReceiverTest {
 			return mock(EventDispatcher.class);
 		}
 	}
+	
 }

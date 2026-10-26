@@ -13,12 +13,11 @@ import java.io.File;
 import java.net.URL;
 import java.util.HashSet;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
+import com.mirth.connect.donkey.testing.StaticOverride;
 import com.mirth.connect.server.builders.JavaScriptBuilder;
 import com.mirth.connect.server.controllers.CodeTemplateController;
 import com.mirth.connect.server.controllers.ConfigurationController;
@@ -27,6 +26,8 @@ import com.mirth.connect.server.controllers.EventController;
 import com.mirth.connect.server.controllers.ExtensionController;
 
 public class MirthContextFactoryTest {
+
+    private static StaticOverride factoryOverride;
 
     @BeforeClass
     public static void setUpBeforeClass() {
@@ -46,16 +47,18 @@ public class MirthContextFactoryTest {
         CodeTemplateController codeTemplateController = mock(CodeTemplateController.class);
         when(controllerFactory.createCodeTemplateController()).thenReturn(codeTemplateController);
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = StaticOverride.install(ControllerFactory.class, "factory", controllerFactory);
 
         JavaScriptBuilder.setControllersForTesting(extensionController, codeTemplateController);
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() {
+        if (factoryOverride != null) {
+            factoryOverride.close();
+        }
+        // JavaScriptBuilder's cached controllers are left alone: reading them back to restore
+        // them would initialize it against the real factory, which rewrites mirth.properties.
     }
 
     /*

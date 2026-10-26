@@ -36,12 +36,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.velocity.runtime.RuntimeConstants;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.connectors.file.filesystems.FileSystemConnectionFactory;
 import com.mirth.connect.donkey.model.message.Message;
 import com.mirth.connect.donkey.model.message.RawMessage;
@@ -52,6 +50,7 @@ import com.mirth.connect.donkey.server.channel.ChannelException;
 import com.mirth.connect.donkey.server.channel.DispatchResult;
 import com.mirth.connect.donkey.server.event.EventDispatcher;
 import com.mirth.connect.donkey.server.message.batch.BatchAdaptorFactory;
+import com.mirth.connect.donkey.testing.StaticOverride;
 import com.mirth.connect.model.datatype.SerializerProperties;
 import com.mirth.connect.plugins.datatypes.hl7v2.ER7BatchAdaptorFactory;
 import com.mirth.connect.plugins.datatypes.hl7v2.HL7v2BatchProperties;
@@ -63,6 +62,8 @@ import com.mirth.connect.server.controllers.EventController;
 import com.mirth.connect.server.controllers.ExtensionController;
 
 public class FileReceiverTest {
+
+    private static StaticOverride factoryOverride;
 
     private static final String POLL_ID = "pollId";
     private static final String POLL_SEQUENCE_ID = "pollSequenceId";
@@ -82,17 +83,17 @@ public class FileReceiverTest {
         ExtensionController extensionController = mock(ExtensionController.class);
         when(controllerFactory.createExtensionController()).thenReturn(extensionController);
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = StaticOverride.install(ControllerFactory.class, "factory", controllerFactory);
 
         Logger logger = LogManager.getLogger(RuntimeConstants.DEFAULT_RUNTIME_LOG_NAME);
         Configurator.setLevel(logger.getName(), Level.OFF);
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() {
+        if (factoryOverride != null) {
+            factoryOverride.close();
+        }
     }
 
     /*

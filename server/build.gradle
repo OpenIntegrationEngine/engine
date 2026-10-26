@@ -13,6 +13,7 @@ dependencies {
     // classifier is selected here
     implementation(variantOf(libs.netty.transport.native.epoll) { classifier('linux-x86_64') })
     testImplementation libs.bundles.server.test
+    testImplementation testFixtures(project(':donkey'))
 }
 
 // ---------------------------------------------------------------------

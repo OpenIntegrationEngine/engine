@@ -12,15 +12,14 @@ import static org.mockito.Mockito.when;
 import java.util.UUID;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.donkey.server.ConnectorTaskException;
 import com.mirth.connect.donkey.server.channel.Channel;
 import com.mirth.connect.donkey.server.event.EventDispatcher;
+import com.mirth.connect.donkey.testing.StaticOverride;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.server.controllers.EventController;
@@ -31,6 +30,8 @@ import com.mirth.connect.server.controllers.EventController;
  * raised for anything that does not resolve to a positive number.
  */
 public class HttpReceiverRequestHeaderSizeTest {
+
+    private static StaticOverride factoryOverride;
 
     private static final String TEST_CHANNEL_ID = UUID.randomUUID().toString();
     private static final String TEST_CHANNEL_NAME = "Test HTTP Listener Channel";
@@ -43,14 +44,14 @@ public class HttpReceiverRequestHeaderSizeTest {
         when(controllerFactory.createConfigurationController()).thenReturn(mock(ConfigurationController.class));
         when(controllerFactory.createEventController()).thenReturn(mock(EventController.class));
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = StaticOverride.install(ControllerFactory.class, "factory", controllerFactory);
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() {
+        if (factoryOverride != null) {
+            factoryOverride.close();
+        }
     }
 
     @After

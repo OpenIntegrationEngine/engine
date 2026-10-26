@@ -25,14 +25,12 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.donkey.model.channel.SourceConnectorProperties;
 import com.mirth.connect.donkey.model.channel.SourceConnectorPropertiesInterface;
@@ -44,26 +42,29 @@ import com.mirth.connect.donkey.server.data.DonkeyDaoFactory;
 import com.mirth.connect.donkey.server.event.EventDispatcher;
 import com.mirth.connect.donkey.server.message.DataType;
 import com.mirth.connect.donkey.server.queue.SourceQueue;
+import com.mirth.connect.donkey.testing.StaticOverride;
 import com.mirth.connect.donkey.util.SerializerProvider;
 
 public class ChannelTest {
+
+    private static StaticOverride donkeyOverride;
 
     @BeforeClass
     public static void setupControllers() throws Exception {
         Donkey donkey = mock(Donkey.class);
         when(donkey.getEventDispatcher()).thenReturn(mock(EventDispatcher.class));
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(Donkey.class);
-                bind(Donkey.class).toInstance(donkey);
-            }
-        });
-        injector.getInstance(Donkey.class);
+        donkeyOverride = StaticOverride.install(Donkey.class, "instance", donkey);
 
         // Make sure injection succeeded
         assertTrue(donkey == Donkey.getInstance());
+    }
+
+    @AfterClass
+    public static void restoreDonkey() {
+        if (donkeyOverride != null) {
+            donkeyOverride.close();
+        }
     }
 
     @Test

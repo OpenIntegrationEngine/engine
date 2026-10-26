@@ -1,6 +1,17 @@
 // Donkey: the message engine. Produces donkey-model.jar and
 // donkey-server.jar in donkey/setup (mirrors donkey/build.xml).
 
+apply plugin: 'java-test-fixtures'
+
+// The test-fixtures plugin gives the test source set the main classes through
+// a dependency on this project, which the non-transitive test classpaths
+// drop, so add them back directly. Remove this when transitive resolution
+// is enabled.
+sourceSets.test {
+    compileClasspath += sourceSets.main.output
+    runtimeClasspath += sourceSets.main.output
+}
+
 dependencies {
     implementation libs.bundles.donkey.main
     testImplementation libs.bundles.donkey.test

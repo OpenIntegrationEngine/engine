@@ -17,7 +17,6 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.inject.Inject;
 import com.mirth.connect.donkey.model.channel.Ports;
 import com.mirth.connect.donkey.model.message.Status;
 import com.mirth.connect.donkey.server.Donkey;
@@ -27,7 +26,6 @@ import com.mirth.connect.donkey.server.data.DonkeyDaoException;
 import com.mirth.connect.donkey.server.data.DonkeyDaoFactory;
 
 public class ChannelController {
-    @Inject
     private static ChannelController instance;
 
     public static ChannelController getInstance() {

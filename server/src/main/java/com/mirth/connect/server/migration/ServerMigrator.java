@@ -33,6 +33,8 @@ import org.apache.logging.log4j.Logger;
 
 import com.mirth.connect.client.core.PropertiesConfigurationUtil;
 import com.mirth.connect.client.core.Version;
+import com.mirth.connect.donkey.server.data.DonkeyDaoException;
+import com.mirth.connect.donkey.server.data.jdbc.JdbcDaoFactory;
 import com.mirth.connect.model.Channel;
 import com.mirth.connect.model.ExportClearable;
 import com.mirth.connect.model.alert.AlertModel;
@@ -258,6 +260,14 @@ public class ServerMigrator extends Migrator {
     private void initDatabase(Connection connection) throws MigrationException {
         // If missing this table we can assume that they don't have the schema installed
         if (!DatabaseUtil.tableExists(connection, "CONFIGURATION")) {
+            // Since we are creating a new database, let the database-specific DAO 
+            // factory check if it is acceptable.
+            try {
+                JdbcDaoFactory.getInstance(getDatabaseType()).checkNewDatabase(connection);
+            } catch (DonkeyDaoException e) {
+                throw new MigrationException(e.getMessage(), e);
+            }
+
             executeScript("/" + getDatabaseType() + "/" + getDatabaseType() + "-database.sql");
 
             initializeAdminPassword();

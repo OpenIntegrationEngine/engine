@@ -24,12 +24,11 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
+import com.mirth.connect.donkey.testing.StaticOverride;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
 
@@ -38,6 +37,8 @@ import com.mirth.connect.server.controllers.ControllerFactory;
  * of the property is behavior Jetty enforces before any channel code runs.
  */
 public class DefaultHttpConfigurationTest {
+
+    private static StaticOverride factoryOverride;
 
     private static final int LARGE_HEADER_BYTES = 16384;
 
@@ -48,14 +49,14 @@ public class DefaultHttpConfigurationTest {
         ControllerFactory controllerFactory = mock(ControllerFactory.class);
         when(controllerFactory.createConfigurationController()).thenReturn(mock(ConfigurationController.class));
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = StaticOverride.install(ControllerFactory.class, "factory", controllerFactory);
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() {
+        if (factoryOverride != null) {
+            factoryOverride.close();
+        }
     }
 
     @After

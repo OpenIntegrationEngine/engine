@@ -29,7 +29,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
-import com.google.inject.Inject;
 import com.mirth.connect.donkey.model.DatabaseConstants;
 import com.mirth.connect.donkey.util.DonkeyElement;
 import com.mirth.connect.model.DatabaseSettings;
@@ -40,7 +39,6 @@ import com.mirth.connect.server.controllers.ExtensionController;
 
 public class SqlConfig {
 
-    @Inject
     private static volatile SqlConfig instance = null;
 
     private boolean splitReadWrite = false;

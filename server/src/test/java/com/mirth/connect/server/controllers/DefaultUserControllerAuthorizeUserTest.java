@@ -23,17 +23,16 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionManager;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.commons.encryption.Digester;
 import com.mirth.connect.donkey.model.event.Event;
+import com.mirth.connect.donkey.testing.StaticOverride;
 import com.mirth.connect.model.Credentials;
 import com.mirth.connect.model.LoginStatus;
 import com.mirth.connect.model.LoginStrike;
@@ -71,6 +70,8 @@ public class DefaultUserControllerAuthorizeUserTest {
     private static UserController userController;
     private static EventController eventController;
     private static SqlSessionManager readOnlySqlSessionManager;
+    private static StaticOverride factoryOverride;
+    private static StaticOverride sqlConfigOverride;
 
     private PasswordRequirements passwordRequirements;
     private Digester digester;
@@ -106,16 +107,18 @@ public class DefaultUserControllerAuthorizeUserTest {
         readOnlySqlSessionManager = mock(SqlSessionManager.class);
         when(sqlConfig.getReadOnlySqlSessionManager()).thenReturn(readOnlySqlSessionManager);
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                requestStaticInjection(SqlConfig.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-                bind(SqlConfig.class).toInstance(sqlConfig);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = StaticOverride.install(ControllerFactory.class, "factory", controllerFactory);
+        sqlConfigOverride = StaticOverride.install(SqlConfig.class, "instance", sqlConfig);
+    }
+
+    @AfterClass
+    public static void restoreOverrides() {
+        if (sqlConfigOverride != null) {
+            sqlConfigOverride.close();
+        }
+        if (factoryOverride != null) {
+            factoryOverride.close();
+        }
     }
 
     @Before

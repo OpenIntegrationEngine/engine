@@ -10,6 +10,7 @@
 package com.mirth.connect.server.controllers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -294,7 +295,7 @@ public class DefaultConfigurationControllerTest {
         AtomicReference<String> database = new AtomicReference<String>(INITIAL_CONFIGURATION_MAP_XML);
         DefaultConfigurationController configurationController = databaseBackedConfigurationController(database);
 
-        configurationController.setConfigurationProperty("B", new ConfigurationProperty("2", "second"));
+        assertTrue(configurationController.setConfigurationProperty("B", new ConfigurationProperty("2", "second"), null));
 
         Map<String, String> expected = new HashMap<String, String>();
         expected.put("A", "1");
@@ -307,6 +308,66 @@ public class DefaultConfigurationControllerTest {
         assertEquals("comment", saved.get("A").getComment());
         assertEquals("2", saved.get("B").getValue());
         assertEquals("second", saved.get("B").getComment());
+    }
+
+    @Test
+    public void setConfigurationProperty_ExpectedVersionMatches() throws Exception {
+        AtomicReference<String> database = new AtomicReference<String>(INITIAL_CONFIGURATION_MAP_XML);
+        DefaultConfigurationController configurationController = databaseBackedConfigurationController(database);
+        String version = ConfigurationProperty.versionOf(new ConfigurationProperty("1", "comment"));
+
+        assertTrue(configurationController.setConfigurationProperty("A", new ConfigurationProperty("2", "comment"), version));
+        assertEquals("2", configurationController.getConfigurationMap().get("A"));
+    }
+
+    @Test
+    public void setConfigurationProperty_ExpectedVersionMatchesIgnoringCase() throws Exception {
+        AtomicReference<String> database = new AtomicReference<String>(INITIAL_CONFIGURATION_MAP_XML);
+        DefaultConfigurationController configurationController = databaseBackedConfigurationController(database);
+        String version = ConfigurationProperty.versionOf(new ConfigurationProperty("1", "comment")).toUpperCase();
+
+        assertTrue(configurationController.setConfigurationProperty("A", new ConfigurationProperty("2", "comment"), version));
+        assertEquals("2", configurationController.getConfigurationMap().get("A"));
+    }
+
+    @Test
+    public void setConfigurationProperty_ExpectedVersionMismatch() throws Exception {
+        assertConflict("A", ConfigurationProperty.versionOf(new ConfigurationProperty("0", "comment")));
+    }
+
+    @Test
+    public void setConfigurationProperty_ExpectedMissing_KeyExists() throws Exception {
+        assertConflict("A", "");
+    }
+
+    @Test
+    public void setConfigurationProperty_ExpectedVersion_KeyMissing() throws Exception {
+        assertConflict("B", ConfigurationProperty.versionOf(new ConfigurationProperty("1", "comment")));
+    }
+
+    @Test
+    public void setConfigurationProperty_ExpectedMissing_KeyMissing() throws Exception {
+        AtomicReference<String> database = new AtomicReference<String>(INITIAL_CONFIGURATION_MAP_XML);
+        DefaultConfigurationController configurationController = databaseBackedConfigurationController(database);
+
+        assertTrue(configurationController.setConfigurationProperty("B", new ConfigurationProperty("2", null), ""));
+
+        Map<String, String> expected = new HashMap<String, String>();
+        expected.put("A", "1");
+        expected.put("B", "2");
+        assertEquals(expected, configurationController.getConfigurationMap());
+    }
+
+    private void assertConflict(String key, String expectedVersion) throws Exception {
+        AtomicReference<String> database = new AtomicReference<String>(INITIAL_CONFIGURATION_MAP_XML);
+        DefaultConfigurationController configurationController = databaseBackedConfigurationController(database);
+        Map<String, String> before = configurationController.getConfigurationMap();
+        String savedBefore = database.get();
+
+        assertFalse(configurationController.setConfigurationProperty(key, new ConfigurationProperty("2", "second"), expectedVersion));
+
+        assertEquals(savedBefore, database.get());
+        assertEquals(before, configurationController.getConfigurationMap());
     }
 
     private DefaultConfigurationController databaseBackedConfigurationController(AtomicReference<String> database) {

@@ -921,6 +921,24 @@ public class DefaultConfigurationController extends ConfigurationController {
 
     @Override
     public synchronized void setConfigurationProperties(Map<String, ConfigurationProperty> map, boolean persist) throws ControllerException {
+        if (map == null) {
+            throw new ControllerException("The configuration map cannot be null.");
+        }
+
+        /*
+         * The map may have been deserialized from a request body, which doesn't enforce its generic
+         * types. Check the raw entries so a bad map is rejected before it is persisted.
+         */
+        for (Entry<?, ?> entry : ((Map<?, ?>) map).entrySet()) {
+            if (!(entry.getKey() instanceof String)) {
+                throw new ControllerException("Configuration map keys must be strings, but found " + typeName(entry.getKey()) + ".");
+            }
+
+            if (!(entry.getValue() instanceof ConfigurationProperty)) {
+                throw new ControllerException("The configuration map entry \"" + entry.getKey() + "\" must be a ConfigurationProperty, but found " + typeName(entry.getValue()) + ".");
+            }
+        }
+
         if (persist) {
             saveConfigurationProperties(map);
         }
@@ -935,6 +953,10 @@ public class DefaultConfigurationController extends ConfigurationController {
 
         configurationMap = Collections.unmodifiableMap(valueMap);
         this.commentMap = Collections.unmodifiableMap(commentMap);
+    }
+
+    private static String typeName(Object object) {
+        return object == null ? "null" : object.getClass().getName();
     }
 
     @Override

@@ -311,7 +311,7 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
     @Operation(summary = "Updates a single entry in the configuration map, leaving the rest alone.")
     @MirthOperation(name = "setConfigurationProperty", display = "Set configuration map entry", permission = Permissions.CONFIGURATION_MAP_EDIT)
     public void setConfigurationProperty(
-            @Param("key") @Parameter(description = "The key of the entry to set.", required = true) @PathParam("key") String key,
+            @Param("key") @Parameter(description = "The key of the entry to set. It can't be blank, and a / in the key has to be encoded as %2F.", required = true) @PathParam("key") String key,
             @Param("property") @RequestBody(description = "The value and comment to store under the key.", required = true) ConfigurationProperty property) throws ClientException;
 
     @GET

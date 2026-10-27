@@ -21,9 +21,11 @@ import java.util.concurrent.Executors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -308,6 +310,10 @@ public class ConfigurationServlet extends MirthServlet implements ConfigurationS
 
     @Override
     public void setConfigurationProperty(String key, ConfigurationProperty property) {
+        if (StringUtils.isBlank(key)) {
+            throw new MirthApiException(Response.status(Response.Status.BAD_REQUEST).entity("The configuration map key cannot be blank.").build());
+        }
+
         try {
             configurationController.setConfigurationProperty(key, property);
         } catch (ControllerException e) {

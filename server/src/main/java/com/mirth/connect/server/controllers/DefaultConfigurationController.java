@@ -939,10 +939,15 @@ public class DefaultConfigurationController extends ConfigurationController {
     }
 
     @Override
-    public synchronized void setConfigurationProperty(String key, ConfigurationProperty property) throws ControllerException {
+    public synchronized boolean setConfigurationProperty(String key, ConfigurationProperty property, String expectedVersion) throws ControllerException {
         Map<String, ConfigurationProperty> properties = getConfigurationProperties();
+        if (expectedVersion != null && !expectedVersion.equalsIgnoreCase(ConfigurationProperty.versionOf(properties.get(key)))) {
+            return false;
+        }
+
         properties.put(key, property);
         setConfigurationProperties(properties, true);
+        return true;
     }
 
     @Override

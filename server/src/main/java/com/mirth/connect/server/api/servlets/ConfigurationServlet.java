@@ -309,13 +309,13 @@ public class ConfigurationServlet extends MirthServlet implements ConfigurationS
     }
 
     @Override
-    public void setConfigurationProperty(String key, ConfigurationProperty property) {
+    public boolean setConfigurationProperty(String key, ConfigurationProperty property, String expectedVersion) {
         if (StringUtils.isBlank(key)) {
             throw new MirthApiException(Response.status(Response.Status.BAD_REQUEST).entity("The configuration map key cannot be blank.").build());
         }
 
         try {
-            configurationController.setConfigurationProperty(key, property);
+            return configurationController.setConfigurationProperty(key, property, expectedVersion);
         } catch (ControllerException e) {
             throw new MirthApiException(e);
         }

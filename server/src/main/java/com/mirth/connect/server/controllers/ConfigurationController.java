@@ -338,8 +338,13 @@ public abstract class ConfigurationController extends Controller {
      *            The key of the entry to set.
      * @param property
      *            The value and comment to store under the key.
+     * @param expectedVersion
+     *            If not null, the entry is only set if this matches the current entry's version,
+     *            as returned by {@link ConfigurationProperty#versionOf}, ignoring case. An empty
+     *            string requires that the key doesn't exist yet.
+     * @return false if expectedVersion didn't match and nothing was changed, otherwise true.
      */
-    public abstract void setConfigurationProperty(String key, ConfigurationProperty property) throws ControllerException;
+    public abstract boolean setConfigurationProperty(String key, ConfigurationProperty property, String expectedVersion) throws ControllerException;
 
     // properties
     public Properties getPropertiesForGroup(String group) {

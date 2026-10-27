@@ -13,6 +13,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -26,8 +28,11 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.xml.XMLConstants;
 import javax.xml.transform.Source;
@@ -36,6 +41,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,6 +51,8 @@ import org.xml.sax.SAXParseException;
 import com.mirth.connect.client.core.ControllerException;
 import com.mirth.connect.donkey.testing.StaticOverride;
 import com.mirth.connect.model.DriverInfo;
+import com.mirth.connect.model.converters.ObjectXMLSerializer;
+import com.mirth.connect.util.ConfigurationProperty;
 
 public class DefaultConfigurationControllerTest {
 
@@ -65,6 +73,11 @@ public class DefaultConfigurationControllerTest {
         if (factoryOverride != null) {
             factoryOverride.close();
         }
+    }
+
+    @After
+    public void resetConfigurationMapLocation() {
+        DefaultConfigurationController.mirthConfig.clearProperty(DefaultConfigurationController.CONFIGURATION_MAP_LOCATION);
     }
 
     @Test
@@ -276,6 +289,38 @@ public class DefaultConfigurationControllerTest {
     	assertTrue(exceptionCaught);
     }
 
+    @Test
+    public void setConfigurationProperty_KeepsOtherEntries() throws Exception {
+        AtomicReference<String> database = new AtomicReference<String>(INITIAL_CONFIGURATION_MAP_XML);
+        DefaultConfigurationController configurationController = databaseBackedConfigurationController(database);
+
+        configurationController.setConfigurationProperty("B", new ConfigurationProperty("2", "second"));
+
+        Map<String, String> expected = new HashMap<String, String>();
+        expected.put("A", "1");
+        expected.put("B", "2");
+        assertEquals(expected, configurationController.getConfigurationMap());
+
+        @SuppressWarnings("unchecked")
+        Map<String, ConfigurationProperty> saved = ObjectXMLSerializer.getInstance().deserialize(database.get(), HashMap.class);
+        assertEquals("1", saved.get("A").getValue());
+        assertEquals("comment", saved.get("A").getComment());
+        assertEquals("2", saved.get("B").getValue());
+        assertEquals("second", saved.get("B").getComment());
+    }
+
+    private DefaultConfigurationController databaseBackedConfigurationController(AtomicReference<String> database) {
+        DefaultConfigurationController.mirthConfig.setProperty(DefaultConfigurationController.CONFIGURATION_MAP_LOCATION, "database");
+
+        DefaultConfigurationController configurationController = spy(new DefaultConfigurationController());
+        doAnswer(invocation -> database.get()).when(configurationController).getProperty(anyString(), anyString());
+        doAnswer(invocation -> {
+            database.set(invocation.getArgument(2));
+            return null;
+        }).when(configurationController).saveProperty(anyString(), anyString(), any());
+        return configurationController;
+    }
+
     private void assertDefaultDrivers(List<DriverInfo> drivers, boolean includeODBC) {
         assertEquals(includeODBC ? 7 : 6, drivers.size());
         int i = 0;
@@ -334,6 +379,18 @@ public class DefaultConfigurationControllerTest {
         tf.newTransformer().transform(source, new StreamResult(writer));
         return writer.toString();
     }
+
+    private static final String INITIAL_CONFIGURATION_MAP_XML = """
+            <map>
+              <entry>
+                <string>A</string>
+                <com.mirth.connect.util.ConfigurationProperty>
+                  <value>1</value>
+                  <comment>comment</comment>
+                </com.mirth.connect.util.ConfigurationProperty>
+              </entry>
+            </map>
+            """;
 
     // @formatter:off
     private String DEFAULT_DRIVERS_XML = "<list>\n" + 

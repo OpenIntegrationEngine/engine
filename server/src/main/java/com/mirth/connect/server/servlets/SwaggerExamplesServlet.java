@@ -241,6 +241,8 @@ public class SwaggerExamplesServlet extends HttpServlet {
 			requestedObject = getChannelSummaryListExample();
 		} else if (exampleRequested.equals("configuration_map")) {
             requestedObject = getConfigurationMapExample();
+        } else if (exampleRequested.equals("configuration_property")) {
+            requestedObject = getConfigurationPropertyExample();
         } else if (exampleRequested.equals("connection_test_response")) {
             requestedObject = getConnectionTestResponseExample();
         } else if (exampleRequested.equals("dashboard_channel_info")) {
@@ -726,6 +728,10 @@ public class SwaggerExamplesServlet extends HttpServlet {
 	    configurationMap.put("exampleKey1", new ConfigurationProperty("exampleValue1", "Example comment 1"));
 	    configurationMap.put("exampleKey2", new ConfigurationProperty("exampleValue2", "Example comment 2"));
 	    return configurationMap;
+	}
+	
+	private ConfigurationProperty getConfigurationPropertyExample() {
+	    return new ConfigurationProperty("exampleValue", "Example comment");
 	}
 	
     private Map<String, List<Integer>> getConnectorMapExample(boolean includeNull) {

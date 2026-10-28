@@ -41,9 +41,9 @@ public class PDFViewer extends AttachmentViewer {
             File temp = File.createTempFile(attachment.getId(), ".pdf");
             temp.deleteOnExit();
 
-            OutputStream out = new FileOutputStream(temp);
-            IOUtils.copy(in, out);
-            out.close();
+            try (OutputStream out = new FileOutputStream(temp)) {
+                IOUtils.copy(in, out);
+            }
 
             new MirthPDFViewer(true, temp);
 

@@ -15,6 +15,8 @@ import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
+import org.apache.commons.dbutils.DbUtils;
+
 public class DisabledConnectionPool implements ConnectionPool {
     private String url;
     private String username;
@@ -31,9 +33,14 @@ public class DisabledConnectionPool implements ConnectionPool {
     @Override
     public PooledConnection getConnection() throws SQLException {
         Connection connection = DriverManager.getConnection(url, username, password);
-        connection.setAutoCommit(false);
-        if (readOnly) {
-            connection.setReadOnly(true);
+        try {
+            connection.setAutoCommit(false);
+            if (readOnly) {
+                connection.setReadOnly(true);
+            }
+        } catch (Exception e) {
+            DbUtils.closeQuietly(connection);
+            throw e;
         }
         return new PooledConnection(connection, connection);
     }

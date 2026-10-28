@@ -11,6 +11,7 @@ package com.mirth.connect.server.controllers;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -394,8 +395,8 @@ public class DefaultDatabaseTaskController implements DatabaseTaskController {
 
     private void executeUpdate(String sql) throws SQLException {
         SqlSession session = SqlConfig.getInstance().getSqlSessionManager().openSession();
-        try {
-            session.getConnection().createStatement().executeUpdate(sql);
+        try (Statement statement = session.getConnection().createStatement()) {
+            statement.executeUpdate(sql);
         } finally {
             session.close();
         }

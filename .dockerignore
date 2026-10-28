@@ -41,6 +41,11 @@
 !**/gradle-wrapper.jar
 
 ##############################
+## install4j
+##############################
+**/*.install4j~
+
+##############################
 ## IntelliJ
 ##############################
 **/out
@@ -117,6 +122,9 @@ donkey/donkey-test
 exports
 MapUtilTestDB
 testconf
+
+ci/test-results
+ci/coverage
 
 client/logs
 client/classes

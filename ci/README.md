@@ -140,3 +140,17 @@ started yourself logged a generated password on its first boot:
 
 JUnit XML results are written to `ci/test-results/<configuration>/` when using
 `ci/runtests.sh`.
+
+## Coverage
+
+CI merges the unit-test and smoke-test coverage into one JaCoCo report (the
+`Coverage Report` artifact). To record smoke-test coverage locally, build with
+coverage and point `JACOCO_AGENT` at the staged agent:
+
+```sh
+./gradlew build stageCoverage -Pcoverage=true
+JACOCO_AGENT=build/coverage/jacocoagent.jar ci/runtests.sh alpine-temurin21-derby
+```
+
+Each configuration writes `ci/coverage/<configuration>.exec` when its server stops.
+In CI, `ci/coverage-report.sh` then merges them with the unit-test data.

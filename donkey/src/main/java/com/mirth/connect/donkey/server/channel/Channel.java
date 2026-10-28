@@ -1728,26 +1728,23 @@ public class Channel implements Runnable {
             }
 
             // store the raw, transformed and encoded content
-            boolean insertedContent = false;
+            List<MessageContent> contentToInsert = new ArrayList<MessageContent>();
             ThreadUtils.checkInterruptedStatus();
 
             if (storageSettings.isStoreProcessedRaw() && sourceMessage.getProcessedRaw() != null) {
-                dao.batchInsertMessageContent(sourceMessage.getProcessedRaw());
-                insertedContent = true;
+                contentToInsert.add(sourceMessage.getProcessedRaw());
             }
 
             if (storageSettings.isStoreTransformed() && sourceMessage.getTransformed() != null) {
-                dao.batchInsertMessageContent(sourceMessage.getTransformed());
-                insertedContent = true;
+                contentToInsert.add(sourceMessage.getTransformed());
             }
 
             if (storageSettings.isStoreSourceEncoded() && sourceMessage.getEncoded() != null) {
-                dao.batchInsertMessageContent(sourceMessage.getEncoded());
-                insertedContent = true;
+                contentToInsert.add(sourceMessage.getEncoded());
             }
 
-            if (insertedContent) {
-                dao.executeBatchInsertMessageContent(channelId);
+            if (!contentToInsert.isEmpty()) {
+                dao.insertMessageContentBatch(contentToInsert);
             }
 
             // create a message for each destination chain

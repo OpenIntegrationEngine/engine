@@ -33,7 +33,6 @@ import java.util.Set;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,7 +64,6 @@ public class JdbcDao implements DonkeyDao {
     private Donkey donkey;
     private Connection connection;
     private QuerySource querySource;
-    private PreparedStatementSource statementSource;
     private SerializerProvider serializerProvider;
     private boolean encryptMessageContent;
     private boolean encryptAttachments;
@@ -87,11 +85,10 @@ public class JdbcDao implements DonkeyDao {
     private char quoteChar = '"';
     private Logger logger = LogManager.getLogger(this.getClass());
 
-    protected JdbcDao(Donkey donkey, Connection connection, QuerySource querySource, PreparedStatementSource statementSource, SerializerProvider serializerProvider, boolean encryptMessageContent, boolean encryptAttachments, boolean encryptCustomMetaData, boolean decryptData, StatisticsUpdater statisticsUpdater, Statistics currentStats, Statistics totalStats, String statsServerId) {
+    protected JdbcDao(Donkey donkey, Connection connection, QuerySource querySource, SerializerProvider serializerProvider, boolean encryptMessageContent, boolean encryptAttachments, boolean encryptCustomMetaData, boolean decryptData, StatisticsUpdater statisticsUpdater, Statistics currentStats, Statistics totalStats, String statsServerId) {
         this.donkey = donkey;
         this.connection = connection;
         this.querySource = querySource;
-        this.statementSource = statementSource;
         this.serializerProvider = serializerProvider;
         this.encryptMessageContent = encryptMessageContent;
         this.encryptAttachments = encryptAttachments;
@@ -208,83 +205,43 @@ public class JdbcDao implements DonkeyDao {
         insertContent(messageContent.getChannelId(), messageContent.getMessageId(), messageContent.getMetaDataId(), messageContent.getContentType(), messageContent.getContent(), messageContent.getDataType(), messageContent.isEncrypted());
     }
 
-    /*
-     * The statement is deliberately left open here. It is the cached statement that holds the
-     * accumulated batch, so closing it would discard every addBatch() made so far;
-     * executeBatchInsertMessageContent() runs the batch and closes the statement if the
-     * subclass needs that.
-     */
     @Override
-    public void batchInsertMessageContent(MessageContent messageContent) {
-        logger.debug(messageContent.getChannelId() + "/" + messageContent.getMessageId() + "/" + messageContent.getMetaDataId() + ": batch inserting message content (" + messageContent.getContentType().toString() + ")");
+    public void insertMessageContentBatch(List<MessageContent> messageContents) {
+        if (messageContents.isEmpty()) {
+            return;
+        }
 
-        PreparedStatement statement = null;
-        try {
-            String content;
-            boolean encrypted;
+        String channelId = messageContents.get(0).getChannelId();
+        logger.debug(channelId + ": batch inserting message content");
 
-            // Only encrypt if the content is not already encrypted
-            if (encryptMessageContent && encryptor != null && !messageContent.isEncrypted()) {
-                content = encryptor.encrypt(messageContent.getContent());
-                encrypted = true;
-            } else {
-                content = messageContent.getContent();
-                encrypted = messageContent.isEncrypted();
+        try (PreparedStatement statement = prepareStatement("insertMessageContent", channelId)) {
+            for (MessageContent messageContent : messageContents) {
+                String content;
+                boolean encrypted;
+
+                // Only encrypt if the content is not already encrypted
+                if (encryptMessageContent && encryptor != null && !messageContent.isEncrypted()) {
+                    content = encryptor.encrypt(messageContent.getContent());
+                    encrypted = true;
+                } else {
+                    content = messageContent.getContent();
+                    encrypted = messageContent.isEncrypted();
+                }
+
+                statement.setInt(1, messageContent.getMetaDataId());
+                statement.setLong(2, messageContent.getMessageId());
+                statement.setInt(3, messageContent.getContentType().getContentTypeCode());
+                statement.setString(4, content);
+                statement.setString(5, messageContent.getDataType());
+                statement.setBoolean(6, encrypted);
+
+                statement.addBatch();
+                statement.clearParameters();
             }
 
-            statement = prepareStatement("batchInsertMessageContent", messageContent.getChannelId());
-            statement.setInt(1, messageContent.getMetaDataId());
-            statement.setLong(2, messageContent.getMessageId());
-            statement.setInt(3, messageContent.getContentType().getContentTypeCode());
-            statement.setString(4, content);
-            statement.setString(5, messageContent.getDataType());
-            statement.setBoolean(6, encrypted);
-
-            statement.addBatch();
-            statement.clearParameters();
-        } catch (SQLException e) {
-            // The batch will never be executed now, so do not leave it for the next message.
-            clearBatchQuietly(statement);
-            closeDatabaseObjectIfNeeded(statement);
-            throw new DonkeyDaoException(e);
-        }
-    }
-
-    @Override
-    public void executeBatchInsertMessageContent(String channelId) {
-        logger.debug(channelId + ": executing batch message content insert");
-
-        PreparedStatement statement = null;
-        try {
-            /*
-             * MIRTH-3597 Batch statements need to have their own prepared statement object due to a
-             * bug? in the Oracle 12 JDBC driver. Therefore we need to have both
-             * insertMessageContent and insertMessageContentBatch even though they are the same
-             * query. We should also call clearBatch() after each batch execution to verify that all
-             * internal buffers are cleared.
-             */
-            statement = prepareStatement("batchInsertMessageContent", channelId);
             statement.executeBatch();
         } catch (SQLException e) {
             throw new DonkeyDaoException(e);
-        } finally {
-            clearBatchQuietly(statement);
-            closeDatabaseObjectIfNeeded(statement);
-        }
-    }
-
-    /**
-     * Empties a cached statement's batch without letting the cleanup itself fail. The statement
-     * outlives the DAO in the prepared statement cache, so anything left on its batch would be
-     * executed along with the next message's rows.
-     */
-    private void clearBatchQuietly(Statement statement) {
-        if (statement != null) {
-            try {
-                statement.clearBatch();
-            } catch (SQLException e) {
-                logger.debug("Failed to clear batch", e);
-            }
         }
     }
 
@@ -2526,20 +2483,6 @@ public class JdbcDao implements DonkeyDao {
         }
     }
 
-    /*
-     * Closes Statement or ResultSet, if needed
-     */
-    protected void closeDatabaseObjectIfNeeded(AutoCloseable dbObject) {
-        // no op
-    }
-
-    /*
-     * Closes any Statements or ResultSets, if needed
-     */
-    protected void closeDatabaseObjectsIfNeeded(List<AutoCloseable> dbObjects) {
-        // no op
-    }
-
     @Override
     public boolean initTableStructure() {
         if (!tableExists("d_channels")) {
@@ -3082,7 +3025,9 @@ public class JdbcDao implements DonkeyDao {
     }
 
     /**
-     * Returns a prepared statement from the statementSource for the given channelId.
+     * Prepares the query with the given id for the given channelId, or returns null if the
+     * current database does not define that query. The caller owns the statement and is
+     * responsible for closing it.
      */
     PreparedStatement prepareStatement(String queryId, String channelId) throws SQLException {
         Long localChannelId = null;
@@ -3091,23 +3036,17 @@ public class JdbcDao implements DonkeyDao {
             localChannelId = getLocalChannelId(channelId);
         }
 
-        return statementSource.getPreparedStatement(queryId, localChannelId);
-    }
+        String query;
 
-    protected void close(Statement statement) {
-        try {
-            DbUtils.close(statement);
-        } catch (SQLException e) {
-            logger.error("Failed to close JDBC statement", e);
+        if (localChannelId == null) {
+            query = querySource.getQuery(queryId);
+        } else {
+            Map<String, Object> values = new HashMap<String, Object>();
+            values.put("localChannelId", localChannelId);
+            query = querySource.getQuery(queryId, values);
         }
-    }
 
-    protected void close(ResultSet resultSet) {
-        try {
-            DbUtils.close(resultSet);
-        } catch (SQLException e) {
-            logger.error("Failed to close JDBC result set", e);
-        }
+        return (query == null) ? null : connection.prepareStatement(query);
     }
 
     private static String sqlTypeToString(int sqlType) {

@@ -29,9 +29,7 @@ public interface DonkeyDao {
 
     public void insertMessageContent(MessageContent messageContent);
 
-    public void batchInsertMessageContent(MessageContent messageContent);
-
-    public void executeBatchInsertMessageContent(String channelId);
+    public void insertMessageContentBatch(List<MessageContent> messageContents);
 
     public void insertMessageAttachment(String channelId, long messageId, Attachment attachment);
 

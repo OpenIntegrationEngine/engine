@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -93,10 +92,6 @@ public class DonkeyDaoTests {
     @AfterClass
     final public static void afterClass() throws StartException {
         Donkey.getInstance().stopEngine();
-    }
-
-    @Before
-    final public void before() {
     }
 
     /*

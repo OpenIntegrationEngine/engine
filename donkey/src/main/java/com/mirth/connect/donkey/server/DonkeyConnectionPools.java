@@ -114,7 +114,8 @@ public class DonkeyConnectionPools {
     private void warnIfPoolConfigured(Properties dbProperties) {
         for (String property : new String[] { DatabaseConstants.DATABASE_POOL,
                 DatabaseConstants.DATABASE_READONLY_POOL }) {
-            if (StringUtils.isNotBlank(dbProperties.getProperty(property))) {
+            // Only DBCP was defined.  Anything but DBCP was taken to be Hikari.
+            if (StringUtils.equalsIgnoreCase(dbProperties.getProperty(property), "DBCP")) {
                 logger.warn("The {} setting is no longer supported and will be ignored; HikariCP is always used.", property);
             }
         }

@@ -208,6 +208,10 @@ public class JdbcDao implements DonkeyDao {
 
         try (PreparedStatement statement = prepareStatement("insertMessageContent", channelId)) {
             for (MessageContent messageContent : messageContents) {
+                if (!channelId.equals(messageContent.getChannelId())) {
+                    throw new DonkeyDaoException("Cannot batch insert content for channel " + messageContent.getChannelId() + " along with content for channel " + channelId);
+                }
+
                 String content;
                 boolean encrypted;
 
@@ -1265,8 +1269,8 @@ public class JdbcDao implements DonkeyDao {
 
     @Override
     public long getMaxMessageId(String channelId) {
-        try (PreparedStatement statement = prepareStatement("getMaxMessageId", channelId)) {
-            ResultSet resultSet = statement.executeQuery();
+        try (PreparedStatement statement = prepareStatement("getMaxMessageId", channelId);
+                ResultSet resultSet = statement.executeQuery()) {
             return (resultSet.next()) ? resultSet.getLong(1) : null;
         } catch (SQLException e) {
             throw new DonkeyDaoException(e);
@@ -1275,8 +1279,8 @@ public class JdbcDao implements DonkeyDao {
 
     @Override
     public long getMinMessageId(String channelId) {
-        try (PreparedStatement statement = prepareStatement("getMinMessageId", channelId)) {
-            ResultSet resultSet = statement.executeQuery();
+        try (PreparedStatement statement = prepareStatement("getMinMessageId", channelId);
+                ResultSet resultSet = statement.executeQuery()) {
             return (resultSet.next()) ? resultSet.getLong(1) : null;
         } catch (SQLException e) {
             throw new DonkeyDaoException(e);
@@ -1768,15 +1772,16 @@ public class JdbcDao implements DonkeyDao {
     public Map<Integer, Status> getConnectorMessageStatuses(String channelId, long messageId, boolean checkProcessed) {
         try (PreparedStatement statement = prepareStatement(checkProcessed ? "getConnectorMessageStatusesCheckProcessed" : "getConnectorMessageStatuses", channelId)) {
             statement.setLong(1, messageId);
-            ResultSet resultSet = statement.executeQuery();
 
-            Map<Integer, Status> statusMap = new HashMap<Integer, Status>();
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Integer, Status> statusMap = new HashMap<Integer, Status>();
 
-            while (resultSet.next()) {
-                statusMap.put(resultSet.getInt(1), Status.fromChar(resultSet.getString(2).charAt(0)));
+                while (resultSet.next()) {
+                    statusMap.put(resultSet.getInt(1), Status.fromChar(resultSet.getString(2).charAt(0)));
+                }
+
+                return statusMap;
             }
-
-            return statusMap;
         } catch (SQLException e) {
             throw new DonkeyDaoException(e);
         }
@@ -1813,9 +1818,11 @@ public class JdbcDao implements DonkeyDao {
             if (serverId != null) {
                 statement.setString(3, serverId);
             }
-            ResultSet resultSet = statement.executeQuery();
-            resultSet.next();
-            return resultSet.getLong(1);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getLong(1);
+            }
         } catch (SQLException e) {
             throw new DonkeyDaoException(e);
         }
@@ -2432,24 +2439,24 @@ public class JdbcDao implements DonkeyDao {
         try (PreparedStatement statement = prepareStatement("getDestinationMessageContentFromSource", channelId)) {
             statement.setLong(1, messageId);
 
-            ResultSet resultSet = statement.executeQuery();
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    String content = resultSet.getString("content");
+                    ContentType contentType = ContentType.fromCode(resultSet.getInt("content_type"));
+                    String dataType = resultSet.getString("data_type");
+                    boolean encrypted = resultSet.getBoolean("is_encrypted");
 
-            while (resultSet.next()) {
-                String content = resultSet.getString("content");
-                ContentType contentType = ContentType.fromCode(resultSet.getInt("content_type"));
-                String dataType = resultSet.getString("data_type");
-                boolean encrypted = resultSet.getBoolean("is_encrypted");
+                    if ((decryptData || alwaysDecrypt.contains(contentType)) && encrypted && encryptor != null) {
+                        content = encryptor.decrypt(content);
+                        encrypted = false;
+                    }
 
-                if ((decryptData || alwaysDecrypt.contains(contentType)) && encrypted && encryptor != null) {
-                    content = encryptor.decrypt(content);
-                    encrypted = false;
+                    if (contentType == ContentType.ENCODED) {
+                        contentType = ContentType.RAW;
+                    }
+
+                    messageContents.add(new MessageContent(channelId, messageId, metaDataId, contentType, content, dataType, encrypted));
                 }
-
-                if (contentType == ContentType.ENCODED) {
-                    contentType = ContentType.RAW;
-                }
-
-                messageContents.add(new MessageContent(channelId, messageId, metaDataId, contentType, content, dataType, encrypted));
             }
         } catch (SQLException e) {
             throw new DonkeyDaoException(e);

@@ -17,7 +17,6 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

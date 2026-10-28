@@ -23,10 +23,14 @@ tar xzf "$artifacts/openintegrationengine.tar.gz" -C "$tmp"
 dist="$tmp/openintegrationengine"
 
 shopt -s nullglob
-java -jar "$cli" merge \
-    "$artifacts"/coverage-unit/unit/*.exec \
-    "$artifacts"/coverage-smoke-*/*.exec \
-    --destfile "$output/merged.exec"
+unit=("$artifacts"/coverage-unit/unit/*.exec)
+smoke=("$artifacts"/coverage-smoke-*/*.exec)
+echo "Merging ${#unit[@]} unit-test and ${#smoke[@]} smoke-test data files"
+if [[ ${#unit[@]} -eq 0 || ${#smoke[@]} -eq 0 ]]; then
+    echo "Missing unit-test or smoke-test coverage data" >&2
+    exit 1
+fi
+java -jar "$cli" merge "${unit[@]}" "${smoke[@]}" --destfile "$output/merged.exec"
 
 # Only our own jars: third-party jars would add their classes to the report,
 # and some of them hold originals of classes we patch in mirth-server.jar.
@@ -39,6 +43,10 @@ for jar in "$dist"/mirth-*-launcher.jar \
     "$dist"/extensions/*/*.jar; do
     classfiles+=(--classfiles "$jar")
 done
+if [[ ${#classfiles[@]} -eq 0 ]]; then
+    echo "No jars found in the distribution" >&2
+    exit 1
+fi
 
 sourcefiles=()
 for dir in donkey server client command; do

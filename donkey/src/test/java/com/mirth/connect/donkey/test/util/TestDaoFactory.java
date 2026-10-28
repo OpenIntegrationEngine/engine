@@ -11,21 +11,12 @@ package com.mirth.connect.donkey.test.util;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.mirth.connect.donkey.server.Donkey;
 import com.mirth.connect.donkey.server.controllers.ChannelController;
 import com.mirth.connect.donkey.server.data.DonkeyDaoException;
-import com.mirth.connect.donkey.server.data.jdbc.CachedPreparedStatementSource;
-import com.mirth.connect.donkey.server.data.jdbc.ConnectionPool;
 import com.mirth.connect.donkey.server.data.jdbc.JdbcDao;
 import com.mirth.connect.donkey.server.data.jdbc.JdbcDaoFactory;
-import com.mirth.connect.donkey.server.data.jdbc.PooledConnection;
-import com.mirth.connect.donkey.server.data.jdbc.PreparedStatementSource;
 import com.mirth.connect.donkey.util.Serializer;
 import com.mirth.connect.donkey.util.SerializerProvider;
 import com.mirth.connect.donkey.util.xstream.XStreamSerializer;
@@ -33,8 +24,6 @@ import com.mirth.connect.donkey.util.xstream.XStreamSerializer;
 public class TestDaoFactory extends JdbcDaoFactory {
     private Donkey donkey;
     private ChannelController channelController;
-    private Logger logger = LogManager.getLogger(getClass());
-    private Map<Connection, PreparedStatementSource> statementSources = new ConcurrentHashMap<Connection, PreparedStatementSource>();
     private SerializerProvider serializerProvider;
     private int errorPct = 0;
     private int hangPct = 0;
@@ -77,42 +66,14 @@ public class TestDaoFactory extends JdbcDaoFactory {
 
     @Override
     public JdbcDao getDao() {
-        ConnectionPool connectionPool = getConnectionPool();
-        PooledConnection pooledConnection;
+        Connection connection;
 
         try {
-            pooledConnection = connectionPool.getConnection();
+            connection = getConnectionPool().getConnection();
         } catch (SQLException e) {
             throw new DonkeyDaoException(e);
         }
 
-        PreparedStatementSource statementSource = null;
-        Connection connection = pooledConnection.getConnection();
-        Connection internalConnection = pooledConnection.getInternalConnection();
-        statementSource = statementSources.get(internalConnection);
-
-        if (statementSource == null) {
-            statementSource = new CachedPreparedStatementSource(internalConnection, getQuerySource());
-            statementSources.put(internalConnection, statementSource);
-
-            Integer maxConnections = connectionPool.getMaxConnections();
-
-            // TODO: find a more efficient way of cleaning up old connections
-            if (maxConnections == null || statementSources.size() > maxConnections) {
-                logger.debug("cleaning up prepared statement cache");
-
-                try {
-                    for (Connection currentConnection : statementSources.keySet()) {
-                        if (currentConnection.isClosed()) {
-                            statementSources.remove(currentConnection);
-                        }
-                    }
-                } catch (SQLException e) {
-                    throw new DonkeyDaoException(e);
-                }
-            }
-        }
-
-        return new TestDao(donkey, connection, getQuerySource(), statementSource, serializerProvider, channelController.getStatistics(), channelController.getTotalStatistics(), getStatsServerId(), errorPct, hangPct, hangMillis);
+        return new TestDao(donkey, connection, getQuerySource(), serializerProvider, channelController.getStatistics(), channelController.getTotalStatistics(), getStatsServerId(), errorPct, hangPct, hangMillis);
     }
 }

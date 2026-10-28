@@ -53,11 +53,9 @@ import com.mirth.connect.donkey.server.data.DonkeyDao;
 import com.mirth.connect.donkey.server.data.DonkeyDaoFactory;
 import com.mirth.connect.donkey.server.data.buffered.BufferedDaoFactory;
 import com.mirth.connect.donkey.server.data.jdbc.JdbcDaoFactory;
-import com.mirth.connect.donkey.server.data.timed.TimedDaoFactory;
 import com.mirth.connect.donkey.test.util.TestChannel;
 import com.mirth.connect.donkey.test.util.TestSourceConnector;
 import com.mirth.connect.donkey.test.util.TestUtils;
-import com.mirth.connect.donkey.util.ActionTimer;
 import com.mirth.connect.donkey.util.Serializer;
 import com.mirth.connect.donkey.util.SerializerProvider;
 import com.mirth.connect.donkey.util.xstream.XStreamSerializer;
@@ -69,7 +67,6 @@ public class DonkeyDaoTests {
     private static String serverId = TestUtils.DEFAULT_SERVER_ID;
     private static String testMessage = TestUtils.TEST_HL7_MESSAGE;
     private static DonkeyDaoFactory daoFactory;
-    private static ActionTimer daoTimer = new ActionTimer();
 
     private Logger logger = LogManager.getLogger(this.getClass());
 
@@ -82,7 +79,7 @@ public class DonkeyDaoTests {
             ((JdbcDaoFactory) donkey.getDaoFactory()).setStatsServerId(serverId);
         }
 
-        daoFactory = new BufferedDaoFactory(new TimedDaoFactory(donkey.getDaoFactory(), daoTimer), new SerializerProvider() {
+        daoFactory = new BufferedDaoFactory(donkey.getDaoFactory(), new SerializerProvider() {
             @Override
             public Serializer getSerializer(Integer metaDataId) {
                 return new XStreamSerializer();
@@ -100,7 +97,6 @@ public class DonkeyDaoTests {
 
     @Before
     final public void before() {
-        daoTimer.reset();
     }
 
     /*
@@ -161,7 +157,6 @@ public class DonkeyDaoTests {
             }
         }
 
-        System.out.println(daoTimer.getLog());
     }
 
     /*
@@ -198,13 +193,9 @@ public class DonkeyDaoTests {
             connectorMessage.setResponseMap(responseMap);
             connectorMessage.setProcessingError("errors");
 
-            double averageTime = 0;
-
             logger.info("Testing DonkeyDao.insertConnectorMessage...");
 
             long localChannelId = ChannelController.getInstance().getLocalChannelId(channelId);
-
-            daoTimer.reset();
 
             for (int i = 1; i <= TEST_SIZE; i++) {
                 logger.debug("testInsertConnectorMessage #" + i);
@@ -259,8 +250,7 @@ public class DonkeyDaoTests {
                 connection.close();
             }
 
-            averageTime = daoTimer.getTotalTime() / TEST_SIZE;
-            logger.info("Success, average transaction time: " + averageTime + " ms");
+            logger.info("Success");
         } finally {
             TestUtils.close(result);
             TestUtils.close(statement);
@@ -316,7 +306,6 @@ public class DonkeyDaoTests {
                 }
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             dao.close();
         }
@@ -348,7 +337,6 @@ public class DonkeyDaoTests {
                 TestUtils.assertAttachmentExists(channel.getChannelId(), sourceMessage.getMessageId(), attachment);
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             dao.close();
         }
@@ -415,7 +403,6 @@ public class DonkeyDaoTests {
                 TestUtils.compareMetaDataMaps(channel.getMetaDataColumns(), destinationMap, TestUtils.getCustomMetaData(channel.getChannelId(), sourceMessage.getMessageId(), 1));
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             dao.close();
             channel.undeploy();
@@ -450,7 +437,6 @@ public class DonkeyDaoTests {
                 }
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             dao.close();
         }
@@ -524,7 +510,6 @@ public class DonkeyDaoTests {
                 connection.close();
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             TestUtils.close(result);
             TestUtils.close(statement);
@@ -624,7 +609,6 @@ public class DonkeyDaoTests {
                 }
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             TestUtils.close(connection);
         }
@@ -661,7 +645,6 @@ public class DonkeyDaoTests {
                 assertTrue(responseMap.equals(insertedResponseMap));
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             dao.close();
         }
@@ -696,7 +679,6 @@ public class DonkeyDaoTests {
                 assertTrue(TestUtils.isMessageProcessed(channel.getChannelId(), sourceMessage.getMessageId()));
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             dao.close();
         }
@@ -870,7 +852,6 @@ public class DonkeyDaoTests {
                 }
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             channel.stop();
             channel.undeploy();
@@ -951,7 +932,6 @@ public class DonkeyDaoTests {
             result.close();
             statement.close();
 
-            System.out.println(daoTimer.getLog());
         } finally {
             TestUtils.close(result);
             TestUtils.close(statement);
@@ -1020,7 +1000,6 @@ public class DonkeyDaoTests {
             }
         }
 
-        System.out.println(daoTimer.getLog());
     }
 
     /*
@@ -1124,7 +1103,6 @@ public class DonkeyDaoTests {
             assertFalse(messageStatisticsTableExists);
         }
 
-        System.out.println(daoTimer.getLog());
     }
 
     /*
@@ -1164,7 +1142,6 @@ public class DonkeyDaoTests {
                 assertEquals(metaDataColumns, TestUtils.getExistingMetaDataColumns(channel.getChannelId()));
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             channel.undeploy();
         }
@@ -1217,7 +1194,6 @@ public class DonkeyDaoTests {
                 assertFalse(databaseMetaDataColumns.contains(metaDataColumn));
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             channel.undeploy();
         }
@@ -1295,7 +1271,6 @@ public class DonkeyDaoTests {
                 }
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             for (String channelId : localChannelIds.keySet()) {
                 ChannelController.getInstance().removeChannel(channelId);
@@ -1380,7 +1355,6 @@ public class DonkeyDaoTests {
                 TestUtils.close(dao);
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             Connection connection = null;
             PreparedStatement statement = null;
@@ -1474,7 +1448,6 @@ public class DonkeyDaoTests {
                 }
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             channel.stop();
             channel.undeploy();
@@ -1649,7 +1622,6 @@ public class DonkeyDaoTests {
             }
 
             ChannelController.getInstance().deleteAllMessages(channel.getChannelId());
-            System.out.println(daoTimer.getLog());
         } finally {
             channel.stop();
             channel.undeploy();
@@ -1701,7 +1673,6 @@ public class DonkeyDaoTests {
                 }
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             channel.stop();
             channel.undeploy();
@@ -1754,7 +1725,6 @@ public class DonkeyDaoTests {
                 TestUtils.assertMessagesEqual(messages.get(i), databaseMessages.get(i));
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             channel.stop();
             channel.undeploy();
@@ -1797,7 +1767,6 @@ public class DonkeyDaoTests {
                 assertTrue(column.getName(), metaDataColumns.contains(column));
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             channel.undeploy();
         }
@@ -1841,41 +1810,10 @@ public class DonkeyDaoTests {
                 assertEquals(TestUtils.getChannelStatistics(channel.getChannelId()), ChannelController.getInstance().getStatistics().getChannelStats(channel.getChannelId()));
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             channel.stop();
             channel.undeploy();
         }
-    }
-
-    /**
-     * Sends messages through 5 channels with (maxConnections * 2) asynchronous destinations for 10
-     * seconds and verifies that the number of connection caches created is not greater than the
-     * maximum number of connections in the connection pool
-     * 
-     * @throws Exception
-     */
-    @Test
-    public final void testJdbcDaoStatementCache() throws Exception {
-        DonkeyDaoFactory daoFactory = ((TimedDaoFactory) ((BufferedDaoFactory) Donkey.getInstance().getDaoFactory()).getDelegateFactory()).getDelegateFactory();
-
-        if (!(daoFactory instanceof JdbcDaoFactory)) {
-            System.out.println("Skipping testJdbcDaoStatementCache() because the current DonkeyDaoFactory is not an instance of JdbcDaoFactory");
-            return;
-        }
-
-        if (Donkey.getInstance().getConfiguration().getDonkeyProperties().get("database").equals("derby")) {
-            System.out.println("Skipping testJdbcDaoStatementCache(), not applicable for Derby");
-            return;
-        }
-
-        Integer maxConnections = Integer.parseInt(Donkey.getInstance().getConfiguration().getDonkeyProperties().getProperty("database.max-connections"));
-
-        JdbcDaoFactory jdbcDaoFactory = (JdbcDaoFactory) daoFactory;
-
-        TestUtils.runChannelTest(testMessage, channelId, serverId, "testJdbcDaoStatementCache", 5, maxConnections * 2, 1, true, null, 10000, null, new StorageSettings());
-
-        assertTrue(jdbcDaoFactory.getStatementSources().size() + " connection caches were created, but the max # of connections is " + maxConnections, jdbcDaoFactory.getStatementSources().size() <= maxConnections);
     }
 
 //    @Test

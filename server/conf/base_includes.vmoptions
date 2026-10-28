@@ -4,6 +4,7 @@
 #
 -server
 -Xmx256m
+-Dderby.language.statementCacheSize=1000
 -Djava.awt.headless=true
 -Dapple.awt.UIElement=true
 -Djavax.xml.accessExternalDTD=

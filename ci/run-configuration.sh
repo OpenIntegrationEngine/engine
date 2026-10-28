@@ -23,9 +23,21 @@ export HOST_UID="$(id -u)"
 export HOST_GID="$(id -g)"
 mkdir -p "$WORKSPACE/ci/test-results"
 
-compose=(docker compose -f "$1" -f ci/harness.compose.yml -p "oie-ci-${OIE_CONFIGURATION//[^a-z0-9-]/-}-$$")
+compose=(docker compose -f "$1" -f ci/harness.compose.yml)
+if [[ -n "${JACOCO_AGENT:-}" ]]; then
+    export JACOCO_AGENT="$(realpath "$JACOCO_AGENT")"
+    mkdir -p "$WORKSPACE/ci/coverage"
+    # The server runs as its own user, whose UID differs between the images.
+    chmod 777 "$WORKSPACE/ci/coverage"
+    compose+=(-f ci/coverage.compose.yml)
+fi
+compose+=(-p "oie-ci-${OIE_CONFIGURATION//[^a-z0-9-]/-}-$$")
 
 cleanup() {
+    if [[ -n "${JACOCO_AGENT:-}" ]]; then
+        # Give the server time to shut down cleanly so JaCoCo writes its data file.
+        "${compose[@]}" stop -t 120 oie || true
+    fi
     "${compose[@]}" down -v --remove-orphans || true
 }
 trap cleanup EXIT

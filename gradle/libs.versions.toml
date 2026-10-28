@@ -23,6 +23,7 @@ httpclient = "4.5.13"
 itext = "2.1.7"
 # do not bump past 2.15.x before reading the note on jackson-core
 jackson = "2.14.3"
+jacoco = "0.8.14"
 jasper = "8.5.70"
 jaxb-ri = "2.4.0-b180725.0644"
 jaxws-ri = "2.3.0.2"
@@ -142,6 +143,8 @@ jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", ver
 jackson-dataformat-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref = "jackson" }
 jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson" }
 jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
+jacoco-agent = { module = "org.jacoco:org.jacoco.agent", version.ref = "jacoco" }
+jacoco-cli = { module = "org.jacoco:org.jacoco.cli", version.ref = "jacoco" }
 jakarta-activation = { module = "com.sun.activation:jakarta.activation", version = "1.2.1" }
 jakarta-mail = { module = "com.sun.mail:jakarta.mail", version = "1.6.8" }
 jasper-apache-el = { module = "org.mortbay.jasper:apache-el", version.ref = "jasper" }

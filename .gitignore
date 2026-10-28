@@ -122,6 +122,7 @@ donkey/donkey-test
 
 # /ci
 /ci/test-results/
+/ci/coverage/
 
 # /client/
 /client/logs

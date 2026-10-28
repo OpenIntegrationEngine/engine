@@ -29,6 +29,8 @@ if [[ -n "${JACOCO_AGENT:-}" ]]; then
     mkdir -p "$WORKSPACE/ci/coverage"
     # The server runs as its own user, whose UID differs between the images.
     chmod 777 "$WORKSPACE/ci/coverage"
+    # The agent appends, so start from a clean file.
+    rm -f "$WORKSPACE/ci/coverage/$OIE_CONFIGURATION.exec"
     compose+=(-f ci/coverage.compose.yml)
 fi
 compose+=(-p "oie-ci-${OIE_CONFIGURATION//[^a-z0-9-]/-}-$$")

@@ -149,7 +149,7 @@ jobs:
 
   coverage:
     needs: [build, integration-test]
-    if: (!cancelled()) && github.ref != 'refs/heads/main'
+    if: (!cancelled()) && needs.build.result == 'success' && github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:

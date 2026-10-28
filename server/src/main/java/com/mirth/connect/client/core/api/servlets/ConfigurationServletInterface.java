@@ -312,7 +312,11 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
     @MirthOperation(name = "setConfigurationProperty", display = "Set configuration map entry", permission = Permissions.CONFIGURATION_MAP_EDIT)
     public void setConfigurationProperty(
             @Param("key") @Parameter(description = "The key of the entry to set. It can't be blank, and a / in the key has to be encoded as %2F.", required = true) @PathParam("key") String key,
-            @Param("property") @RequestBody(description = "The value and comment to store under the key.", required = true) ConfigurationProperty property) throws ClientException;
+            @Param("property") @RequestBody(description = "The value and comment to store under the key.", required = true, content = {
+                    @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                            @ExampleObject(name = "configurationProperty", ref = "../apiexamples/configuration_property_xml") }),
+                    @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
+                            @ExampleObject(name = "configurationProperty", ref = "../apiexamples/configuration_property_json") }) }) ConfigurationProperty property) throws ClientException;
 
     @GET
     @Path("/databaseDrivers")

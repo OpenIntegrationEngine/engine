@@ -311,6 +311,24 @@ public class DefaultConfigurationControllerTest {
     }
 
     @Test
+    public void setConfigurationProperty_Exception_NullProperty() throws Exception {
+        AtomicReference<String> database = new AtomicReference<String>(INITIAL_CONFIGURATION_MAP_XML);
+        DefaultConfigurationController configurationController = databaseBackedConfigurationController(database);
+        Map<String, String> before = configurationController.getConfigurationMap();
+        String savedBefore = database.get();
+
+        try {
+            configurationController.setConfigurationProperty("B", null, null);
+            fail("Exception should have been thrown");
+        } catch (ControllerException e) {
+            // Expected
+        }
+
+        assertEquals(savedBefore, database.get());
+        assertEquals(before, configurationController.getConfigurationMap());
+    }
+
+    @Test
     public void setConfigurationProperty_ExpectedVersionMatches() throws Exception {
         AtomicReference<String> database = new AtomicReference<String>(INITIAL_CONFIGURATION_MAP_XML);
         DefaultConfigurationController configurationController = databaseBackedConfigurationController(database);
@@ -358,6 +376,44 @@ public class DefaultConfigurationControllerTest {
         assertEquals(expected, configurationController.getConfigurationMap());
     }
 
+    @Test
+    public void setConfigurationProperties_Exception_NullEntry() throws Exception {
+        assertInvalidEntryRejected("B", null);
+    }
+
+    @Test
+    public void setConfigurationProperties_Exception_NullKey() throws Exception {
+        assertInvalidEntryRejected(null, new ConfigurationProperty("2", "second"));
+    }
+
+    @Test
+    public void setConfigurationProperties_Exception_NonStringKey() throws Exception {
+        assertInvalidEntryRejected(5, new ConfigurationProperty("2", "second"));
+    }
+
+    @Test
+    public void setConfigurationProperties_Exception_NonConfigurationPropertyValue() throws Exception {
+        assertInvalidEntryRejected("B", "2");
+    }
+
+    @Test
+    public void setConfigurationProperties_Exception_NullMap() throws Exception {
+        AtomicReference<String> database = new AtomicReference<String>(INITIAL_CONFIGURATION_MAP_XML);
+        DefaultConfigurationController configurationController = databaseBackedConfigurationController(database);
+        Map<String, String> before = configurationController.getConfigurationMap();
+        String savedBefore = database.get();
+
+        try {
+            configurationController.setConfigurationProperties(null, true);
+            fail("Exception should have been thrown");
+        } catch (ControllerException e) {
+            // Expected
+        }
+
+        assertEquals(savedBefore, database.get());
+        assertEquals(before, configurationController.getConfigurationMap());
+    }
+
     private void assertConflict(String key, String expectedVersion) throws Exception {
         AtomicReference<String> database = new AtomicReference<String>(INITIAL_CONFIGURATION_MAP_XML);
         DefaultConfigurationController configurationController = databaseBackedConfigurationController(database);
@@ -365,6 +421,31 @@ public class DefaultConfigurationControllerTest {
         String savedBefore = database.get();
 
         assertFalse(configurationController.setConfigurationProperty(key, new ConfigurationProperty("2", "second"), expectedVersion));
+
+        assertEquals(savedBefore, database.get());
+        assertEquals(before, configurationController.getConfigurationMap());
+    }
+
+    /*
+     * Request bodies are deserialized without their generic types, so a map can hold entries that
+     * its declared type doesn't allow.
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void assertInvalidEntryRejected(Object key, Object value) throws Exception {
+        AtomicReference<String> database = new AtomicReference<String>(INITIAL_CONFIGURATION_MAP_XML);
+        DefaultConfigurationController configurationController = databaseBackedConfigurationController(database);
+        Map<String, String> before = configurationController.getConfigurationMap();
+        String savedBefore = database.get();
+
+        Map map = configurationController.getConfigurationProperties();
+        map.put(key, value);
+
+        try {
+            configurationController.setConfigurationProperties(map, true);
+            fail("Exception should have been thrown");
+        } catch (ControllerException e) {
+            // Expected
+        }
 
         assertEquals(savedBefore, database.get());
         assertEquals(before, configurationController.getConfigurationMap());

@@ -27,7 +27,7 @@ The following are distributed under the terms of the Apache License version 2.0
 	Google Code Prettify (https://github.com/google/code-prettify)
 	Guava 32.0.1 [incl. CLI] (https://github.com/google/guava)
 	Guice 4.1 (https://github.com/google/guice)
-	HikariCP 2.5.1
+	HikariCP 7.1.0
 	J2ObjC Annotations 1.3 (https://github.com/google/j2objc/)
 	Jackson Project [incl. CLI] (https://github.com/FasterXML/jackson)
 	Java Native Access (JNA) 4.5.2 (https://github.com/java-native-access/jna)

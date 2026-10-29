@@ -115,7 +115,7 @@ hamcrest = { module = "org.hamcrest:hamcrest", version = "2.2" }
 hapi-structures-v27 = { module = "ca.uhn.hapi:hapi-structures-v27", version.ref = "hapi" }
 hapi-structures-v28 = { module = "ca.uhn.hapi:hapi-structures-v28", version.ref = "hapi" }
 hapi-structures-v281 = { module = "ca.uhn.hapi:hapi-structures-v281", version.ref = "hapi" }
-hikaricp = { module = "com.zaxxer:HikariCP", version = "2.5.1" }
+hikaricp = { module = "com.zaxxer:HikariCP", version = "7.1.0" }
 hk2-aopalliance-repackaged = { module = "org.glassfish.hk2.external:aopalliance-repackaged", version.ref = "hk2" }
 hk2-api = { module = "org.glassfish.hk2:hk2-api", version.ref = "hk2" }
 hk2-javax-inject = { module = "org.glassfish.hk2.external:javax.inject", version.ref = "hk2" }

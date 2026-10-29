@@ -112,8 +112,7 @@ tasks.register('devClient', JavaExec) {
     workingDir = projectDir
     classpath = sourceSets.main.runtimeClasspath
     args 'https://localhost:8443', '0.0.0', 'admin', 'admin'
-    jvmArgs '-Dcom.sun.webkit.useHTTP2Loader=false',
-            '--add-modules=java.sql.rowset,javafx.controls,javafx.fxml',
+    jvmArgs '--add-modules=java.sql.rowset',
             '--add-exports=java.base/com.sun.crypto.provider=ALL-UNNAMED',
             '--add-exports=java.base/sun.security.provider=ALL-UNNAMED',
             '--add-opens=java.base/java.lang=ALL-UNNAMED',

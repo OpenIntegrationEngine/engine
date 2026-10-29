@@ -656,3 +656,4 @@ server-test = [
 
 [plugins]
 owasp-dependencycheck = { id = "org.owasp.dependencycheck", version = "12.2.2" }
+sonarqube = { id = "org.sonarqube", version = "7.5.0.8588" }

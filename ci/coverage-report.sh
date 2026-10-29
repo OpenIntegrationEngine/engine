@@ -1,30 +1,20 @@
 #!/usr/bin/env bash
-# Merges unit-test and smoke-test JaCoCo data into one report.
-#
-# <artifacts> holds what the CI build uploads: openintegrationengine.tar.gz
-# (the distribution the smoke tests ran), coverage-unit/ (unit-test data,
-# jacococli.jar) and coverage-smoke-*/ (one data file per configuration).
+# Merges unit-test and smoke-test JaCoCo data into build/coverage/report,
+# which `./gradlew sonar` picks up. Expects, from the same commit:
+#   ./gradlew build stageCoverage -Pcoverage=true    (server/setup, build/coverage)
+#   JACOCO_AGENT=build/coverage/jacocoagent.jar ci/runtests.sh <configuration>
+#                                                    (ci/coverage/*.exec)
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-    echo "Usage: $0 <artifacts> <output>" >&2
-    exit 2
-fi
-
-artifacts="$(realpath "$1")"
-mkdir -p "$2"
-output="$(realpath "$2")"
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
-cli="$artifacts/coverage-unit/jacococli.jar"
-
-tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
-tar xzf "$artifacts/openintegrationengine.tar.gz" -C "$tmp"
-dist="$tmp/openintegrationengine"
+cli=build/coverage/jacococli.jar
+dist=server/setup
+output=build/coverage/report
+mkdir -p "$output"
 
 shopt -s nullglob
-unit=("$artifacts"/coverage-unit/unit/*.exec)
-smoke=("$artifacts"/coverage-smoke-*/*.exec)
+unit=(build/coverage/unit/*.exec)
+smoke=(ci/coverage/*.exec)
 echo "Merging ${#unit[@]} unit-test and ${#smoke[@]} smoke-test data files"
 if [[ ${#unit[@]} -eq 0 || ${#smoke[@]} -eq 0 ]]; then
     echo "Missing unit-test or smoke-test coverage data" >&2

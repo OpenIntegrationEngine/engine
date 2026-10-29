@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1.19.0
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2026 Mitch Gaffigan
+
+###############################################################################
+# Rebases the already-assembled server image onto a different alpine JRE.
+###############################################################################
+ARG OIE_IMAGE=oie-ci-server:local-alpine-temurin25
+ARG JRE_IMAGE
+
+FROM ${OIE_IMAGE} AS source
+FROM ${JRE_IMAGE}
+
+# Mirrors the jre-run stage of the root Dockerfile; keep the two in step.
+RUN apk add --no-cache bash
+RUN addgroup -S engine \
+    && adduser -S -g engine engine \
+    && mkdir -p /opt/engine/appdata \
+    && chown -R engine:engine /opt/engine
+
+WORKDIR /opt/engine
+
+COPY --from=source --chown=engine:engine /opt/engine /opt/engine
+
+VOLUME /opt/engine/appdata
+VOLUME /opt/engine/custom-extensions
+
+EXPOSE 8443
+
+USER engine
+ENTRYPOINT ["./configure-from-env"]
+CMD ["./oieserver"]

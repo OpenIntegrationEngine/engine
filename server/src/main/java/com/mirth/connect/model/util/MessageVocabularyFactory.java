@@ -13,9 +13,13 @@ import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.mirth.connect.client.core.Client;
 
 public class MessageVocabularyFactory {
+    private static Logger logger = LogManager.getLogger(MessageVocabularyFactory.class);
     private static MessageVocabularyFactory instance = null;
     private Map<String, Class<? extends MessageVocabulary>> vocabs = new HashMap<String, Class<? extends MessageVocabulary>>();
 
@@ -60,7 +64,7 @@ public class MessageVocabularyFactory {
                 }
 
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Error creating message vocabulary for data type " + type, e);
                 return new DefaultVocabulary(version, type);
             }
         } else {

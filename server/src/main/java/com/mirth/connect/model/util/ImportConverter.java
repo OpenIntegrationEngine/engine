@@ -33,6 +33,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -47,6 +49,7 @@ import com.mirth.connect.util.CharsetUtils;
 import com.mirth.connect.util.MigrationUtil;
 
 public class ImportConverter {
+    private static Logger logger = LogManager.getLogger(ImportConverter.class);
     private static final String HL7V2 = "HL7V2";
     private static final String XML = "XML";
     private static Pattern matchVersion = Pattern.compile("<version>([\\.0-9]+?)<\\/version>");
@@ -1031,11 +1034,11 @@ public class ImportConverter {
             DocumentSerializer docSerializer = new DocumentSerializer();
             filterXml = docSerializer.toXML(document);
         } catch (ParserConfigurationException e) {
-            e.printStackTrace();
+            logger.error("Error converting filter", e);
         } catch (SAXException e) {
-            e.printStackTrace();
+            logger.error("Error converting filter", e);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error converting filter", e);
         }
         return updateLocalAndGlobalVariables(filterXml);
     }

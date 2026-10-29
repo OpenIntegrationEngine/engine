@@ -71,7 +71,7 @@ public class ScriptRunner {
         try {
             DatabaseUtil.executeScript(FileUtils.readFileToString(scriptFile), false);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error executing script " + scriptFile.getAbsolutePath(), e);
         }
     }
 }

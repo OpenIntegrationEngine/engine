@@ -17,6 +17,8 @@ import java.io.InputStream;
 
 import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.dcm4che2.data.BasicDicomObject;
 import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.TransferSyntax;
@@ -26,6 +28,7 @@ import org.dcm4che2.io.DicomOutputStream;
 import com.mirth.connect.donkey.util.ByteCounterOutputStream;
 
 public class DICOMConverter {
+    private static Logger logger = LogManager.getLogger(DICOMConverter.class);
 
     public static DicomObject byteArrayToDicomObject(byte[] bytes, boolean decodeBase64) throws IOException {
         DicomObject basicDicomObject = new BasicDicomObject();
@@ -107,7 +110,7 @@ public class DICOMConverter {
         } catch (IOException e) {
             throw e;
         } catch (Throwable t) {
-            t.printStackTrace();
+            logger.error("Error converting DICOM object to byte array", t);
             return null;
         } finally {
             IOUtils.closeQuietly(dos);

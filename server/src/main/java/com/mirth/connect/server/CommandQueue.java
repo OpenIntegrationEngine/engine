@@ -12,7 +12,11 @@ package com.mirth.connect.server;
 import java.util.Iterator;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class CommandQueue {
+    private static Logger logger = LogManager.getLogger(CommandQueue.class);
     private PriorityBlockingQueue<Command> commandQueue = new PriorityBlockingQueue<Command>();
 
     // singleton pattern
@@ -47,7 +51,7 @@ public class CommandQueue {
         try {
             return commandQueue.take();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error retrieving command from queue", e);
 
             return null;
         }

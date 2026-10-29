@@ -64,7 +64,7 @@ public class SystemServlet extends MirthServlet implements SystemServletInterfac
                 dao.close();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error retrieving system info", e);
             throw new ClientException(e);
         }
     }

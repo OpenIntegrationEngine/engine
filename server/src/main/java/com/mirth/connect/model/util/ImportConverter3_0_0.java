@@ -241,7 +241,7 @@ public class ImportConverter3_0_0 {
             try {
                 Class<?> migratorClass = Class.forName("com.mirth.connect.connectors.email.shared.EmailReceiverMigrate3_0_0");
                 Method migrateMethod = migratorClass.getMethod("migrate", DonkeyElement.class);
-                migrateMethod.invoke(migratorClass.newInstance(), properties);
+                migrateMethod.invoke(migratorClass.getDeclaredConstructor().newInstance(), properties);
             } catch (Exception e) {
                 throw new MigrationException("Failed to migrate " + connectorName + " properties", e);
             }

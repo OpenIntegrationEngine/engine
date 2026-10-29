@@ -27,7 +27,7 @@ public class OAuth2AuthenticatorProvider extends AuthenticatorProvider {
     public OAuth2AuthenticatorProvider(Connector connector, HttpAuthConnectorPluginProperties properties) {
         super(connector, properties);
         try {
-            configuration = (HttpConfiguration) Class.forName(configurationController.getProperty("HTTP", "httpConfigurationClass")).newInstance();
+            configuration = (HttpConfiguration) Class.forName(configurationController.getProperty("HTTP", "httpConfigurationClass")).getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             configuration = new DefaultHttpConfiguration();
         }

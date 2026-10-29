@@ -97,7 +97,7 @@ public class ExtensionLoader {
                         String conditionClass = controllerClassModel.getConditionClass();
                         if (StringUtils.isNotBlank(conditionClass)) {
                             try {
-                                accept = ((PluginClassCondition) Class.forName(conditionClass).newInstance()).accept(controllerClassModel);
+                                accept = ((PluginClassCondition) Class.forName(conditionClass).getDeclaredConstructor().newInstance()).accept(controllerClassModel);
                             } catch (Exception e) {
                                 logger.warn("Error instantiating plugin condition class \"" + conditionClass + "\".");
                             }
@@ -128,7 +128,7 @@ public class ExtensionLoader {
 
         if (overrideClass != null) {
             try {
-                T instance = overrideClass.newInstance();
+                T instance = overrideClass.getDeclaredConstructor().newInstance();
                 logger.debug("Using custom " + abstractClass.getSimpleName() + ": " + overrideClass.getName());
                 return instance;
             } catch (Exception e) {

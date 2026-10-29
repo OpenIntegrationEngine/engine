@@ -57,7 +57,7 @@ public class SmtpDispatcher extends DestinationConnector {
         String configurationClass = configurationController.getProperty(getConnectorProperties().getProtocol(), "smtpConfigurationClass");
 
         try {
-            configuration = (SmtpConfiguration) Class.forName(configurationClass).newInstance();
+            configuration = (SmtpConfiguration) Class.forName(configurationClass).getDeclaredConstructor().newInstance();
         } catch (Throwable t) {
             logger.trace("could not find custom configuration class, using default");
             configuration = new DefaultSmtpConfiguration();

@@ -17,7 +17,7 @@ public class AuthorizationControllerFactory {
 
             if (PlatformUI.MIRTH_FRAME.getPluginMetaData().containsKey("Role-Based Access Control")) {
                 try {
-                    authorizationController = (AuthorizationController) Class.forName("com.mirth.connect.plugins.auth.client.SecureAuthorizationController").newInstance();
+                    authorizationController = (AuthorizationController) Class.forName("com.mirth.connect.plugins.auth.client.SecureAuthorizationController").getDeclaredConstructor().newInstance();
                 } catch (Exception e) {
                     authorizationController = new DefaultAuthorizationController();
                 }

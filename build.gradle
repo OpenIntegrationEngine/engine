@@ -45,6 +45,25 @@ plugins {
     // vulnerability scanning: ./gradlew dependencyCheckAggregate
     // (replaces the old standalone dependency-check.xml Ant entry point)
     alias(libs.plugins.owasp.dependencycheck)
+    // static analysis: ./gradlew sonar -Dsonar.host.url=... -Dsonar.token=...
+    alias(libs.plugins.sonarqube)
+}
+
+sonar {
+    properties {
+        property 'sonar.projectKey', 'oie'
+        property 'sonar.projectName', 'Open Integration Engine'
+    }
+}
+
+allprojects {
+    sonar {
+        properties {
+            // unit and smoke-test coverage merged by ci/coverage-report.sh;
+            // set on every module, or JaCoCo's per-module default wins
+            property 'sonar.coverage.jacoco.xmlReportPaths', rootProject.file('build/coverage/report/coverage.xml').path
+        }
+    }
 }
 
 dependencyCheck {

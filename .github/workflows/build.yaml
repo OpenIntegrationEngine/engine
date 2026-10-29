@@ -167,11 +167,17 @@ jobs:
           pattern: coverage-*
           path: artifacts
 
+      # Lay the artifacts out as a local build would leave them.
       - name: Merge unit and smoke-test coverage
-        run: ci/coverage-report.sh artifacts coverage-report
+        run: |
+          mkdir -p server build ci/coverage
+          tar xzf artifacts/openintegrationengine.tar.gz -C server --transform 's|^openintegrationengine/|setup/|'
+          cp -r artifacts/coverage-unit build/coverage
+          cp artifacts/coverage-smoke-*/*.exec ci/coverage/
+          ci/coverage-report.sh
 
       - name: Upload coverage report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Coverage Report
-          path: coverage-report
+          path: build/coverage/report

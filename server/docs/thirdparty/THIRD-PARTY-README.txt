@@ -322,9 +322,9 @@ https://repo1.maven.org/maven2/org/swinglabs/pdf-renderer/1.0.5/pdf-renderer-1.0
 --------------------------------------------------------------------------------
 
 
-javaparser version 1.0.8 is covered by the LGPL version 3 or later (see
+javaparser-core version 3.28.2 is covered by the LGPL version 3 or later (see
 LGPL-3.0.txt). The library source code is available at
-https://repo1.maven.org/maven2/com/google/code/javaparser/javaparser/1.0.8/javaparser-1.0.8-sources.jar
+https://repo1.maven.org/maven2/com/github/javaparser/javaparser-core/3.28.2/javaparser-core-3.28.2-sources.jar
 
 
 --------------------------------------------------------------------------------

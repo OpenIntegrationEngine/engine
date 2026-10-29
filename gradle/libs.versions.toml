@@ -147,6 +147,7 @@ jakarta-mail = { module = "com.sun.mail:jakarta.mail", version = "1.6.8" }
 jasper-apache-el = { module = "org.mortbay.jasper:apache-el", version.ref = "jasper" }
 jasper-apache-jsp = { module = "org.mortbay.jasper:apache-jsp", version.ref = "jasper" }
 java-semver = { module = "com.github.zafarkhaja:java-semver", version = "0.10.2" }
+javaparser-core = { module = "com.github.javaparser:javaparser-core", version = "3.28.2" }
 javassist = { module = "org.javassist:javassist", version = "3.26.0-GA" }
 javax-activation-api = { module = "javax.activation:javax.activation-api", version = "1.2.0" }
 javax-annotation-api = { module = "javax.annotation:javax.annotation-api", version = "1.3.2" }
@@ -299,6 +300,7 @@ client-main = [
     "jakarta-activation",
     "jakarta-mail",
     "java-semver",
+    "javaparser-core",
     "javassist",
     "javax-activation-api",
     "javax-annotation-api",

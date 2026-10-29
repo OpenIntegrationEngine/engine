@@ -10,6 +10,7 @@
 package com.mirth.connect.server.controllers;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,12 +25,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.mirth.commons.encryption.Digester;
+import com.mirth.commons.encryption.EncryptionException;
 import com.mirth.connect.client.core.ControllerException;
 import com.mirth.connect.model.Credentials;
 import com.mirth.connect.model.LoginStatus;
 import com.mirth.connect.model.LoginStatus.Status;
 import com.mirth.connect.model.LoginStrike;
 import com.mirth.connect.model.PasswordRequirements;
+import com.mirth.connect.model.ServerEvent;
+import com.mirth.connect.model.ServerEvent.Level;
+import com.mirth.connect.model.ServerEvent.Outcome;
 import com.mirth.connect.model.User;
 import com.mirth.connect.server.ExtensionLoader;
 import com.mirth.connect.server.mybatis.KeyValuePair;
@@ -43,6 +48,12 @@ import com.mirth.connect.server.util.StatementLock;
 public class DefaultUserController extends UserController {
     public static final String VACUUM_LOCK_PERSON_STATEMENT_ID = "User.vacuumPersonTable";
     public static final String VACUUM_LOCK_PREFERENCES_STATEMENT_ID = "User.vacuumPersonPreferencesTable";
+    private static final String FAILED_LOGIN_MESSAGE = "Login failed.";
+    private static final String THROWAWAY_PASSWORD = "password used only to equalize authentication timing";
+    private static final int NO_SUCH_USER_ID = -1;
+
+    private final Object throwawayHashLock = new Object();
+    private String throwawayHash;
 
     private Logger logger = LogManager.getLogger(this.getClass());
     private ExtensionController extensionController = null;
@@ -298,35 +309,43 @@ public class DefaultUserController extends UserController {
                 }
             }
 
-            boolean authorized = false;
-            Credentials credentials = null;
             LoginRequirementsChecker loginRequirementsChecker = null;
+            boolean lockedOut = false;
+            Digester digester = ControllerFactory.getFactory().createConfigurationController().getDigester();
 
             // Retrieve the matching User
             User validUser = getUser(null, username);
 
             if (validUser != null) {
-                Digester digester = ControllerFactory.getFactory().createConfigurationController().getDigester();
                 loginRequirementsChecker = new LoginRequirementsChecker(validUser);
-                if (loginRequirementsChecker.isUserLockedOut()) {
-                    return new LoginStatus(LoginStatus.Status.FAIL_LOCKED_OUT, "User account \"" + username + "\" has been locked. You may attempt to login again in " + loginRequirementsChecker.getPrintableStrikeTimeRemaining() + ".");
+                lockedOut = loginRequirementsChecker.isUserLockedOut();
+
+                if (!lockedOut) {
+                    loginRequirementsChecker.resetExpiredStrikes();
                 }
+            }
 
-                loginRequirementsChecker.resetExpiredStrikes();
+            /*
+             * Every attempt does the same work whether the username exists, the account is locked or
+             * it has no password: one credentials query and one full digest, against a throwaway hash
+             * when there is no real one. The outcome is decided once at the end, so the time taken to
+             * reject a login doesn't reveal which of those it was.
+             */
+            Credentials credentials = (Credentials) SqlConfig.getInstance().getReadOnlySqlSessionManager().selectOne("User.getLatestUserCredentials", validUser != null ? validUser.getId() : NO_SUCH_USER_ID);
+            String storedHash = credentials != null ? credentials.getPassword() : null;
+            boolean pre22Hash = Pre22PasswordChecker.isPre22Hash(storedHash);
+            boolean useStoredHash = storedHash != null && !pre22Hash;
+            boolean passwordMatches = digester.matches(plainPassword, useStoredHash ? storedHash : getThrowawayHash(digester)) && useStoredHash;
 
-                // Validate the user credentials
-                credentials = (Credentials) SqlConfig.getInstance().getReadOnlySqlSessionManager().selectOne("User.getLatestUserCredentials", validUser.getId());
+            if (pre22Hash) {
+                // A pre-2.2 hash has its own cheap check; the digest above has already paid the full cost
+                passwordMatches = Pre22PasswordChecker.checkPassword(plainPassword, storedHash);
+            }
 
-                if (credentials != null) {
-                    if (Pre22PasswordChecker.isPre22Hash(credentials.getPassword())) {
-                        if (Pre22PasswordChecker.checkPassword(plainPassword, credentials.getPassword())) {
-                            checkOrUpdateUserPassword(validUser.getId(), plainPassword);
-                            authorized = true;
-                        }
-                    } else {
-                        authorized = digester.matches(plainPassword, credentials.getPassword());
-                    }
-                }
+            boolean authorized = validUser != null && !lockedOut && passwordMatches;
+
+            if (authorized && pre22Hash) {
+                checkOrUpdateUserPassword(validUser.getId(), plainPassword);
             }
 
             PasswordRequirements passwordRequirements = ControllerFactory.getFactory().createConfigurationController().getPasswordRequirements();
@@ -391,23 +410,16 @@ public class DefaultUserController extends UserController {
                     }
                 }
             } else {
-                LoginStatus.Status status = LoginStatus.Status.FAIL;
-                String failMessage = "Incorrect username or password.";
-
-                if (loginRequirementsChecker != null) {
+                // A locked account gets no strike, so the lock isn't extended. Attempts already in flight when it locks each log the event
+                if (loginRequirementsChecker != null && !lockedOut) {
                     loginRequirementsChecker.incrementStrikes();
 
-                    if (loginRequirementsChecker.isLockoutEnabled()) {
-                        if (loginRequirementsChecker.isUserLockedOut()) {
-                            status = LoginStatus.Status.FAIL_LOCKED_OUT;
-                            failMessage += " User account \"" + username + "\" has been locked. You may attempt to login again in " + loginRequirementsChecker.getPrintableStrikeTimeRemaining() + ".";
-                        } else {
-                            failMessage += " " + loginRequirementsChecker.getAttemptsRemaining() + " login attempt(s) remaining for \"" + username + "\" until the account is locked for " + loginRequirementsChecker.getPrintableLockoutPeriod() + ".";
-                        }
+                    if (loginRequirementsChecker.isUserLockedOut()) {
+                        dispatchUserLockedEvent(username, loginRequirementsChecker);
                     }
                 }
 
-                loginStatus = new LoginStatus(status, failMessage);
+                loginStatus = new LoginStatus(LoginStatus.Status.FAIL, FAILED_LOGIN_MESSAGE);
             }
 
             return handleSecondaryAuthentication(username, loginStatus, loginRequirementsChecker, serverURL);
@@ -627,6 +639,36 @@ public class DefaultUserController extends UserController {
         } finally {
             StatementLock.getInstance(VACUUM_LOCK_PREFERENCES_STATEMENT_ID).readUnlock();
         }
+    }
+
+    /**
+     * The hash a login is checked against when there is no real one to check, so that every login
+     * pays for one full digest. Generated once from the live digester, so it follows the configured
+     * algorithm and iteration count. Its own lock, so the first digest doesn't hold up updateUser or
+     * removeUser, which lock the controller.
+     */
+    private String getThrowawayHash(Digester digester) throws EncryptionException {
+        synchronized (throwawayHashLock) {
+            if (throwawayHash == null) {
+                throwawayHash = digester.digest(THROWAWAY_PASSWORD);
+            }
+
+            return throwawayHash;
+        }
+    }
+
+    /**
+     * Records the failed login that locks an account. Every failed login gets the same generic
+     * message, so this event is how an administrator finds out that an account is locked and until
+     * when.
+     */
+    private void dispatchUserLockedEvent(String username, LoginRequirementsChecker loginRequirementsChecker) {
+        Map<String, String> attributes = new HashMap<String, String>();
+        attributes.put("username", username);
+        attributes.put("locked until", String.valueOf(new Date(System.currentTimeMillis() + loginRequirementsChecker.getStrikeTimeRemaining())));
+
+        String serverId = ControllerFactory.getFactory().createConfigurationController().getServerId();
+        ControllerFactory.getFactory().createEventController().dispatchEvent(new ServerEvent(serverId, "User account locked", Level.WARNING, Outcome.FAILURE, attributes));
     }
 
     private LoginStatus handleSecondaryAuthentication(String username, LoginStatus loginStatus, LoginRequirementsChecker loginRequirementsChecker, String serverURL) {

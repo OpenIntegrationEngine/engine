@@ -86,10 +86,18 @@ public class ChannelController {
     }
 
     public Statistics getStatisticsFromStorage(String serverId) {
+        return getStatisticsFromStorage(serverId, null);
+    }
+
+    /**
+     * The stored current statistics of the given channels, or of every channel when
+     * {@code channelIds} is null or empty.
+     */
+    public Statistics getStatisticsFromStorage(String serverId, Set<String> channelIds) {
         DonkeyDao dao = donkey.getReadOnlyDaoFactory().getDao();
 
         try {
-            return dao.getChannelStatistics(serverId);
+            return dao.getChannelStatistics(serverId, channelIds);
         } finally {
             dao.close();
         }
@@ -106,10 +114,15 @@ public class ChannelController {
     }
 
     public Statistics getTotalStatisticsFromStorage(String serverId) {
+        return getTotalStatisticsFromStorage(serverId, null);
+    }
+
+    /** The lifetime counterpart of {@link #getStatisticsFromStorage(String, Set)}. */
+    public Statistics getTotalStatisticsFromStorage(String serverId, Set<String> channelIds) {
         DonkeyDao dao = donkey.getReadOnlyDaoFactory().getDao();
 
         try {
-            return dao.getChannelTotalStatistics(serverId);
+            return dao.getChannelTotalStatistics(serverId, channelIds);
         } finally {
             dao.close();
         }

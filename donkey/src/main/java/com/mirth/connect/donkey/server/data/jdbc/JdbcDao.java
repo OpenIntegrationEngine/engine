@@ -2354,21 +2354,35 @@ public class JdbcDao implements DonkeyDao {
 
     @Override
     public Statistics getChannelStatistics(String serverId) {
-        return getChannelStatistics(serverId, false);
+        return getChannelStatistics(serverId, null, false);
+    }
+
+    @Override
+    public Statistics getChannelStatistics(String serverId, Set<String> channelIds) {
+        return getChannelStatistics(serverId, channelIds, false);
     }
 
     @Override
     public Statistics getChannelTotalStatistics(String serverId) {
-        return getChannelStatistics(serverId, true);
+        return getChannelStatistics(serverId, null, true);
     }
 
-    private Statistics getChannelStatistics(String serverId, boolean total) {
-        Map<String, Long> channelIds = getLocalChannelIds();
+    @Override
+    public Statistics getChannelTotalStatistics(String serverId, Set<String> channelIds) {
+        return getChannelStatistics(serverId, channelIds, true);
+    }
+
+    private Statistics getChannelStatistics(String serverId, Set<String> requestedChannelIds, boolean total) {
+        Map<String, Long> localChannelIds = getLocalChannelIds();
         String queryId = (total) ? "getChannelTotalStatistics" : "getChannelStatistics";
         Statistics statistics = new Statistics(!total);
         ResultSet resultSet = null;
 
-        for (String channelId : channelIds.keySet()) {
+        for (String channelId : localChannelIds.keySet()) {
+            if (CollectionUtils.isNotEmpty(requestedChannelIds) && !requestedChannelIds.contains(channelId)) {
+                continue;
+            }
+
             PreparedStatement statement = null;
             try {
                 statement = prepareStatement(queryId, channelId);

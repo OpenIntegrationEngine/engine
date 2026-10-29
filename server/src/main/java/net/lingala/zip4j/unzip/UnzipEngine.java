@@ -377,10 +377,15 @@ public class UnzipEngine {
 				RandomAccessFile raf = new RandomAccessFile(partFile, InternalZipConstants.READ_MODE);
 				
 				if (currSplitFileCounter == 1) {
-					byte[] splitSig = new byte[4];
-					raf.read(splitSig);
-					if (Raw.readIntLittleEndian(splitSig, 0) != InternalZipConstants.SPLITSIG) {
-						throw new ZipException("invalid first part split file signature");
+					try {
+						byte[] splitSig = new byte[4];
+						raf.read(splitSig);
+						if (Raw.readIntLittleEndian(splitSig, 0) != InternalZipConstants.SPLITSIG) {
+							throw new ZipException("invalid first part split file signature");
+						}
+					} catch (Exception e) {
+						raf.close();
+						throw e;
 					}
 				}
 				return raf;

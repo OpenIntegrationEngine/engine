@@ -839,9 +839,10 @@ public class MirthWebServer extends Server {
                             ((GZIPOutputStream) responseOutputStream).finish();
                         }
                     } catch (Throwable t) {
-                        IOUtils.closeQuietly(fis);
                         response.reset();
                         response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+                    } finally {
+                        IOUtils.closeQuietly(fis);
                     }
                 }
             } else {

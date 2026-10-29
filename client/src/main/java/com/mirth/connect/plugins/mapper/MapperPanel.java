@@ -35,6 +35,8 @@ import net.miginfocom.swing.MigLayout;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jdesktop.swingx.decorator.Highlighter;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
 
@@ -49,6 +51,7 @@ import com.mirth.connect.model.Step;
 import com.mirth.connect.plugins.mapper.MapperStep.Scope;
 
 public class MapperPanel extends EditorPanel<Step> {
+    private static Logger logger = LogManager.getLogger(MapperPanel.class);
 
     private static final int REGEX_COLUMN = 0;
     private static final int REPLACEMENT_COLUMN = 1;
@@ -197,7 +200,7 @@ public class MapperPanel extends EditorPanel<Step> {
                         nameActionListener.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, text));
                     }
                 } catch (BadLocationException e) {
-                    e.printStackTrace();
+                    logger.error("Error updating mapper name", e);
                 }
             }
         });

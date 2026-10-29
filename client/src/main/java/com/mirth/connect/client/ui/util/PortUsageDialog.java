@@ -24,6 +24,8 @@ import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.SortOrder;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
 
 import com.mirth.connect.client.core.ClientException;
@@ -41,6 +43,7 @@ import net.miginfocom.swing.MigLayout;
 
 @SuppressWarnings("serial")
 public class PortUsageDialog extends MirthDialog {
+    private static Logger logger = LogManager.getLogger(PortUsageDialog.class);
 	
     private Frame parent;
     
@@ -115,8 +118,7 @@ public class PortUsageDialog extends MirthDialog {
     	try {
 			ports = parent.mirthClient.getChannelPortsInUse();
 		} catch (ClientException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error("Error retrieving channel ports in use", e);
 		}
 
         Object[][] data = new Object[ports.size()][4];

@@ -2159,7 +2159,7 @@ public class CodeTemplatePanel extends AbstractFramePanel {
                         try {
                             contextSet.add(pair.getRight());
                         } catch (ClassCastException e) {
-                            e.printStackTrace();
+                            logger.error("Unexpected context type in code template library tree", e);
                         }
                     }
                 }

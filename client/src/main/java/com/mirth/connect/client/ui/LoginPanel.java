@@ -22,6 +22,8 @@ import javax.swing.SwingWorker;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.mirth.connect.client.core.Client;
 import com.mirth.connect.client.core.ClientException;
@@ -38,6 +40,7 @@ import com.mirth.connect.plugins.MultiFactorAuthenticationClientPlugin;
 import com.mirth.connect.util.MirthSSLUtil;
 
 public class LoginPanel extends javax.swing.JFrame {
+    private static Logger logger = LogManager.getLogger(LoginPanel.class);
 
     private Client client;
     private static final String ERROR_MESSAGE = "There was an error connecting to the server at the specified address. Please verify that the server is up and running.";
@@ -433,7 +436,7 @@ public class LoginPanel extends javax.swing.JFrame {
                         customHeaders.put(UserServletInterface.LOGIN_SERVER_URL_HEADER, Collections.singletonList(PlatformUI.SERVER_URL));
                         loginStatus = client.getServlet(UserServletInterface.class, null, customHeaders).login(username.getText(), String.valueOf(password.getPassword()));
                     } catch (ClientException ex) {
-                        ex.printStackTrace();
+                        logger.error("Error logging in", ex);
 
                         if (ex instanceof UnauthorizedException) {
                             UnauthorizedException e2 = (UnauthorizedException) ex;
@@ -485,7 +488,7 @@ public class LoginPanel extends javax.swing.JFrame {
                 } catch (Throwable t) {
                     errorOccurred = true;
                     errorTextArea.setText(ERROR_MESSAGE);
-                    t.printStackTrace();
+                    logger.error("Error logging in", t);
                 }
 
                 if (errorOccurred) {

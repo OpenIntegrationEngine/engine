@@ -79,6 +79,8 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.jdesktop.swingx.JXTaskPane;
 import org.jdesktop.swingx.decorator.ColorHighlighter;
@@ -132,6 +134,7 @@ import com.mirth.connect.plugins.TaskPlugin;
 import net.miginfocom.swing.MigLayout;
 
 public class ChannelPanel extends AbstractFramePanel {
+    private static Logger logger = LogManager.getLogger(ChannelPanel.class);
 
     public static final String STATUS_COLUMN_NAME = "Status";
     public static final String DATA_TYPE_COLUMN_NAME = "Data Type";
@@ -3130,7 +3133,7 @@ public class ChannelPanel extends AbstractFramePanel {
                         }
                     });
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    logger.error("Error importing file " + file.getAbsolutePath(), e);
                 }
             }
 

@@ -18,6 +18,8 @@ import java.util.Map.Entry;
 
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +28,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class FindReplaceProperties {
+    private static Logger logger = LogManager.getLogger(FindReplaceProperties.class);
 
     private static final String KEY_FORWARD = "forward";
     private static final String KEY_WRAP_SEARCH = "wrapSearch";
@@ -181,7 +184,7 @@ public class FindReplaceProperties {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Error parsing find/replace preferences", e);
             }
         }
 

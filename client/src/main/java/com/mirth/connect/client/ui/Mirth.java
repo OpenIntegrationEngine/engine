@@ -180,7 +180,7 @@ public class Mirth {
                 OSXAdapter.setQuitHandler(Mirth.class, Mirth.class.getDeclaredMethod("quitMac", (Class[]) null));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogManager.getLogger(Mirth.class).error("Error initializing look and feel", e);
         }
 
         // keep the tooltips from disappearing
@@ -244,7 +244,7 @@ public class Mirth {
         try {
             UIManager.put("wizard.sidebar.image", ImageIO.read(com.mirth.connect.client.ui.Frame.class.getResource("images/wizardsidebar.png")));
         } catch (IOException e) {
-            e.printStackTrace();
+            LogManager.getLogger(Mirth.class).error("Error loading wizard sidebar image", e);
         }
     }
 

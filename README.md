@@ -73,7 +73,7 @@ The **Open Integration Engine Project** is an open-source initiative committed t
 
 ## Building from Source
 
-The build is driven by Gradle through the committed wrapper; the only prerequisite is JDK 17 (see [.sdkmanrc](.sdkmanrc)):
+The build is driven by Gradle through the committed wrapper; the only prerequisite is JDK 25 (see [.sdkmanrc](.sdkmanrc)):
 
 ```bash
 ./gradlew build              # full build + tests; distribution lands in server/setup

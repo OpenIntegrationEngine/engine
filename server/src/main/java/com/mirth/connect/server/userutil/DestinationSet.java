@@ -44,7 +44,9 @@ public class DestinationSet extends AbstractSet<Integer> {
         Set<Integer> metaDataIds = null;
 
         try {
-            if (connectorMessage.getSourceMap().get(Constants.DESTINATION_SET_KEY) instanceof Set<?> set) {
+            // No pattern matching here: the client's reference parser only understands Java 5 syntax
+            Object set = connectorMessage.getSourceMap().get(Constants.DESTINATION_SET_KEY);
+            if (set instanceof Set) {
                 destinationIdMap = connectorMessage.getDestinationIdMap();
                 metaDataIds = (Set<Integer>) set;
             }

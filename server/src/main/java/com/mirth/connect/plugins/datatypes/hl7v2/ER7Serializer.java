@@ -115,7 +115,7 @@ public class ER7Serializer implements IMessageSerializer {
         try {
             context.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error closing HL7 parser context", e);
         }
     }
 

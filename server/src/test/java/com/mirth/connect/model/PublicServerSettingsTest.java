@@ -8,18 +8,18 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.donkey.model.channel.MetaDataColumn;
 import com.mirth.connect.donkey.model.channel.MetaDataColumnType;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.server.controllers.ScriptController;
 
 public class PublicServerSettingsTest {
+
+    private static AutoCloseable factoryOverride;
 
     public static ServerSettings serverSettings = new ServerSettings();
     public static List<MetaDataColumn> COLUMNS;
@@ -31,14 +31,7 @@ public class PublicServerSettingsTest {
         ScriptController scriptController = mock(ScriptController.class);
         when(controllerFactory.createScriptController()).thenReturn(scriptController);
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = ControllerFactory.setFactoryForTesting(controllerFactory);
         serverSettings.setEnvironmentName("envName");
         serverSettings.setServerName("serverName");
         serverSettings.setDefaultMetaDataColumns(null);
@@ -47,6 +40,11 @@ public class PublicServerSettingsTest {
         COLUMNS.add(new MetaDataColumn("SOURCE", MetaDataColumnType.STRING, "mirth_source"));
         COLUMNS.add(new MetaDataColumn("TYPE", MetaDataColumnType.STRING, "mirth_type"));
         
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() throws Exception {
+        factoryOverride.close();
     }
     
     @Test

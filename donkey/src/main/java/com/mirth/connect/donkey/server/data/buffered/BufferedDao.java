@@ -580,11 +580,33 @@ public class BufferedDao implements DonkeyDao {
     }
 
     @Override
+    public Statistics getChannelStatistics(String serverId, Set<String> channelIds) {
+        DonkeyDao dao = getDelegateDao();
+
+        try {
+            return dao.getChannelStatistics(serverId, channelIds);
+        } finally {
+            dao.close();
+        }
+    }
+
+    @Override
     public Statistics getChannelTotalStatistics(String serverId) {
         DonkeyDao dao = getDelegateDao();
 
         try {
             return dao.getChannelTotalStatistics(serverId);
+        } finally {
+            dao.close();
+        }
+    }
+
+    @Override
+    public Statistics getChannelTotalStatistics(String serverId, Set<String> channelIds) {
+        DonkeyDao dao = getDelegateDao();
+
+        try {
+            return dao.getChannelTotalStatistics(serverId, channelIds);
         } finally {
             dao.close();
         }

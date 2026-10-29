@@ -739,7 +739,7 @@ public class DonkeyEngineController implements EngineController {
 
         synchronized (deployingChannels) {
             for (Channel channel : deployingChannels) {
-                if (!channels.containsKey(channel.getChannelId())) {
+                if (requested(channelIds, channel) && !channels.containsKey(channel.getChannelId())) {
                     channels.put(channel.getChannelId(), channel);
                 }
             }
@@ -747,12 +747,17 @@ public class DonkeyEngineController implements EngineController {
 
         synchronized (undeployingChannels) {
             for (Channel channel : undeployingChannels) {
-                if (!channels.containsKey(channel.getChannelId())) {
+                if (requested(channelIds, channel) && !channels.containsKey(channel.getChannelId())) {
                     channels.put(channel.getChannelId(), channel);
                 }
             }
         }
         return channels;
+    }
+
+    /** Whether one channel is in the set a caller asked about; an empty set means all of them. */
+    private boolean requested(Set<String> channelIds, Channel channel) {
+        return CollectionUtils.isEmpty(channelIds) || channelIds.contains(channel.getChannelId());
     }
 
     @Override
@@ -778,8 +783,16 @@ public class DonkeyEngineController implements EngineController {
 
     private List<DashboardStatus> getUndeployedDashboardStatuses(Collection<com.mirth.connect.model.Channel> channelModels, Map<String, ChannelMetadata> metadataMap) {
         List<DashboardStatus> statuses = new ArrayList<DashboardStatus>();
-        Statistics stats = channelController.getStatisticsFromStorage(configurationController.getServerId());
-        Statistics lifetimeStats = channelController.getTotalStatisticsFromStorage(configurationController.getServerId());
+        if (channelModels.isEmpty()) {
+            return statuses;
+        }
+
+        Set<String> channelIds = new HashSet<String>();
+        for (com.mirth.connect.model.Channel channelModel : channelModels) {
+            channelIds.add(channelModel.getId());
+        }
+        Statistics stats = channelController.getStatisticsFromStorage(configurationController.getServerId(), channelIds);
+        Statistics lifetimeStats = channelController.getTotalStatisticsFromStorage(configurationController.getServerId(), channelIds);
         String serverId = configurationController.getServerId();
 
         for (com.mirth.connect.model.Channel channelModel : channelModels) {
@@ -1043,7 +1056,15 @@ public class DonkeyEngineController implements EngineController {
 
     private List<ChannelStatistics> getUndeployedChannelStatistics(Collection<com.mirth.connect.model.Channel> channelModels, Set<Integer> includeMetaDataIds, Set<Integer> excludeMetaDataIds) {
         List<ChannelStatistics> statisticsList = new ArrayList<ChannelStatistics>();
-        Statistics stats = channelController.getStatisticsFromStorage(configurationController.getServerId());
+        if (channelModels.isEmpty()) {
+            return statisticsList;
+        }
+
+        Set<String> channelIds = new HashSet<String>();
+        for (com.mirth.connect.model.Channel channelModel : channelModels) {
+            channelIds.add(channelModel.getId());
+        }
+        Statistics stats = channelController.getStatisticsFromStorage(configurationController.getServerId(), channelIds);
 
         String serverId = configurationController.getServerId();
 

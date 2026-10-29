@@ -19,18 +19,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.invocation.Invocation;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.model.DriverInfo;
 import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
 
 public class Migrate3_8_0Test {
+
+    private static AutoCloseable factoryOverride;
 
     private static ControllerFactory controllerFactory;
     private static ConfigurationController configurationController;
@@ -42,14 +42,12 @@ public class Migrate3_8_0Test {
         configurationController = mock(ConfigurationController.class);
         when(controllerFactory.createConfigurationController()).thenReturn(configurationController);
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = ControllerFactory.setFactoryForTesting(controllerFactory);
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() throws Exception {
+        factoryOverride.close();
     }
 
     @Test

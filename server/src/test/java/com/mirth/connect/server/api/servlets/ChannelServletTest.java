@@ -21,12 +21,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.SecurityContext;
 
 import org.junit.Before;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.model.Channel;
 import com.mirth.connect.model.ChannelDependency;
 import com.mirth.connect.model.ChannelExportData;
@@ -42,6 +40,8 @@ import com.mirth.connect.server.controllers.ControllerFactory;
 
 
 public class ChannelServletTest extends ServletTestBase {
+
+    private static AutoCloseable factoryOverride;
 
     private static final String CHANNEL_ID_1 = "channelId1";
     private static final String CHANNEL_ID_2 = "channelId2";
@@ -106,14 +106,12 @@ public class ChannelServletTest extends ServletTestBase {
 
         when(codeTemplateController.getLibraries(isNull(), anyBoolean())).thenReturn(codeTemplateLibraries);
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = ControllerFactory.setFactoryForTesting(controllerFactory);
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() throws Exception {
+        factoryOverride.close();
     }
     
     private static Channel createChannel(String id) {

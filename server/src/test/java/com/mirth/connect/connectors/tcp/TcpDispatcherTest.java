@@ -20,12 +20,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.donkey.model.message.ConnectorMessage;
 import com.mirth.connect.donkey.model.message.Response;
 import com.mirth.connect.donkey.model.message.Status;
@@ -45,6 +43,8 @@ import com.mirth.connect.server.controllers.EventController;
 import com.mirth.connect.server.controllers.ExtensionController;
 
 public class TcpDispatcherTest {
+
+    private static AutoCloseable factoryOverride;
 	private static final String TEST_CHANNEL_ID = UUID.randomUUID().toString();
 	private static final String TEST_SERVER_ID = UUID.randomUUID().toString();
 	private static final String TEST_CHANNEL_NAME = "Test TCP Sender Channel";
@@ -83,14 +83,12 @@ public class TcpDispatcherTest {
         when(extensionController.getTransmissionModeProviders()).thenReturn(transmissionModeProviders);
         when(controllerFactory.createExtensionController()).thenReturn(extensionController);
         
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = ControllerFactory.setFactoryForTesting(controllerFactory);
+	}
+
+	@AfterClass
+	public static void restoreControllerFactory() throws Exception {
+		factoryOverride.close();
 	}
 
 	@After

@@ -25,14 +25,12 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.donkey.model.channel.SourceConnectorProperties;
 import com.mirth.connect.donkey.model.channel.SourceConnectorPropertiesInterface;
@@ -48,22 +46,22 @@ import com.mirth.connect.donkey.util.SerializerProvider;
 
 public class ChannelTest {
 
+    private static AutoCloseable donkeyOverride;
+
     @BeforeClass
     public static void setupControllers() throws Exception {
         Donkey donkey = mock(Donkey.class);
         when(donkey.getEventDispatcher()).thenReturn(mock(EventDispatcher.class));
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(Donkey.class);
-                bind(Donkey.class).toInstance(donkey);
-            }
-        });
-        injector.getInstance(Donkey.class);
+        donkeyOverride = Donkey.setInstanceForTesting(donkey);
 
         // Make sure injection succeeded
         assertTrue(donkey == Donkey.getInstance());
+    }
+
+    @AfterClass
+    public static void restoreDonkey() throws Exception {
+        donkeyOverride.close();
     }
 
     @Test

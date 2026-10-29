@@ -1,0 +1,4 @@
+patient=12345
+PHOTO:${ATTACH:((ANY))};
+REPORT:${ATTACH:((ANY))};
+end

@@ -307,6 +307,15 @@ public class ConfigurationServlet extends MirthServlet implements ConfigurationS
     }
 
     @Override
+    public void setConfigurationProperty(String key, ConfigurationProperty property) {
+        try {
+            configurationController.setConfigurationProperty(key, property);
+        } catch (ControllerException e) {
+            throw new MirthApiException(e);
+        }
+    }
+
+    @Override
     public List<DriverInfo> getDatabaseDrivers() {
         try {
             return configurationController.getDatabaseDrivers();

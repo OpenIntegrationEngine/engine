@@ -5,19 +5,19 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.server.controllers.ScriptController;
 
 public class ServerSettingsTest {
+
+    private static AutoCloseable factoryOverride;
 
     public static ServerSettings serverSettings = new ServerSettings();
     
@@ -28,19 +28,17 @@ public class ServerSettingsTest {
         ScriptController scriptController = mock(ScriptController.class);
         when(controllerFactory.createScriptController()).thenReturn(scriptController);
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = ControllerFactory.setFactoryForTesting(controllerFactory);
         serverSettings.setEnvironmentName("envName");
         serverSettings.setServerName("serverName");
         serverSettings.setDefaultMetaDataColumns(null);
         serverSettings.setQueueBufferSize(1000);
         
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() throws Exception {
+        factoryOverride.close();
     }
     
     @Test

@@ -341,7 +341,17 @@ public class PassthruDao implements DonkeyDao {
     }
 
     @Override
+    public Statistics getChannelStatistics(String serverId, Set<String> channelIds) {
+        return new Statistics(false);
+    }
+
+    @Override
     public Statistics getChannelTotalStatistics(String serverId) {
+        return new Statistics(false);
+    }
+
+    @Override
+    public Statistics getChannelTotalStatistics(String serverId, Set<String> channelIds) {
         return new Statistics(false);
     }
 

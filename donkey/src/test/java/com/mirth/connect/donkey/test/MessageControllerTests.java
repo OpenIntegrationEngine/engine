@@ -14,10 +14,8 @@ import static org.junit.Assert.assertTrue;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,20 +25,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.mirth.connect.donkey.model.message.ConnectorMessage;
-import com.mirth.connect.donkey.model.message.ContentType;
-import com.mirth.connect.donkey.model.message.Message;
-import com.mirth.connect.donkey.model.message.MessageContent;
 import com.mirth.connect.donkey.model.message.RawMessage;
-import com.mirth.connect.donkey.model.message.Status;
 import com.mirth.connect.donkey.server.Donkey;
 import com.mirth.connect.donkey.server.StartException;
 import com.mirth.connect.donkey.server.channel.Channel;
 import com.mirth.connect.donkey.server.controllers.ChannelController;
-import com.mirth.connect.donkey.server.controllers.MessageController;
-import com.mirth.connect.donkey.server.data.DonkeyDao;
 import com.mirth.connect.donkey.server.data.timed.TimedDaoFactory;
-import com.mirth.connect.donkey.server.queue.ConnectorMessageQueueDataSource;
-import com.mirth.connect.donkey.test.util.TestChannel;
 import com.mirth.connect.donkey.test.util.TestUtils;
 import com.mirth.connect.donkey.util.ActionTimer;
 
@@ -126,59 +116,6 @@ public class MessageControllerTests {
         }
     }
 
-    @Test
-    public void testDeleteMessage() throws Exception {
-        TestChannel channel = TestUtils.createDefaultChannel(channelId, serverId);
-        channel.getSourceConnector().setRespondAfterProcessing(false);
-        channel.getSourceQueue().setDataSource(new ConnectorMessageQueueDataSource(channelId, serverId, 0, Status.RECEIVED, false, TestUtils.getDaoFactory()));
-        channel.getSourceQueue().updateSize();
-
-        Message message = null;
-        ConnectorMessage sourceMessage = null;
-        DonkeyDao dao = null;
-
-        try {
-            dao = TestUtils.getDaoFactory().getDao();
-
-            message = new Message();
-            message.setMessageId(dao.getNextMessageId(channelId));
-            message.setChannelId(channelId);
-            message.setServerId(serverId);
-            message.setReceivedDate(Calendar.getInstance());
-
-            sourceMessage = new ConnectorMessage(channelId, channel.getName(), message.getMessageId(), 0, serverId, message.getReceivedDate(), Status.RECEIVED);
-            sourceMessage.setRaw(new MessageContent(channelId, message.getMessageId(), 0, ContentType.RAW, testMessage, null, false));
-            message.getConnectorMessages().put(0, sourceMessage);
-
-            dao.insertMessage(message);
-            dao.insertConnectorMessage(sourceMessage, true, true);
-            dao.insertMessageContent(sourceMessage.getRaw());
-            dao.commit();
-        } finally {
-            TestUtils.close(dao);
-        }
-
-        // put the message in the source queue
-        channel.queue(sourceMessage);
-
-        // assert that the message exists in the database
-        TestUtils.assertMessageExists(message, true);
-        TestUtils.assertConnectorMessageExists(sourceMessage, true);
-
-        // assert that the message exists in the source queue's memory
-        assertTrue(channel.getSourceQueue().contains(sourceMessage));
-
-        // delete the message
-        Map<Long, Set<Integer>> messages = new HashMap<Long, Set<Integer>>();
-        messages.put(message.getMessageId(), null);
-        MessageController.getInstance().deleteMessages(channelId, messages);
-        channel.invalidateQueues();
-
-        // assert that the message does not exist in the database
-        TestUtils.assertMessageDoesNotExist(message);
-        TestUtils.assertConnectorMessageDoesNotExist(sourceMessage);
-
-        // assert that the message does not exist in the source queue's memory
-        assertTrue(!channel.getSourceQueue().contains(sourceMessage));
-    }
+    // Deleting a message, and the queue that still holds it noticing, is covered against every
+    // dialect by the 240-message-deletion smoke tests.
 }

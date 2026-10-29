@@ -39,9 +39,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.Invocation;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.commons.encryption.Digester;
 import com.mirth.connect.donkey.server.Donkey;
 import com.mirth.connect.donkey.server.DonkeyConfiguration;
@@ -235,14 +232,8 @@ public class DatabaseConnectionPoolTests {
         if (!USE_REAL_DATABASE_CONNECTIONS) {
             com.mirth.connect.donkey.server.controllers.ChannelController channelController = spy(com.mirth.connect.donkey.server.controllers.ChannelController.class);
             doReturn(1L).when(channelController).getLocalChannelId(eq("test"), anyBoolean());
-            Injector injector = Guice.createInjector(new AbstractModule() {
-                @Override
-                protected void configure() {
-                    requestStaticInjection(com.mirth.connect.donkey.server.controllers.ChannelController.class);
-                    bind(com.mirth.connect.donkey.server.controllers.ChannelController.class).toInstance(channelController);
-                }
-            });
-            injector.getInstance(com.mirth.connect.donkey.server.controllers.ChannelController.class);
+            // TODO: this leaks channelController into global state and could cause flaky tests
+            com.mirth.connect.donkey.server.controllers.ChannelController.setInstanceForTesting(channelController);
         }
 
         MessageController messageController = DonkeyMessageController.create();
@@ -336,27 +327,15 @@ public class DatabaseConnectionPoolTests {
             doReturn(createPool(readOnlyConnection)).when(donkeyCP).createConnectionPool(anyString(), anyString(), anyString(), anyString(), anyString(), any(), anyBoolean(), anyString(), anyInt(), eq(true));
         }
 
-        Injector donkeyConnectionPoolsInjector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(DonkeyConnectionPools.class);
-                bind(DonkeyConnectionPools.class).toInstance(donkeyCP);
-            }
-        });
-        donkeyConnectionPoolsInjector.getInstance(DonkeyConnectionPools.class);
+        // TODO: this leaks channelController into global state and could cause flaky tests
+        DonkeyConnectionPools.setInstanceForTesting(donkeyCP);
 
         DonkeyConnectionPools.getInstance().init(databaseSettings.getProperties());
 
         donkey = spy(Donkey.class);
 
-        Injector donkeyInjector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(Donkey.class);
-                bind(Donkey.class).toInstance(donkey);
-            }
-        });
-        donkeyInjector.getInstance(Donkey.class);
+        // TODO: this leaks channelController into global state and could cause flaky tests
+        Donkey.setInstanceForTesting(donkey);
 
         ControllerFactory controllerFactory = spy(new DefaultControllerFactory());
 
@@ -371,25 +350,13 @@ public class DatabaseConnectionPoolTests {
         ExtensionController extensionController = mock(ExtensionController.class);
         doReturn(extensionController).when(controllerFactory).createExtensionController();
 
-        Injector controllerFactoryInjector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        controllerFactoryInjector.getInstance(ControllerFactory.class);
+        // TODO: this leaks channelController into global state and could cause flaky tests
+        ControllerFactory.setFactoryForTesting(controllerFactory);
 
         sqlConfig = spy(new SqlConfig());
 
-        Injector sqlConfigInjector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(SqlConfig.class);
-                bind(SqlConfig.class).toInstance(sqlConfig);
-            }
-        });
-        sqlConfigInjector.getInstance(SqlConfig.class);
+        // TODO: this leaks channelController into global state and could cause flaky tests
+        SqlConfig.setInstanceForTesting(sqlConfig);
 
         donkey.startEngine(new DonkeyConfiguration("appdata", databaseSettings.getProperties(), null, null, "testserverid"));
 

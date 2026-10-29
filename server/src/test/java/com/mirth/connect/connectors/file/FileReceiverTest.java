@@ -36,12 +36,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.velocity.runtime.RuntimeConstants;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.connectors.file.filesystems.FileSystemConnectionFactory;
 import com.mirth.connect.donkey.model.message.Message;
 import com.mirth.connect.donkey.model.message.RawMessage;
@@ -64,6 +62,8 @@ import com.mirth.connect.server.controllers.ExtensionController;
 
 public class FileReceiverTest {
 
+    private static AutoCloseable factoryOverride;
+
     private static final String POLL_ID = "pollId";
     private static final String POLL_SEQUENCE_ID = "pollSequenceId";
     private static final String POLL_COMPLETE = "pollComplete";
@@ -82,17 +82,15 @@ public class FileReceiverTest {
         ExtensionController extensionController = mock(ExtensionController.class);
         when(controllerFactory.createExtensionController()).thenReturn(extensionController);
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = ControllerFactory.setFactoryForTesting(controllerFactory);
 
         Logger logger = LogManager.getLogger(RuntimeConstants.DEFAULT_RUNTIME_LOG_NAME);
         Configurator.setLevel(logger.getName(), Level.OFF);
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() throws Exception {
+        factoryOverride.close();
     }
 
     /*

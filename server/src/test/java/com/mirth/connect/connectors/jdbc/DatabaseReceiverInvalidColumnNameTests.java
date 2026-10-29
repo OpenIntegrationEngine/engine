@@ -17,12 +17,10 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.donkey.model.message.RawMessage;
 import com.mirth.connect.donkey.server.channel.ChannelException;
 import com.mirth.connect.donkey.server.channel.DispatchResult;
@@ -38,6 +36,8 @@ import com.mirth.connect.server.controllers.ExtensionController;
 import com.mirth.connect.server.util.javascript.MirthContextFactory;
 
 public class DatabaseReceiverInvalidColumnNameTests {
+
+    private static AutoCloseable factoryOverride;
 
     private final static String DB_DRIVER = "org.postgresql.Driver";
     private final static String DB_URL = "jdbc:postgresql://localhost:5432/test";
@@ -63,14 +63,12 @@ public class DatabaseReceiverInvalidColumnNameTests {
         when(contextFactoryController.getContextFactory(any())).thenReturn(new MirthContextFactory(null, null, false));
         when(controllerFactory.createContextFactoryController()).thenReturn(contextFactoryController);
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = ControllerFactory.setFactoryForTesting(controllerFactory);
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() throws Exception {
+        factoryOverride.close();
     }
 
     @Test
@@ -132,4 +130,5 @@ public class DatabaseReceiverInvalidColumnNameTests {
             return null;
         }
     }
+
 }

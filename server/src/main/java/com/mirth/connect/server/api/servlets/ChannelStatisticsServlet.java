@@ -105,6 +105,11 @@ public class ChannelStatisticsServlet extends MirthServlet implements ChannelSta
 
         if (CollectionUtils.isNotEmpty(channelStatisticsList)) {
             channelStatistics = channelStatisticsList.get(0);
+
+            // Paranoia: verify that the channel ID matches the requested one
+            if (!channelId.equals(channelStatistics.getChannelId())) {
+                throw new IllegalStateException("Channel ID mismatch: expected " + channelId + " but got " + channelStatistics.getChannelId());
+            }
         } else {
             channelStatistics = new ChannelStatistics();
             channelStatistics.setChannelId(channelId);

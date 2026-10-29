@@ -17,7 +17,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.inject.Inject;
+import com.google.common.annotations.VisibleForTesting;
 import com.mirth.connect.donkey.model.channel.Ports;
 import com.mirth.connect.donkey.model.message.Status;
 import com.mirth.connect.donkey.server.Donkey;
@@ -27,7 +27,6 @@ import com.mirth.connect.donkey.server.data.DonkeyDaoException;
 import com.mirth.connect.donkey.server.data.DonkeyDaoFactory;
 
 public class ChannelController {
-    @Inject
     private static ChannelController instance;
 
     public static ChannelController getInstance() {
@@ -37,6 +36,26 @@ public class ChannelController {
             }
 
             return instance;
+        }
+    }
+
+    /** Replaces the instance {@link #getInstance()} hands out until the returned handle is closed. */
+    @VisibleForTesting
+    public static AutoCloseable setInstanceForTesting(ChannelController newInstance) {
+        synchronized (ChannelController.class) {
+            ChannelController previous = instance;
+            instance = newInstance;
+
+            return () -> {
+                synchronized (ChannelController.class) {
+                    if (instance != newInstance) {
+                        throw new IllegalStateException("The ChannelController instance was replaced by " + instance
+                                + " while " + newInstance + " was installed for testing.");
+                    }
+
+                    instance = previous;
+                }
+            };
         }
     }
 
@@ -86,10 +105,18 @@ public class ChannelController {
     }
 
     public Statistics getStatisticsFromStorage(String serverId) {
+        return getStatisticsFromStorage(serverId, null);
+    }
+
+    /**
+     * The stored current statistics of the given channels, or of every channel when
+     * {@code channelIds} is null or empty.
+     */
+    public Statistics getStatisticsFromStorage(String serverId, Set<String> channelIds) {
         DonkeyDao dao = donkey.getReadOnlyDaoFactory().getDao();
 
         try {
-            return dao.getChannelStatistics(serverId);
+            return dao.getChannelStatistics(serverId, channelIds);
         } finally {
             dao.close();
         }
@@ -106,10 +133,15 @@ public class ChannelController {
     }
 
     public Statistics getTotalStatisticsFromStorage(String serverId) {
+        return getTotalStatisticsFromStorage(serverId, null);
+    }
+
+    /** The lifetime counterpart of {@link #getStatisticsFromStorage(String, Set)}. */
+    public Statistics getTotalStatisticsFromStorage(String serverId, Set<String> channelIds) {
         DonkeyDao dao = donkey.getReadOnlyDaoFactory().getDao();
 
         try {
-            return dao.getChannelTotalStatistics(serverId);
+            return dao.getChannelTotalStatistics(serverId, channelIds);
         } finally {
             dao.close();
         }

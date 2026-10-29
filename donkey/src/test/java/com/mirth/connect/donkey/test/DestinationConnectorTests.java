@@ -16,26 +16,18 @@ import static org.junit.Assert.assertTrue;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.mirth.connect.donkey.model.DonkeyException;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.donkey.model.channel.DeployedState;
 import com.mirth.connect.donkey.model.channel.DestinationConnectorProperties;
-import com.mirth.connect.donkey.model.channel.DestinationConnectorPropertiesInterface;
-import com.mirth.connect.donkey.model.message.ConnectorMessage;
 import com.mirth.connect.donkey.model.message.ContentType;
-import com.mirth.connect.donkey.model.message.MessageContent;
-import com.mirth.connect.donkey.model.message.RawMessage;
-import com.mirth.connect.donkey.model.message.Response;
 import com.mirth.connect.donkey.model.message.Status;
 import com.mirth.connect.donkey.server.Donkey;
 import com.mirth.connect.donkey.server.StartException;
-import com.mirth.connect.donkey.server.channel.Channel;
 import com.mirth.connect.donkey.server.channel.DestinationChainProvider;
 import com.mirth.connect.donkey.server.channel.DestinationConnector;
 import com.mirth.connect.donkey.server.channel.DispatchResult;
@@ -47,10 +39,8 @@ import com.mirth.connect.donkey.test.util.TestDispatcher;
 import com.mirth.connect.donkey.test.util.TestDispatcherProperties;
 import com.mirth.connect.donkey.test.util.TestPostProcessor;
 import com.mirth.connect.donkey.test.util.TestPreProcessor;
-import com.mirth.connect.donkey.test.util.TestResponseTransformer;
 import com.mirth.connect.donkey.test.util.TestSourceConnector;
 import com.mirth.connect.donkey.test.util.TestUtils;
-import com.mirth.connect.donkey.util.Serializer;
 
 public class DestinationConnectorTests {
     private static int TEST_SIZE = 10;
@@ -364,227 +354,8 @@ public class DestinationConnectorTests {
     }
 
     /*
-     * Create channel where the response transformer blocks the thread Send messages in asynchronous
-     * thread (so that the response transformer is waiting), assert that: - The destination
-     * connector response content was stored - The message status was updated to PENDING in the
-     * database
-     * 
-     * Then allow the response transformer to finish, join the thread, and assert: - The response
-     * transformer was successfully run - The message status was updated to SENT in the database
+     * testAfterSend and testRunResponseTransformer are re-implemented against the CI harness:
+     * ci/tests/190-response-handling for the response transformer, and
+     * smoketest BlockingResponseTransformerTest for a transformer that has not returned yet.
      */
-    @Test
-    public final void testAfterSend() throws Exception {
-        ChannelController.getInstance().getLocalChannelId(channelId);
-
-        final TestChannel channel = new TestChannel();
-
-        channel.setChannelId(channelId);
-        channel.setServerId(serverId);
-
-        channel.setPreProcessor(new TestPreProcessor());
-        channel.setPostProcessor(new TestPostProcessor());
-
-        final TestSourceConnector sourceConnector = (TestSourceConnector) TestUtils.createDefaultSourceConnector();
-        sourceConnector.setChannelId(channel.getChannelId());
-        sourceConnector.setChannel(channel);
-        channel.setSourceConnector(sourceConnector);
-        channel.getSourceConnector().setFilterTransformerExecutor(TestUtils.createDefaultFilterTransformerExecutor());
-
-        final ConnectorProperties connectorProperties = new TestDispatcherProperties();
-        ((TestDispatcherProperties) connectorProperties).getDestinationConnectorProperties().setQueueEnabled(true);
-        ((TestDispatcherProperties) connectorProperties).getDestinationConnectorProperties().setSendFirst(true);
-        ((TestDispatcherProperties) connectorProperties).getDestinationConnectorProperties().setRegenerateTemplate(true);
-
-        final DestinationConnector destinationConnector = new TestDispatcher();
-        TestUtils.initDefaultDestinationConnector(destinationConnector, connectorProperties);
-        destinationConnector.setChannelId(channelId);
-        ((TestDispatcher) destinationConnector).setReturnStatus(Status.SENT);
-
-        class BlockingTestResponseTransformer extends TestResponseTransformer {
-            public volatile boolean waiting = true;
-
-            @Override
-            public String doTransform(Response response, ConnectorMessage connectorMessage) throws DonkeyException, InterruptedException {
-                while (waiting) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                return super.doTransform(response, connectorMessage);
-            }
-        }
-        final BlockingTestResponseTransformer responseTransformer = new BlockingTestResponseTransformer();
-
-        destinationConnector.setMetaDataReplacer(sourceConnector.getMetaDataReplacer());
-        destinationConnector.setMetaDataColumns(channel.getMetaDataColumns());
-        destinationConnector.setFilterTransformerExecutor(TestUtils.createDefaultFilterTransformerExecutor());
-        destinationConnector.setResponseTransformerExecutor(TestUtils.createDefaultResponseTransformerExecutor());
-        destinationConnector.getResponseTransformerExecutor().setResponseTransformer(responseTransformer);
-
-        DestinationChainProvider chain = new DestinationChainProvider();
-        chain.setChannelId(channelId);
-        chain.addDestination(1, destinationConnector);
-        channel.addDestinationChainProvider(chain);
-
-        if (ChannelController.getInstance().channelExists(channelId)) {
-            ChannelController.getInstance().deleteAllMessages(channelId);
-        }
-
-        channel.deploy();
-        channel.start(null);
-
-        class TempClass {
-            public long messageId;
-        }
-        final TempClass tempClass = new TempClass();
-
-        for (int i = 1; i <= TEST_SIZE; i++) {
-            responseTransformer.waiting = true;
-
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
-                    ConnectorMessage sourceMessage = TestUtils.createAndStoreNewMessage(new RawMessage(testMessage), channel.getChannelId(), channel.getName(), channel.getServerId()).getConnectorMessages().get(0);
-                    tempClass.messageId = sourceMessage.getMessageId();
-
-                    try {
-                        channel.process(sourceMessage, false);
-                    } catch (InterruptedException e) {
-                        throw new AssertionError(e);
-                    }
-                }
-            };
-            thread.start();
-
-            Thread.sleep(100);
-            // Assert that the response content was stored
-            Connection connection = null;
-            PreparedStatement statement = null;
-            ResultSet result = null;
-
-            try {
-                connection = TestUtils.getConnection();
-                long localChannelId = ChannelController.getInstance().getLocalChannelId(channelId);
-                statement = connection.prepareStatement("SELECT * FROM d_mc" + localChannelId + " WHERE message_id = ? AND metadata_id = ? AND content_type = ?");
-                statement.setLong(1, tempClass.messageId);
-                statement.setInt(2, 1);
-                statement.setInt(3, ContentType.SENT.getContentTypeCode());
-                result = statement.executeQuery();
-                assertTrue(result.next());
-                result.close();
-                statement.close();
-
-                // Assert that the message status was updated to PENDING
-                statement = connection.prepareStatement("SELECT * FROM d_mm" + localChannelId + " WHERE message_id = ? AND id = ? AND status = ?");
-                statement.setLong(1, tempClass.messageId);
-                statement.setInt(2, 1);
-                statement.setString(3, String.valueOf(Status.PENDING.getStatusCode()));
-                result = statement.executeQuery();
-                assertTrue(result.next());
-                result.close();
-                statement.close();
-
-                responseTransformer.waiting = false;
-                thread.join();
-
-                // Assert that the response transformer was run
-                assertTrue(responseTransformer.isTransformed());
-
-                // Assert that the message status was updated to SENT
-                statement = connection.prepareStatement("SELECT * FROM d_mm" + localChannelId + " WHERE message_id = ? AND id = ? AND status = ?");
-                statement.setLong(1, tempClass.messageId);
-                statement.setInt(2, 1);
-                statement.setString(3, String.valueOf(Status.SENT.getStatusCode()));
-                result = statement.executeQuery();
-                assertTrue(result.next());
-                result.close();
-                statement.close();
-            } finally {
-                TestUtils.close(result);
-                TestUtils.close(statement);
-                TestUtils.close(connection);
-            }
-        }
-
-        channel.stop();
-        channel.undeploy();
-        //ChannelController.getInstance().removeChannel(channel.getChannelId());
-    }
-
-    /*
-     * Create new channel where the response transformer changes the message and status of the
-     * Response object If the response status was changed to QUEUED and queuing is not enabled, or
-     * if the status was changed to something invalid (RECEIVED/TRANSFORMED/PENDING), then assume
-     * that it was changed to ERROR
-     * 
-     * Send messages, assert that: - The processed response was stored - The destination entry in
-     * the response map was overwritten - The connector message status was changed based on the
-     * response status
-     * 
-     * Do the above steps for all statuses
-     */
-    @Test
-    public final void testRunResponseTransformer() throws Exception {
-        for (Status status : Status.values()) {
-            testRunResponseTransformer(status);
-        }
-    }
-
-    private void testRunResponseTransformer(Status responseStatus) throws Exception {
-        final Response testResponse = new Response(responseStatus, TestUtils.TEST_HL7_ACK);
-        Channel channel = TestUtils.createDefaultChannel(channelId, serverId);
-
-        Response finalResponse = new Response(testResponse.getStatus(), testResponse.getMessage());
-        if (finalResponse.getStatus() != Status.ERROR && finalResponse.getStatus() != Status.SENT && finalResponse.getStatus() != Status.QUEUED) {
-            // If the response is invalid for a final destination finalResponse.getStatus(), change the status to ERROR
-            finalResponse.setStatus(Status.ERROR);
-        } else if (channel.getDestinationConnector(1).getConnectorProperties() instanceof DestinationConnectorPropertiesInterface) {
-            // If the destination connector isn't queuing, and the response status is QUEUED, then it should have changed to ERROR
-            DestinationConnectorProperties destinationConnectorProperties = ((DestinationConnectorPropertiesInterface) channel.getDestinationConnector(1).getConnectorProperties()).getDestinationConnectorProperties();
-            if ((destinationConnectorProperties == null || !destinationConnectorProperties.isQueueEnabled()) && finalResponse.getStatus() == Status.QUEUED) {
-                finalResponse.setStatus(Status.ERROR);
-            }
-        } else if (finalResponse.getStatus() == Status.QUEUED) {
-            // If the destination connector isn't queuing, and the response status is QUEUED, then it should have changed to ERROR
-            finalResponse.setStatus(Status.ERROR);
-        }
-
-        class TestResponseTransformer2 extends TestResponseTransformer {
-            @Override
-            public String doTransform(Response response, ConnectorMessage connectorMessage) throws DonkeyException, InterruptedException {
-                response.setMessage(testResponse.getMessage());
-                response.setStatus(testResponse.getStatus());
-                connectorMessage.getResponseTransformed().setContent(testResponse.getMessage());
-                return super.doTransform(response, connectorMessage);
-            }
-        }
-        channel.getDestinationConnector(1).getResponseTransformerExecutor().setResponseTransformer(new TestResponseTransformer2());
-
-        //ChannelController.getInstance().deleteAllMessages(channel.getChannelId());
-        channel.deploy();
-        channel.start(null);
-
-        for (int i = 1; i <= TEST_SIZE; i++) {
-            DispatchResult messageResponse = ((TestSourceConnector) channel.getSourceConnector()).readTestMessage(testMessage);
-            Serializer serializer = Donkey.getInstance().getSerializer();
-            String responseString = serializer.serialize(finalResponse);
-
-            // Assert that the processed response was stored
-            MessageContent messageContent = new MessageContent(channel.getChannelId(), messageResponse.getMessageId(), 1, ContentType.PROCESSED_RESPONSE, responseString, null, false);
-            TestUtils.assertMessageContentExists(messageContent);
-
-            // Assert that the entry in the response map was overwritten
-            Map<String, Object> responseMap = TestUtils.getResponseMap(channel.getChannelId(), messageResponse.getMessageId(), 1);
-            assertTrue(responseMap.get("d1").equals(finalResponse));
-
-            // Assert that the message status was changed
-            TestUtils.assertConnectorMessageStatusEquals(channel.getChannelId(), messageResponse.getMessageId(), 1, finalResponse.getStatus());
-        }
-
-        channel.stop();
-        channel.undeploy();
-        //ChannelController.getInstance().removeChannel(channel.getChannelId());
-    }
 }

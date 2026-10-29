@@ -22,12 +22,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.donkey.model.message.ConnectorMessage;
 import com.mirth.connect.donkey.model.message.MessageContent;
 import com.mirth.connect.model.codetemplates.ContextType;
@@ -41,6 +39,8 @@ import com.mirth.connect.server.controllers.ScriptController;
 import com.mirth.connect.server.util.CompiledScriptCache;
 
 public class JavaScriptUtilTest {
+
+    private static AutoCloseable factoryOverride;
 
     private static final String SCRIPT_ID = "JavaScriptUtilTest-script";
 
@@ -62,14 +62,7 @@ public class JavaScriptUtilTest {
         CodeTemplateController codeTemplateController = mock(CodeTemplateController.class);
         when(controllerFactory.createCodeTemplateController()).thenReturn(codeTemplateController);
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = ControllerFactory.setFactoryForTesting(controllerFactory);
 
         /*
          * JavaScriptBuilder captures its controllers in static fields at class-load time. If an
@@ -77,6 +70,13 @@ public class JavaScriptUtilTest {
          * generateGlobalSealedScript/appendCodeTemplates don't NPE.
          */
         JavaScriptBuilder.setControllersForTesting(extensionController, codeTemplateController);
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() throws Exception {
+        factoryOverride.close();
+        // JavaScriptBuilder's cached controllers are left alone: reading them back to restore
+        // them would initialize it against the real factory, which rewrites mirth.properties.
     }
 
     private MirthContextFactory contextFactory() {

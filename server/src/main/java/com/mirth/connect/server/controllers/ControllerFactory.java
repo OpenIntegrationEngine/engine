@@ -9,10 +9,9 @@
 
 package com.mirth.connect.server.controllers;
 
-import com.google.inject.Inject;
+import com.google.common.annotations.VisibleForTesting;
 
 public abstract class ControllerFactory {
-    @Inject
     private static ControllerFactory factory;
 
     public static ControllerFactory getFactory() {
@@ -22,6 +21,26 @@ public abstract class ControllerFactory {
             }
 
             return factory;
+        }
+    }
+
+    /** Replaces the factory {@link #getFactory()} hands out until the returned handle is closed. */
+    @VisibleForTesting
+    public static AutoCloseable setFactoryForTesting(ControllerFactory newFactory) {
+        synchronized (ControllerFactory.class) {
+            ControllerFactory previous = factory;
+            factory = newFactory;
+
+            return () -> {
+                synchronized (ControllerFactory.class) {
+                    if (factory != newFactory) {
+                        throw new IllegalStateException("The ControllerFactory was replaced by " + factory
+                                + " while " + newFactory + " was installed for testing.");
+                    }
+
+                    factory = previous;
+                }
+            };
         }
     }
 

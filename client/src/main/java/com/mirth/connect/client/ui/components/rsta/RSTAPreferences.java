@@ -20,6 +20,8 @@ import java.util.Map.Entry;
 import javax.swing.KeyStroke;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.fife.ui.rtextarea.RTextArea;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,6 +32,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mirth.connect.client.ui.components.rsta.actions.ActionInfo;
 
 public class RSTAPreferences {
+    private static Logger logger = LogManager.getLogger(RSTAPreferences.class);
 
     private Map<String, KeyStroke> keyStrokeMap;
     private FindReplaceProperties findReplaceProperties;
@@ -150,7 +153,7 @@ public class RSTAPreferences {
                     keyStrokeMap.put(entry.getKey(), keyStroke);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Error parsing key stroke preferences", e);
             }
         }
 
@@ -169,7 +172,7 @@ public class RSTAPreferences {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Error parsing toggle option preferences", e);
             }
         }
 

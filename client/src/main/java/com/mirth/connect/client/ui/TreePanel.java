@@ -407,7 +407,7 @@ public class TreePanel extends javax.swing.JPanel {
 
                         jsonDoc = mapper.readTree(message);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        logger.error("Error converting message to JSON", e);
                     }
 
                     if (jsonDoc != null) {
@@ -464,7 +464,7 @@ public class TreePanel extends javax.swing.JPanel {
 
                         xmlDoc = docBuilder.parse(new InputSource(new StringReader(message)));
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        logger.error("Error converting message to XML", e);
                     }
 
                     if (xmlDoc != null) {

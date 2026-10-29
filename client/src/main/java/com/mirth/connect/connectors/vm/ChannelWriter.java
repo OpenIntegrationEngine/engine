@@ -35,6 +35,8 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
 
 import com.mirth.connect.client.ui.Frame;
@@ -45,6 +47,7 @@ import com.mirth.connect.client.ui.panels.connectors.ConnectorSettingsPanel;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 
 public class ChannelWriter extends ConnectorSettingsPanel {
+    private static Logger logger = LogManager.getLogger(ChannelWriter.class);
 
     private Frame parent;
     private Map<String, String> channelList;
@@ -141,7 +144,7 @@ public class ChannelWriter extends ConnectorSettingsPanel {
 						((CustomTableCellEditor)mapVariablesTable.getColumnModel().getColumn(0).getCellEditor()).getTextField().setText(data);
 						dtde.dropComplete(true);
 					} catch (Exception e) {
-						e.printStackTrace();
+						logger.error("Error dropping variable into map variables table", e);
 						dtde.rejectDrop();
 					}
 				}
@@ -149,7 +152,7 @@ public class ChannelWriter extends ConnectorSettingsPanel {
 				public void dropActionChanged(DropTargetDragEvent dtde) {}
 			});
 		} catch (TooManyListenersException e) {
-			e.printStackTrace();
+			logger.error("Error adding drop target listener", e);
 		}
 
 		gt.setFlavorMap(new FlavorMap() {

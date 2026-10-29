@@ -10,6 +10,8 @@
 package com.mirth.connect.client.ui.components.rsta;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +19,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class AutoCompleteProperties {
+    private static Logger logger = LogManager.getLogger(AutoCompleteProperties.class);
 
     private boolean activateAfterLetters;
     private String activateAfterOthers;
@@ -111,7 +114,7 @@ public class AutoCompleteProperties {
                     activationDelay = node.asInt();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Error parsing auto-complete preferences", e);
             }
         }
 

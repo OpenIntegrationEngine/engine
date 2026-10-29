@@ -92,6 +92,8 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.text.WordUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.jdesktop.swingx.JXTaskPane;
 import org.jdesktop.swingx.action.ActionFactory;
@@ -130,6 +132,7 @@ import com.mirth.connect.util.ScriptBuilderException;
 
 @SuppressWarnings("serial")
 public abstract class BaseEditorPane<T extends FilterTransformer<C>, C extends FilterTransformerElement> extends JPanel implements DropTargetListener {
+    private static Logger logger = LogManager.getLogger(BaseEditorPane.class);
 
     private static final int TASK_ADD = 0;
     private static final int TASK_DELETE = 1;
@@ -183,7 +186,7 @@ public abstract class BaseEditorPane<T extends FilterTransformer<C>, C extends F
         try {
             return getPlugins().get(treeTable.getValueAt(rowIndex, typeColumn)).isNameEditable();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error checking whether the name is editable", e);
             return false;
         }
     }
@@ -1674,7 +1677,7 @@ public abstract class BaseEditorPane<T extends FilterTransformer<C>, C extends F
             try {
                 generatedScriptTextArea.setText(JavaScriptSharedUtil.prettyPrint(element.getScript(false)));
             } catch (ScriptBuilderException e) {
-                e.printStackTrace();
+                logger.error("Error generating script", e);
                 generatedScriptTextArea.setText("");
             }
         } else {

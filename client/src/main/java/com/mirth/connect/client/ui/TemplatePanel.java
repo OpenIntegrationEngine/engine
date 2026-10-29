@@ -32,6 +32,8 @@ import javax.swing.event.DocumentListener;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.syntax.jedit.SyntaxDocument;
 import org.syntax.jedit.tokenmarker.HL7TokenMarker;
 import org.syntax.jedit.tokenmarker.TokenMarker;
@@ -41,6 +43,7 @@ import com.mirth.connect.model.datatype.DataTypeProperties;
 import com.mirth.connect.plugins.DataTypeClientPlugin;
 
 public class TemplatePanel extends javax.swing.JPanel implements DropTargetListener {
+    private static Logger logger = LogManager.getLogger(TemplatePanel.class);
     public final String DEFAULT_TEXT = "Paste a sample message here.";
 
     private static final String MESSAGE_TEMPLATES_BOLD = "<html><b>Message Templates</b></html>";
@@ -200,7 +203,7 @@ public class TemplatePanel extends javax.swing.JPanel implements DropTargetListe
                     try {
                         treePanel.setMessage(dataProperties, (String) dataTypeComboBox.getSelectedItem(), message, DEFAULT_TEXT);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        logger.error("Error parsing message template", e);
                     }
                     PlatformUI.MIRTH_FRAME.stopWorking(workingId);
                 }

@@ -9,6 +9,9 @@
 
 package com.mirth.connect.plugins.pdfviewer;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.mirth.connect.client.ui.BrandingConstants;
 
 import java.io.File;
@@ -19,6 +22,7 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
 public class MirthPDFViewer extends com.sun.pdfview.PDFViewer {
+    private static Logger logger = LogManager.getLogger(MirthPDFViewer.class);
 
     public final static String TITLE = String.format("%s PDF Viewer", BrandingConstants.PRODUCT_NAME);
     private File tempFile;
@@ -74,8 +78,7 @@ public class MirthPDFViewer extends com.sun.pdfview.PDFViewer {
                 System.out.println("Couldn't find " + url);
             }
         } catch (Exception e) {
-            System.out.println("Couldn't find " + getClass().getName() + "/" + name);
-            e.printStackTrace();
+            logger.error("Couldn't find " + getClass().getName() + "/" + name, e);
         }
         return icon;
     }

@@ -1466,7 +1466,7 @@ public class MessageBrowser extends javax.swing.JPanel {
             }
             return temp;
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error retrieving attachment data", e);
         }
         return null;
     }

@@ -14,12 +14,16 @@ import java.awt.datatransfer.Transferable;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.mirth.connect.client.ui.VariableListHandler.TransferMode;
 
 /**
  * Package Database Variables for movement.
  */
 public class VariableTransferable implements Transferable {
+    private static Logger logger = LogManager.getLogger(VariableTransferable.class);
 
     private static DataFlavor[] flavors = null;
     private static final Pattern VALID_VELOCITY_VARIABLE_PATTERN = Pattern.compile("[a-zA-Z][a-zA-Z0-9_-]*");
@@ -57,7 +61,7 @@ public class VariableTransferable implements Transferable {
             flavors = new DataFlavor[1];
             flavors[0] = DataFlavor.stringFlavor;
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error initializing data flavors", e);
         }
     }
 

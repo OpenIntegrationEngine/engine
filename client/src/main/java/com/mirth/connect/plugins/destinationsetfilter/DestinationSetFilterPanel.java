@@ -44,6 +44,8 @@ import javax.swing.text.BadLocationException;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jdesktop.swingx.decorator.Highlighter;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
 
@@ -61,6 +63,7 @@ import com.mirth.connect.plugins.destinationsetfilter.DestinationSetFilterStep.B
 import com.mirth.connect.plugins.destinationsetfilter.DestinationSetFilterStep.Condition;
 
 public class DestinationSetFilterPanel extends EditorPanel<Step> {
+    private static Logger logger = LogManager.getLogger(DestinationSetFilterPanel.class);
 
     private ActionListener nameActionListener;
 
@@ -309,7 +312,7 @@ public class DestinationSetFilterPanel extends EditorPanel<Step> {
                 try {
                     updateName(evt.getDocument().getText(0, evt.getDocument().getLength()));
                 } catch (BadLocationException e) {
-                    e.printStackTrace();
+                    logger.error("Error updating destination set filter name", e);
                 }
             }
         });

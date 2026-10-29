@@ -559,8 +559,12 @@ public class ReferenceListFactory {
 
     private void addUserutilReferences(String fileName, InputStream is) {
         try {
-            // Parse the source file
-            ParseResult<CompilationUnit> result = new JavaParser(new ParserConfiguration().setLanguageLevel(LanguageLevel.JAVA_17)).parse(is);
+            /*
+             * Parse the source file. Use the newest grammar the parser supports, since extension
+             * userutil sources may target a newer Java version than ours and we only read
+             * signatures and javadoc.
+             */
+            ParseResult<CompilationUnit> result = new JavaParser(new ParserConfiguration().setLanguageLevel(LanguageLevel.CURRENT)).parse(is);
             if (!result.isSuccessful()) {
                 throw new ParseProblemException(result.getProblems());
             }

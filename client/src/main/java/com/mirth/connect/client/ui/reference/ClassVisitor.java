@@ -28,6 +28,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.nodeTypes.NodeWithModifiers;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -163,6 +164,11 @@ public class ClassVisitor extends VoidVisitorAdapter<Object> {
         for (BodyDeclaration<?> member : n.getMembers()) {
             member.accept(this, className);
         }
+    }
+
+    @Override
+    public void visit(RecordDeclaration n, Object arg) {
+        // Records get no references, and their members must not be attributed to the package
     }
 
     @Override

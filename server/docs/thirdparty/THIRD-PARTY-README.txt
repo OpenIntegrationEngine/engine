@@ -42,7 +42,6 @@ The following are distributed under the terms of the Apache License version 2.0
 	StAXON 1.3 [incl. CLI] (https://github.com/beckchr/staxon)
 	Swagger Core 2.0.10 [incl. CLI] (https://github.com/swagger-api/swagger-core)
 	Swagger UI 2.2.10 (http://swagger.io/swagger-ui/)
-	webdavclient4j 0.92 (http://sourceforge.net/projects/webdavclient4j/)
 	Zip4j 1.3.3 (http://www.lingala.net/zip4j/)
 
 

@@ -398,6 +398,22 @@ public class WebDavConnectionTest {
     }
 
     @Test
+    public void collectionWithoutTrailingSlashIsRedirected() throws Exception {
+        connect(Auth.BASIC, WebDavTestServer.USER, WebDavTestServer.PASSWORD);
+        server.slashRedirect = true;
+        assertTrue(connection.canRead("/in"));
+        assertTrue(connection.canWrite("/in"));
+        assertTrue(connection.exists("sub", "/in"));
+        assertEquals(List.of("a.txt", "b.txt"), names(connection.listFiles("/in", "*.txt", false, true)));
+        assertEquals(List.of("d.txt"), names(connection.listFiles(connection.listDirectories("/in").get(0), "*", false, false)));
+        writeFile("redirected.txt", "/out", "ok");
+        assertEquals("ok", content("out/redirected.txt"));
+        connection.move("redirected.txt", "/out", "moved.txt", "/in/sub");
+        assertEquals("ok", content("in/sub/moved.txt"));
+        assertTrue(server.requests().contains("PROPFIND /in/"));
+    }
+
+    @Test
     public void connectedAndValid() throws Exception {
         connect();
         assertTrue(connection.isConnected());

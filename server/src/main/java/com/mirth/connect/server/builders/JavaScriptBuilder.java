@@ -335,7 +335,7 @@ public class JavaScriptBuilder {
         builder.append("function doTransform() {");
 
         if (!response) {
-            builder.append(" phase[0] = 'transformer'; logger = Packages.org.apache.log4j.Logger.getLogger(phase[0]);");
+            builder.append(" phase[0] = 'transformer'; logger = Packages.org.apache.logging.log4j.LogManager.getLogger(phase[0]);");
         }
 
         builder.append("\n\n\n");

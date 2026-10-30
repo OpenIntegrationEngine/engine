@@ -320,6 +320,8 @@ public class WebDavConnectionTest {
         assertEquals("streamed", content("out/chunked.txt"));
         connection.move("challenged.txt", "/out", "moved.txt", "/out");
         assertEquals("body", content("out/moved.txt"));
+        // Streamed, not buffered: the retry relies on 100-continue holding the body back
+        assertTrue(server.putExpectHeaders.stream().allMatch("100-continue"::equalsIgnoreCase));
     }
 
     @Test

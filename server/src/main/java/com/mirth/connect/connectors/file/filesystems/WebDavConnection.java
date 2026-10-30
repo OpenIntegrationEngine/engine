@@ -50,7 +50,6 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.DateUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
@@ -185,6 +184,7 @@ public class WebDavConnection implements FileSystemConnection {
     private CloseableHttpClient client = null;
     /** Shared across requests so an authenticated session is reused */
     private HttpClientContext context = HttpClientContext.create();
+    private RequestConfig requestConfig;
     private String baseUrl;
     private CloseableHttpResponse readResponse = null;
     /** Whether the last path looked up exists, as WebdavResource.exists() reported it */
@@ -211,7 +211,7 @@ public class WebDavConnection implements FileSystemConnection {
         }
 
         // The schemes httpclient 3 negotiated, in its order of preference
-        RequestConfig requestConfig = RequestConfig.custom().setTargetPreferredAuthSchemes(Arrays.asList(AuthSchemes.NTLM, AuthSchemes.DIGEST, AuthSchemes.BASIC)).setConnectTimeout(timeout).setSocketTimeout(timeout).build();
+        requestConfig = RequestConfig.custom().setTargetPreferredAuthSchemes(Arrays.asList(AuthSchemes.NTLM, AuthSchemes.DIGEST, AuthSchemes.BASIC)).setConnectTimeout(timeout).setSocketTimeout(timeout).build();
 
         client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).setDefaultRequestConfig(requestConfig).setSSLSocketFactory(new SSLConnectionSocketFactory(SSLContexts.createSystemDefault())).build();
 
@@ -338,8 +338,10 @@ public class WebDavConnection implements FileSystemConnection {
         }
 
         HttpPut put = new HttpPut(uri(fullPath));
-        // Buffered so the PUT can be repeated after an authentication challenge
-        put.setEntity(new BufferedHttpEntity(new InputStreamEntity(is, contentLength)));
+        // The body is streamed, so it can't be sent twice. With Expect: 100-continue an
+        // authentication challenge arrives before the body, and the PUT can still be retried.
+        put.setConfig(RequestConfig.copy(requestConfig).setExpectContinueEnabled(true).build());
+        put.setEntity(new InputStreamEntity(is, contentLength));
         if (!execute(put)) {
             logger.error("Unable to write file: '" + fullPath);
         }

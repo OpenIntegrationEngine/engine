@@ -9,9 +9,11 @@
 
 package com.mirth.connect.connectors.file.filesystems;
 
+import java.io.ByteArrayInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -172,6 +174,32 @@ public class WebDavConnection implements FileSystemConnection {
         @Override
         public String getMethod() {
             return "MOVE";
+        }
+    }
+
+    /**
+     * Streams a ByteArrayInputStream, which is what FileDispatcher passes, and resends it by
+     * resetting the stream. The PUT can then be retried after an authentication challenge without
+     * copying the payload, even when a proxy has already read the body.
+     */
+    private static class ResettableEntity extends InputStreamEntity {
+        private final ByteArrayInputStream in;
+
+        ResettableEntity(ByteArrayInputStream in, long length) {
+            super(in, length);
+            this.in = in;
+            in.mark(0);
+        }
+
+        @Override
+        public boolean isRepeatable() {
+            return true;
+        }
+
+        @Override
+        public void writeTo(OutputStream out) throws IOException {
+            in.reset();
+            super.writeTo(out);
         }
     }
 
@@ -338,10 +366,14 @@ public class WebDavConnection implements FileSystemConnection {
         }
 
         HttpPut put = new HttpPut(uri(fullPath));
-        // The body is streamed, so it can't be sent twice. With Expect: 100-continue an
-        // authentication challenge arrives before the body, and the PUT can still be retried.
-        put.setConfig(RequestConfig.copy(requestConfig).setExpectContinueEnabled(true).build());
-        put.setEntity(new InputStreamEntity(is, contentLength));
+        if (is instanceof ByteArrayInputStream) {
+            put.setEntity(new ResettableEntity((ByteArrayInputStream) is, contentLength));
+        } else {
+            // Other streams can't be resent. Expect: 100-continue usually gets an authentication
+            // challenge before the body, but a buffering proxy may still consume it first.
+            put.setConfig(RequestConfig.copy(requestConfig).setExpectContinueEnabled(true).build());
+            put.setEntity(new InputStreamEntity(is, contentLength));
+        }
         if (!execute(put)) {
             logger.error("Unable to write file: '" + fullPath);
         }

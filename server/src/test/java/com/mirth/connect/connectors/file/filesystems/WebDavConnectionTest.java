@@ -320,7 +320,31 @@ public class WebDavConnectionTest {
         assertEquals("streamed", content("out/chunked.txt"));
         connection.move("challenged.txt", "/out", "moved.txt", "/out");
         assertEquals("body", content("out/moved.txt"));
-        // Streamed, not buffered: the retry relies on 100-continue holding the body back
+        // A ByteArrayInputStream is resent by resetting it, so 100-continue isn't needed
+        assertTrue(server.putExpectHeaders.stream().noneMatch("100-continue"::equalsIgnoreCase));
+    }
+
+    @Test
+    public void putIsRetriedWhenTheBodyIsConsumedBeforeTheChallenge() throws Exception {
+        connect(Auth.BASIC_WRITES, WebDavTestServer.USER, WebDavTestServer.PASSWORD);
+        server.consumeUnauthenticatedBodies = true;
+        // FileDispatcher hands over a ByteArrayInputStream
+        writeFile("challenged.txt", "/out", "body");
+        assertEquals("body", content("out/challenged.txt"));
+    }
+
+    @Test
+    public void nonResettableStreamUsesExpectContinue() throws Exception {
+        connect(Auth.BASIC_WRITES, WebDavTestServer.USER, WebDavTestServer.PASSWORD);
+        byte[] bytes = "streamed".getBytes(StandardCharsets.UTF_8);
+        InputStream in = new java.io.FilterInputStream(new ByteArrayInputStream(bytes)) {
+            @Override
+            public boolean markSupported() {
+                return false;
+            }
+        };
+        connection.writeFile("stream.txt", "/out", false, in, bytes.length, new HashMap<>());
+        assertEquals("streamed", content("out/stream.txt"));
         assertTrue(server.putExpectHeaders.stream().allMatch("100-continue"::equalsIgnoreCase));
     }
 

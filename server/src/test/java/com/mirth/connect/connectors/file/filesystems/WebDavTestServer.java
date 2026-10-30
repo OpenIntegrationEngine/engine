@@ -87,6 +87,8 @@ class WebDavTestServer {
     volatile boolean prettyPrint;
     /** Delay before answering any request */
     volatile long delayMillis;
+    /** Redirect a collection requested without a trailing slash, like Apache's DirectorySlash */
+    volatile boolean slashRedirect;
 
     private Server server;
     private int port;
@@ -228,6 +230,12 @@ class WebDavTestServer {
                 }
             }
             File file = resolve(path);
+
+            if (slashRedirect && file.isDirectory() && !req.getRequestURI().endsWith("/")) {
+                resp.setStatus(301);
+                resp.setHeader("Location", req.getRequestURL() + "/");
+                return;
+            }
 
             switch (req.getMethod()) {
                 case "PROPFIND":

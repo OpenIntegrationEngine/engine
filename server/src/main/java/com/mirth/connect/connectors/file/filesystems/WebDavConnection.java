@@ -446,10 +446,16 @@ public class WebDavConnection implements FileSystemConnection {
     /** Returns the resources of a PROPFIND multistatus, or null if the request failed */
     private List<Resource> propfind(String path, int depth) throws IOException {
         try (CloseableHttpResponse response = client.execute(new HttpPropfind(uri(path), depth), context)) {
-            exists = response.getStatusLine().getStatusCode() == HttpStatus.SC_MULTI_STATUS;
+            int statusCode = response.getStatusLine().getStatusCode();
+            exists = statusCode == HttpStatus.SC_MULTI_STATUS;
             if (!exists) {
                 lastStatus = response.getStatusLine().toString();
                 EntityUtils.consume(response.getEntity());
+
+                // Apache redirects a collection requested without its trailing slash
+                if (statusCode >= 300 && statusCode < 400 && !path.endsWith("/")) {
+                    return propfind(path + "/", depth);
+                }
                 return null;
             }
 

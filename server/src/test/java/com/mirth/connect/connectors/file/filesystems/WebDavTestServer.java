@@ -87,6 +87,8 @@ class WebDavTestServer {
     volatile boolean prettyPrint;
     /** Delay before answering any request */
     volatile long delayMillis;
+    /** Read an unauthenticated PUT body before the 401, like nginx with request buffering */
+    volatile boolean consumeUnauthenticatedBodies;
     /** Redirect a collection requested without a trailing slash, like Apache's DirectorySlash */
     volatile boolean slashRedirect;
 
@@ -161,6 +163,10 @@ class WebDavTestServer {
                 authorizations.add(authorization == null ? "" : authorization.split(" ")[0]);
                 if ("PUT".equals(request.getMethod())) {
                     putExpectHeaders.add(String.valueOf(request.getHeader("Expect")));
+                    if (consumeUnauthenticatedBodies && authorization == null) {
+                        // Answers 100 Continue and takes the whole body
+                        request.getInputStream().readAllBytes();
+                    }
                 }
                 super.handle(target, baseRequest, request, response);
             }

@@ -47,8 +47,8 @@ public class WebDavConnectionTest {
         write(root, "in/c.hl7", "MSH|");
         write(root, "in/.hidden.txt", "x");
         write(root, "in/sub/d.txt", "delta");
-        new File(root, "in/sub2").mkdirs();
-        new File(root, "out").mkdirs();
+        WebDavTestServer.file(root, "in/sub2").mkdirs();
+        WebDavTestServer.file(root, "out").mkdirs();
         server = new WebDavTestServer(root);
     }
 
@@ -227,7 +227,7 @@ public class WebDavConnectionTest {
     public void delete() throws Exception {
         connect();
         connection.delete("a.txt", "/in", false);
-        assertFalse(new File(server.root, "in/a.txt").exists());
+        assertFalse(WebDavTestServer.file(server.root, "in/a.txt").exists());
 
         // A failed delete is only logged
         connection.delete("a.txt", "/in", false);
@@ -238,7 +238,7 @@ public class WebDavConnectionTest {
     public void moveToExistingDirectory() throws Exception {
         connect();
         connection.move("a.txt", "/in", "moved.txt", "/out");
-        assertFalse(new File(server.root, "in/a.txt").exists());
+        assertFalse(WebDavTestServer.file(server.root, "in/a.txt").exists());
         assertEquals("alpha", content("out/moved.txt"));
     }
 
@@ -259,7 +259,7 @@ public class WebDavConnectionTest {
         } catch (Exception e) {
             assertTrue(e.getMessage(), e.getMessage().startsWith("The move-to directory path is invalid: '/in/b.txt'"));
         }
-        assertTrue(new File(server.root, "in/a.txt").exists());
+        assertTrue(WebDavTestServer.file(server.root, "in/a.txt").exists());
     }
 
     @Test
@@ -275,7 +275,7 @@ public class WebDavConnectionTest {
     public void moveMissingFileIsOnlyLogged() throws Exception {
         connect();
         connection.move("nope.txt", "/in", "moved.txt", "/out");
-        assertFalse(new File(server.root, "out/moved.txt").exists());
+        assertFalse(WebDavTestServer.file(server.root, "out/moved.txt").exists());
     }
 
     @Test
@@ -473,7 +473,7 @@ public class WebDavConnectionTest {
         connect();
         String dir = "/spa ce/ü+ß";
         String name = "a b ü+%.txt";
-        new File(server.root, dir).mkdirs();
+        WebDavTestServer.file(server.root, dir).mkdirs();
         write(server.root, dir + "/" + name, "encoded");
 
         assertTrue(connection.exists(name, dir));
@@ -491,7 +491,7 @@ public class WebDavConnectionTest {
         assertEquals("encoded", content("new dir ü/m ü.txt"));
 
         connection.delete("m ü.txt", "/new dir ü", false);
-        assertFalse(new File(server.root, "new dir ü/m ü.txt").exists());
+        assertFalse(WebDavTestServer.file(server.root, "new dir ü/m ü.txt").exists());
 
         String sub = connection.listDirectories("/spa ce").get(0);
         assertEquals(List.of(), names(connection.listFiles(sub, "*", false, false)));
@@ -505,7 +505,7 @@ public class WebDavConnectionTest {
         assertEquals("authed", content("newdir/auth.txt"));
         connection.move("auth.txt", "/newdir", "auth2.txt", "/newdir");
         connection.delete("auth2.txt", "/newdir", false);
-        assertFalse(new File(server.root, "newdir/auth2.txt").exists());
+        assertFalse(WebDavTestServer.file(server.root, "newdir/auth2.txt").exists());
     }
 
     private static String multistatus(String... responses) {
@@ -522,7 +522,7 @@ public class WebDavConnectionTest {
     }
 
     private String content(String path) throws Exception {
-        return new String(Files.readAllBytes(new File(server.root, path).toPath()), StandardCharsets.UTF_8);
+        return new String(Files.readAllBytes(WebDavTestServer.file(server.root, path).toPath()), StandardCharsets.UTF_8);
     }
 
     private static String read(InputStream in) throws Exception {
@@ -532,7 +532,7 @@ public class WebDavConnectionTest {
     }
 
     private static void write(File root, String path, String content) throws Exception {
-        File file = new File(root, path);
+        File file = WebDavTestServer.file(root, path);
         file.getParentFile().mkdirs();
         Files.write(file.toPath(), content.getBytes(StandardCharsets.UTF_8));
         Files.setLastModifiedTime(file.toPath(), FileTime.fromMillis(MODIFIED));

@@ -320,7 +320,7 @@ class WebDavTestServer {
             if (file.isDirectory() && !"0".equals(req.getHeader("Depth"))) {
                 try (Stream<Path> children = Files.list(file.toPath())) {
                     for (Path child : (Iterable<Path>) children.sorted()::iterator) {
-                        appendResponse(xml, (path.endsWith("/") ? path : path + "/") + child.getFileName(), child.toFile());
+                        appendResponse(xml, (path.endsWith("/") ? path : path + "/") + decode(child.getFileName().toString()), child.toFile());
                     }
                 }
             }
@@ -361,8 +361,16 @@ class WebDavTestServer {
         }
 
         private File resolve(String path) {
-            return new File(root, path);
+            return file(root, path);
         }
+    }
+
+    /**
+     * The file backing a decoded DAV path. Names are stored percent-encoded so they stay ASCII on
+     * disk, which works whatever charset the JVM uses for file names (e.g. a POSIX locale in CI).
+     */
+    static File file(File root, String path) {
+        return new File(root, encode(path));
     }
 
     private static String decode(String rawPath) {

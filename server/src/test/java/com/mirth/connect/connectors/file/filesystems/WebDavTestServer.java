@@ -80,6 +80,7 @@ class WebDavTestServer {
     final List<String> authorizations = Collections.synchronizedList(new ArrayList<>());
     final Set<String> lockedPaths = Collections.synchronizedSet(new HashSet<>());
     final List<String> destinations = Collections.synchronizedList(new ArrayList<>());
+    final List<String> putExpectHeaders = Collections.synchronizedList(new ArrayList<>());
     /** When set, returned verbatim for every PROPFIND */
     volatile String propfindOverride;
     /** Indent the multistatus and put whitespace around status lines */
@@ -156,6 +157,9 @@ class WebDavTestServer {
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, javax.servlet.ServletException {
                 String authorization = request.getHeader("Authorization");
                 authorizations.add(authorization == null ? "" : authorization.split(" ")[0]);
+                if ("PUT".equals(request.getMethod())) {
+                    putExpectHeaders.add(String.valueOf(request.getHeader("Expect")));
+                }
                 super.handle(target, baseRequest, request, response);
             }
         });

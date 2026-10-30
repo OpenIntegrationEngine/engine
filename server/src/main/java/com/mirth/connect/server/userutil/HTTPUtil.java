@@ -10,10 +10,8 @@
 package com.mirth.connect.server.userutil;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.ProtocolException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,7 +23,11 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.fileupload.FileUploadBase;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
 import org.apache.http.entity.ContentType;
+import org.apache.http.impl.io.AbstractMessageParser;
+import org.apache.http.impl.io.HttpTransportMetricsImpl;
+import org.apache.http.impl.io.SessionInputBufferImpl;
 
 import com.mirth.connect.connectors.http.HttpMessageConverter;
 import com.mirth.connect.donkey.util.DonkeyElement.DonkeyElementException;
@@ -47,64 +49,15 @@ public class HTTPUtil {
      */
     public static Map<String, String> parseHeaders(String str) throws Exception {
         Map<String, String> headersMap = new HashMap<String, String>();
-        InputStream is = new ByteArrayInputStream(str.getBytes());
-        String name = null;
-        StringBuilder value = null;
+        SessionInputBufferImpl buffer = new SessionInputBufferImpl(new HttpTransportMetricsImpl(), 8192, 8192, null, StandardCharsets.UTF_8.newDecoder());
+        buffer.bind(new ByteArrayInputStream(str.getBytes()));
+        Header[] headers = AbstractMessageParser.parseHeaders(buffer, -1, -1, null);
 
-        // Same rules as the commons-httpclient 3 HttpParser.parseHeaders this replaces
-        for (String line = readLine(is); line != null && line.trim().length() > 0; line = readLine(is)) {
-            if (line.charAt(0) == ' ' || line.charAt(0) == '\t') {
-                // Folded continuation line, appended to the previous header value
-                if (value != null) {
-                    value.append(' ').append(line.trim());
-                }
-            } else {
-                if (name != null) {
-                    headersMap.put(name, value.toString());
-                }
-
-                int colon = line.indexOf(':');
-                if (colon < 0) {
-                    throw new ProtocolException("Unable to parse header: " + line);
-                }
-                name = line.substring(0, colon).trim();
-                value = new StringBuilder(line.substring(colon + 1).trim());
-            }
-        }
-
-        if (name != null) {
-            headersMap.put(name, value.toString());
+        for (int i = 0; i < headers.length; i++) {
+            headersMap.put(headers[i].getName(), headers[i].getValue());
         }
 
         return headersMap;
-    }
-
-    /*
-     * Reads up to and including the next LF, strips a trailing LF or CRLF and decodes the line as
-     * UTF-8. Returns null at the end of the stream.
-     */
-    private static String readLine(InputStream is) throws IOException {
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
-        int ch;
-        while ((ch = is.read()) >= 0) {
-            buf.write(ch);
-            if (ch == '\n') {
-                break;
-            }
-        }
-        if (buf.size() == 0) {
-            return null;
-        }
-
-        byte[] data = buf.toByteArray();
-        int len = data.length;
-        if (data[len - 1] == '\n') {
-            len--;
-            if (len > 0 && data[len - 1] == '\r') {
-                len--;
-            }
-        }
-        return new String(data, 0, len, StandardCharsets.UTF_8);
     }
 
     /**

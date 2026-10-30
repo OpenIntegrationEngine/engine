@@ -14,9 +14,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,46 +23,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.NTCredentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.client.utils.DateUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContexts;
-import org.apache.http.util.EntityUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
+import com.github.sardine.DavResource;
+import com.github.sardine.impl.SardineImpl;
+import com.github.sardine.impl.SardineRedirectStrategy;
+import com.github.sardine.impl.handler.MultiStatusResponseHandler;
+import com.github.sardine.impl.methods.HttpPropFind;
+import com.github.sardine.model.Activelock;
+import com.github.sardine.model.Prop;
+import com.github.sardine.model.Propstat;
+import com.github.sardine.model.Response;
 import com.mirth.connect.connectors.file.FileSystemConnectionOptions;
 import com.mirth.connect.connectors.file.filters.RegexFilenameFilter;
 
@@ -137,43 +125,19 @@ public class WebDavConnection implements FileSystemConnection {
         private boolean locked;
     }
 
-    private static class HttpPropfind extends HttpEntityEnclosingRequestBase {
-        private static final String BODY = "<?xml version=\"1.0\" encoding=\"utf-8\"?>" + "<D:propfind xmlns:D=\"DAV:\"><D:prop>" + "<D:resourcetype/><D:getcontentlength/><D:getlastmodified/><D:lockdiscovery/>" + "</D:prop></D:propfind>";
+    /** Sardine leaves lockdiscovery out of DavResource, so keep the raw responses */
+    private static class Client extends SardineImpl {
+        private static final String PROPFIND = "<?xml version=\"1.0\" encoding=\"utf-8\"?>" + "<D:propfind xmlns:D=\"DAV:\"><D:prop>" + "<D:resourcetype/><D:getcontentlength/><D:getlastmodified/><D:lockdiscovery/>" + "</D:prop></D:propfind>";
 
-        HttpPropfind(URI uri, int depth) {
-            setURI(uri);
-            setHeader("Depth", String.valueOf(depth));
-            setEntity(new StringEntity(BODY, ContentType.create("application/xml", StandardCharsets.UTF_8)));
+        Client(HttpClientBuilder builder) {
+            super(builder);
         }
 
-        @Override
-        public String getMethod() {
-            return "PROPFIND";
-        }
-    }
-
-    private static class HttpMkcol extends HttpRequestBase {
-        HttpMkcol(URI uri) {
-            setURI(uri);
-        }
-
-        @Override
-        public String getMethod() {
-            return "MKCOL";
-        }
-    }
-
-    private static class HttpMove extends HttpRequestBase {
-        HttpMove(URI source, URI destination) {
-            setURI(source);
-            setHeader("Destination", destination.toASCIIString());
-            // Slide never overwrote an existing target
-            setHeader("Overwrite", "F");
-        }
-
-        @Override
-        public String getMethod() {
-            return "MOVE";
+        List<Response> propfind(String url, int depth) throws IOException {
+            HttpPropFind propfind = new HttpPropFind(url);
+            propfind.setDepth(String.valueOf(depth));
+            propfind.setEntity(new StringEntity(PROPFIND, ContentType.create("application/xml", StandardCharsets.UTF_8)));
+            return execute(propfind, new MultiStatusResponseHandler()).getResponse();
         }
     }
 
@@ -186,7 +150,7 @@ public class WebDavConnection implements FileSystemConnection {
         private final ByteArrayInputStream in;
 
         ResettableEntity(ByteArrayInputStream in, long length) {
-            super(in, length);
+            super(in, length, ContentType.APPLICATION_OCTET_STREAM);
             this.in = in;
             in.mark(0);
         }
@@ -203,18 +167,14 @@ public class WebDavConnection implements FileSystemConnection {
         }
     }
 
-    private static final String DAV = "DAV:";
     private static final Pattern SUCCESS_STATUS = Pattern.compile("^HTTP/\\S+\\s+2\\d\\d");
 
     private static transient Log logger = LogFactory.getLog(WebDavConnection.class);
 
     /** The WebDAV client instance */
-    private CloseableHttpClient client = null;
-    /** Shared across requests so an authenticated session is reused */
-    private HttpClientContext context = HttpClientContext.create();
-    private RequestConfig requestConfig;
+    private Client client = null;
     private String baseUrl;
-    private CloseableHttpResponse readResponse = null;
+    private InputStream readStream = null;
     /** Whether the last path looked up exists, as WebdavResource.exists() reported it */
     private boolean exists = false;
     /** Status line of the last failed PROPFIND */
@@ -239,9 +199,9 @@ public class WebDavConnection implements FileSystemConnection {
         }
 
         // The schemes httpclient 3 negotiated, in its order of preference
-        requestConfig = RequestConfig.custom().setTargetPreferredAuthSchemes(Arrays.asList(AuthSchemes.NTLM, AuthSchemes.DIGEST, AuthSchemes.BASIC)).setConnectTimeout(timeout).setSocketTimeout(timeout).build();
+        RequestConfig requestConfig = RequestConfig.custom().setTargetPreferredAuthSchemes(Arrays.asList(AuthSchemes.NTLM, AuthSchemes.DIGEST, AuthSchemes.BASIC)).setConnectTimeout(timeout).setSocketTimeout(timeout).setExpectContinueEnabled(false).build();
 
-        client = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).setDefaultRequestConfig(requestConfig).setSSLSocketFactory(new SSLConnectionSocketFactory(SSLContexts.createSystemDefault())).build();
+        client = new Client(HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).setDefaultRequestConfig(requestConfig).setRedirectStrategy(new SardineRedirectStrategy()).setSSLSocketFactory(new SSLConnectionSocketFactory(SSLContexts.createSystemDefault())));
 
         try {
             stat("/");
@@ -267,7 +227,7 @@ public class WebDavConnection implements FileSystemConnection {
     public List<String> listDirectories(String fromDir) throws Exception {
         List<String> directories = new ArrayList<String>();
         for (FileInfo directory : list(fromDir, false, null, false)) {
-            directories.add(getFullPath(directory.getParent(), directory.getName()));
+            directories.add(normalize(getFullPath(directory.getParent(), directory.getName())));
         }
         return directories;
     }
@@ -292,7 +252,7 @@ public class WebDavConnection implements FileSystemConnection {
             String path = normalize(resource.path);
 
             String name = path.substring(path.lastIndexOf('/') + 1);
-            WebDavFileInfo file = new WebDavFileInfo(fromDir, name, uri(getFullPath(fromDir, name)).toString(), resource.collection, resource.length, resource.lastModified);
+            WebDavFileInfo file = new WebDavFileInfo(fromDir, name, url(getFullPath(fromDir, name)), resource.collection, resource.length, resource.lastModified);
 
             if (files) {
                 if (file.isFile() && filenameFilter.accept(null, file.getName()) && !(ignoreDot && file.getName().startsWith("."))) {
@@ -326,21 +286,19 @@ public class WebDavConnection implements FileSystemConnection {
         }
 
         closeReadFile();
-        CloseableHttpResponse response = client.execute(new HttpGet(uri(fullPath)), context);
-        if (!isSuccess(response)) {
-            response.close();
-            throw new IOException("Couldn't get file");
+        try {
+            readStream = client.get(url(fullPath));
+        } catch (HttpResponseException e) {
+            throw new IOException("Couldn't get file", e);
         }
-
-        readResponse = response;
-        return response.getEntity().getContent();
+        return readStream;
     }
 
     @Override
     public void closeReadFile() throws Exception {
-        if (readResponse != null) {
-            readResponse.close();
-            readResponse = null;
+        if (readStream != null) {
+            readStream.close();
+            readStream = null;
         }
     }
 
@@ -358,24 +316,23 @@ public class WebDavConnection implements FileSystemConnection {
 
         if (dir == null) {
             // create the directory.
-            execute(new HttpMkcol(uri(toDir)));
+            createDirectory(toDir);
             logger.info("Destination directory does not exist. Creating directory: '" + toDir + "'");
         } else if (!dir.collection) {
             // make sure it's a directory, not a file.
             throw new Exception("The destination directory path is invalid: '" + toDir + "'");
         }
 
-        HttpPut put = new HttpPut(uri(fullPath));
-        if (is instanceof ByteArrayInputStream) {
-            put.setEntity(new ResettableEntity((ByteArrayInputStream) is, contentLength));
-        } else {
-            // Other streams can't be resent. Expect: 100-continue usually gets an authentication
-            // challenge before the body, but a buffering proxy may still consume it first.
-            put.setConfig(RequestConfig.copy(requestConfig).setExpectContinueEnabled(true).build());
-            put.setEntity(new InputStreamEntity(is, contentLength));
-        }
-        if (!execute(put)) {
-            logger.error("Unable to write file: '" + fullPath);
+        try {
+            if (is instanceof ByteArrayInputStream) {
+                client.put(url(fullPath), new ResettableEntity((ByteArrayInputStream) is, contentLength), null, false);
+            } else {
+                // Other streams can't be resent. Expect: 100-continue usually gets an authentication
+                // challenge before the body, but a buffering proxy may still consume it first.
+                client.put(url(fullPath), new InputStreamEntity(is, contentLength, ContentType.APPLICATION_OCTET_STREAM), null, true);
+            }
+        } catch (HttpResponseException e) {
+            logger.error("Unable to write file: '" + fullPath, e);
         }
     }
 
@@ -383,9 +340,11 @@ public class WebDavConnection implements FileSystemConnection {
     public void delete(String file, String fromDir, boolean mayNotExist) throws Exception {
         String fullPath = getFullPath(fromDir, file);
 
-        if (!execute(new HttpDelete(uri(fullPath)))) {
+        try {
+            client.delete(url(fullPath));
+        } catch (HttpResponseException e) {
             if (!mayNotExist) {
-                logger.error("Unable to delete file: '" + fullPath + "'");
+                logger.error("Unable to delete file: '" + fullPath + "'", e);
             }
         }
     }
@@ -400,15 +359,18 @@ public class WebDavConnection implements FileSystemConnection {
 
         if (dir == null) {
             // create the directory. and then move.
-            execute(new HttpMkcol(uri(toDir)));
+            createDirectory(toDir);
             logger.info("Move-To directory does not exist. Creating directory: '" + toDir + "'");
         } else if (!dir.collection) {
             // make sure it's a directory, not a file.
             throw new Exception("The move-to directory path is invalid: '" + toDir + "'");
         }
 
-        if (!execute(new HttpMove(uri(sourcePath), uri(targetPath)))) {
-            logger.error("Unable to move file: '" + sourcePath + "' to '" + targetPath + "'");
+        try {
+            // Slide never overwrote an existing target
+            client.move(url(sourcePath), url(targetPath), false);
+        } catch (HttpResponseException e) {
+            logger.error("Unable to move file: '" + sourcePath + "' to '" + targetPath + "'", e);
         }
     }
 
@@ -435,7 +397,7 @@ public class WebDavConnection implements FileSystemConnection {
         try {
             closeReadFile();
             if (client != null) {
-                client.close();
+                client.shutdown();
             }
         } catch (Exception e) {
             logger.debug(e);
@@ -477,100 +439,66 @@ public class WebDavConnection implements FileSystemConnection {
 
     /** Returns the resources of a PROPFIND multistatus, or null if the request failed */
     private List<Resource> propfind(String path, int depth) throws IOException {
-        try (CloseableHttpResponse response = client.execute(new HttpPropfind(uri(path), depth), context)) {
-            int statusCode = response.getStatusLine().getStatusCode();
-            exists = statusCode == HttpStatus.SC_MULTI_STATUS;
-            if (!exists) {
-                lastStatus = response.getStatusLine().toString();
-                EntityUtils.consume(response.getEntity());
-
-                // Apache redirects a collection requested without its trailing slash
-                if (statusCode >= 300 && statusCode < 400 && !path.endsWith("/")) {
-                    return propfind(path + "/", depth);
-                }
-                return null;
-            }
-
-            try (InputStream in = response.getEntity().getContent()) {
-                return parseMultistatus(newDocumentBuilder().parse(in));
-            } catch (IOException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new IOException("Invalid PROPFIND response for '" + path + "'", e);
-            }
+        List<Response> responses;
+        try {
+            responses = client.propfind(url(path), depth);
+            exists = true;
+        } catch (HttpResponseException e) {
+            exists = false;
+            lastStatus = e.getMessage();
+            return null;
         }
-    }
 
-    private static List<Resource> parseMultistatus(Document document) {
         List<Resource> resources = new ArrayList<Resource>();
-        NodeList responses = document.getElementsByTagNameNS(DAV, "response");
-
-        for (int i = 0; i < responses.getLength(); i++) {
-            Element response = (Element) responses.item(i);
-            Element href = child(response, "href");
-            if (href == null) {
+        for (Response response : responses) {
+            DavResource davResource;
+            try {
+                davResource = new DavResource(response);
+            } catch (URISyntaxException e) {
                 continue;
             }
 
             // A response-level status means there are no properties, e.g. 403
-            Element responseStatus = child(response, "status");
-            if (responseStatus != null && !isSuccess(responseStatus)) {
+            int status = davResource.getStatusCode();
+            if (status < 200 || status >= 300) {
                 continue;
             }
-            boolean found = responseStatus != null;
 
+            // Only count responses with a 2xx propstat, or none at all
+            boolean found = response.getStatus() != null;
             Resource resource = new Resource();
-            resource.path = hrefPath(href.getTextContent().trim());
-
-            // Only properties from a 2xx propstat are present
-            for (Element propstat : children(response, "propstat")) {
-                Element prop = child(propstat, "prop");
-                if (prop == null || !isSuccess(child(propstat, "status"))) {
+            for (Propstat propstat : response.getPropstat()) {
+                Prop prop = propstat.getProp();
+                if (prop == null || !isSuccess(propstat.getStatus())) {
                     continue;
                 }
                 found = true;
 
-                Element resourceType = child(prop, "resourcetype");
-                if (resourceType != null && child(resourceType, "collection") != null) {
-                    resource.collection = true;
-                }
-
-                Element contentLength = child(prop, "getcontentlength");
-                if (contentLength != null) {
-                    try {
-                        resource.length = Long.parseLong(contentLength.getTextContent().trim());
-                    } catch (NumberFormatException e) {}
-                }
-
-                Element lastModified = child(prop, "getlastmodified");
-                if (lastModified != null) {
-                    Date date = DateUtils.parseDate(lastModified.getTextContent().trim());
-                    if (date != null) {
-                        resource.lastModified = date.getTime();
-                    }
-                }
-
-                Element lockDiscovery = child(prop, "lockdiscovery");
-                if (lockDiscovery != null) {
-                    for (Element activeLock : children(lockDiscovery, "activelock")) {
-                        Element lockType = child(activeLock, "locktype");
-                        if (lockType != null && child(lockType, "write") != null) {
+                if (prop.getLockdiscovery() != null) {
+                    for (Activelock activeLock : prop.getLockdiscovery().getActivelock()) {
+                        if (activeLock.getLocktype() != null && activeLock.getLocktype().getWrite() != null) {
                             resource.locked = true;
                         }
                     }
                 }
             }
-
-            if (found) {
-                resources.add(resource);
+            if (!found) {
+                continue;
             }
+
+            resource.path = davResource.getPath();
+            resource.collection = davResource.isDirectory();
+            resource.length = Math.max(davResource.getContentLength(), 0);
+            Date modified = davResource.getModified();
+            resource.lastModified = modified == null ? 0 : modified.getTime();
+            resources.add(resource);
         }
 
         return resources;
     }
 
-    private static boolean isSuccess(Element status) {
-        return status == null || SUCCESS_STATUS.matcher(status.getTextContent().trim()).find();
+    private static boolean isSuccess(String status) {
+        return status == null || SUCCESS_STATUS.matcher(status.trim()).find();
     }
 
     /**
@@ -599,63 +527,17 @@ public class WebDavConnection implements FileSystemConnection {
         return -1;
     }
 
-    private static DocumentBuilder newDocumentBuilder() throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        factory.setXIncludeAware(false);
-        factory.setExpandEntityReferences(false);
-        return factory.newDocumentBuilder();
-    }
-
-    private static Element child(Element parent, String localName) {
-        List<Element> children = children(parent, localName);
-        return children.isEmpty() ? null : children.get(0);
-    }
-
-    private static List<Element> children(Element parent, String localName) {
-        List<Element> children = new ArrayList<Element>();
-        for (Node node = parent.getFirstChild(); node != null; node = node.getNextSibling()) {
-            if (node.getNodeType() == Node.ELEMENT_NODE && DAV.equals(node.getNamespaceURI()) && localName.equals(node.getLocalName())) {
-                children.add((Element) node);
-            }
-        }
-        return children;
-    }
-
-    /** Decodes an href, which may be an absolute URL or an absolute path */
-    private static String hrefPath(String href) {
-        int schemeEnd = href.indexOf("://");
-        if (schemeEnd >= 0) {
-            int pathStart = href.indexOf('/', schemeEnd + 3);
-            href = pathStart < 0 ? "/" : href.substring(pathStart);
-        }
+    private void createDirectory(String path) throws IOException {
         try {
-            // Paths don't use form encoding, so keep '+' as is
-            return URLDecoder.decode(href.replace("+", "%2B"), "UTF-8");
-        } catch (Exception e) {
-            return href;
+            client.createDirectory(url(path));
+        } catch (HttpResponseException e) {
+            logger.debug(e);
         }
     }
 
-    private boolean execute(HttpUriRequest request) throws IOException {
-        try (CloseableHttpResponse response = client.execute(request, context)) {
-            EntityUtils.consume(response.getEntity());
-            return isSuccess(response);
-        }
-    }
-
-    private static boolean isSuccess(HttpResponse response) {
-        int statusCode = response.getStatusLine().getStatusCode();
-        return statusCode >= 200 && statusCode < 300;
-    }
-
-    private URI uri(String path) throws IOException {
+    private String url(String path) throws IOException {
         try {
-            return new URIBuilder(baseUrl).setPath(path).build();
+            return new URIBuilder(baseUrl).setPath(path).build().toASCIIString();
         } catch (URISyntaxException e) {
             throw new IOException(e);
         }

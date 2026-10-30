@@ -137,6 +137,7 @@ public class WebDavConnectionTest {
         List<String> directories = connection.listDirectories("/in");
         Collections.sort(directories);
         assertEquals(List.of("/in/sub", "/in/sub2"), directories);
+        assertTrue(connection.listDirectories("/").contains("/in"));
     }
 
     @Test

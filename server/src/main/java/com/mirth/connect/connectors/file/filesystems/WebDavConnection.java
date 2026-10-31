@@ -9,9 +9,11 @@
 
 package com.mirth.connect.connectors.file.filesystems;
 
+import java.io.ByteArrayInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,12 +34,13 @@ import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContexts;
 
 import com.github.sardine.DavResource;
-import com.github.sardine.Sardine;
 import com.github.sardine.impl.SardineImpl;
 import com.github.sardine.impl.SardineRedirectStrategy;
 
@@ -104,14 +107,40 @@ public class WebDavConnection implements FileSystemConnection {
         public void populateSourceMap(Map<String, Object> sourceMap) {}
     }
 
+    /**
+     * Streams a ByteArrayInputStream, which is what FileDispatcher passes, and resends it by
+     * resetting the stream. The PUT can then be retried after an authentication challenge without
+     * copying the payload, even when a proxy has already read the body.
+     */
+    private static class ResettableEntity extends InputStreamEntity {
+        private final ByteArrayInputStream in;
+
+        ResettableEntity(ByteArrayInputStream in, long length) {
+            super(in, length, ContentType.APPLICATION_OCTET_STREAM);
+            this.in = in;
+            in.mark(0);
+        }
+
+        @Override
+        public boolean isRepeatable() {
+            return true;
+        }
+
+        @Override
+        public void writeTo(OutputStream out) throws IOException {
+            in.reset();
+            super.writeTo(out);
+        }
+    }
+
     private static transient Log logger = LogFactory.getLog(WebDavConnection.class);
 
     /** The WebDAV client instance */
-    private Sardine client = null;
+    private SardineImpl client = null;
     private String baseUrl;
     private InputStream readStream = null;
-    /** Whether the last path looked up exists, as WebdavResource.exists() reported it */
-    private boolean exists = false;
+    /** Whether the server answered the last PROPFIND */
+    private boolean connected = false;
     /** Status of the last failed PROPFIND */
     private String lastStatus = null;
 
@@ -119,7 +148,7 @@ public class WebDavConnection implements FileSystemConnection {
         this(createClient(host, port, secure, fileSystemOptions, timeout), new HttpHost(host, port, secure ? "https" : "http").toURI());
     }
 
-    WebDavConnection(Sardine client, String baseUrl) {
+    WebDavConnection(SardineImpl client, String baseUrl) {
         this.client = client;
         this.baseUrl = baseUrl;
 
@@ -130,13 +159,13 @@ public class WebDavConnection implements FileSystemConnection {
         }
     }
 
-    private static Sardine createClient(String host, int port, boolean secure, FileSystemConnectionOptions fileSystemOptions, int timeout) {
+    private static SardineImpl createClient(String host, int port, boolean secure, FileSystemConnectionOptions fileSystemOptions, int timeout) {
         String username = fileSystemOptions.getUsername();
         String password = fileSystemOptions.getPassword();
-        int authPort = port > 0 ? port : (secure ? 443 : 80);
-
         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         if (!username.equals("null")) {
+            int authPort = port > 0 ? port : (secure ? 443 : 80);
+
             // Scope credentials to this port so a redirect elsewhere doesn't get them
             credentialsProvider.setCredentials(new AuthScope(host, authPort), new UsernamePasswordCredentials(username, password));
 
@@ -149,13 +178,7 @@ public class WebDavConnection implements FileSystemConnection {
         // The schemes httpclient 3 negotiated, in its order of preference
         RequestConfig requestConfig = RequestConfig.custom().setTargetPreferredAuthSchemes(Arrays.asList(AuthSchemes.NTLM, AuthSchemes.DIGEST, AuthSchemes.BASIC)).setConnectTimeout(timeout).setSocketTimeout(timeout).setExpectContinueEnabled(false).build();
 
-        SardineImpl sardine = new SardineImpl(HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).setDefaultRequestConfig(requestConfig).setRedirectStrategy(new SardineRedirectStrategy()).setSSLSocketFactory(new SSLConnectionSocketFactory(SSLContexts.createSystemDefault())));
-        if (secure && !username.equals("null")) {
-            // Send Basic up front so a streamed PUT doesn't have to be resent. Only over TLS, so a
-            // server that would have negotiated Digest never sees the password in cleartext.
-            sardine.enablePreemptiveAuthentication(host, authPort, authPort);
-        }
-        return sardine;
+        return new SardineImpl(HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).setDefaultRequestConfig(requestConfig).setRedirectStrategy(new SardineRedirectStrategy()).setSSLSocketFactory(new SSLConnectionSocketFactory(SSLContexts.createSystemDefault())));
     }
 
     @Override
@@ -273,7 +296,13 @@ public class WebDavConnection implements FileSystemConnection {
         }
 
         try {
-            client.put(url(fullPath), is, "application/octet-stream", true, contentLength);
+            if (is instanceof ByteArrayInputStream) {
+                client.put(url(fullPath), new ResettableEntity((ByteArrayInputStream) is, contentLength), null, false);
+            } else {
+                // Other streams can't be resent. Expect: 100-continue usually gets an authentication
+                // challenge before the body, but a buffering proxy may still consume it first.
+                client.put(url(fullPath), new InputStreamEntity(is, contentLength, ContentType.APPLICATION_OCTET_STREAM), null, true);
+            }
         } catch (HttpResponseException e) {
             logger.error("Unable to write file: '" + fullPath, e);
         }
@@ -319,7 +348,7 @@ public class WebDavConnection implements FileSystemConnection {
 
     @Override
     public boolean isConnected() {
-        return client != null && exists;
+        return client != null && connected;
     }
 
     @Override
@@ -349,7 +378,7 @@ public class WebDavConnection implements FileSystemConnection {
 
     @Override
     public boolean isValid() {
-        return client != null && exists;
+        return client != null && connected;
     }
 
     @Override
@@ -383,12 +412,16 @@ public class WebDavConnection implements FileSystemConnection {
     private List<DavResource> propfind(String path, int depth) throws IOException {
         try {
             List<DavResource> resources = client.list(url(path), depth, Collections.emptySet());
-            exists = true;
+            connected = true;
             return resources;
         } catch (HttpResponseException e) {
-            exists = false;
+            // Any answer, e.g. 404 for a missing file, means the server is reachable
+            connected = true;
             lastStatus = e.getMessage();
             return null;
+        } catch (IOException e) {
+            connected = false;
+            throw e;
         }
     }
 

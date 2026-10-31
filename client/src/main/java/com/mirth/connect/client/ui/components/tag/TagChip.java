@@ -16,17 +16,23 @@ import java.awt.event.MouseEvent;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 
 /**
  * A single rounded tag "chip" with a delete affordance. Used by {@link MirthTagField}.
+ * <p>
+ * Like a browser tab, a chip is deleted by a left click on its "×" or a middle click anywhere on
+ * it. Either acts on release, and only if the pointer is still over what was pressed.
  */
 public class TagChip extends JPanel {
-    private static final Font FONT = new Font("Tahoma", Font.PLAIN, 11);
+    /** Also used by {@link MirthTagField}'s editor, so typed text looks like the chips. */
+    static final Font FONT = new Font("Tahoma", Font.PLAIN, 11);
     private static final Font CLOSE_FONT = new Font("Tahoma", Font.BOLD, 12);
     private static final int HEIGHT = 20;
-    private static final int ARC = 6;
+    /** Also used by {@link MirthTagField}'s edit mode outline. */
+    static final int ARC = 6;
     private static final float OPACITY = 0.9f;
     private static final Color BORDER_COLOR = new Color(0xD9, 0xD9, 0xD9);
 
@@ -44,14 +50,31 @@ public class TagChip extends JPanel {
         nameLabel.setForeground(foreground);
         add(nameLabel);
 
+        // The name label has no listeners of its own, so presses on it land here too.
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (isEnabled() && SwingUtilities.isMiddleMouseButton(e) && contains(e.getPoint())) {
+                    onDelete.run();
+                }
+            }
+        });
+
         closeLabel = new JLabel("×");
         closeLabel.setFont(CLOSE_FONT);
         closeLabel.setForeground(foreground);
         closeLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         closeLabel.addMouseListener(new MouseAdapter() {
+            /*
+             * Released rather than clicked: a click is dropped if the pointer moves at all while the
+             * button is down, which a trackpoint nearly always does. Other buttons are ignored; they
+             * include horizontal scrolling on X11, which arrives as buttons 4 and 5.
+             */
             @Override
-            public void mouseClicked(MouseEvent e) {
-                if (isEnabled()) {
+            public void mouseReleased(MouseEvent e) {
+                boolean deleteButton = SwingUtilities.isLeftMouseButton(e) || SwingUtilities.isMiddleMouseButton(e);
+
+                if (isEnabled() && deleteButton && closeLabel.contains(e.getPoint())) {
                     onDelete.run();
                 }
             }

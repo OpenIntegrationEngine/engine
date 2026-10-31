@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.NTCredentials;
@@ -296,13 +297,10 @@ public class WebDavConnection implements FileSystemConnection {
         }
 
         try {
-            if (is instanceof ByteArrayInputStream) {
-                client.put(url(fullPath), new ResettableEntity((ByteArrayInputStream) is, contentLength), null, false);
-            } else {
-                // Other streams can't be resent. Expect: 100-continue usually gets an authentication
-                // challenge before the body, but a buffering proxy may still consume it first.
-                client.put(url(fullPath), new InputStreamEntity(is, contentLength, ContentType.APPLICATION_OCTET_STREAM), null, true);
-            }
+            // Expect: 100-continue usually gets an authentication challenge before the body. A buffering
+            // proxy may still consume the body first, so resend it when the stream allows.
+            HttpEntity entity = is instanceof ByteArrayInputStream ? new ResettableEntity((ByteArrayInputStream) is, contentLength) : new InputStreamEntity(is, contentLength, ContentType.APPLICATION_OCTET_STREAM);
+            client.put(url(fullPath), entity, null, true);
         } catch (HttpResponseException e) {
             logger.error("Unable to write file: '" + fullPath, e);
         }

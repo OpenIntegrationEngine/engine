@@ -122,16 +122,16 @@ public class WebDavConnectionTest {
         connection.writeFile("a.txt", "/out", false, new ByteArrayInputStream("abc".getBytes()), 3, new HashMap<>());
         verify(sardine).createDirectory(BASE + "/out");
 
-        // The body can be resent after an authentication challenge, without Expect: 100-continue
+        // The body can be resent if a proxy consumed it before the authentication challenge
         ArgumentCaptor<HttpEntity> entity = ArgumentCaptor.forClass(HttpEntity.class);
-        verify(sardine).put(eq(BASE + "/out/a.txt"), entity.capture(), isNull(), eq(false));
+        verify(sardine).put(eq(BASE + "/out/a.txt"), entity.capture(), isNull(), eq(true));
         assertTrue(entity.getValue().isRepeatable());
         assertEquals("abc", body(entity.getValue()));
         assertEquals("abc", body(entity.getValue()));
     }
 
     @Test
-    public void otherStreamsUseExpectContinue() throws Exception {
+    public void otherStreamsAreNotResent() throws Exception {
         propfind("/out", 0, dir("/out/"));
         InputStream in = new FilterInputStream(new ByteArrayInputStream("abc".getBytes())) {};
         connection.writeFile("a.txt", "/out", false, in, 3, new HashMap<>());

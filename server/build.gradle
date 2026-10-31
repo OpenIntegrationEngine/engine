@@ -40,16 +40,6 @@ def syncDonkeyLibs = tasks.register('syncDonkeyLibs', Sync) {
 
 compileJava.dependsOn syncDonkeyLibs
 
-compileTestJava {
-    options.compilerArgs += [
-        '--add-modules=java.sql.rowset',
-        '--add-exports=java.sql.rowset/com.sun.rowset=ALL-UNNAMED',
-        '--add-exports=java.base/com.sun.crypto.provider=ALL-UNNAMED',
-        '--add-exports=java.base/sun.security.provider=ALL-UNNAMED',
-    ]
-}
-
-
 def generateVersionProperties = tasks.register('generateVersionProperties') {
     description = 'Generates version.properties (embedded in mirth-client-core.jar).'
     def outFile = file('version.properties')
@@ -502,9 +492,12 @@ def userApiJavadoc = tasks.register('userApiJavadoc') {
     })
     outputs.dir outDir
     dependsOn syncDonkeyLibs
+    def javadocTool = javaToolchains.javadocToolFor(java.toolchain)
+    // the output depends on the javadoc version, which is not otherwise an input
+    inputs.property('javadocVersion', javadocTool.map { it.metadata.languageVersion.asInt() })
     doLast {
         outDir.mkdirs()
-        def cmd = [new File(System.getProperty('java.home'), 'bin/javadoc').absolutePath,
+        def cmd = [javadocTool.get().executablePath.asFile.absolutePath,
                    '-d', outDir.absolutePath,
                    '-notimestamp',
                    '-classpath', (configurations.compileClasspath + fileTree(dir: 'lib', include: '**/*.jar')).asPath,

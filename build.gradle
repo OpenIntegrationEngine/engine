@@ -34,6 +34,8 @@
  *   ./gradlew test [-Pcoverage=true]         tests only (JaCoCo optional)
  *   ./gradlew dist                           distribution extension zips
  *   ./gradlew clean                          clean all modules
+ *   ./gradlew build -PjavaToolchain=21       compile/test with another JDK
+ *                                            (output still targets Java 17)
  *
  * For release artifacts run a clean build (./gradlew clean build dist):
  * the staging into server/setup removes stale files where it owns the
@@ -71,6 +73,9 @@ ext {
     disableTests = flag('disableTests')
     disableSigning = flag('disableSigning')
     coverageEnabled = flag('coverage')
+    // the shipped bytecode and API level; the JDK used to build may be newer
+    javaRelease = 17
+    javaToolchain = (providers.gradleProperty('javaToolchain').getOrNull() ?: javaRelease) as int
 }
 
 allprojects {
@@ -158,7 +163,7 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(17)
+            languageVersion = JavaLanguageVersion.of(rootProject.javaToolchain)
         }
     }
 
@@ -177,6 +182,7 @@ subprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
+        options.release = rootProject.javaRelease
         options.debug = true
     }
     // Match Ant's javac invocation: -sourcepath defaults to srcdir, and
@@ -275,7 +281,7 @@ subprojects {
 
     if (rootProject.coverageEnabled) {
         apply plugin: 'jacoco'
-        jacoco { toolVersion = '0.8.8' }
+        jacoco { toolVersion = '0.8.15' }
         tasks.withType(Test).configureEach { finalizedBy tasks.named('jacocoTestReport') }
         tasks.named('jacocoTestReport') {
             reports.xml.required = true

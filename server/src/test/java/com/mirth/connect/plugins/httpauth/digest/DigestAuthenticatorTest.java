@@ -226,6 +226,10 @@ public class DigestAuthenticatorTest {
         assertEquals(null, directive(result, "stale"));
     }
 
+    /*
+     * Characterizes existing behaviour, not an endorsement: without qop the request follows RFC 2069,
+     * which has no nonce count, so a nonce stays reusable until it expires.
+     */
     @Test
     public void testNonceWithoutCountCanBeReused() throws Exception {
         String nonce = challengeNonce();
@@ -280,14 +284,24 @@ public class DigestAuthenticatorTest {
     public void testDisabledAlgorithmAndQopAreRejected() throws Exception {
         props.setAlgorithms(EnumSet.of(Algorithm.MD5_SESS));
         props.setQopModes(EnumSet.of(QOPMode.AUTH_INT));
-        String nonce = challengeNonce();
         String ha1 = md5(USER, REALM, PASSWORD);
 
+        // Each attempt gets its own nonce, so a rejection can't come from the nonce count instead
+        String nonce = challengeNonce();
         String md5Response = md5(ha1, nonce, md5("POST", URI));
         AuthenticationResult result = authenticator.authenticate(request(URI, authorization(USER, REALM, nonce, URI, md5Response, OPAQUE, "algorithm=MD5"), null));
         assertEquals(AuthStatus.CHALLENGED, result.getStatus());
 
-        assertEquals(AuthStatus.CHALLENGED, authenticateWithQop(nonce, "00000001").getStatus());
+        assertEquals(AuthStatus.CHALLENGED, authenticateWithQop(challengeNonce(), "00000001").getStatus());
+
+        // Positive control: the enabled combination still succeeds
+        nonce = challengeNonce();
+        String sessHa1 = md5(ha1, nonce, "cnonce1");
+        String ha2 = md5("POST", URI, md5("hello"));
+        String response = md5(sessHa1, nonce, "00000001", "cnonce1", "auth-int", ha2);
+        String extra = "algorithm=MD5-sess, qop=auth-int, nc=00000001, cnonce=\"cnonce1\"";
+        result = authenticator.authenticate(request(URI, authorization(USER, REALM, nonce, URI, response, OPAQUE, extra), "hello".getBytes(StandardCharsets.UTF_8)));
+        assertEquals(AuthStatus.SUCCESS, result.getStatus());
     }
 
     @Test

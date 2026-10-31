@@ -306,6 +306,22 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                     @ExampleObject(name = "configurationMap", ref = "../apiexamples/configuration_map_json") }) }) Map<String, ConfigurationProperty> map) throws ClientException;
 
+    @PUT
+    @Path("/configurationMap/{key}")
+    @Operation(summary = "Updates a single entry in the configuration map, leaving the rest alone.")
+    @MirthOperation(name = "setConfigurationProperty", display = "Set configuration map entry", permission = Permissions.CONFIGURATION_MAP_EDIT)
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN })
+    public boolean setConfigurationProperty(
+            @Param("key") @Parameter(description = "The key of the entry to set. It can't be blank, and a / in the key has to be encoded as %2F.", required = true) @PathParam("key") String key,
+            @Param("property") @RequestBody(description = "The value and comment to store under the key.", required = true, content = {
+                    @Content(mediaType = MediaType.APPLICATION_XML, examples = {
+                            @ExampleObject(name = "configurationProperty", ref = "../apiexamples/configuration_property_xml") }),
+                    @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
+                            @ExampleObject(name = "configurationProperty", ref = "../apiexamples/configuration_property_json") }) }) ConfigurationProperty property,
+            @Param("expectedVersion") @Parameter(description = "If set, the entry is only updated if its current version matches. Otherwise nothing is changed and false is returned. "
+                    + "An entry's version is the hex SHA-256 of the UTF-8 bytes of its value, a unit separator (U+001F), and its comment, with a null value and a null or blank comment treated as empty strings. The comparison ignores case. "
+                    + "Use an empty string to require that the key doesn't exist yet. If not set, the entry is updated unconditionally.") @QueryParam("expectedVersion") String expectedVersion) throws ClientException;
+
     @GET
     @Path("/databaseDrivers")
     @Operation(summary = "Returns the database driver list.")

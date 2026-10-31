@@ -810,6 +810,19 @@ public class Client implements UserServletInterface, ConfigurationServletInterfa
     }
 
     /**
+     * Updates a single entry in the configuration map, leaving the rest alone. If expectedVersion is
+     * not null and doesn't match the entry's current version, nothing is changed and false is
+     * returned.
+     * 
+     * @see ConfigurationServletInterface#setConfigurationProperty
+     * @see ConfigurationProperty#versionOf
+     */
+    @Override
+    public boolean setConfigurationProperty(String key, ConfigurationProperty property, String expectedVersion) throws ClientException {
+        return getServlet(ConfigurationServletInterface.class).setConfigurationProperty(key, property, expectedVersion);
+    }
+
+    /**
      * Returns the database driver list.
      * 
      * @see ConfigurationServletInterface#getDatabaseDrivers

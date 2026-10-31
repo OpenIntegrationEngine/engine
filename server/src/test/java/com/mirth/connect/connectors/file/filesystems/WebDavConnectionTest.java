@@ -5,16 +5,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,24 +26,27 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.http.HttpEntity;
+
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.github.sardine.DavResource;
-import com.github.sardine.Sardine;
 import com.github.sardine.impl.SardineException;
+import com.github.sardine.impl.SardineImpl;
 import com.mirth.connect.connectors.file.FileSystemConnectionOptions;
 
 public class WebDavConnectionTest {
 
     private static final String BASE = "http://dav.example:8080";
 
-    private Sardine sardine;
+    private SardineImpl sardine;
     private WebDavConnection connection;
 
     @Before
     public void setUp() throws Exception {
-        sardine = mock(Sardine.class);
+        sardine = mock(SardineImpl.class);
         // Anything not set up below doesn't exist
         when(sardine.list(anyString(), anyInt(), any())).thenThrow(new SardineException("Unexpected response", 404, "Not Found"));
         propfind("/", 0, dir("/"));
@@ -112,10 +119,25 @@ public class WebDavConnectionTest {
 
     @Test
     public void writeFileCreatesMissingDirectory() throws Exception {
-        InputStream in = new ByteArrayInputStream(new byte[3]);
-        connection.writeFile("a.txt", "/out", false, in, 3, new HashMap<>());
+        connection.writeFile("a.txt", "/out", false, new ByteArrayInputStream("abc".getBytes()), 3, new HashMap<>());
         verify(sardine).createDirectory(BASE + "/out");
-        verify(sardine).put(BASE + "/out/a.txt", in, "application/octet-stream", true, 3);
+
+        // The body can be resent after an authentication challenge, without Expect: 100-continue
+        ArgumentCaptor<HttpEntity> entity = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(sardine).put(eq(BASE + "/out/a.txt"), entity.capture(), isNull(), eq(false));
+        assertTrue(entity.getValue().isRepeatable());
+        assertEquals("abc", body(entity.getValue()));
+        assertEquals("abc", body(entity.getValue()));
+    }
+
+    @Test
+    public void otherStreamsUseExpectContinue() throws Exception {
+        propfind("/out", 0, dir("/out/"));
+        InputStream in = new FilterInputStream(new ByteArrayInputStream("abc".getBytes())) {};
+        connection.writeFile("a.txt", "/out", false, in, 3, new HashMap<>());
+        ArgumentCaptor<HttpEntity> entity = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(sardine).put(eq(BASE + "/out/a.txt"), entity.capture(), isNull(), eq(true));
+        assertFalse(entity.getValue().isRepeatable());
     }
 
     @Test
@@ -127,7 +149,7 @@ public class WebDavConnectionTest {
         } catch (Exception e) {
             assertEquals("The destination directory path is invalid: '/out'", e.getMessage());
         }
-        verify(sardine, never()).put(anyString(), any(InputStream.class), anyString(), eq(true), anyLong());
+        verify(sardine, never()).put(anyString(), any(HttpEntity.class), any(), anyBoolean());
     }
 
     @Test
@@ -142,6 +164,17 @@ public class WebDavConnectionTest {
     public void pathsAreEncoded() throws Exception {
         connection.delete("a b#?.txt", "/in", false);
         verify(sardine).delete(BASE + "/in/a%20b%23%3F.txt");
+    }
+
+    @Test
+    public void missingFileKeepsConnectionValid() throws Exception {
+        assertTrue(connection.isValid());
+        assertFalse(connection.exists("a.txt", "/in"));
+        assertTrue(connection.isValid());
+
+        when(sardine.list(eq(BASE + "/in/b.txt"), eq(0), any())).thenThrow(new IOException("Connection reset"));
+        assertFalse(connection.exists("b.txt", "/in"));
+        assertFalse(connection.isValid());
     }
 
     @Test
@@ -176,6 +209,12 @@ public class WebDavConnectionTest {
         when(resource.getName()).thenReturn(name.substring(name.lastIndexOf('/') + 1));
         when(resource.getStatusCode()).thenReturn(200);
         return resource;
+    }
+
+    private static String body(HttpEntity entity) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        entity.writeTo(out);
+        return out.toString("UTF-8");
     }
 
     private static List<String> names(List<FileInfo> files) {

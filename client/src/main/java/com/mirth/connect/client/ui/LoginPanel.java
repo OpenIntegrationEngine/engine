@@ -460,7 +460,7 @@ public class LoginPanel extends javax.swing.JFrame {
 
                             if (StringUtils.isNotBlank(extendedLoginStatus.getClientPluginClass())) {
                                 String updatedUsername = StringUtils.defaultString(loginStatus.getUpdatedUsername(), username.getText());
-                                MultiFactorAuthenticationClientPlugin plugin = (MultiFactorAuthenticationClientPlugin) Class.forName(extendedLoginStatus.getClientPluginClass()).newInstance();
+                                MultiFactorAuthenticationClientPlugin plugin = (MultiFactorAuthenticationClientPlugin) Class.forName(extendedLoginStatus.getClientPluginClass()).getDeclaredConstructor().newInstance();
 
                                 loginStatus = plugin.authenticate(LoginPanel.this, client, updatedUsername, loginStatus);
 

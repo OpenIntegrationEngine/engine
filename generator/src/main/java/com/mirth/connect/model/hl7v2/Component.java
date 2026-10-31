@@ -1,5 +1,6 @@
 package com.mirth.connect.model.hl7v2;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,7 +37,11 @@ public class Component {
 	public static Component getCachedComponent(Class componentClass) throws InstantiationException, IllegalAccessException {
 		Component component = cacheMap.get(componentClass);
 		if (component == null) {
-			component = (Component) componentClass.newInstance();
+			try {
+				component = (Component) componentClass.getDeclaredConstructor().newInstance();
+			} catch (NoSuchMethodException | InvocationTargetException e) {
+				throw (InstantiationException) new InstantiationException(e.getMessage()).initCause(e);
+			}
 			cacheMap.put(componentClass, component);
 		}
 		return component;

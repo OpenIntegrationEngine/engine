@@ -109,7 +109,7 @@ public class CustomDriver implements Driver {
         }
 
         // Instantiate our new class and get its methods
-        Object driverManagerShim = ctClass.newInstance();
+        Object driverManagerShim = ctClass.getDeclaredConstructor().newInstance();
         Method getDriversMethod = ctClass.getMethod("getDrivers");
         Method deregisterDriverMethod = ctClass.getMethod("deregisterDriver", Driver.class);
 
@@ -122,7 +122,7 @@ public class CustomDriver implements Driver {
             // Get the current list of drivers
             List<Driver> currentDrivers = Collections.list((Enumeration<Driver>) getDriversMethod.invoke(driverManagerShim));
             // Instantiate the driver
-            delegate = (Driver) Class.forName(className, true, classLoader).newInstance();
+            delegate = (Driver) Class.forName(className, true, classLoader).getDeclaredConstructor().newInstance();
             // Get the new list of drivers, which will usually include the one we just initialized
             List<Driver> newDrivers = Collections.list((Enumeration<Driver>) getDriversMethod.invoke(driverManagerShim));
             // If the new list is greater in size than the old, remove the last one registered

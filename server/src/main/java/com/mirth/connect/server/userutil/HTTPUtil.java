@@ -12,6 +12,7 @@ package com.mirth.connect.server.userutil;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,10 +22,12 @@ import javax.mail.util.ByteArrayDataSource;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.fileupload.FileUploadBase;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpParser;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
 import org.apache.http.entity.ContentType;
+import org.apache.http.impl.io.AbstractMessageParser;
+import org.apache.http.impl.io.HttpTransportMetricsImpl;
+import org.apache.http.impl.io.SessionInputBufferImpl;
 
 import com.mirth.connect.connectors.http.HttpMessageConverter;
 import com.mirth.connect.donkey.util.DonkeyElement.DonkeyElementException;
@@ -46,7 +49,9 @@ public class HTTPUtil {
      */
     public static Map<String, String> parseHeaders(String str) throws Exception {
         Map<String, String> headersMap = new HashMap<String, String>();
-        Header[] headers = HttpParser.parseHeaders(new ByteArrayInputStream(str.getBytes()), "UTF-8");
+        SessionInputBufferImpl buffer = new SessionInputBufferImpl(new HttpTransportMetricsImpl(), 8192, 8192, null, StandardCharsets.UTF_8.newDecoder());
+        buffer.bind(new ByteArrayInputStream(str.getBytes()));
+        Header[] headers = AbstractMessageParser.parseHeaders(buffer, -1, -1, null);
 
         for (int i = 0; i < headers.length; i++) {
             headersMap.put(headers[i].getName(), headers[i].getValue());

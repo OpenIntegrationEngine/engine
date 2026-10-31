@@ -201,9 +201,9 @@ junit = { module = "junit:junit", version = "4.13.1" }
 junit-platform-console-standalone = { module = "org.junit.platform:junit-platform-console-standalone", version = "1.11.4" }
 libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version = "8.12.50" }
 listenablefuture = { module = "com.google.guava:listenablefuture", version = "9999.0-empty-to-avoid-conflict-with-guava" }
-log4j-1-2-api = { module = "org.apache.logging.log4j:log4j-1.2-api", version.ref = "log4j" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
+log4j-slf4j-impl = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
 miglayout-core = { module = "com.miglayout:miglayout-core", version.ref = "miglayout" }
 miglayout-swing = { module = "com.miglayout:miglayout-swing", version.ref = "miglayout" }
 mimepull = { module = "org.jvnet.mimepull:mimepull", version = "1.9.7" }
@@ -240,7 +240,6 @@ reflections = { module = "org.reflections:reflections", version = "0.9.10" }
 rhino = { module = "org.mozilla:rhino", version = "1.7.13" }
 saaj-impl = { module = "com.sun.xml.messaging.saaj:saaj-impl", version = "1.4.0" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
-slf4j-log4j12 = { module = "org.slf4j:slf4j-log4j12", version.ref = "slf4j" }
 snakeyaml = { module = "org.yaml:snakeyaml", version = "2.5" }
 stax-ex = { module = "org.jvnet.staxex:stax-ex", version = "1.8" }
 staxon = { module = "de.odysseus.staxon:staxon", version = "1.3" }
@@ -313,9 +312,9 @@ client-main = [
     "jetty-util",
     "joda-time",
     "libphonenumber",
-    "log4j-1-2-api",
     "log4j-api",
     "log4j-core",
+    "log4j-slf4j-impl",
     "miglayout-core",
     "miglayout-swing",
     "mimepull",
@@ -323,7 +322,6 @@ client-main = [
     "reflections",
     "rhino",
     "slf4j-api",
-    "slf4j-log4j12",
     "staxon",
     "swagger-annotations",
     "swingx-core",
@@ -373,11 +371,11 @@ command-main = [
     "jetty-util",
     "log4j-api",
     "log4j-core",
+    "log4j-slf4j-impl",
     "mimepull",
     "reflections",
     "rhino",
     "slf4j-api",
-    "slf4j-log4j12",
     "staxon",
     "swagger-annotations",
     "velocity-engine-core",
@@ -411,16 +409,15 @@ donkey-main = [
     "javassist",
     "jsr305",
     "listenablefuture",
-    "log4j-1-2-api",
     "log4j-api",
     "log4j-core",
+    "log4j-slf4j-impl",
     "mssql-jdbc",
     "mysql-connector-j",
     "ojdbc8",
     "postgresql",
     "quartz",
     "slf4j-api",
-    "slf4j-log4j12",
     "xpp3",
     "xstream",
 ]
@@ -438,11 +435,10 @@ generator-main = [
     "commons-collections4",
     "commons-io",
     "commons-lang3",
-    "log4j-1-2-api",
     "log4j-api",
     "log4j-core",
+    "log4j-slf4j-impl",
     "slf4j-api",
-    "slf4j-log4j12",
     "velocity-engine-core",
 ]
 server-extensions = [
@@ -592,7 +588,6 @@ server-main = [
     "joda-time",
     "jsch",
     "jsr181-api",
-    "log4j-1-2-api",
     "log4j-api",
     "log4j-core",
     "mimepull",

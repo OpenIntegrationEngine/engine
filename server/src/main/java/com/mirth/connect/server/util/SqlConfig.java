@@ -93,7 +93,7 @@ public class SqlConfig {
      */
     private void init() {
         try {
-            LogFactory.useLog4JLogging();
+            LogFactory.useCommonsLogging();
             System.setProperty("derby.stream.error.method", "com.mirth.connect.server.Mirth.getNullOutputStream");
 
             DatabaseSettings databaseSettings = ControllerFactory.getFactory().createConfigurationController().getDatabaseSettings();

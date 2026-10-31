@@ -158,7 +158,7 @@ subprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(17)
+            languageVersion = JavaLanguageVersion.of(25)
         }
     }
 
@@ -178,6 +178,7 @@ subprojects {
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
         options.debug = true
+        options.release = 21
     }
     // Match Ant's javac invocation: -sourcepath defaults to srcdir, and
     // annotation processors are discovered on the compile classpath
@@ -275,7 +276,7 @@ subprojects {
 
     if (rootProject.coverageEnabled) {
         apply plugin: 'jacoco'
-        jacoco { toolVersion = '0.8.8' }
+        jacoco { toolVersion = '0.8.16' }
         tasks.withType(Test).configureEach { finalizedBy tasks.named('jacocoTestReport') }
         tasks.named('jacocoTestReport') {
             reports.xml.required = true

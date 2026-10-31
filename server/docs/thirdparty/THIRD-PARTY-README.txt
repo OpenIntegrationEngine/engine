@@ -1204,16 +1204,6 @@ SOFTWARE.
 --------------------------------------------------------------------------------
 
 
-Unmodified libraries from OpenJFX are licensed under the GNU General Public
-License version 2, with the Classpath Exception. A copy of this license is
-available in the file named GPLv2+CE.txt.
-
-The source code for OpenJFX is available at: http://jdk.java.net/openjfx/
-
-
---------------------------------------------------------------------------------
-
-
 The OSHI library is licensed under the Eclipse Public License version 1.0. A
 copy of this license is available in the file named EPL-1.0.txt.
 

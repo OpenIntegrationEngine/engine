@@ -14,7 +14,7 @@
 asm = "9.6"
 awssdk = "2.15.28"
 bouncycastle = "1.78.1"
-byte-buddy = "1.14.13"
+byte-buddy = "1.17.7"
 derby = "10.10.2.0"
 flying-saucer = "9.0.1"
 hapi = "2.3"
@@ -31,7 +31,7 @@ jetty = "9.4.57.v20241219"
 jna = "4.5.2"
 log4j = "2.26.1"
 miglayout = "4.2"
-mockito = "5.1.1"
+mockito = "5.24.0"
 netty = "4.1.137.Final"
 netty-reactive-streams = "2.0.8"
 openhtmltopdf = "1.0.9"
@@ -209,7 +209,6 @@ miglayout-core = { module = "com.miglayout:miglayout-core", version.ref = "migla
 miglayout-swing = { module = "com.miglayout:miglayout-swing", version.ref = "miglayout" }
 mimepull = { module = "org.jvnet.mimepull:mimepull", version = "1.9.7" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
-mockito-inline = { module = "org.mockito:mockito-inline", version.ref = "mockito" }
 mssql-jdbc = { module = "com.microsoft.sqlserver:mssql-jdbc", version = "10.2.4.jre11" }
 mybatis = { module = "org.mybatis:mybatis", version = "3.1.1" }
 mysql-connector-j = { module = "com.mysql:mysql-connector-j", version = "8.4.0" }
@@ -225,7 +224,7 @@ netty-resolver = { module = "io.netty:netty-resolver", version.ref = "netty" }
 netty-transport = { module = "io.netty:netty-transport", version.ref = "netty" }
 netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
 netty-transport-native-unix-common = { module = "io.netty:netty-transport-native-unix-common", version.ref = "netty" }
-objenesis = { module = "org.objenesis:objenesis", version = "2.5.1" }
+objenesis = { module = "org.objenesis:objenesis", version = "3.3" }
 ojdbc8 = { module = "com.oracle.database.jdbc:ojdbc8", version = "12.2.0.1" }
 openhtmltopdf-core = { module = "com.openhtmltopdf:openhtmltopdf-core", version.ref = "openhtmltopdf" }
 openhtmltopdf-pdfbox = { module = "com.openhtmltopdf:openhtmltopdf-pdfbox", version.ref = "openhtmltopdf" }
@@ -646,7 +645,6 @@ server-test = [
     "hamcrest",
     "junit",
     "mockito-core",
-    "mockito-inline",
     "objenesis",
 ]
 

@@ -35,9 +35,9 @@ import com.mirth.commons.encryption.KeyEncryptor;
 import com.mirth.commons.encryption.Output;
 import com.mirth.commons.encryption.util.EncryptionUtil;
 import com.mirth.connect.model.EncryptionSettings;
-import com.sun.crypto.provider.SunJCE;
 
 public class KeyEncryptorTest {
+    private static final String SUNJCE_PROVIDER_CLASS = "com.sun.crypto.provider.SunJCE";
 
     @Test
     public void testAESCBC128BC() throws Exception {
@@ -65,7 +65,7 @@ public class KeyEncryptorTest {
         EncryptionSettings encryptionSettings = new EncryptionSettings();
         encryptionSettings.setEncryptionAlgorithm("AES/CBC/PKCS5Padding");
         encryptionSettings.setEncryptionKeyLength(128);
-        encryptionSettings.setSecurityProvider(SunJCE.class.getName());
+        encryptionSettings.setSecurityProvider(SUNJCE_PROVIDER_CLASS);
         encryptionSettings.setEncryptionCharset(StandardCharsets.UTF_8.name());
         testEncryptAndDecrypt(encryptionSettings);
     }
@@ -76,7 +76,7 @@ public class KeyEncryptorTest {
 //        EncryptionSettings encryptionSettings = new EncryptionSettings();
 //        encryptionSettings.setEncryptionAlgorithm("AES/CBC/PKCS5Padding");
 //        encryptionSettings.setEncryptionKeyLength(256);
-//        encryptionSettings.setSecurityProvider(SunJCE.class.getName());
+//        encryptionSettings.setSecurityProvider(SUNJCE_PROVIDER_CLASS);
 //        encryptionSettings.setEncryptionCharset(StandardCharsets.UTF_8.name());
 //        testEncryptAndDecrypt(encryptionSettings);
 //    }
@@ -161,7 +161,7 @@ public class KeyEncryptorTest {
         EncryptionSettings oldEncryptionSettings = new EncryptionSettings();
         oldEncryptionSettings.setEncryptionAlgorithm("AES/CBC/PKCS5Padding");
         oldEncryptionSettings.setEncryptionKeyLength(128);
-        oldEncryptionSettings.setSecurityProvider(SunJCE.class.getName());
+        oldEncryptionSettings.setSecurityProvider(SUNJCE_PROVIDER_CLASS);
         oldEncryptionSettings.setEncryptionCharset(StandardCharsets.UTF_8.name());
 
         EncryptionSettings encryptionSettings = new EncryptionSettings();
@@ -225,7 +225,7 @@ public class KeyEncryptorTest {
         EncryptionSettings encryptionSettings = new EncryptionSettings();
         encryptionSettings.setEncryptionAlgorithm("DES/CBC/PKCS5Padding");
         encryptionSettings.setEncryptionKeyLength(56);
-        encryptionSettings.setSecurityProvider(SunJCE.class.getName());
+        encryptionSettings.setSecurityProvider(SUNJCE_PROVIDER_CLASS);
         encryptionSettings.setEncryptionCharset(StandardCharsets.UTF_8.name());
         testEncryptAndDecrypt(encryptionSettings);
     }

@@ -41,12 +41,7 @@ def syncDonkeyLibs = tasks.register('syncDonkeyLibs', Sync) {
 compileJava.dependsOn syncDonkeyLibs
 
 compileTestJava {
-    options.compilerArgs += [
-        '--add-modules=java.sql.rowset',
-        '--add-exports=java.sql.rowset/com.sun.rowset=ALL-UNNAMED',
-        '--add-exports=java.base/com.sun.crypto.provider=ALL-UNNAMED',
-        '--add-exports=java.base/sun.security.provider=ALL-UNNAMED',
-    ]
+    options.compilerArgs += ['--add-modules=java.sql.rowset']
 }
 
 
@@ -509,7 +504,7 @@ def userApiJavadoc = tasks.register('userApiJavadoc') {
                    '-notimestamp',
                    '-classpath', (configurations.compileClasspath + fileTree(dir: 'lib', include: '**/*.jar')).asPath,
                    '-sourcepath', file('src/main/java').absolutePath,
-                   '-link', 'https://docs.oracle.com/en/java/javase/17/docs/api/',
+                   '-link', 'https://docs.oracle.com/en/java/javase/21/docs/api/',
                    '-bottom', '\n\t\t\t\tLicensed under the <a href="https://www.mozilla.org/MPL/2.0/">Mozilla Public License 2.0</a>.\n\t\t\t',
                    '--add-modules=java.sql.rowset',
                    '--add-exports=java.sql.rowset/com.sun.rowset=ALL-UNNAMED',

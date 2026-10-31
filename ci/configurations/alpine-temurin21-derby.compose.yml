@@ -1,6 +1,11 @@
 services:
   oie:
-    image: ${OIE_IMAGE}
+    build:
+      context: ..
+      dockerfile: Dockerfile.rebase-alpine
+      args:
+        OIE_IMAGE: ${OIE_IMAGE}
+        JRE_IMAGE: eclipse-temurin:21.0.9_10-jre-alpine
     ports:
       - "8443:8443"
     healthcheck:

@@ -5,31 +5,23 @@
 # Stages:
 # 1. Builder Stage: Compiles the application and resolves dependencies.  Produces
 #    JAR files that can be deployed.
-#      1a. Install dependencies
+#      1a. Drop root
 #      1b. Build the application
 # 2. Runner Stage: Creates a lightweight image that runs the application using the JRE.
 
-FROM ubuntu:noble-20251013 AS builder
+# Keep the JDK in sync with .sdkmanrc, which pins the same version for
+# local development.
+FROM eclipse-temurin:25.0.4.1_1-jdk-noble AS builder
 WORKDIR /app
-# sdkman requires bash
-SHELL ["/bin/bash", "-c"]
 ARG GRADLE_BUILD_ARGS="-PdisableSigning=true"
 
-# Stage 1a: Install dependencies
-# Install necessary tools, then drop root. The base image ships a
-# pre-created "ubuntu" user (uid 1000, the same one the runner stage
-# below renames to "engine") — reuse it so Gradle doesn't run as root,
-# which ignores POSIX permission bits and breaks tests that depend on
-# them (e.g. Log4jMigrationsTest's read-only-file assertion).
-RUN apt-get update\
-    && apt-get install -y zip curl\
-    && rm -rf /var/lib/apt/lists/* \
-    && chown ubuntu:ubuntu /app
+# Stage 1a: Drop root. The base image ships a pre-created "ubuntu" user
+# (uid 1000, the same one the runner stage below renames to "engine")
+# — reuse it so Gradle doesn't run as root, which ignores POSIX
+# permission bits and breaks tests that depend on them (e.g.
+# Log4jMigrationsTest's read-only-file assertion).
+RUN chown ubuntu:ubuntu /app
 USER ubuntu
-
-COPY --chown=ubuntu:ubuntu .sdkmanrc .
-RUN curl -s "https://get.sdkman.io?ci=true" | bash \
-    && source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk env install
 
 # Stage 1b: Build the application
 # Copy the entire source tree (excluding .dockerignore files), and build
@@ -41,8 +33,7 @@ COPY --chown=ubuntu:ubuntu . .
 RUN mkdir -p /home/ubuntu/.gradle
 RUN --mount=type=cache,target=/home/ubuntu/.gradle/caches,sharing=locked,uid=1000,gid=1000 \
     --mount=type=cache,target=/home/ubuntu/.gradle/wrapper,sharing=locked,uid=1000,gid=1000 \
-    source "$HOME/.sdkman/bin/sdkman-init.sh" \
-    && ./gradlew --no-daemon build :smoketest:installHarnessDist ${GRADLE_BUILD_ARGS}
+    ./gradlew --no-daemon build :smoketest:installHarnessDist ${GRADLE_BUILD_ARGS}
 
 # Stage 1c: Present artifacts for export if not running within docker
 FROM scratch AS build-output-export
@@ -53,7 +44,7 @@ COPY --from=builder /app/donkey/build/test-results /app/donkey/build/test-result
 COPY --from=builder /app/server/build/test-results /app/server/build/test-results/
 
 # Stage 1d: Smoke Test Harness
-FROM eclipse-temurin:21.0.9_10-jre-noble AS smoketest-harness
+FROM eclipse-temurin:25.0.4.1_1-jre-noble AS smoketest-harness
 
 COPY --from=builder /app/server/setup/server-lib /opt/engine/server-lib
 COPY --from=builder /app/server/setup/extensions /opt/engine/extensions
@@ -72,7 +63,7 @@ ENTRYPOINT ["/bin/bash", "/harness/run-harness.sh"]
 #
 ##########################################
 
-FROM eclipse-temurin:21.0.9_10-jdk-noble AS jdk-run
+FROM eclipse-temurin:25.0.4.1_1-jdk-noble AS jdk-run
 
 RUN groupadd engine \
     && usermod -l engine ubuntu \
@@ -104,7 +95,7 @@ CMD ["./oieserver"]
 #
 ##########################################
 
-FROM eclipse-temurin:21.0.9_10-jre-alpine AS jre-run
+FROM eclipse-temurin:25.0.4.1_1-jre-alpine AS jre-run
 
 # Alpine does not include bash by default, so we install it
 RUN apk add --no-cache bash

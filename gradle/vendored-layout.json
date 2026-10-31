@@ -378,6 +378,7 @@
   "xpp3:xpp3": ""
  },
  "server-extensions": {
+  "com.github.lookfirst:sardine": "extensions/file",
   "com.lowagie:itext": "extensions/doc",
   "com.lowagie:itext-rtf": "extensions/doc",
   "com.openhtmltopdf:openhtmltopdf-core": "extensions/doc",

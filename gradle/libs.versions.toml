@@ -240,6 +240,7 @@ reactive-streams = { module = "org.reactivestreams:reactive-streams", version = 
 reflections = { module = "org.reflections:reflections", version = "0.9.10" }
 rhino = { module = "org.mozilla:rhino", version = "1.7.13" }
 saaj-impl = { module = "com.sun.xml.messaging.saaj:saaj-impl", version = "1.4.0" }
+sardine = { module = "com.github.lookfirst:sardine", version = "5.10" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-log4j12 = { module = "org.slf4j:slf4j-log4j12", version.ref = "slf4j" }
 snakeyaml = { module = "org.yaml:snakeyaml", version = "2.5" }

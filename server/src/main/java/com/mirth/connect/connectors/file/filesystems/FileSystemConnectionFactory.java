@@ -179,7 +179,7 @@ public class FileSystemConnectionFactory implements PooledObjectFactory<FileSyst
         } else if (scheme.equals(FileScheme.SMB)) {
             return new DefaultPooledObject<FileSystemConnection>(new SmbFileConnection(host, fileSystemOptions, timeout));
         } else if (scheme.equals(FileScheme.WEBDAV)) {
-            return new DefaultPooledObject<FileSystemConnection>(new WebDavConnection(host, secure, fileSystemOptions));
+            return new DefaultPooledObject<FileSystemConnection>(new WebDavConnection(host, port, secure, fileSystemOptions, timeout));
         } else {
             logger.error("makeObject doesn't handle scheme " + scheme);
             throw new IOException("Unimplemented or unrecognized scheme");

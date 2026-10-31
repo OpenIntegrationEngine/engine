@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Nico Piel <nico.piel@hotmail.de>
+
 package com.mirth.connect.plugins.datatypes.ncpdp;
 
 import static org.junit.Assert.assertEquals;

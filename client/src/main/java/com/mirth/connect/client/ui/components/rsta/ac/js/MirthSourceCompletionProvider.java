@@ -24,12 +24,15 @@ import javax.swing.text.Segment;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.fife.rsta.ac.js.SourceCompletionProvider;
 import org.fife.ui.autocomplete.Completion;
 
 import com.mirth.connect.client.ui.components.rsta.ac.MirthCompletionCacheInterface;
 
 public class MirthSourceCompletionProvider extends SourceCompletionProvider {
+    private static Logger logger = LogManager.getLogger(MirthSourceCompletionProvider.class);
 
     private static final Pattern PARENTHESES_PATTERN = Pattern.compile("\\([\\S\\s]*\\)");
 
@@ -160,7 +163,7 @@ public class MirthSourceCompletionProvider extends SourceCompletionProvider {
             return new ArrayList<Completion>(completions);
 
         } catch (BadLocationException ble) {
-            ble.printStackTrace(); // Never happens
+            logger.error("Error retrieving completions at caret position", ble); // Never happens
         }
 
         lastCompletionsAtText = null;

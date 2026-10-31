@@ -32,6 +32,8 @@ import javax.swing.text.BadLocationException;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jdesktop.swingx.decorator.Highlighter;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
 
@@ -43,6 +45,7 @@ import com.mirth.connect.model.FilterTransformerElement;
 import com.mirth.connect.model.IteratorElement;
 
 public abstract class IteratorPanel<C extends FilterTransformerElement> extends EditorPanel<C> {
+    private static Logger logger = LogManager.getLogger(IteratorPanel.class);
 
     private ActionListener nameActionListener;
 
@@ -176,7 +179,7 @@ public abstract class IteratorPanel<C extends FilterTransformerElement> extends 
                 try {
                     updateName(evt.getDocument().getText(0, evt.getDocument().getLength()));
                 } catch (BadLocationException e) {
-                    e.printStackTrace();
+                    logger.error("Error updating iterator name", e);
                 }
             }
         });

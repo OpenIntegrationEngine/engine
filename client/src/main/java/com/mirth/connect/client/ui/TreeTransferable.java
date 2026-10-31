@@ -14,6 +14,9 @@ import java.awt.datatransfer.Transferable;
 
 import javax.swing.tree.TreeNode;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.mirth.connect.client.ui.components.MirthTree;
 import com.mirth.connect.client.ui.editors.BaseEditorPane;
 import com.mirth.connect.client.ui.editors.MessageTreePanel;
@@ -22,6 +25,7 @@ import com.mirth.connect.client.ui.editors.MessageTreePanel;
  * Package TreeNodes for movement.
  */
 public class TreeTransferable implements Transferable {
+    private static Logger logger = LogManager.getLogger(TreeTransferable.class);
 
     public static final DataFlavor MAPPER_DATA_FLAVOR = new DataFlavor(MapperDropData.class, "MapperDropData");
     public static final DataFlavor MESSAGE_BUILDER_DATA_FLAVOR = new DataFlavor(MessageBuilderDropData.class, "MessageBuilderDropData");
@@ -55,7 +59,7 @@ public class TreeTransferable implements Transferable {
             flavors[1] = supportedDropFlavor;
             flavors[2] = RULE_DATA_FLAVOR;
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error initializing data flavors", e);
         }
     }
 

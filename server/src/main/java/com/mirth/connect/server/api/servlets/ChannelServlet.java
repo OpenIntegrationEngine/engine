@@ -30,6 +30,7 @@ import javax.ws.rs.core.SecurityContext;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -267,7 +268,7 @@ public class ChannelServlet extends MirthServlet implements ChannelServletInterf
                     dateStartEdit.setTime(sdf.parse(startEdit));
         	    }
         	} catch (ParseException e) {
-        	    e.printStackTrace();
+        	    logger.error("Error parsing start edit date: \"" + StringEscapeUtils.escapeJava(startEdit) + "\"");
         	}
             return channelController.updateChannel(channel, context, override, dateStartEdit);
         } catch (ControllerException e) {

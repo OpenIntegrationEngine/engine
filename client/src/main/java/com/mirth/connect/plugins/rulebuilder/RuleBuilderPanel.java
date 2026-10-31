@@ -39,6 +39,8 @@ import javax.swing.text.BadLocationException;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jdesktop.swingx.decorator.Highlighter;
 import org.jdesktop.swingx.decorator.HighlighterFactory;
 
@@ -52,6 +54,7 @@ import com.mirth.connect.model.Rule;
 import com.mirth.connect.plugins.rulebuilder.RuleBuilderRule.Condition;
 
 public class RuleBuilderPanel extends EditorPanel<Rule> {
+    private static Logger logger = LogManager.getLogger(RuleBuilderPanel.class);
 
     private static final int VALUE_COLUMN = 0;
     private static final String VALUE_COLUMN_NAME = "Value";
@@ -198,7 +201,7 @@ public class RuleBuilderPanel extends EditorPanel<Rule> {
                 try {
                     updateName(evt.getDocument().getText(0, evt.getDocument().getLength()));
                 } catch (BadLocationException e) {
-                    e.printStackTrace();
+                    logger.error("Error updating rule name", e);
                 }
             }
         });

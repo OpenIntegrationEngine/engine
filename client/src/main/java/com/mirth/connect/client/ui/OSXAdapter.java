@@ -56,9 +56,12 @@ import java.security.AccessController;
 import java.util.List;
 
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.internal.util.ReflectionHelper;
 
 public class OSXAdapter implements InvocationHandler {
+    private static Logger logger = LogManager.getLogger(OSXAdapter.class);
 
     protected Object targetObject;
     protected Method targetMethod;
@@ -88,8 +91,7 @@ public class OSXAdapter implements InvocationHandler {
                 setHandler(new OSXAdapter("handleQuit", target, quitHandler));
             }
         } catch (Exception ex) {
-            System.err.println("OSXAdapter could not set quit handler");
-            ex.printStackTrace();
+            logger.error("OSXAdapter could not set quit handler", ex);
         }
     }
 
@@ -115,8 +117,7 @@ public class OSXAdapter implements InvocationHandler {
                         Boolean.valueOf(enableAboutMenu) });
             }
         } catch (Exception ex) {
-            System.err.println("OSXAdapter could not access the About Menu");
-            ex.printStackTrace();
+            logger.error("OSXAdapter could not access the About Menu", ex);
         }
     }
 
@@ -141,8 +142,7 @@ public class OSXAdapter implements InvocationHandler {
                         Boolean.valueOf(enablePrefsMenu) });
             }
         } catch (Exception ex) {
-            System.err.println("OSXAdapter could not set preferences handler");
-            ex.printStackTrace();
+            logger.error("OSXAdapter could not set preferences handler", ex);
         }
     }
 
@@ -187,8 +187,7 @@ public class OSXAdapter implements InvocationHandler {
                 });
             }
         } catch (Exception ex) {
-            System.err.println("OSXAdapter could not set open files handler");
-            ex.printStackTrace();
+            logger.error("OSXAdapter could not set open files handler", ex);
         }
     }
 
@@ -206,8 +205,7 @@ public class OSXAdapter implements InvocationHandler {
         } catch (ClassNotFoundException cnfe) {
             System.err.println("This version of Mac OS X does not support the Apple EAWT.  ApplicationEvent handling has been disabled (" + cnfe + ")");
         } catch (Exception ex) { // Likely a NoSuchMethodException or an IllegalAccessException loading/invoking eawt.Application methods
-            System.err.println("Mac OS X Adapter could not talk to EAWT:");
-            ex.printStackTrace();
+            logger.error("Mac OS X Adapter could not talk to EAWT", ex);
         }
     }
 
@@ -257,8 +255,7 @@ public class OSXAdapter implements InvocationHandler {
                 // If the target method returns a boolean, use that as a hint
                 setHandledMethod.invoke(event, new Object[] { Boolean.valueOf(handled) });
             } catch (Exception ex) {
-                System.err.println("OSXAdapter was unable to handle an ApplicationEvent: " + event);
-                ex.printStackTrace();
+                logger.error("OSXAdapter was unable to handle an ApplicationEvent: " + event, ex);
             }
         }
     }

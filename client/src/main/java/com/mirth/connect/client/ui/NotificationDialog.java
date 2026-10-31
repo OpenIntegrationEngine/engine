@@ -52,6 +52,8 @@ import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.ConnectServiceUtil;
@@ -60,6 +62,7 @@ import com.mirth.connect.model.converters.ObjectXMLSerializer;
 import com.mirth.connect.model.notification.Notification;
 
 public class NotificationDialog extends MirthDialog {
+    private static Logger logger = LogManager.getLogger(NotificationDialog.class);
 
     private NotificationModel notificationModel = new NotificationModel();
     private Notification currentNotification;
@@ -225,7 +228,7 @@ public class NotificationDialog extends MirthDialog {
                             BareBonesBrowserLaunch.openURL(evt.getURL().toString());
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        logger.error("Error opening hyperlink " + evt.getURL(), e);
                     }
                 }
             }

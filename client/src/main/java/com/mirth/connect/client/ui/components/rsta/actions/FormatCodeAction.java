@@ -10,12 +10,15 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Caret;
 import javax.swing.text.Element;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
 
 import com.mirth.connect.client.ui.components.rsta.MirthRSyntaxTextArea;
 import com.mirth.connect.util.JavaScriptSharedUtil;
 
 public class FormatCodeAction extends MirthRecordableTextAction {
+    private static Logger logger = LogManager.getLogger(FormatCodeAction.class);
 
     public FormatCodeAction(MirthRSyntaxTextArea textArea) {
         super(textArea, ActionInfo.FORMAT_CODE);
@@ -91,7 +94,7 @@ public class FormatCodeAction extends MirthRecordableTextAction {
             formatAndReplace(sb.toString(), replaceRangeStart, replaceRangeEnd);
 
         } catch (BadLocationException ble) {
-            ble.printStackTrace();
+            logger.error("Error formatting code", ble);
             UIManager.getLookAndFeel().provideErrorFeedback(textArea);
         }
     }

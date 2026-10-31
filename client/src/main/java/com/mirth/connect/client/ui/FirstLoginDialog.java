@@ -28,6 +28,9 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.ui.util.DisplayUtil;
 import com.mirth.connect.model.User;
@@ -36,6 +39,7 @@ import com.mirth.connect.model.User;
  * A dialog for creating a new user or editing a current user
  */
 public class FirstLoginDialog extends javax.swing.JDialog implements UserDialogInterface {
+    private static Logger logger = LogManager.getLogger(FirstLoginDialog.class);
 
     private Frame parent;
     private boolean result = false;
@@ -192,7 +196,7 @@ public class FirstLoginDialog extends javax.swing.JDialog implements UserDialogI
                             BareBonesBrowserLaunch.openURL(evt.getURL().toString());
                         }
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        logger.error("Error opening hyperlink " + evt.getURL(), e);
                     }
                 }
             }

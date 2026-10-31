@@ -1484,8 +1484,8 @@ public class Frame extends JXFrame {
         boolean showDialog = true;
 
         if (t != null) {
-            // Always print the stacktrace for troubleshooting purposes
-            t.printStackTrace();
+            // Always log the stacktrace for troubleshooting purposes
+            logger.error("Error alert: " + message, t);
 
             if (t instanceof ExecutionException && t.getCause() != null) {
                 t = t.getCause();
@@ -3099,7 +3099,7 @@ public class Frame extends JXFrame {
 
                 } catch (ChannelDependencyException e) {
                     // Should never happen
-                    e.printStackTrace();
+                    logger.error("Error resolving channel dependencies", e);
                 }   
             } 
                    
@@ -3205,7 +3205,7 @@ public class Frame extends JXFrame {
             }
         } catch (ChannelDependencyException e) {
             // Should never happen
-            e.printStackTrace();
+            logger.error("Error resolving channel dependencies", e);
         }
 
         return true;

@@ -182,15 +182,16 @@ public class Mirth extends Thread {
      * @return true if the resources required by the server have been successfully loaded
      */
     public boolean initResources() {
-        InputStream mirthPropertiesStream = null;
+        // Read the shared, drop-in-merged copy the configuration controller already loaded, rather
+        // than reloading and re-merging mirth.properties here.
+        mirthProperties = configurationController.getPropertiesConfiguration();
 
-        try {
-            mirthPropertiesStream = ResourceUtil.getResourceStream(this.getClass(), "mirth.properties");
-            mirthProperties = PropertiesConfigurationUtil.create(mirthPropertiesStream);
-        } catch (Exception e) {
-            logger.error("could not load mirth.properties", e);
-        } finally {
-            IOUtils.closeQuietly(mirthPropertiesStream);
+        // Refuse to start if configuration could not be loaded cleanly (e.g. an unreadable
+        // mirth.properties.d drop-in file) rather than run with a silently reverted configuration.
+        String configurationLoadError = configurationController.getConfigurationLoadError();
+        if (configurationLoadError != null) {
+            logger.error("Refusing to start: " + configurationLoadError);
+            return false;
         }
 
         InputStream versionPropertiesStream = null;
@@ -221,7 +222,10 @@ public class Mirth extends Thread {
         configurationController.initializeSecuritySettings();
         configurationController.initializeDatabaseSettings();
 
-        // Refresh the in-memory config in case the configuration controller changed it
+        // Pull in any settings the controller changed during initialization (e.g. generated keystore
+        // passwords). With the default controller mirthProperties is already the controller's own
+        // configuration, so this is a no-op; a controller that hands out a separate configuration is
+        // refreshed here.
         configurationController.updatePropertiesConfiguration(mirthProperties);
 
         try {

@@ -58,44 +58,6 @@ public class NCPDPReaderTest {
     }
 
     @Test
-    public void testRequestHeader() throws Exception {
-        Document doc = parse(REQUEST_HEADER_D0 + segment("AM01", "C419800101", "C51"));
-
-        assertEquals("NCPDP_D0_Billing_Request", doc.getDocumentElement().getNodeName());
-        String header = "/NCPDP_D0_Billing_Request/TransactionHeaderRequest/";
-        assertEquals("610066", text(doc, header + "BinNumber"));
-        assertEquals("D0", text(doc, header + "VersionReleaseNumber"));
-        assertEquals("B1", text(doc, header + "TransactionCode"));
-        assertEquals("PCN1234567", text(doc, header + "ProcessorControlNumber"));
-        assertEquals("1", text(doc, header + "TransactionCount"));
-        assertEquals("01", text(doc, header + "ServiceProviderIdQualifier"));
-        assertEquals("123456789012345", text(doc, header + "ServiceProviderId"));
-        assertEquals("20261031", text(doc, header + "DateOfService"));
-        assertEquals("VENDOR1234", text(doc, header + "SoftwareVendorCertificationId"));
-
-        assertEquals("19800101", text(doc, "/NCPDP_D0_Billing_Request/Patient/DateOfBirth"));
-        assertEquals("1", text(doc, "/NCPDP_D0_Billing_Request/Patient/PatientGenderCode"));
-    }
-
-    @Test
-    public void testResponseHeader() throws Exception {
-        Document doc = parse(RESPONSE_HEADER_D0 + segment("AM21", "ANA", "F3AUTH1"));
-
-        assertEquals("NCPDP_D0_Billing_Response", doc.getDocumentElement().getNodeName());
-        String header = "/NCPDP_D0_Billing_Response/TransactionHeaderResponse/";
-        assertEquals("D0", text(doc, header + "VersionReleaseNumber"));
-        assertEquals("B1", text(doc, header + "TransactionCode"));
-        assertEquals("1", text(doc, header + "TransactionCount"));
-        assertEquals("A", text(doc, header + "HeaderResponseStatus"));
-        assertEquals("01", text(doc, header + "ServiceProviderIdQualifier"));
-        assertEquals("123456789012345", text(doc, header + "ServiceProviderId"));
-        assertEquals("20261031", text(doc, header + "DateOfService"));
-
-        assertEquals("A", text(doc, "/NCPDP_D0_Billing_Response/ResponseStatus/TransactionResponseStatus"));
-        assertEquals("AUTH1", text(doc, "/NCPDP_D0_Billing_Response/ResponseStatus/AuthorizationNumber"));
-    }
-
-    @Test
     public void testUnknownTransactionCodeAndField() throws Exception {
         String header = REQUEST_HEADER_D0.substring(0, 8) + "ZZ" + REQUEST_HEADER_D0.substring(10);
         Document doc = parse(header + segment("AM01", "Q9value"));

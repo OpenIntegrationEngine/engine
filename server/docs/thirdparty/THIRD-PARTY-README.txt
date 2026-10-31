@@ -230,16 +230,6 @@ License version 1.0 (see EDL-1.0.txt):
 --------------------------------------------------------------------------------
 
 
-The following are distributed under the terms of the Creative Commons Zero
-License version 1.0 (see CC0-1.0.txt):
-
-	Backport-util-concurrent API 3.1 (source code can be downloaded from:
-	https://backport-jsr166.sourceforge.net/)
-
-
---------------------------------------------------------------------------------
-
-
 The following are released into public domain:
 
 	ImageJ (source code can be downloaded from:

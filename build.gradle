@@ -45,6 +45,25 @@ plugins {
     // vulnerability scanning: ./gradlew dependencyCheckAggregate
     // (replaces the old standalone dependency-check.xml Ant entry point)
     alias(libs.plugins.owasp.dependencycheck)
+    // static analysis: ./gradlew sonar -Dsonar.host.url=... -Dsonar.token=...
+    alias(libs.plugins.sonarqube)
+}
+
+sonar {
+    properties {
+        property 'sonar.projectKey', 'oie'
+        property 'sonar.projectName', 'Open Integration Engine'
+    }
+}
+
+allprojects {
+    sonar {
+        properties {
+            // unit and smoke-test coverage merged by ci/coverage-report.sh;
+            // set on every module, or JaCoCo's per-module default wins
+            property 'sonar.coverage.jacoco.xmlReportPaths', rootProject.file('build/coverage/report/coverage.xml').path
+        }
+    }
 }
 
 dependencyCheck {
@@ -275,7 +294,7 @@ subprojects {
 
     if (rootProject.coverageEnabled) {
         apply plugin: 'jacoco'
-        jacoco { toolVersion = '0.8.8' }
+        jacoco { toolVersion = libs.versions.jacoco.get() }
         tasks.withType(Test).configureEach { finalizedBy tasks.named('jacocoTestReport') }
         tasks.named('jacocoTestReport') {
             reports.xml.required = true
@@ -328,6 +347,36 @@ tasks.register('test') {
     group = 'verification'
     description = 'Runs the unit tests of every module (pass -Pcoverage=true for JaCoCo).'
     dependsOn ':donkey:test', ':server:test', ':client:test', ':command:test'
+}
+
+// Collects what CI needs to merge unit and smoke-test coverage: the unit
+// test execution data, the agent for the smoke-test server and the CLI
+// that merges and reports. See ci/README.md.
+def coverageTools = configurations.create('coverageTools') { transitive = false }
+dependencies {
+    add('coverageTools', variantOf(libs.jacoco.agent) { classifier('runtime') })
+    add('coverageTools', variantOf(libs.jacoco.cli) { classifier('nodeps') })
+}
+repositories {
+    mavenCentral()
+}
+
+tasks.register('stageCoverage', Sync) {
+    group = 'verification'
+    description = 'Stages unit-test JaCoCo data and the JaCoCo agent and CLI into build/coverage.'
+    onlyIf { rootProject.coverageEnabled }
+    mustRunAfter ':donkey:test', ':server:test', ':client:test', ':command:test'
+    into layout.buildDirectory.dir('coverage')
+    from(coverageTools) {
+        rename { it.startsWith('org.jacoco.agent') ? 'jacocoagent.jar' : 'jacococli.jar' }
+    }
+    ['donkey', 'server', 'client', 'command'].each { name ->
+        from(project(":${name}").layout.buildDirectory.dir('jacoco')) {
+            include '*.exec'
+            into 'unit'
+            rename { "${name}-${it}" }
+        }
+    }
 }
 
 tasks.register('clean') {

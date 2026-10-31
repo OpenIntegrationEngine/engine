@@ -19,3 +19,6 @@ configure-from-env text eol=lf
 
 # NCPDP fixtures delimit with control characters (0x1C/0x1D/0x1E), not line breaks
 /server/tests/test-ncpdp-*-input.txt binary
+
+# EDISerializer only infers delimiters from a bare \n after the segment terminator
+/server/tests/test-edi-input.txt text eol=lf

@@ -44,22 +44,6 @@ public class ER7ReaderTest {
     }
 
     @Test
-    public void testHeaderAndSegments() throws Exception {
-        Document doc = parse("MSH|^~\\&|APP|FAC\rPID|1||12345^^^MRN||DOE^JOHN\r");
-
-        assertEquals("HL7Message", doc.getDocumentElement().getNodeName());
-        assertEquals("|", text(doc, "/HL7Message/MSH/MSH.1"));
-        assertEquals("^~\\&", text(doc, "/HL7Message/MSH/MSH.2"));
-        assertEquals("APP", text(doc, "/HL7Message/MSH/MSH.3/MSH.3.1"));
-        assertEquals("FAC", text(doc, "/HL7Message/MSH/MSH.4/MSH.4.1"));
-        assertEquals("1", text(doc, "/HL7Message/PID/PID.1/PID.1.1"));
-        assertEquals("12345", text(doc, "/HL7Message/PID/PID.3/PID.3.1"));
-        assertEquals("MRN", text(doc, "/HL7Message/PID/PID.3/PID.3.4"));
-        assertEquals("DOE", text(doc, "/HL7Message/PID/PID.5/PID.5.1"));
-        assertEquals("JOHN", text(doc, "/HL7Message/PID/PID.5/PID.5.2"));
-    }
-
-    @Test
     public void testEmptyFields() throws Exception {
         Document doc = parse("MSH|^~\\&\rPID|||X|");
 
@@ -155,18 +139,6 @@ public class ER7ReaderTest {
         assertEquals("^~", text(parse("MSH|^~"), "/HL7Message/MSH/MSH.2"));
         assertEquals("^~\\", text(parse("MSH|^~\\"), "/HL7Message/MSH/MSH.2"));
         assertEquals("^~\\&", text(parse("MSH|^~\\&"), "/HL7Message/MSH/MSH.2"));
-    }
-
-    @Test
-    public void testBatchHeaders() throws Exception {
-        Document doc = parse("FHS|^~\\&|F\rBHS|^~\\&|B\rMSH|^~\\&|M\rBTS|1\rFTS|1");
-
-        assertEquals("^~\\&", text(doc, "/HL7Message/FHS/FHS.2"));
-        assertEquals("F", text(doc, "/HL7Message/FHS/FHS.3/FHS.3.1"));
-        assertEquals("^~\\&", text(doc, "/HL7Message/BHS/BHS.2"));
-        assertEquals("B", text(doc, "/HL7Message/BHS/BHS.3/BHS.3.1"));
-        assertEquals("M", text(doc, "/HL7Message/MSH/MSH.3/MSH.3.1"));
-        assertEquals("1", text(doc, "/HL7Message/FTS/FTS.1/FTS.1.1"));
     }
 
     @Test

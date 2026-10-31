@@ -412,11 +412,11 @@ public class DatabaseWriter extends ConnectorSettingsPanel {
     }
 
     private DriverInfo getSelectOneDriver() {
-        return new DriverInfo(DatabaseReceiverProperties.DRIVER_DEFAULT, "", "", "");
+        return new DriverInfo(DatabaseReceiverProperties.DRIVER_DEFAULT, "", "");
     }
 
     private DriverInfo getCustomDriver() {
-        return new DriverInfo(DatabaseReceiverProperties.DRIVER_CUSTOM, "", "", "");
+        return new DriverInfo(DatabaseReceiverProperties.DRIVER_CUSTOM, "", "");
     }
 
     private void fixDriversList() {
@@ -508,7 +508,7 @@ public class DatabaseWriter extends ConnectorSettingsPanel {
         } else {
             Connector destinationConnector = PlatformUI.MIRTH_FRAME.channelEditPanel.currentChannel.getDestinationConnectors().get(PlatformUI.MIRTH_FRAME.channelEditPanel.lastModelIndex);
             Set<String> resourceIds = PlatformUI.MIRTH_FRAME.channelEditPanel.resourceIds.get(destinationConnector.getMetaDataId()).keySet();
-            new DatabaseMetadataDialog(this, type, new DatabaseConnectionInfo(properties.getDriver(), properties.getUrl(), properties.getUsername(), properties.getPassword(), "", getSelectedDriver().getSelectLimit(), resourceIds));
+            new DatabaseMetadataDialog(this, type, new DatabaseConnectionInfo(properties.getDriver(), properties.getUrl(), properties.getUsername(), properties.getPassword(), "", resourceIds));
         }
     }
 

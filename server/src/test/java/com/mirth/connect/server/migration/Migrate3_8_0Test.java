@@ -77,12 +77,12 @@ public class Migrate3_8_0Test {
     @Test
     public void migrate_Updated() throws Exception {
         List<DriverInfo> drivers = new ArrayList<DriverInfo>();
-        drivers.add(new DriverInfo("Sun JDBC-ODBC Bridge", "sun.jdbc.odbc.JdbcOdbcDriver", "jdbc:odbc:DSN", ""));
-        drivers.add(new DriverInfo("MySQL", "com.mysql.jdbc.Driver", "jdbc:mysql://host:port/dbname", "SELECT * FROM ? LIMIT 1"));
-        drivers.add(new DriverInfo("Oracle", "oracle.jdbc.driver.OracleDriver", "jdbc:oracle:thin:@host:port:dbname", "SELECT * FROM ? WHERE ROWNUM < 2"));
-        drivers.add(new DriverInfo("PostgreSQL", "org.postgresql.Driver", "jdbc:postgresql://host:port/dbname", "SELECT * FROM ? LIMIT 1"));
-        drivers.add(new DriverInfo("SQL Server/Sybase", "net.sourceforge.jtds.jdbc.Driver", "jdbc:jtds:sqlserver://host:port/dbname", "SELECT TOP 1 * FROM ?"));
-        drivers.add(new DriverInfo("SQLite", "org.sqlite.JDBC", "jdbc:sqlite:dbfile.db", "SELECT * FROM ? LIMIT 1"));
+        drivers.add(new DriverInfo("Sun JDBC-ODBC Bridge", "sun.jdbc.odbc.JdbcOdbcDriver", "jdbc:odbc:DSN"));
+        drivers.add(new DriverInfo("MySQL", "com.mysql.jdbc.Driver", "jdbc:mysql://host:port/dbname"));
+        drivers.add(new DriverInfo("Oracle", "oracle.jdbc.driver.OracleDriver", "jdbc:oracle:thin:@host:port:dbname"));
+        drivers.add(new DriverInfo("PostgreSQL", "org.postgresql.Driver", "jdbc:postgresql://host:port/dbname"));
+        drivers.add(new DriverInfo("SQL Server/Sybase", "net.sourceforge.jtds.jdbc.Driver", "jdbc:jtds:sqlserver://host:port/dbname"));
+        drivers.add(new DriverInfo("SQLite", "org.sqlite.JDBC", "jdbc:sqlite:dbfile.db"));
 
         when(configurationController.getDatabaseDrivers()).thenReturn(new ArrayList<DriverInfo>(drivers));
 
@@ -104,12 +104,12 @@ public class Migrate3_8_0Test {
 
     private List<DriverInfo> getDefaultDrivers() {
         List<DriverInfo> drivers = new ArrayList<DriverInfo>();
-        drivers.add(new DriverInfo("MySQL", "com.mysql.cj.jdbc.Driver", "jdbc:mysql://host:port/dbname", "SELECT * FROM ? LIMIT 1", new ArrayList<String>(Arrays.asList(new String[] {
+        drivers.add(new DriverInfo("MySQL", "com.mysql.cj.jdbc.Driver", "jdbc:mysql://host:port/dbname", new ArrayList<String>(Arrays.asList(new String[] {
                 "com.mysql.jdbc.Driver" }))));
-        drivers.add(new DriverInfo("Oracle", "oracle.jdbc.driver.OracleDriver", "jdbc:oracle:thin:@host:port:dbname", "SELECT * FROM ? WHERE ROWNUM < 2"));
-        drivers.add(new DriverInfo("PostgreSQL", "org.postgresql.Driver", "jdbc:postgresql://host:port/dbname", "SELECT * FROM ? LIMIT 1"));
-        drivers.add(new DriverInfo("SQL Server/Sybase", "net.sourceforge.jtds.jdbc.Driver", "jdbc:jtds:sqlserver://host:port/dbname", "SELECT TOP 1 * FROM ?"));
-        drivers.add(new DriverInfo("SQLite", "org.sqlite.JDBC", "jdbc:sqlite:dbfile.db", "SELECT * FROM ? LIMIT 1"));
+        drivers.add(new DriverInfo("Oracle", "oracle.jdbc.driver.OracleDriver", "jdbc:oracle:thin:@host:port:dbname"));
+        drivers.add(new DriverInfo("PostgreSQL", "org.postgresql.Driver", "jdbc:postgresql://host:port/dbname"));
+        drivers.add(new DriverInfo("SQL Server/Sybase", "net.sourceforge.jtds.jdbc.Driver", "jdbc:jtds:sqlserver://host:port/dbname"));
+        drivers.add(new DriverInfo("SQLite", "org.sqlite.JDBC", "jdbc:sqlite:dbfile.db"));
         return drivers;
     }
 }

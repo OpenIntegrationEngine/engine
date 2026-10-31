@@ -198,8 +198,6 @@
   "com.sun.xml.ws:jaxws-tools": "javax/jaxws",
   "com.sun.xml.ws:policy": "javax/jaxws/ext",
   "com.thoughtworks.xstream:xstream": "",
-  "com.typesafe.netty:netty-reactive-streams": "aws/ext/netty",
-  "com.typesafe.netty:netty-reactive-streams-http": "aws/ext/netty",
   "com.zaxxer:HikariCP": "",
   "commons-beanutils:commons-beanutils": "commons",
   "commons-cli:commons-cli": "commons",

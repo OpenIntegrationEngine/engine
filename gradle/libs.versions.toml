@@ -33,7 +33,6 @@ log4j = "2.26.1"
 miglayout = "4.2"
 mockito = "5.1.1"
 netty = "4.1.137.Final"
-netty-reactive-streams = "2.0.8"
 openhtmltopdf = "1.0.9"
 pdfbox = "2.0.24"
 slf4j = "1.7.30"
@@ -218,8 +217,6 @@ netty-codec-http = { module = "io.netty:netty-codec-http", version.ref = "netty"
 netty-codec-http2 = { module = "io.netty:netty-codec-http2", version.ref = "netty" }
 netty-common = { module = "io.netty:netty-common", version.ref = "netty" }
 netty-handler = { module = "io.netty:netty-handler", version.ref = "netty" }
-netty-reactive-streams = { module = "com.typesafe.netty:netty-reactive-streams", version.ref = "netty-reactive-streams" }
-netty-reactive-streams-http = { module = "com.typesafe.netty:netty-reactive-streams-http", version.ref = "netty-reactive-streams" }
 netty-resolver = { module = "io.netty:netty-resolver", version.ref = "netty" }
 netty-transport = { module = "io.netty:netty-transport", version.ref = "netty" }
 netty-transport-native-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
@@ -605,8 +602,6 @@ server-main = [
     "netty-codec-http2",
     "netty-common",
     "netty-handler",
-    "netty-reactive-streams",
-    "netty-reactive-streams-http",
     "netty-resolver",
     "netty-transport",
     "netty-transport-native-unix-common",

@@ -117,7 +117,7 @@ public interface AlertServletInterface extends BaseServletInterface {
 
 	@POST
 	@Path("/{alertId}/_getInfo")
-	@Operation(summary = "Returns an AlertInfo object containing the alert model, alert protocol options, and any updated channel summaries.")
+	@Operation(operationId = "getAlertInfo", summary = "Returns an AlertInfo object containing the alert model, alert protocol options, and any updated channel summaries.")
 	@ApiResponse(content = {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "alert_info", ref = "../apiexamples/alert_info_xml") }),
@@ -136,7 +136,7 @@ public interface AlertServletInterface extends BaseServletInterface {
 
 	@POST
 	@Path("/_getInfo")
-	@Operation(summary = "Returns an AlertInfo object containing alert protocol options and any updated channel summaries.")
+	@Operation(operationId = "getAlertInfo_1", summary = "Returns an AlertInfo object containing alert protocol options and any updated channel summaries.")
 	@ApiResponse(content = {
 			@Content(mediaType = MediaType.APPLICATION_XML, examples = {
 					@ExampleObject(name = "alert_info", ref = "../apiexamples/alert_info_xml") }),

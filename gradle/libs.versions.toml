@@ -12,7 +12,7 @@
 [versions]
 # Shared by artifacts released together; bump the whole family at once.
 asm = "9.6"
-awssdk = "2.15.28"
+awssdk = "2.55.12"
 bouncycastle = "1.78.1"
 byte-buddy = "1.14.13"
 derby = "10.10.2.0"
@@ -21,8 +21,7 @@ hapi = "2.3"
 hk2 = "2.4.0-b31"
 httpclient = "4.5.13"
 itext = "2.1.7"
-# do not bump past 2.15.x before reading the note on jackson-core
-jackson = "2.14.3"
+jackson = "2.18.11"
 jasper = "8.5.70"
 jaxb-ri = "2.4.0-b180725.0644"
 jaxws-ri = "2.3.0.2"
@@ -37,7 +36,7 @@ netty-reactive-streams = "2.0.8"
 openhtmltopdf = "1.0.9"
 pdfbox = "2.0.24"
 slf4j = "1.7.30"
-swagger = "2.0.10"
+swagger = "2.2.41"
 taglibs = "1.2.5"
 
 [libraries]
@@ -49,23 +48,37 @@ asm-util = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
 aws-eventstream = { module = "software.amazon.eventstream:eventstream", version = "1.0.1" }
 awssdk-annotations = { module = "software.amazon.awssdk:annotations", version.ref = "awssdk" }
 awssdk-apache-client = { module = "software.amazon.awssdk:apache-client", version.ref = "awssdk" }
+awssdk-arns = { module = "software.amazon.awssdk:arns", version.ref = "awssdk" }
 awssdk-auth = { module = "software.amazon.awssdk:auth", version.ref = "awssdk" }
 awssdk-aws-core = { module = "software.amazon.awssdk:aws-core", version.ref = "awssdk" }
 awssdk-aws-json-protocol = { module = "software.amazon.awssdk:aws-json-protocol", version.ref = "awssdk" }
 awssdk-aws-query-protocol = { module = "software.amazon.awssdk:aws-query-protocol", version.ref = "awssdk" }
 awssdk-aws-xml-protocol = { module = "software.amazon.awssdk:aws-xml-protocol", version.ref = "awssdk" }
+awssdk-checksums = { module = "software.amazon.awssdk:checksums", version.ref = "awssdk" }
+awssdk-checksums-spi = { module = "software.amazon.awssdk:checksums-spi", version.ref = "awssdk" }
+awssdk-crt-core = { module = "software.amazon.awssdk:crt-core", version.ref = "awssdk" }
+awssdk-endpoints-spi = { module = "software.amazon.awssdk:endpoints-spi", version.ref = "awssdk" }
+awssdk-http-auth = { module = "software.amazon.awssdk:http-auth", version.ref = "awssdk" }
+awssdk-http-auth-aws = { module = "software.amazon.awssdk:http-auth-aws", version.ref = "awssdk" }
+awssdk-http-auth-aws-eventstream = { module = "software.amazon.awssdk:http-auth-aws-eventstream", version.ref = "awssdk" }
+awssdk-http-auth-spi = { module = "software.amazon.awssdk:http-auth-spi", version.ref = "awssdk" }
 awssdk-http-client-spi = { module = "software.amazon.awssdk:http-client-spi", version.ref = "awssdk" }
+awssdk-identity-spi = { module = "software.amazon.awssdk:identity-spi", version.ref = "awssdk" }
+awssdk-json-utils = { module = "software.amazon.awssdk:json-utils", version.ref = "awssdk" }
 awssdk-kms = { module = "software.amazon.awssdk:kms", version.ref = "awssdk" }
 awssdk-metrics-spi = { module = "software.amazon.awssdk:metrics-spi", version.ref = "awssdk" }
-# AWS SDK module, but not on the awssdk ref: the vendored jar was 2.20.140
-awssdk-netty-nio-client = { module = "software.amazon.awssdk:netty-nio-client", version = "2.20.140" }
+awssdk-netty-nio-client = { module = "software.amazon.awssdk:netty-nio-client", version.ref = "awssdk" }
 awssdk-profiles = { module = "software.amazon.awssdk:profiles", version.ref = "awssdk" }
 awssdk-protocol-core = { module = "software.amazon.awssdk:protocol-core", version.ref = "awssdk" }
 awssdk-regions = { module = "software.amazon.awssdk:regions", version.ref = "awssdk" }
+awssdk-retries = { module = "software.amazon.awssdk:retries", version.ref = "awssdk" }
+awssdk-retries-spi = { module = "software.amazon.awssdk:retries-spi", version.ref = "awssdk" }
 awssdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "awssdk" }
 awssdk-sdk-core = { module = "software.amazon.awssdk:sdk-core", version.ref = "awssdk" }
 awssdk-sts = { module = "software.amazon.awssdk:sts", version.ref = "awssdk" }
+awssdk-third-party-jackson-core = { module = "software.amazon.awssdk:third-party-jackson-core", version.ref = "awssdk" }
 awssdk-utils = { module = "software.amazon.awssdk:utils", version.ref = "awssdk" }
+awssdk-utils-lite = { module = "software.amazon.awssdk:utils-lite", version.ref = "awssdk" }
 bcpkix-jdk18on = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
 bcprov-jdk18on = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
 bcutil-jdk18on = { module = "org.bouncycastle:bcutil-jdk18on", version.ref = "bouncycastle" }
@@ -129,14 +142,7 @@ itext = { module = "com.lowagie:itext", version.ref = "itext" }
 itext-rtf = { module = "com.lowagie:itext-rtf", version.ref = "itext" }
 j2objc-annotations = { module = "com.google.j2objc:j2objc-annotations", version = "1.3" }
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
-# off the jackson ref: bumped alone for a security fix. Realigning the
-# family is blocked: databind 2.16 and later remove APIs that
-# swagger-core 2.0.10 (BeanDescription.findJsonValueMethod,
-# AnnotationIntrospector.findPropertiesToIgnore) and AWS SDK 2.15.28
-# regions (PropertyNamingStrategy.PASCAL_CASE_TO_CAMEL_CASE) still call,
-# failing at runtime with NoSuchMethodError/NoSuchFieldError. Upgrade
-# those callers first.
-jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version = "2.18.8" }
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-dataformat-cbor = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor", version.ref = "jackson" }
 jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson" }
@@ -470,22 +476,37 @@ server-main = [
     "aws-eventstream",
     "awssdk-annotations",
     "awssdk-apache-client",
+    "awssdk-arns",
     "awssdk-auth",
     "awssdk-aws-core",
     "awssdk-aws-json-protocol",
     "awssdk-aws-query-protocol",
     "awssdk-aws-xml-protocol",
+    "awssdk-checksums",
+    "awssdk-checksums-spi",
+    "awssdk-crt-core",
+    "awssdk-endpoints-spi",
+    "awssdk-http-auth",
+    "awssdk-http-auth-aws",
+    "awssdk-http-auth-aws-eventstream",
+    "awssdk-http-auth-spi",
     "awssdk-http-client-spi",
+    "awssdk-identity-spi",
+    "awssdk-json-utils",
     "awssdk-kms",
     "awssdk-metrics-spi",
     "awssdk-netty-nio-client",
     "awssdk-profiles",
     "awssdk-protocol-core",
     "awssdk-regions",
+    "awssdk-retries",
+    "awssdk-retries-spi",
     "awssdk-s3",
     "awssdk-sdk-core",
     "awssdk-sts",
+    "awssdk-third-party-jackson-core",
     "awssdk-utils",
+    "awssdk-utils-lite",
     "bcpkix-jdk18on",
     "bcprov-jdk18on",
     "bcutil-jdk18on",

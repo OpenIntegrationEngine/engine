@@ -15,6 +15,8 @@ import com.mirth.connect.donkey.model.channel.DeployedState;
 import com.mirth.connect.donkey.model.message.Message;
 import com.mirth.connect.donkey.model.message.RawMessage;
 import com.mirth.connect.model.Channel;
+import com.mirth.connect.model.ChannelStatistics;
+import com.mirth.connect.model.DashboardStatus;
 import com.mirth.connect.model.LoginStatus;
 import com.mirth.connect.model.converters.ObjectXMLSerializer;
 import com.mirth.connect.model.filters.MessageFilter;
@@ -143,6 +145,33 @@ final class OieServer implements AutoCloseable {
             throw new AssertionError("Server returned no message ids for channel " + channelId);
         }
         return messageIds;
+    }
+
+    /** Stops a deployed channel, so a load test can line its input up before anything runs. */
+    void stopChannel(String channelId) throws ClientException {
+        client.stopChannel(channelId, true);
+    }
+
+    /** Starts a stopped channel. For a polling source this is the start of the run. */
+    void startChannel(String channelId) throws ClientException {
+        client.startChannel(channelId, true);
+    }
+
+    /** Lifetime received/sent/error/filtered/queued counts for a channel. */
+    ChannelStatistics statistics(String channelId) throws ClientException {
+        return client.getStatistics(channelId);
+    }
+
+    /** Dashboard view of a channel, including live queue depth per destination. */
+    DashboardStatus status(String channelId) throws ClientException {
+        return client.getChannelStatus(channelId);
+    }
+
+    /** Reads a page of messages, newest id last, for bulk assertions after a load run. */
+    List<Message> fetchMessages(String channelId, boolean includeContent, int offset, int limit)
+            throws ClientException {
+        List<Message> messages = client.getMessages(channelId, new MessageFilter(), includeContent, offset, limit);
+        return messages == null ? List.of() : messages;
     }
 
     /** Reads one message back, with content, so assertions can inspect every connector. */

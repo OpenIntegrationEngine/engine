@@ -13,6 +13,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -26,6 +27,8 @@ import javax.ws.rs.ext.Provider;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.ibatis.exceptions.PersistenceException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.server.model.Invocable;
 import org.glassfish.jersey.server.spi.internal.ResourceMethodInvocationHandlerProvider;
 
@@ -41,6 +44,8 @@ import com.mirth.connect.server.api.MirthServlet;
 
 @Provider
 public class MirthResourceInvocationHandlerProvider implements ResourceMethodInvocationHandlerProvider {
+
+    private static final Logger logger = LogManager.getLogger(MirthResourceInvocationHandlerProvider.class);
 
     /*
      * This map is used to cache information about specific methods so we don't have to calculate it
@@ -243,7 +248,11 @@ public class MirthResourceInvocationHandlerProvider implements ResourceMethodInv
         Throwable cause = t.getCause();
         Throwable convertedCause = convertThrowable(cause, visited);
 
-        if (t instanceof PersistenceException) {
+        if (t instanceof SQLException) {
+            // Not serializable by XStream due to module restrictions, so log and wrap it instead
+            logger.error("Database error while handling an API request", t);
+            return new com.mirth.connect.client.core.api.PersistenceException(t.getMessage(), convertedCause);
+        } else if (t instanceof PersistenceException) {
             // Always convert this exception
             return new com.mirth.connect.client.core.api.PersistenceException(t.getMessage(), convertedCause != null ? convertedCause : cause);
         } else if (t instanceof WebApplicationException) {

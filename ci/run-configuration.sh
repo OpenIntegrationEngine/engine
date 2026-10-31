@@ -37,4 +37,10 @@ if ! "${compose[@]}" up -d --wait oie; then
 fi
 
 echo "==> $OIE_CONFIGURATION: running the harness"
-"${compose[@]}" run --rm harness
+"${compose[@]}" run --rm harness || {
+    # Harness failed, dump the server log before exiting
+    code=$?
+    echo "==> $OIE_CONFIGURATION: harness failed with exit code $code" >&2
+    "${compose[@]}" logs --no-color oie >&2 || true
+    exit "$code"
+}

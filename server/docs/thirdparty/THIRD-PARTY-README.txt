@@ -27,14 +27,14 @@ The following are distributed under the terms of the Apache License version 2.0
 	Google Code Prettify (https://github.com/google/code-prettify)
 	Guava 32.0.1 [incl. CLI] (https://github.com/google/guava)
 	Guice 4.1 (https://github.com/google/guice)
-	HikariCP 2.5.1
+	HikariCP 7.1.0
 	J2ObjC Annotations 1.3 (https://github.com/google/j2objc/)
 	Jackson Project [incl. CLI] (https://github.com/FasterXML/jackson)
 	Java Native Access (JNA) 4.5.2 (https://github.com/java-native-access/jna)
 	Jetty 9.4.57
 	Joda-Time 2.9.9
 	JSR305 Annotations for Findbugs 3.0.2 (http://findbugs.sourceforge.net/)
-	MyBatis 3.1.1
+	MyBatis 3.5.19
 	Netty 4.1.137
 	Not-Going-To-Be-Commons-SSL 0.3.18
 	Quartz Scheduler 2.3.2
@@ -80,6 +80,10 @@ terms.
 
 	Javassist 3.26.0 [incl. CLI] (source code can be downloaded at:
 	https://github.com/jboss-javassist/javassist/tree/rel_3_26_0_ga)
+
+	Javassist 3.30.2-GA, included within the MyBatis 3.5.19 library (source
+	code can be downloaded at:
+	https://github.com/jboss-javassist/javassist/tree/rel_3_30_2_ga)
 
 	
 --------------------------------------------------------------------------------
@@ -717,7 +721,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 The license below pertains to OGNL (Object-Graph Navigation Language), which is
-included within the MyBatis 3.1.1 library.
+included within the MyBatis 3.5.19 library.
 
 =================== Beginning of License ===================
 

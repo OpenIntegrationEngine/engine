@@ -39,8 +39,10 @@ public class DefaultSmtpConfiguration implements SmtpConfiguration {
         if ("SSL".equalsIgnoreCase(props.getEncryption())) {
             email.setSSLOnConnect(true);
             email.setSslSmtpPort(props.getSmtpPort());
+            email.setSSLCheckServerIdentity(true);
         } else if ("TLS".equalsIgnoreCase(props.getEncryption())) {
             email.setStartTLSEnabled(true);
+            email.setSSLCheckServerIdentity(true);
         }
     }
 

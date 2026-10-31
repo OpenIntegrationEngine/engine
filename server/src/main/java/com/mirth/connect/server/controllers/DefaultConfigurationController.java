@@ -1660,8 +1660,10 @@ public class DefaultConfigurationController extends ConfigurationController {
         if ("SSL".equalsIgnoreCase(encryption)) {
             email.setSSLOnConnect(true);
             email.setSslSmtpPort(portString);
+            email.setSSLCheckServerIdentity(true);
         } else if ("TLS".equalsIgnoreCase(encryption)) {
             email.setStartTLSEnabled(true);
+            email.setSSLCheckServerIdentity(true);
         }
 
         if (authentication) {

@@ -36,18 +36,19 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.invocation.Invocation;
 import org.xml.sax.SAXParseException;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.mirth.connect.client.core.ControllerException;
+import com.mirth.connect.donkey.testing.StaticOverride;
 import com.mirth.connect.model.DriverInfo;
 
 public class DefaultConfigurationControllerTest {
+
+    private static StaticOverride factoryOverride;
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -56,14 +57,14 @@ public class DefaultConfigurationControllerTest {
         ScriptController scriptController = mock(ScriptController.class);
         when(controllerFactory.createScriptController()).thenReturn(scriptController);
 
-        Injector injector = Guice.createInjector(new AbstractModule() {
-            @Override
-            protected void configure() {
-                requestStaticInjection(ControllerFactory.class);
-                bind(ControllerFactory.class).toInstance(controllerFactory);
-            }
-        });
-        injector.getInstance(ControllerFactory.class);
+        factoryOverride = StaticOverride.install(ControllerFactory.class, "factory", controllerFactory);
+    }
+
+    @AfterClass
+    public static void restoreControllerFactory() {
+        if (factoryOverride != null) {
+            factoryOverride.close();
+        }
     }
 
     @Test

@@ -9,10 +9,8 @@
 
 package com.mirth.connect.server.controllers;
 
-import com.google.inject.Inject;
 
 public abstract class ControllerFactory {
-    @Inject
     private static ControllerFactory factory;
 
     public static ControllerFactory getFactory() {

@@ -110,7 +110,6 @@ glassfish-ha-api = { module = "org.glassfish.ha:ha-api", version = "3.1.9" }
 glassfish-management-api = { module = "org.glassfish.external:management-api", version = "3.2.1-b001" }
 gmbal-api-only = { module = "org.glassfish.gmbal:gmbal-api-only", version = "3.1.0-b001" }
 guava = { module = "com.google.guava:guava", version = "32.0.1-jre" }
-guice = { module = "com.google.inject:guice", version = "4.1.0" }
 hamcrest = { module = "org.hamcrest:hamcrest", version = "2.2" }
 hapi-structures-v27 = { module = "ca.uhn.hapi:hapi-structures-v27", version.ref = "hapi" }
 hapi-structures-v28 = { module = "ca.uhn.hapi:hapi-structures-v28", version.ref = "hapi" }
@@ -407,7 +406,6 @@ donkey-main = [
     "error-prone-annotations",
     "failureaccess",
     "guava",
-    "guice",
     "hikaricp",
     "j2objc-annotations",
     "javassist",
@@ -521,7 +519,6 @@ server-main = [
     "glassfish-ha-api",
     "glassfish-management-api",
     "gmbal-api-only",
-    "guice",
     "hapi-structures-v27",
     "hapi-structures-v28",
     "hapi-structures-v281",

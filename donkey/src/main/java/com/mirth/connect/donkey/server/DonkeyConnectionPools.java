@@ -15,7 +15,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.google.inject.Inject;
 import com.mirth.connect.donkey.model.DatabaseConstants;
 import com.mirth.connect.donkey.server.data.jdbc.ConnectionPool;
 import com.mirth.connect.donkey.server.data.jdbc.HikariConnectionPool;
@@ -24,7 +23,6 @@ public class DonkeyConnectionPools {
 
     private static final Logger logger = LogManager.getLogger(DonkeyConnectionPools.class);
 
-    @Inject
     private static volatile DonkeyConnectionPools instance = null;
 
     private ConnectionPool connectionPool;

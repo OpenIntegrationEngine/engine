@@ -12,14 +12,17 @@ package com.mirth.connect.donkey.server;
 import java.util.Properties;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
 import com.mirth.connect.donkey.model.DatabaseConstants;
 import com.mirth.connect.donkey.server.data.jdbc.ConnectionPool;
-import com.mirth.connect.donkey.server.data.jdbc.DBCPConnectionPool;
 import com.mirth.connect.donkey.server.data.jdbc.HikariConnectionPool;
 
 public class DonkeyConnectionPools {
+
+    private static final Logger logger = LogManager.getLogger(DonkeyConnectionPools.class);
 
     @Inject
     private static volatile DonkeyConnectionPools instance = null;
@@ -59,7 +62,8 @@ public class DonkeyConnectionPools {
             String url = dbProperties.getProperty(DatabaseConstants.DATABASE_URL);
             String username = dbProperties.getProperty(DatabaseConstants.DATABASE_USERNAME);
             String password = dbProperties.getProperty(DatabaseConstants.DATABASE_PASSWORD);
-            String pool = dbProperties.getProperty(DatabaseConstants.DATABASE_POOL);
+            warnIfPoolConfigured(dbProperties);
+
             boolean jdbc4 = Boolean.parseBoolean(dbProperties.getProperty(DatabaseConstants.DATABASE_JDBC4));
             String testQuery = dbProperties.getProperty(DatabaseConstants.DATABASE_TEST_QUERY);
             int maxConnections;
@@ -70,7 +74,7 @@ public class DonkeyConnectionPools {
                 throw new Exception("Failed to read the " + DatabaseConstants.DATABASE_MAX_CONNECTIONS + " configuration property");
             }
 
-            connectionPool = createConnectionPool(database, driver, url, username, password, pool, jdbc4, testQuery, maxConnections, false);
+            connectionPool = createConnectionPool(database, driver, url, username, password, jdbc4, testQuery, maxConnections, false);
 
             boolean splitReadWrite = Boolean.parseBoolean(dbProperties.getProperty(DatabaseConstants.DATABASE_ENABLE_READ_WRITE_SPLIT));
 
@@ -80,7 +84,6 @@ public class DonkeyConnectionPools {
                 String readOnlyUrl = dbProperties.getProperty(DatabaseConstants.DATABASE_READONLY_URL, url);
                 String readOnlyUsername = dbProperties.getProperty(DatabaseConstants.DATABASE_READONLY_USERNAME, username);
                 String readOnlyPassword = dbProperties.getProperty(DatabaseConstants.DATABASE_READONLY_PASSWORD, password);
-                String readOnlyPool = dbProperties.getProperty(DatabaseConstants.DATABASE_READONLY_POOL, pool);
                 boolean readOnlyJdbc4 = Boolean.parseBoolean(dbProperties.getProperty(DatabaseConstants.DATABASE_READONLY_JDBC4, dbProperties.getProperty(DatabaseConstants.DATABASE_JDBC4)));
                 String readOnlyTestQuery = dbProperties.getProperty(DatabaseConstants.DATABASE_READONLY_TEST_QUERY, testQuery);
                 int readOnlyMaxConnections;
@@ -91,7 +94,7 @@ public class DonkeyConnectionPools {
                     throw new Exception("Failed to read the " + DatabaseConstants.DATABASE_READONLY_MAX_CONNECTIONS + " configuration property");
                 }
 
-                readOnlyConnectionPool = createConnectionPool(readOnlyDatabase, readOnlyDriver, readOnlyUrl, readOnlyUsername, readOnlyPassword, readOnlyPool, readOnlyJdbc4, readOnlyTestQuery, readOnlyMaxConnections, true);
+                readOnlyConnectionPool = createConnectionPool(readOnlyDatabase, readOnlyDriver, readOnlyUrl, readOnlyUsername, readOnlyPassword, readOnlyJdbc4, readOnlyTestQuery, readOnlyMaxConnections, true);
             } else {
                 readOnlyConnectionPool = connectionPool;
             }
@@ -100,15 +103,21 @@ public class DonkeyConnectionPools {
         }
     }
 
-    public ConnectionPool createConnectionPool(String database, String driver, String url, String username, String password, String pool, boolean jdbc4, String testQuery, int maxConnections, boolean readOnly) throws Exception {
+    public ConnectionPool createConnectionPool(String database, String driver, String url, String username, String password, boolean jdbc4, String testQuery, int maxConnections, boolean readOnly) throws Exception {
         if (driver != null) {
             Class.forName(driver);
         }
 
-        if (StringUtils.equalsIgnoreCase(pool, "DBCP")) {
-            return new DBCPConnectionPool(url, username, password, maxConnections, readOnly);
-        } else {
-            return new HikariConnectionPool(driver, url, username, password, maxConnections, jdbc4, testQuery, readOnly);
+        return new HikariConnectionPool(driver, url, username, password, maxConnections, jdbc4, testQuery, readOnly);
+    }
+
+    private void warnIfPoolConfigured(Properties dbProperties) {
+        for (String property : new String[] { DatabaseConstants.DATABASE_POOL,
+                DatabaseConstants.DATABASE_READONLY_POOL }) {
+            // Only DBCP was defined.  Anything but DBCP was taken to be Hikari.
+            if (StringUtils.equalsIgnoreCase(dbProperties.getProperty(property), "DBCP")) {
+                logger.warn("The {} setting is no longer supported and will be ignored; HikariCP is always used.", property);
+            }
         }
     }
 }

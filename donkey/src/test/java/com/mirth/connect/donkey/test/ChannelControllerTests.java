@@ -22,7 +22,6 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -31,34 +30,25 @@ import com.mirth.connect.donkey.server.Donkey;
 import com.mirth.connect.donkey.server.StartException;
 import com.mirth.connect.donkey.server.channel.Channel;
 import com.mirth.connect.donkey.server.controllers.ChannelController;
-import com.mirth.connect.donkey.server.data.timed.TimedDaoFactory;
 import com.mirth.connect.donkey.test.util.TestSourceConnector;
 import com.mirth.connect.donkey.test.util.TestUtils;
-import com.mirth.connect.donkey.util.ActionTimer;
 
 public class ChannelControllerTests {
     private static int TEST_SIZE = 10;
     private static String channelId = TestUtils.DEFAULT_CHANNEL_ID;
     private static String serverId = TestUtils.DEFAULT_SERVER_ID;
     private static String testMessage = TestUtils.TEST_HL7_MESSAGE;
-    private static ActionTimer daoTimer = new ActionTimer();
     private Logger logger = LogManager.getLogger(this.getClass());
 
     @BeforeClass
     final public static void beforeClass() throws StartException {
         Donkey donkey = Donkey.getInstance();
         donkey.startEngine(TestUtils.getDonkeyTestConfiguration());
-        donkey.setDaoFactory(new TimedDaoFactory(donkey.getDaoFactory(), daoTimer));
     }
 
     @AfterClass
     final public static void afterClass() throws StartException {
         Donkey.getInstance().stopEngine();
-    }
-
-    @Before
-    final public void before() {
-        daoTimer.reset();
     }
 
     /*
@@ -84,7 +74,6 @@ public class ChannelControllerTests {
                 assertEquals(localChannelId, (long) ChannelController.getInstance().getLocalChannelId(channelId));
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             ChannelController.getInstance().removeChannel(channelId);
         }
@@ -122,7 +111,6 @@ public class ChannelControllerTests {
                 assertEquals(TestUtils.getChannelStatistics(channel.getChannelId()), ChannelController.getInstance().getStatistics().getChannelStats(channelId));
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             if (channel != null) {
                 channel.stop();
@@ -192,7 +180,6 @@ public class ChannelControllerTests {
                 assertEquals(subtractedStats, vmStats);
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             channel.stop();
             channel.undeploy();

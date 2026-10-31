@@ -48,7 +48,6 @@ import com.mirth.connect.donkey.server.DonkeyConfiguration;
 import com.mirth.connect.donkey.server.DonkeyConnectionPools;
 import com.mirth.connect.donkey.server.data.ChannelDoesNotExistException;
 import com.mirth.connect.donkey.server.data.jdbc.ConnectionPool;
-import com.mirth.connect.donkey.server.data.jdbc.PooledConnection;
 import com.mirth.connect.model.Channel;
 import com.mirth.connect.model.ChannelGroup;
 import com.mirth.connect.model.ChannelHeader;
@@ -332,8 +331,8 @@ public class DatabaseConnectionPoolTests {
         if (!USE_REAL_DATABASE_CONNECTIONS) {
             connection = createConnection(databaseSettings.getDatabase());
             readOnlyConnection = createConnection(StringUtils.defaultIfBlank(databaseSettings.getDatabaseReadOnly(), databaseSettings.getDatabase()));
-            doReturn(createPool(connection)).when(donkeyCP).createConnectionPool(anyString(), anyString(), anyString(), anyString(), anyString(), any(), anyBoolean(), anyString(), anyInt(), eq(false));
-            doReturn(createPool(readOnlyConnection)).when(donkeyCP).createConnectionPool(anyString(), anyString(), anyString(), anyString(), anyString(), any(), anyBoolean(), anyString(), anyInt(), eq(true));
+            doReturn(createPool(connection)).when(donkeyCP).createConnectionPool(anyString(), anyString(), anyString(), anyString(), anyString(), anyBoolean(), anyString(), anyInt(), eq(false));
+            doReturn(createPool(readOnlyConnection)).when(donkeyCP).createConnectionPool(anyString(), anyString(), anyString(), anyString(), anyString(), anyBoolean(), anyString(), anyInt(), eq(true));
         }
 
         Injector donkeyConnectionPoolsInjector = Guice.createInjector(new AbstractModule() {
@@ -422,8 +421,7 @@ public class DatabaseConnectionPoolTests {
 
     private ConnectionPool createPool(Connection connection) throws Exception {
         ConnectionPool connectionPool = mock(ConnectionPool.class);
-        when(connectionPool.getConnection()).thenReturn(new PooledConnection(connection, connection));
-        when(connectionPool.getMaxConnections()).thenReturn(20);
+        when(connectionPool.getConnection()).thenReturn(connection);
         DataSource dataSource = mock(DataSource.class);
         when(dataSource.getConnection()).thenReturn(connection);
         when(dataSource.getConnection(anyString(), anyString())).thenReturn(connection);

@@ -17,7 +17,6 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -27,14 +26,12 @@ import com.mirth.connect.donkey.server.StartException;
 import com.mirth.connect.donkey.server.channel.Channel;
 import com.mirth.connect.donkey.server.channel.DestinationChainProvider;
 import com.mirth.connect.donkey.server.channel.DispatchResult;
-import com.mirth.connect.donkey.server.data.timed.TimedDaoFactory;
 import com.mirth.connect.donkey.test.util.TestChannel;
 import com.mirth.connect.donkey.test.util.TestChannelWriter;
 import com.mirth.connect.donkey.test.util.TestConnectorProperties;
 import com.mirth.connect.donkey.test.util.TestDataType;
 import com.mirth.connect.donkey.test.util.TestUtils;
 import com.mirth.connect.donkey.test.util.TestUtils.MessageStorageMode;
-import com.mirth.connect.donkey.util.ActionTimer;
 
 public class PerformanceTests {
     private final static String TEST_MESSAGE = "src/test/java/com/mirth/connect/donkey/test/hl7/large.hl7";
@@ -47,7 +44,6 @@ public class PerformanceTests {
     private final static boolean DEFAULT_WAIT_FOR_DESTINATIONS = true;
 
     private static String testMessage;
-    private static ActionTimer daoTimer = null;
     private static String channelId = TestUtils.DEFAULT_CHANNEL_ID;
     private static String serverId = TestUtils.DEFAULT_SERVER_ID;
 
@@ -57,22 +53,11 @@ public class PerformanceTests {
 
         Donkey donkey = Donkey.getInstance();
         donkey.startEngine(TestUtils.getDonkeyTestConfiguration());
-
-        if (daoTimer != null) {
-            donkey.setDaoFactory(new TimedDaoFactory(donkey.getDaoFactory(), daoTimer));
-        }
     }
 
     @AfterClass
     final public static void afterClass() throws StartException {
         Donkey.getInstance().stopEngine();
-    }
-
-    @Before
-    final public void before() {
-        if (daoTimer != null) {
-            daoTimer.reset();
-        }
     }
 
     @Test

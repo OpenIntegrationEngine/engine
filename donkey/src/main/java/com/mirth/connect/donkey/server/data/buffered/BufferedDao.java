@@ -103,6 +103,7 @@ public class BufferedDao implements DonkeyDao {
         return dao;
     }
 
+    @SuppressWarnings("unchecked")
     private void executeTasks(Boolean durable) {
         DonkeyDao dao = getDelegateDao();
         boolean commitSuccess = false;
@@ -117,8 +118,7 @@ public class BufferedDao implements DonkeyDao {
                     case INSERT_MESSAGE: dao.insertMessage((Message) p[0]); break;
                     case INSERT_CONNECTOR_MESSAGE: dao.insertConnectorMessage((ConnectorMessage) p[0], (Boolean) p[1], (Boolean) p[2]); break;
                     case INSERT_MESSAGE_CONTENT: dao.insertMessageContent((MessageContent) p[0]); break;
-                    case BATCH_INSERT_MESSAGE_CONTENT: dao.batchInsertMessageContent((MessageContent) p[0]); break;
-                    case EXECUTE_BATCH_INSERT_MESSAGE_CONTENT: dao.executeBatchInsertMessageContent((String) p[0]); break;
+                    case INSERT_MESSAGE_CONTENT_BATCH: dao.insertMessageContentBatch((List<MessageContent>) p[0]); break;
                     case INSERT_MESSAGE_ATTACHMENT: dao.insertMessageAttachment((String) p[0], (Long) p[1], (Attachment) p[2]); break;
                     case UPDATE_MESSAGE_ATTACHMENT: dao.updateMessageAttachment((String) p[0], (Long) p[1], (Attachment) p[2]); break;
                     case INSERT_META_DATA: dao.insertMetaData((ConnectorMessage) p[0], (List<MetaDataColumn>) p[1]); break;
@@ -203,15 +203,9 @@ public class BufferedDao implements DonkeyDao {
     }
 
     @Override
-    public void batchInsertMessageContent(MessageContent messageContent) {
-        tasks.add(new DaoTask(DaoTaskType.BATCH_INSERT_MESSAGE_CONTENT, new Object[] {
-                messageContent }));
-    }
-
-    @Override
-    public void executeBatchInsertMessageContent(String channelId) {
-        tasks.add(new DaoTask(DaoTaskType.EXECUTE_BATCH_INSERT_MESSAGE_CONTENT, new Object[] {
-                channelId }));
+    public void insertMessageContentBatch(List<MessageContent> messageContents) {
+        tasks.add(new DaoTask(DaoTaskType.INSERT_MESSAGE_CONTENT_BATCH, new Object[] {
+                messageContents }));
     }
 
     @Override

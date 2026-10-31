@@ -9,9 +9,6 @@
 
 package com.mirth.connect.client.ui.reference;
 
-import japa.parser.JavaParser;
-import japa.parser.ast.CompilationUnit;
-
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +30,12 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParseProblemException;
+import com.github.javaparser.ParseResult;
+import com.github.javaparser.ParserConfiguration;
+import com.github.javaparser.ParserConfiguration.LanguageLevel;
+import com.github.javaparser.ast.CompilationUnit;
 import com.mirth.connect.client.ui.LoadedExtensions;
 import com.mirth.connect.client.ui.PlatformUI;
 import com.mirth.connect.client.ui.components.rsta.ac.MirthCompletionCacheInterface;
@@ -556,8 +559,16 @@ public class ReferenceListFactory {
 
     private void addUserutilReferences(String fileName, InputStream is) {
         try {
-            // Parse the source file
-            CompilationUnit compilationUnit = JavaParser.parse(is);
+            /*
+             * Parse the source file. Use the newest grammar the parser supports, since extension
+             * userutil sources may target a newer Java version than ours and we only read
+             * signatures and javadoc.
+             */
+            ParseResult<CompilationUnit> result = new JavaParser(new ParserConfiguration().setLanguageLevel(LanguageLevel.CURRENT)).parse(is);
+            if (!result.isSuccessful()) {
+                throw new ParseProblemException(result.getProblems());
+            }
+            CompilationUnit compilationUnit = result.getResult().get();
             // Determine any runtime aliases for the class
             List<String> inputTextList = aliasMap.get(fileName.replaceAll("\\.java$", "").replace('/', '.'));
             // Create and add references for the parsed source file

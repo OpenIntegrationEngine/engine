@@ -9,20 +9,6 @@
 
 package com.mirth.connect.client.ui.reference;
 
-import japa.parser.ast.CompilationUnit;
-import japa.parser.ast.PackageDeclaration;
-import japa.parser.ast.body.BodyDeclaration;
-import japa.parser.ast.body.ClassOrInterfaceDeclaration;
-import japa.parser.ast.body.ConstructorDeclaration;
-import japa.parser.ast.body.JavadocComment;
-import japa.parser.ast.body.MethodDeclaration;
-import japa.parser.ast.body.ModifierSet;
-import japa.parser.ast.body.Parameter;
-import japa.parser.ast.expr.NameExpr;
-import japa.parser.ast.expr.QualifiedNameExpr;
-import japa.parser.ast.type.ClassOrInterfaceType;
-import japa.parser.ast.visitor.VoidVisitorAdapter;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -35,6 +21,18 @@ import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.lang3.StringUtils;
 import org.fife.rsta.ac.js.IconFactory;
 
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier.Keyword;
+import com.github.javaparser.ast.body.BodyDeclaration;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.RecordDeclaration;
+import com.github.javaparser.ast.comments.JavadocComment;
+import com.github.javaparser.ast.nodeTypes.NodeWithModifiers;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.mirth.connect.client.ui.PlatformUI;
 import com.mirth.connect.client.ui.UIConstants;
 import com.mirth.connect.model.Parameters;
@@ -59,40 +57,15 @@ public class ClassVisitor extends VoidVisitorAdapter<Object> {
     }
 
     @Override
-    public void visit(PackageDeclaration n, Object arg) {
-        n.getName().accept(this, arg);
-    }
-
-    public void visit(QualifiedNameExpr n, Object arg) {
-        n.getQualifier().accept(this, arg);
-        if (arg instanceof StringBuilder) {
-            ((StringBuilder) arg).append('.');
-        }
-        visit((NameExpr) n, arg);
-    }
-
-    @Override
-    public void visit(NameExpr n, Object arg) {
-        if (arg instanceof StringBuilder) {
-            ((StringBuilder) arg).append(n.getName());
-        }
-    }
-
-    @Override
     public void visit(CompilationUnit n, Object arg) {
-        String packageName = null;
-        if (n.getPackage() != null) {
-            StringBuilder builder = new StringBuilder();
-            visit(n.getPackage(), builder);
-            packageName = builder.toString();
-        }
+        String packageName = n.getPackageDeclaration().map(p -> p.getNameAsString()).orElse(null);
 
         super.visit(n, packageName);
     }
 
     @Override
     public void visit(ClassOrInterfaceDeclaration n, Object arg) {
-        String className = n.getName();
+        String className = n.getNameAsString();
         String packageName = (String) arg;
 
         StringBuilder builder = new StringBuilder();
@@ -119,32 +92,32 @@ public class ClassVisitor extends VoidVisitorAdapter<Object> {
         builder.append(className);
         builder.append("</a></h3></b><hr/><code>");
 
-        if (ModifierSet.isPublic(n.getModifiers())) {
+        if (n.hasModifier(Keyword.PUBLIC)) {
             builder.append("public ");
         } else {
             // Don't add references for non-public classes
             return;
         }
 
-        if (ModifierSet.isStatic(n.getModifiers())) {
+        if (n.hasModifier(Keyword.STATIC)) {
             builder.append("static ");
         }
-        if (ModifierSet.isAbstract(n.getModifiers())) {
+        if (n.hasModifier(Keyword.ABSTRACT)) {
             builder.append("abstract ");
         }
-        if (ModifierSet.isFinal(n.getModifiers())) {
+        if (n.hasModifier(Keyword.FINAL)) {
             builder.append("final ");
         }
-        if (ModifierSet.isNative(n.getModifiers())) {
+        if (n.hasModifier(Keyword.NATIVE)) {
             builder.append("native ");
         }
-        if (ModifierSet.isSynchronized(n.getModifiers())) {
+        if (n.hasModifier(Keyword.SYNCHRONIZED)) {
             builder.append("synchronized ");
         }
-        if (ModifierSet.isTransient(n.getModifiers())) {
+        if (n.hasModifier(Keyword.TRANSIENT)) {
             builder.append("transient ");
         }
-        if (ModifierSet.isVolatile(n.getModifiers())) {
+        if (n.hasModifier(Keyword.VOLATILE)) {
             builder.append("volatile ");
         }
 
@@ -156,19 +129,19 @@ public class ClassVisitor extends VoidVisitorAdapter<Object> {
 
         builder.append(className);
 
-        List<ClassOrInterfaceType> extendsList = n.getExtends();
+        List<ClassOrInterfaceType> extendsList = n.getExtendedTypes();
         if (CollectionUtils.isNotEmpty(extendsList)) {
             ClassOrInterfaceType type = extendsList.get(0);
             builder.append("<br/>extends ");
-            builder.append(type.getName());
+            builder.append(type.getNameAsString());
         }
 
-        List<ClassOrInterfaceType> implementsList = n.getImplements();
+        List<ClassOrInterfaceType> implementsList = n.getImplementedTypes();
         if (CollectionUtils.isNotEmpty(implementsList)) {
             builder.append("<br/>implements ");
             for (Iterator<ClassOrInterfaceType> it = implementsList.iterator(); it.hasNext();) {
                 ClassOrInterfaceType type = it.next();
-                builder.append(type.getName());
+                builder.append(type.getNameAsString());
                 if (it.hasNext()) {
                     builder.append(", ");
                 }
@@ -177,8 +150,8 @@ public class ClassVisitor extends VoidVisitorAdapter<Object> {
 
         builder.append("</code><br/><br/>");
 
-        if (n.getJavaDoc() != null) {
-            String comment = StringUtils.trim(n.getJavaDoc().getContent());
+        if (n.getJavadocComment().isPresent()) {
+            String comment = StringUtils.trim(n.getJavadocComment().get().getContent());
             if (StringUtils.isNotBlank(comment)) {
                 builder.append(encode(convertComment(comment)));
             }
@@ -188,27 +161,30 @@ public class ClassVisitor extends VoidVisitorAdapter<Object> {
 
         references.add(new ClassReference(CodeTemplateContextSet.getGlobalContextSet(), null, className, inputTextList, summary));
 
-        if (n.getMembers() != null) {
-            for (BodyDeclaration member : n.getMembers()) {
-                member.accept(this, className);
-            }
+        for (BodyDeclaration<?> member : n.getMembers()) {
+            member.accept(this, className);
         }
     }
 
     @Override
+    public void visit(RecordDeclaration n, Object arg) {
+        // Records get no references, and their members must not be attributed to the package
+    }
+
+    @Override
     public void visit(ConstructorDeclaration n, Object arg) {
-        addMethod(true, (String) arg, n.getName(), n.getName(), n.getModifiers(), n.getJavaDoc(), n.getParameters());
+        addMethod(true, (String) arg, n.getNameAsString(), n.getNameAsString(), n, n.getJavadocComment().orElse(null), n.getParameters());
     }
 
     @Override
     public void visit(MethodDeclaration n, Object arg) {
-        addMethod(false, (String) arg, n.getName(), n.getType().toString(), n.getModifiers(), n.getJavaDoc(), n.getParameters());
+        addMethod(false, (String) arg, n.getNameAsString(), n.getType().toString(), n, n.getJavadocComment().orElse(null), n.getParameters());
     }
 
-    private void addMethod(boolean constructor, String className, String name, String type, int modifiers, JavadocComment javadoc, List<Parameter> parameters) {
+    private void addMethod(boolean constructor, String className, String name, String type, NodeWithModifiers<?> modifiers, JavadocComment javadoc, List<Parameter> parameters) {
         String iconName = null;
-        if (ModifierSet.isPublic(modifiers)) {
-            if (ModifierSet.isStatic(modifiers)) {
+        if (modifiers.hasModifier(Keyword.PUBLIC)) {
+            if (modifiers.hasModifier(Keyword.STATIC)) {
                 iconName = IconFactory.PUBLIC_STATIC_FUNCTION_ICON;
             } else {
                 iconName = IconFactory.PUBLIC_METHOD_ICON;
@@ -260,7 +236,7 @@ public class ClassVisitor extends VoidVisitorAdapter<Object> {
         Parameters params = new Parameters();
         if (CollectionUtils.isNotEmpty(parameters)) {
             for (Parameter parameter : parameters) {
-                String parameterName = parameter.getId().getName();
+                String parameterName = parameter.getNameAsString();
                 params.add(parameterName, parameter.getType().toString(), parameterComments.get(parameterName));
             }
         }

@@ -10,11 +10,15 @@
 package com.mirth.connect.donkey.server.data.jdbc;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -34,16 +38,22 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import com.mirth.connect.donkey.model.channel.MetaDataColumn;
+import com.mirth.connect.donkey.model.message.ContentType;
+import com.mirth.connect.donkey.model.message.MessageContent;
 import com.mirth.connect.donkey.model.message.attachment.Attachment;
 import com.mirth.connect.donkey.server.Donkey;
 import com.mirth.connect.donkey.server.channel.Channel;
 import com.mirth.connect.donkey.server.channel.Statistics;
+import com.mirth.connect.donkey.server.data.DonkeyDaoException;
 import com.mirth.connect.donkey.server.data.StatisticsUpdater;
 import com.mirth.connect.donkey.util.SerializerProvider;
 
 public class JdbcDaoTest {
+    private static final String BATCH_CHANNEL_ID = "batchChannel";
+
     private JdbcDao dao;
     private Donkey donkey;
     private Connection connection;
@@ -53,7 +63,6 @@ public class JdbcDaoTest {
         donkey = mock(Donkey.class);
         connection = mock(Connection.class);
         QuerySource querySource = mock(QuerySource.class);
-        PreparedStatementSource statementSource = mock(PreparedStatementSource.class);
         SerializerProvider serializerProvider = mock(SerializerProvider.class);
         boolean encryptMessageContent = false;
         boolean encryptAttachments = false;
@@ -63,7 +72,7 @@ public class JdbcDaoTest {
         Statistics currentStats = mock(Statistics.class);
         Statistics totalStats = mock(Statistics.class);
         String statsServerId = "";
-        dao = new JdbcDao(donkey, connection, querySource, statementSource, serializerProvider, encryptMessageContent, encryptAttachments, encryptCustomMetaData, decryptData, statisticsUpdater, currentStats, totalStats, statsServerId);
+        dao = new JdbcDao(donkey, connection, querySource, serializerProvider, encryptMessageContent, encryptAttachments, encryptCustomMetaData, decryptData, statisticsUpdater, currentStats, totalStats, statsServerId);
     }
 
     @Test
@@ -387,11 +396,55 @@ public class JdbcDaoTest {
         verify(deleteStatement, times(0)).executeUpdate();
     }
 
+    /**
+     * Every row has to make it onto the batch, and the batch has to run before the statement is
+     * closed -- closing it early silently discarded the source content.
+     */
+    @Test
+    public void insertMessageContentBatchBatchesEveryRowThenExecutesOnce() throws Exception {
+        PreparedStatement statement = mock(PreparedStatement.class);
+        JdbcDao batchDao = batchDao(statement);
+
+        batchDao.insertMessageContentBatch(Arrays.asList(content(ContentType.PROCESSED_RAW, "processed raw"), content(ContentType.TRANSFORMED, "transformed"), content(ContentType.ENCODED, "encoded")));
+
+        InOrder inOrder = inOrder(statement);
+        inOrder.verify(statement, times(3)).addBatch();
+        inOrder.verify(statement).executeBatch();
+        inOrder.verify(statement).close();
+    }
+
+    /** A batch that fails half way through must execute nothing and still release the statement. */
+    @Test
+    public void insertMessageContentBatchClosesTheStatementWhenBindingFails() throws Exception {
+        PreparedStatement statement = mock(PreparedStatement.class);
+        doThrow(new SQLException("no")).when(statement).addBatch();
+        JdbcDao batchDao = batchDao(statement);
+
+        try {
+            batchDao.insertMessageContentBatch(Arrays.asList(content(ContentType.ENCODED, "encoded")));
+            fail("Expected a DonkeyDaoException");
+        } catch (DonkeyDaoException e) {
+            // expected
+        }
+
+        verify(statement, never()).executeBatch();
+        verify(statement).close();
+    }
+
+    private JdbcDao batchDao(PreparedStatement statement) throws SQLException {
+        JdbcDao batchDao = spy(dao);
+        doReturn(statement).when(batchDao).prepareStatement(eq("insertMessageContent"), eq(BATCH_CHANNEL_ID));
+        return batchDao;
+    }
+
+    private static MessageContent content(ContentType contentType, String content) {
+        return new MessageContent(BATCH_CHANNEL_ID, 1L, 0, contentType, content, "RAW", false);
+    }
+
     private JdbcDao getDao(String channelId, ResultSet segmentCountResult, PreparedStatement segmentCountStatement, PreparedStatement updateStatement, PreparedStatement insertStatement, PreparedStatement deleteStatement) throws Exception {
         Donkey donkey = mock(Donkey.class);
         Connection connection = mock(Connection.class);
         QuerySource querySource = mock(QuerySource.class);
-        PreparedStatementSource statementSource = mock(PreparedStatementSource.class);
         SerializerProvider serializerProvider = mock(SerializerProvider.class);
         boolean encryptMessageContent = false;
         boolean encryptAttachments = false;
@@ -402,7 +455,7 @@ public class JdbcDaoTest {
         Statistics totalStats = mock(Statistics.class);
         String statsServerId = "";
 
-        JdbcDao dao = spy(new JdbcDao(donkey, connection, querySource, statementSource, serializerProvider, encryptMessageContent, encryptAttachments, encryptCustomMetaData, decryptData, statisticsUpdater, currentStats, totalStats, statsServerId));
+        JdbcDao dao = spy(new JdbcDao(donkey, connection, querySource, serializerProvider, encryptMessageContent, encryptAttachments, encryptCustomMetaData, decryptData, statisticsUpdater, currentStats, totalStats, statsServerId));
 
         when(segmentCountStatement.executeQuery()).thenReturn(segmentCountResult);
         doReturn(segmentCountStatement).when(dao).prepareStatement(eq("selectMessageAttachmentSegmentCount"), eq(channelId));

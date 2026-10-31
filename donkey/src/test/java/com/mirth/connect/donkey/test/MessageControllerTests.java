@@ -22,7 +22,6 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,35 +37,26 @@ import com.mirth.connect.donkey.server.channel.Channel;
 import com.mirth.connect.donkey.server.controllers.ChannelController;
 import com.mirth.connect.donkey.server.controllers.MessageController;
 import com.mirth.connect.donkey.server.data.DonkeyDao;
-import com.mirth.connect.donkey.server.data.timed.TimedDaoFactory;
 import com.mirth.connect.donkey.server.queue.ConnectorMessageQueueDataSource;
 import com.mirth.connect.donkey.test.util.TestChannel;
 import com.mirth.connect.donkey.test.util.TestUtils;
-import com.mirth.connect.donkey.util.ActionTimer;
 
 public class MessageControllerTests {
     private static int TEST_SIZE = 20;
     private static String channelId = TestUtils.DEFAULT_CHANNEL_ID;
     private static String serverId = TestUtils.DEFAULT_SERVER_ID;
     private static String testMessage = TestUtils.TEST_HL7_MESSAGE;
-    private static ActionTimer daoTimer = new ActionTimer();
     private Logger logger = LogManager.getLogger(this.getClass());
 
     @BeforeClass
     final public static void beforeClass() throws StartException {
         Donkey donkey = Donkey.getInstance();
         donkey.startEngine(TestUtils.getDonkeyTestConfiguration());
-        donkey.setDaoFactory(new TimedDaoFactory(donkey.getDaoFactory(), daoTimer));
     }
 
     @AfterClass
     final public static void afterClass() throws StartException {
         Donkey.getInstance().stopEngine();
-    }
-
-    @Before
-    final public void before() {
-        daoTimer.reset();
     }
 
     /*
@@ -120,7 +110,6 @@ public class MessageControllerTests {
                 TestUtils.assertMessageContentExists(sourceMessage.getRaw());
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             ChannelController.getInstance().removeChannel(channel.getChannelId());
         }

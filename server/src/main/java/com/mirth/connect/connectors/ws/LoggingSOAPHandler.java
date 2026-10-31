@@ -60,6 +60,8 @@ public class LoggingSOAPHandler implements SOAPHandler<SOAPMessageContext> {
             } else {
                 logger.debug("Web Service returning response.");
             }
+            // The result is unused, but don't remove this: it parses the whole message, so
+            // requests with malformed XML after the payload are rejected instead of processed.
             smc.getMessage();
         } catch (Exception e) {
             logger.error("Error handling SOAP message", e);

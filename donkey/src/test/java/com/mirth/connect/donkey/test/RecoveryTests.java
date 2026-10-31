@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -44,13 +43,11 @@ import com.mirth.connect.donkey.server.controllers.ChannelController;
 import com.mirth.connect.donkey.server.data.DonkeyDao;
 import com.mirth.connect.donkey.server.data.DonkeyDaoFactory;
 import com.mirth.connect.donkey.server.data.buffered.BufferedDaoFactory;
-import com.mirth.connect.donkey.server.data.timed.TimedDaoFactory;
 import com.mirth.connect.donkey.test.util.TestChannel;
 import com.mirth.connect.donkey.test.util.TestDataType;
 import com.mirth.connect.donkey.test.util.TestDestinationConnector;
 import com.mirth.connect.donkey.test.util.TestSourceConnector;
 import com.mirth.connect.donkey.test.util.TestUtils;
-import com.mirth.connect.donkey.util.ActionTimer;
 import com.mirth.connect.donkey.util.Serializer;
 import com.mirth.connect.donkey.util.SerializerProvider;
 import com.mirth.connect.donkey.util.xstream.XStreamSerializer;
@@ -61,7 +58,6 @@ public class RecoveryTests {
     private static String channelName = TestUtils.DEFAULT_CHANNEL_ID;
     private static String serverId = TestUtils.DEFAULT_SERVER_ID;
     private static RawMessage testMessage = new RawMessage(TestUtils.TEST_HL7_MESSAGE);
-    private static ActionTimer daoTimer = new ActionTimer();
     private static DonkeyDaoFactory daoFactory;
     private Logger logger = LogManager.getLogger(this.getClass());
 
@@ -70,7 +66,7 @@ public class RecoveryTests {
         Donkey donkey = Donkey.getInstance();
         donkey.startEngine(TestUtils.getDonkeyTestConfiguration());
 
-        daoFactory = new BufferedDaoFactory(new TimedDaoFactory(donkey.getDaoFactory(), daoTimer), new SerializerProvider() {
+        daoFactory = new BufferedDaoFactory(donkey.getDaoFactory(), new SerializerProvider() {
             @Override
             public Serializer getSerializer(Integer metaDataId) {
                 return new XStreamSerializer();
@@ -82,11 +78,6 @@ public class RecoveryTests {
     @AfterClass
     final public static void afterClass() throws StartException {
         Donkey.getInstance().stopEngine();
-    }
-
-    @Before
-    final public void before() {
-        daoTimer.reset();
     }
 
     @Test
@@ -297,7 +288,6 @@ public class RecoveryTests {
                 assertTrue(TestUtils.isMessageProcessed(channel.getChannelId(), messageId));
             }
 
-            System.out.println(daoTimer.getLog());
         } finally {
             channel.stop();
             channel.undeploy();

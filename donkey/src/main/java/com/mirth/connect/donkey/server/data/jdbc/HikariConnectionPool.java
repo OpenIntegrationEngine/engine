@@ -18,11 +18,8 @@ import com.zaxxer.hikari.HikariDataSource;
 
 public class HikariConnectionPool implements ConnectionPool {
     private HikariDataSource dataSource;
-    private int maxConnections;
 
     public HikariConnectionPool(String driver, String url, String username, String password, int maxConnections, boolean jdbc4, String testQuery, boolean readOnly) {
-        this.maxConnections = maxConnections;
-
         dataSource = new HikariDataSource();
         dataSource.setDriverClassName(driver);
         dataSource.setJdbcUrl(url);
@@ -40,14 +37,8 @@ public class HikariConnectionPool implements ConnectionPool {
     }
 
     @Override
-    public PooledConnection getConnection() throws SQLException {
-        Connection connection = dataSource.getConnection();
-        return new PooledConnection(connection, connection.unwrap(Connection.class));
-    }
-
-    @Override
-    public Integer getMaxConnections() {
-        return maxConnections;
+    public Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
     }
 
     @Override

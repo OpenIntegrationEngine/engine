@@ -58,6 +58,13 @@ public class ResponseTransformerExecutor {
     }
 
     public void runResponseTransformer(DonkeyDao dao, ConnectorMessage connectorMessage, Response response, boolean queueEnabled, StorageSettings storageSettings, Serializer serializer) throws InterruptedException, DonkeyException {
+        try (var observation = MessageTelemetry.start(MessageTelemetry.Stage.RESPONSE, connectorMessage)) {
+            try { transformResponse(dao, connectorMessage, response, queueEnabled, storageSettings, serializer); observation.status(response.getStatus()); }
+            catch (InterruptedException | DonkeyException | RuntimeException | Error failure) { observation.failed(failure); throw failure; }
+        }
+    }
+
+    private void transformResponse(DonkeyDao dao, ConnectorMessage connectorMessage, Response response, boolean queueEnabled, StorageSettings storageSettings, Serializer serializer) throws InterruptedException, DonkeyException {
         ThreadUtils.checkInterruptedStatus();
         String processedResponseContent;
 

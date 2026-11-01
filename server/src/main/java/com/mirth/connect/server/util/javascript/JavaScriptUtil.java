@@ -71,7 +71,7 @@ public class JavaScriptUtil {
     private static String serverId = ControllerFactory.getFactory().createConfigurationController().getServerId();
 
     public static <T> T execute(JavaScriptTask<T> task) throws JavaScriptExecutorException, InterruptedException {
-        Future<T> future = executor.submit(task);
+        Future<T> future = executor.submit(com.mirth.connect.donkey.server.channel.MessageTelemetry.wrap(task));
 
         try {
             return future.get();

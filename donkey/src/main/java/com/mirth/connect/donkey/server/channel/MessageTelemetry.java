@@ -1,0 +1,196 @@
+/* Published under the Mozilla Public License 2.0. */
+package com.mirth.connect.donkey.server.channel;
+
+import java.util.Objects;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import com.mirth.connect.donkey.model.message.ConnectorMessage;
+import com.mirth.connect.donkey.model.message.Status;
+import org.apache.logging.log4j.LogManager;
+
+/**
+ * Optional in-process observer. Providers own telemetry; callbacks must not block or mutate
+ * message behavior. An observation belongs to its starting thread. A provider that fails during
+ * start/activation must restore any context it already attached before throwing.
+ */
+public final class MessageTelemetry {
+    public enum Stage { SOURCE, TRANSFORM, SEND, RESPONSE, DESTINATION }
+    public interface Observation extends AutoCloseable {
+        default void status(Status status) { }
+        default void failed(Throwable failure) { }
+        @Override void close();
+    }
+    public interface Provider {
+        Observation start(Stage stage, ConnectorMessage message);
+        /** Static API capability, not a cached policy/admission decision. No live resources. */
+        default boolean supportsDispatchContext() { return false; }
+        /**
+         * Optional immutable, bounded, content-free preparation proof. It must retain no message,
+         * application map, Throwable, Context, SDK/provider or lease. Persisted data stays in the
+         * existing map representation. Null opts this dispatch into the ordinary start path.
+         */
+        default Object prepareDispatch(ConnectorMessage message, Map<String, Object> sourceMap) {
+            beforeStore(message, sourceMap);
+            return null;
+        }
+        /** Providers must recheck native coordinates, observed map values and current policy. */
+        default Observation start(Stage stage, ConnectorMessage message, Object dispatchContext) {
+            return start(stage, message);
+        }
+        /**
+         * Before the source map becomes read-only and is first persisted. May add only private,
+         * content-free propagation data to sourceMap; preserve all application entries. This
+         * callback must open no span/scope or other resource requiring later cleanup.
+         */
+        default void beforeStore(ConnectorMessage message, Map<String, Object> sourceMap) { }
+        /**
+         * Capture immutable context now, without opening a scope or allocating live resources.
+         * The supplier attaches it only if the task runs; its observation restores worker state.
+         * Null means no transfer is needed. Never capture a thread-bound open scope.
+         */
+        default Supplier<Observation> capture() { return null; }
+    }
+    private static final Observation NONE = () -> { };
+    private static final AtomicReference<Registration> CURRENT = new AtomicReference<>();
+    private MessageTelemetry() { }
+
+    /**
+     * Exactly one provider; the idempotent token detaches only this installation and never blocks
+     * traffic. Existing observations and captured context activations retain the old provider,
+     * which must allow them to finish safely after detach. New stage observations (including those
+     * inside captured tasks) select the current installation. This token does not shut down resources.
+     */
+    public static AutoCloseable install(Provider provider) {
+        Registration registration = new Registration(Objects.requireNonNull(provider));
+        if (!CURRENT.compareAndSet(null, registration)) throw new IllegalStateException("Message telemetry already installed");
+        return () -> CURRENT.compareAndSet(registration, null);
+    }
+    public static Observation start(Stage stage, ConnectorMessage message) {
+        Registration registration = CURRENT.get();
+        if (registration == null) return NONE;
+        return observe(registration, () -> registration.dispatchOwner == null
+                ? registration.provider.start(stage, message)
+                : registration.provider.start(stage, message, message == null ? null
+                        : message.getTelemetryContext(registration.dispatchOwner)));
+    }
+    public static void beforeStore(ConnectorMessage message, Map<String, Object> sourceMap) {
+        Registration registration = CURRENT.get();
+        if (registration == null) return;
+        if (registration.dispatchOwner == null || message == null) {
+            try { registration.provider.beforeStore(message, sourceMap); }
+            catch (Throwable failure) { registration.failed(failure); }
+            return;
+        }
+        Object reservation = null;
+        try {
+            reservation = message.reserveTelemetryContext(registration.dispatchOwner);
+            Object prepared = registration.provider.prepareDispatch(message, sourceMap);
+            message.completeTelemetryContext(reservation, prepared);
+        } catch (Throwable failure) {
+            if (reservation != null) message.completeTelemetryContext(reservation, null);
+            registration.failed(failure);
+        }
+    }
+
+    /** Native dispatch copies only this installation's scalar proof, never a source message/SDK. */
+    static void copyDispatchContext(ConnectorMessage source, ConnectorMessage destination) {
+        Registration registration = CURRENT.get();
+        if (registration == null || registration.dispatchOwner == null || source == null || destination == null) return;
+        try {
+            Object value = source.getTelemetryContext(registration.dispatchOwner);
+            Object reservation = destination.reserveTelemetryContext(registration.dispatchOwner);
+            destination.completeTelemetryContext(reservation, value);
+        } catch (Throwable failure) { registration.failed(failure); }
+    }
+    private static Observation observe(Registration registration, Supplier<Observation> start) {
+        try {
+            Observation observation = start.get();
+            return observation == null ? NONE : new Observation() {
+                public void status(Status status) { try { observation.status(status); } catch (Throwable failure) { registration.failed(failure); } }
+                public void failed(Throwable cause) {
+                    try { observation.failed(cause); }
+                    catch (Throwable failure) {
+                        if (fatal(cause) && fatal(failure)) {
+                            if (cause != failure) {
+                                try { cause.addSuppressed(failure); }
+                                catch (Throwable ignored) { /* Preserve the original fatal even if suppression cannot allocate. */ }
+                            }
+                        } else registration.failed(failure);
+                    }
+                }
+                public void close() { try { observation.close(); } catch (Throwable failure) { registration.failed(failure); } }
+            };
+        } catch (Throwable failure) { registration.failed(failure); return NONE; }
+    }
+    private static boolean fatal(Throwable failure) {
+        return failure instanceof VirtualMachineError || failure instanceof ThreadDeath;
+    }
+    /** Retain the first observed engine fatal across later handling or cleanup failures. */
+    static Throwable failure(Throwable previous, Throwable next) {
+        return fatal(previous) ? previous : next;
+    }
+    /** Finish after engine cleanup, including failures the engine deliberately catches. */
+    static void finish(Observation observation, Throwable failure) {
+        Throwable problem = null;
+        try {
+            if (observation != null && failure != null) observation.failed(failure);
+        } catch (VirtualMachineError | ThreadDeath telemetryFailure) { problem = telemetryFailure; }
+        finally {
+            try { if (observation != null) observation.close(); }
+            catch (VirtualMachineError | ThreadDeath telemetryFailure) {
+                if (problem == null) problem = telemetryFailure;
+                else suppress(problem, telemetryFailure);
+            }
+        }
+        if (problem != null) {
+            if (fatal(failure)) suppress(failure, problem);
+            else if (problem instanceof VirtualMachineError) throw (VirtualMachineError) problem;
+            else throw (ThreadDeath) problem;
+        }
+    }
+    private static void suppress(Throwable primary, Throwable secondary) {
+        if (primary != secondary) {
+            try { primary.addSuppressed(secondary); }
+            catch (Throwable ignored) { /* Preserve the first fatal even if suppression cannot allocate. */ }
+        }
+    }
+    public static <T> Callable<T> wrap(Callable<T> task) {
+        Objects.requireNonNull(task);
+        Registration registration = CURRENT.get();
+        if (registration == null) return task;
+        try {
+            Supplier<Observation> captured = registration.provider.capture();
+            if (captured == null) return task;
+            return () -> {
+                try (Observation scope = observe(registration, captured)) {
+                    return task.call();
+                }
+            };
+        }
+        catch (Throwable failure) { registration.failed(failure); return task; }
+    }
+    private static final class Registration {
+        final Provider provider;
+        // This key is deliberately not Registration: messages must not retain Provider/SDK owners.
+        final Object dispatchOwner;
+        final AtomicBoolean warned = new AtomicBoolean();
+        Registration(Provider provider) {
+            this.provider = provider;
+            dispatchOwner = provider.supportsDispatchContext() ? new Object() : null;
+        }
+        void failed(Throwable failure) {
+            if (failure instanceof VirtualMachineError) throw (VirtualMachineError) failure;
+            if (failure instanceof ThreadDeath) throw (ThreadDeath) failure;
+            if (warned.compareAndSet(false, true)) {
+                try {
+                    LogManager.getLogger(MessageTelemetry.class)
+                            .warn("Message telemetry callback failed; further warnings for this installation are suppressed");
+                } catch (VirtualMachineError | ThreadDeath fatal) { throw fatal; }
+                catch (Throwable loggingFailure) { /* A broken appender must not break message processing. */ }
+            }
+        }
+    }
+}

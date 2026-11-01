@@ -12,25 +12,26 @@ package com.mirth.connect.server;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.Predicate;
 
-import com.mirth.connect.client.core.BrandingConstants;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.AndFileFilter;
-import org.apache.commons.io.filefilter.FileFilterUtils;
-import org.apache.commons.io.filefilter.IOFileFilter;
-import org.apache.commons.io.filefilter.NameFileFilter;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
+import com.mirth.connect.client.core.ControllerException;
+import com.mirth.connect.client.core.ExtensionDependencies;
 import com.mirth.connect.client.core.PropertiesConfigurationUtil;
 import com.mirth.connect.model.ConnectorMetaData;
 import com.mirth.connect.model.MetaData;
@@ -55,10 +56,16 @@ public class ExtensionLoader {
     private Map<String, ConnectorMetaData> connectorProtocolsMap = new HashMap<String, ConnectorMetaData>();
     private Map<String, MetaData> invalidMetaDataMap = new HashMap<String, MetaData>();
     private boolean loadedExtensions = false;
-    private ObjectXMLSerializer serializer = ObjectXMLSerializer.getInstance();
+    private final ObjectXMLSerializer serializer;
     private static Logger logger = LogManager.getLogger(ExtensionLoader.class);
 
-    private ExtensionLoader() {}
+    private ExtensionLoader() {
+        this(ObjectXMLSerializer.getInstance());
+    }
+
+    public ExtensionLoader(ObjectXMLSerializer serializer) {
+        this.serializer = serializer;
+    }
 
     public Map<String, ConnectorMetaData> getConnectorMetaData() {
         loadExtensions();
@@ -140,77 +147,100 @@ public class ExtensionLoader {
         return null;
     }
 
+    /** Checks declarations and the engine requirement; plugin requirements need the full inventory. */
     public boolean isExtensionCompatible(MetaData metaData) {
-        String serverMirthVersion;
         try {
-            serverMirthVersion = getServerVersion();
+            return ExtensionDependencies.getEngineError(metaData, getServerVersion()) == null;
         } catch (Exception e) {
-            logger.error("An error occurred while attempting to determine the current server version.", e);
+            logger.error("An error occurred while attempting to determine extension compatibility.", e);
             return false;
         }
-
-        String[] extensionMirthVersions = metaData.getMirthVersion().split(",");
-
-        logger.debug("checking extension \"" + metaData.getName() + "\" version compatability: versions=" + ArrayUtils.toString(extensionMirthVersions) + ", server=" + serverMirthVersion);
-
-        // if there is no build version, just use the patch version
-        if (serverMirthVersion.split("\\.").length == 4) {
-            serverMirthVersion = serverMirthVersion.substring(0, serverMirthVersion.lastIndexOf('.'));
-        }
-
-        for (int i = 0; i < extensionMirthVersions.length; i++) {
-            if (extensionMirthVersions[i].trim().equals(serverMirthVersion)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
-    /**
-     * Loads the metadata files (plugin.xml, source.xml, destination.xml) for all extensions of the
-     * specified type. If this function fails to parse the metadata file for an extension, it will
-     * skip it and continue.
-     */
+    /** Validates a complete inventory, including providers rejected by their own requirements. */
+    public Map<MetaData, String> getCompatibilityErrors(Collection<MetaData> metadata, Predicate<String> enabled) throws ControllerException {
+        List<MetaData> candidates = new ArrayList<>();
+        Map<String, Boolean> statuses = new HashMap<>();
+        Map<MetaData, String> errors = new LinkedHashMap<>();
+        for (MetaData extension : metadata) {
+            try {
+                statuses.computeIfAbsent(extension.getName(), enabled::test);
+                candidates.add(extension);
+            } catch (Exception e) {
+                errors.put(extension, "Could not read extension status: " + e.getMessage());
+            }
+        }
+        try {
+            errors.putAll(ExtensionDependencies.validate(candidates, getServerVersion(), statuses::get));
+        } catch (Exception e) {
+            logger.error("An error occurred while attempting to determine extension compatibility.", e);
+            throw new ControllerException("Could not determine extension compatibility.", e);
+        }
+        return errors;
+    }
+
+    /** Reads the same package/descriptor layout as the launcher, without including pending installs. */
+    public Map<String, List<MetaData>> readExtensionMetaData(File extensionPath) {
+        Map<String, List<MetaData>> packages = new TreeMap<>();
+        File[] directories = extensionPath.listFiles(File::isDirectory);
+        if (directories == null) {
+            return packages;
+        }
+        for (File directory : directories) {
+            if (directory.getName().equals("install_temp") || directory.getName().startsWith(".install-")) {
+                continue;
+            }
+            List<MetaData> metadata = new ArrayList<>();
+            File[] files = directory.listFiles(file -> file.isFile() && isMetaDataFile(file.getName()));
+            if (files == null) {
+                continue;
+            }
+            Arrays.sort(files);
+            for (File file : files) {
+                try {
+                    MetaData extension = serializer.deserialize(FileUtils.readFileToString(file), MetaData.class);
+                    if (!(extension instanceof PluginMetaData || extension instanceof ConnectorMetaData)
+                            || StringUtils.isBlank(extension.getName())) {
+                        throw new IllegalArgumentException("Expected named plugin or connector metadata.");
+                    }
+                    metadata.add(extension);
+                } catch (Exception e) {
+                    logger.error("Error reading or parsing extension metadata file: {}", file, e);
+                }
+            }
+            packages.put(directory.getName(), metadata);
+        }
+        return packages;
+    }
+
+    public static boolean isMetaDataFile(String name) {
+        return "plugin.xml".equalsIgnoreCase(name) || "source.xml".equalsIgnoreCase(name) || "destination.xml".equalsIgnoreCase(name);
+    }
+
     private synchronized void loadExtensions() {
         if (!loadedExtensions) {
             try {
-                // match all of the file names for the extension
-                IOFileFilter nameFileFilter = new NameFileFilter(new String[] { "plugin.xml",
-                        "source.xml", "destination.xml" });
-                // this is probably not needed, but we dont want to pick up directories,
-                // so we AND the two filters
-                IOFileFilter andFileFilter = new AndFileFilter(nameFileFilter, FileFilterUtils.fileFileFilter());
-                // this is directory where extensions are located
-                File extensionPath = new File(getExtensionsPath());
-                // do a recursive scan for extension files
-                Collection<File> extensionFiles = FileUtils.listFiles(extensionPath, andFileFilter, FileFilterUtils.trueFileFilter());
-
-                for (File extensionFile : extensionFiles) {
-                    try {
-                        MetaData metaData = (MetaData) serializer.deserialize(FileUtils.readFileToString(extensionFile), MetaData.class);
-
-                        if (isExtensionCompatible(metaData)) {
-                            if (metaData instanceof ConnectorMetaData) {
-                                ConnectorMetaData connectorMetaData = (ConnectorMetaData) metaData;
-                                connectorMetaDataMap.put(connectorMetaData.getName(), connectorMetaData);
-
-                                if (StringUtils.contains(connectorMetaData.getProtocol(), ":")) {
-                                    for (String protocol : connectorMetaData.getProtocol().split(":")) {
-                                        connectorProtocolsMap.put(protocol, connectorMetaData);
-                                    }
-                                } else {
-                                    connectorProtocolsMap.put(connectorMetaData.getProtocol(), connectorMetaData);
-                                }
-                            } else if (metaData instanceof PluginMetaData) {
-                                pluginMetaDataMap.put(metaData.getName(), (PluginMetaData) metaData);
+                List<MetaData> metadata = new ArrayList<>();
+                for (List<MetaData> extensions : readExtensionMetaData(new File(getExtensionsPath())).values()) {
+                    metadata.addAll(extensions);
+                }
+                Map<MetaData, String> errors = getCompatibilityErrors(metadata, ExtensionStatuses.getInstance()::isEnabled);
+                for (MetaData metaData : metadata) {
+                    if (errors.containsKey(metaData)) {
+                        logger.error("Extension \"{}\" was not loaded: {}", metaData.getName(), errors.get(metaData));
+                        invalidMetaDataMap.put(metaData.getName(), metaData);
+                    } else if (metaData instanceof ConnectorMetaData) {
+                        ConnectorMetaData connectorMetaData = (ConnectorMetaData) metaData;
+                        connectorMetaDataMap.put(connectorMetaData.getName(), connectorMetaData);
+                        if (StringUtils.contains(connectorMetaData.getProtocol(), ":")) {
+                            for (String protocol : connectorMetaData.getProtocol().split(":")) {
+                                connectorProtocolsMap.put(protocol, connectorMetaData);
                             }
                         } else {
-                            logger.error("Extension \"{}\" is not compatible with this version of {} and was not loaded. Please install a compatible version.", metaData.getName(), BrandingConstants.PRODUCT_NAME);
-                            invalidMetaDataMap.put(metaData.getName(), metaData);
+                            connectorProtocolsMap.put(connectorMetaData.getProtocol(), connectorMetaData);
                         }
-                    } catch (Exception e) {
-                        logger.error("Error reading or parsing extension metadata file: {}", extensionFile.getName(), e);
+                    } else if (metaData instanceof PluginMetaData) {
+                        pluginMetaDataMap.put(metaData.getName(), (PluginMetaData) metaData);
                     }
                 }
             } catch (Exception e) {
@@ -235,7 +265,7 @@ public class ExtensionLoader {
         }
     }
 
-    private String getServerVersion() throws FileNotFoundException, ConfigurationException {
+    protected String getServerVersion() throws FileNotFoundException, ConfigurationException {
         PropertiesConfiguration versionConfig = PropertiesConfigurationUtil.create();
         
         InputStream versionPropertiesStream = null;

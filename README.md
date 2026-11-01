@@ -82,6 +82,9 @@ The build is driven by Gradle through the committed wrapper; the only prerequisi
 
 On Windows use `gradlew.bat`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full command reference, the dependency policy, and how to run the server for development.
 
+For new plugins and connectors, or migrating existing extensions away from
+release-specific compatibility, see [Writing and migrating extensions](docs/extension-compatibility.md).
+
 ---
 
 ## Project Values

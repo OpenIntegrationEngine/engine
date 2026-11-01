@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2026 Tony Germano <tony@germano.name>
+
+name: Validate Renovate config
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - renovate.json
+      - .github/workflows/renovate-config.yaml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - renovate.json
+      - .github/workflows/renovate-config.yaml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # A docker:// reference rather than a docker run command so that
+      # Renovate's github-actions manager keeps the image current.
+      #
+      # --no-global is required because renovate.json is a repository
+      # config. When given file names, renovate-config-validator treats
+      # them as global configuration for a self-hosted Renovate instance
+      # unless --no-global is passed. Global configuration may set options
+      # that a repository config is not allowed to, such as
+      # allowedCommands, so without the flag those options would pass
+      # validation. --no-global validates the file as a repository config,
+      # which rejects them.
+      #
+      # --strict also fails on warnings and on options that need migration.
+      - name: Validate renovate.json
+        uses: docker://ghcr.io/renovatebot/renovate:44.199.0@sha256:76e0fb8c982004f8f9a6dd041a777f9c8aee6b4b852da862a1217c5ec550e6d9
+        with:
+          entrypoint: renovate-config-validator
+          args: --strict --no-global renovate.json

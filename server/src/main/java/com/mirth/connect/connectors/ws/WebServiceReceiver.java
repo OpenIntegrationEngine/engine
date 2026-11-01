@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: Open Integration Engine Contributors
 
 package com.mirth.connect.connectors.ws;
 
@@ -35,6 +30,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import com.google.common.annotations.VisibleForTesting;
 import com.mirth.connect.donkey.model.channel.ConnectorPluginProperties;
 import com.mirth.connect.donkey.model.event.ConnectionStatusEventType;
 import com.mirth.connect.donkey.model.event.ErrorEventType;
@@ -236,6 +232,7 @@ public class WebServiceReceiver extends SourceConnector {
      * see server-lib, and lookups through the context classloader (e.g. the SAAJ implementation)
      * fail. Give the worker threads the given classloader explicitly instead.
      */
+    @VisibleForTesting
     static ExecutorService createExecutor(int threads, ClassLoader contextClassLoader) {
         ThreadFactory defaultThreadFactory = Executors.defaultThreadFactory();
 

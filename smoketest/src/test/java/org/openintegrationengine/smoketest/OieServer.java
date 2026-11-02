@@ -30,7 +30,7 @@ import com.mirth.connect.util.MirthSSLUtil;
  * {@code X-Requested-With} header, keeps the session cookie, and serialises the OIE model
  * classes. Assertions therefore run against typed objects rather than scraped XML.
  */
-final class OieServer implements AutoCloseable {
+public final class OieServer implements AutoCloseable {
 
     private static boolean serializerInitialized;
 
@@ -43,13 +43,7 @@ final class OieServer implements AutoCloseable {
     }
 
     static OieServer connect() {
-        Client client;
-        try {
-            client = new Client(HarnessConfig.BASE_URL, HarnessConfig.REQUEST_TIMEOUT_MILLIS,
-                    MirthSSLUtil.DEFAULT_HTTPS_CLIENT_PROTOCOLS, MirthSSLUtil.DEFAULT_HTTPS_CIPHER_SUITES);
-        } catch (Exception e) {
-            throw new IllegalStateException("Could not create a client for " + HarnessConfig.BASE_URL, e);
-        }
+        Client client = newClient();
 
         try {
             LoginStatus status = client.login(HarnessConfig.USERNAME, HarnessConfig.PASSWORD);
@@ -70,6 +64,19 @@ final class OieServer implements AutoCloseable {
     }
 
     /**
+     * Creates a client for the server under test that has not logged in, for tests that need a
+     * session other than the shared one.
+     */
+    public static Client newClient() {
+        try {
+            return new Client(HarnessConfig.BASE_URL, HarnessConfig.REQUEST_TIMEOUT_MILLIS,
+                    MirthSSLUtil.DEFAULT_HTTPS_CLIENT_PROTOCOLS, MirthSSLUtil.DEFAULT_HTTPS_CIPHER_SUITES);
+        } catch (Exception e) {
+            throw new IllegalStateException("Could not create a client for " + HarnessConfig.BASE_URL, e);
+        }
+    }
+
+    /**
      * {@code ObjectXMLSerializer.init} throws if called twice, and the singleton outlives
      * any one connection, so initialise it at most once per JVM.
      */
@@ -81,10 +88,18 @@ final class OieServer implements AutoCloseable {
     }
 
     /**
+     * The underlying client, for the administrator operations this class has no helper for.
+     * It shares this server's session, so a test must restore anything it changes.
+     */
+    public Client client() {
+        return client;
+    }
+
+    /**
      * Returns a typed client for one of the server's servlet interfaces, for the APIs the
      * administrator uses that have no {@link Client} convenience method.
      */
-    <T> T servlet(Class<T> servletInterface) {
+    public <T> T servlet(Class<T> servletInterface) {
         return client.getServlet(servletInterface);
     }
 
@@ -96,7 +111,19 @@ final class OieServer implements AutoCloseable {
      * @return the deployed channel's id
      */
     String deployChannel(String xml, String label) throws Exception {
-        Channel channel = ObjectXMLSerializer.getInstance().deserialize(xml, Channel.class);
+        return deployChannel(ObjectXMLSerializer.getInstance().deserialize(xml, Channel.class), label, "");
+    }
+
+    /**
+     * Deploys a channel and waits for it to reach {@link DeployedState#STARTED}.
+     *
+     * @param channel the channel to create, or to update if it already exists
+     * @param label   a human-readable name for the channel, used only in error messages
+     * @param debug   the debug options, in the comma-separated form the engine servlet takes
+     *                (empty for none)
+     * @return the deployed channel's id
+     */
+    public String deployChannel(Channel channel, String label, String debug) throws Exception {
         String channelId = channel.getId();
         if (channelId == null || channelId.isBlank()) {
             throw new IllegalArgumentException("Channel fixture has no id: " + label);
@@ -106,11 +133,13 @@ final class OieServer implements AutoCloseable {
         if (!client.createChannel(channel)) {
             client.updateChannel(channel, true, null);
         }
-        deployedChannelIds.push(channelId);
+        if (!deployedChannelIds.contains(channelId)) {
+            deployedChannelIds.push(channelId);
+        }
 
         // returnErrors=true so a deploy failure surfaces here instead of only as a status
         // that never reaches STARTED. The String overload avoids DebuggerUtil parsing.
-        client.deployChannel(channelId, true, "");
+        client.deployChannel(channelId, true, debug);
         awaitStarted(channelId, label);
         return channelId;
     }
@@ -132,7 +161,7 @@ final class OieServer implements AutoCloseable {
     }
 
     /** Submits a source payload and returns the id of every message it produced, in dispatch order. */
-    List<Long> submitMessage(String channelId, String rawData, Map<String, Object> sourceMap) throws ClientException {
+    public List<Long> submitMessage(String channelId, String rawData, Map<String, Object> sourceMap) throws ClientException {
         RawMessage rawMessage = new RawMessage(rawData, null, sourceMap);
         List<Long> messageIds = client.processBatchMessage(channelId, rawMessage);
         if (messageIds == null) {

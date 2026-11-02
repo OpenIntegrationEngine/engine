@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import org.junit.jupiter.api.Assumptions;
@@ -21,10 +22,13 @@ import com.mirth.connect.donkey.model.message.ConnectorMessage;
 import com.mirth.connect.donkey.model.message.Message;
 import com.mirth.connect.donkey.model.message.MessageContent;
 import com.mirth.connect.donkey.model.message.Status;
+import com.mirth.connect.model.Channel;
+import com.mirth.connect.model.converters.ObjectXMLSerializer;
 
 /**
  * The entry points the generated smoke tests call (see :smoketest:generateSmokeTests
- * and the generated smoketest/build/generated/smoketest files).
+ * and the generated smoketest/build/generated/smoketest files), and helpers the hand-written
+ * tests share.
  */
 public final class Harness {
 
@@ -109,6 +113,21 @@ public final class Harness {
                 configuration == null || configuration.isBlank()
                         || Arrays.asList(configurations).contains(configuration),
                 () -> "fixture is not enabled for configuration '" + configuration + "'");
+    }
+
+    /**
+     * Loads the channel exported at {@code channelResource} as a new channel: it gets a random id,
+     * and a name made of {@code name} and the start of that id, so it never collides with another
+     * test's channel or one left by an earlier run. Nothing is created on the server.
+     */
+    public static Channel newChannel(String channelResource, String name) {
+        // Deserializing needs ObjectXMLSerializer, which the shared login initialises.
+        server();
+        Channel channel = ObjectXMLSerializer.getInstance().deserialize(resource(channelResource), Channel.class);
+        String id = UUID.randomUUID().toString();
+        channel.setId(id);
+        channel.setName(name + " " + id.substring(0, 8));
+        return channel;
     }
 
     /** Deploys the channel exported at {@code channelResource} and returns its id. */

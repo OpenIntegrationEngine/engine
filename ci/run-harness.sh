@@ -6,9 +6,13 @@ ENGINE_HOME="${ENGINE_HOME:-/opt/engine}"
 HARNESS_DIR="${HARNESS_DIR:-/harness}"
 RESULTS_DIR="${RESULTS_DIR:-/results}"
 
-# Build our classpath from the harness and engine jars, sorted so that the engine jars are first.
-classpath=$(find "$ENGINE_HOME/server-lib" "$ENGINE_HOME/extensions" "$HARNESS_DIR" \
-    -name '*.jar' -type f | sort | paste -sd: -)
+# Build our classpath from the engine and harness jars. The engine's own jars go first: they
+# replace some library classes, such as Jersey's WebResourceFactory, which the engine extends to
+# send multipart requests.
+classpath=$( {
+    find "$ENGINE_HOME/server-lib" -maxdepth 1 -name 'mirth-*.jar' -type f | sort
+    find "$ENGINE_HOME/server-lib" "$ENGINE_HOME/extensions" "$HARNESS_DIR" -name '*.jar' -type f | sort
+} | awk '!seen[$0]++' | paste -sd: -)
 
 results="$RESULTS_DIR/$OIE_CONFIGURATION"
 mkdir -p "$results"

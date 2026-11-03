@@ -129,7 +129,6 @@ tasks.register('devClient', JavaExec) {
             '--add-opens=java.base/sun.security.pkcs=ALL-UNNAMED',
             '--add-opens=java.base/sun.security.rsa=ALL-UNNAMED',
             '--add-opens=java.base/sun.security.x509=ALL-UNNAMED',
-            '--add-opens=java.desktop/com.apple.eawt=ALL-UNNAMED',
             '--add-opens=java.desktop/com.apple.eio=ALL-UNNAMED',
             '--add-opens=java.desktop/java.awt=ALL-UNNAMED',
             '--add-opens=java.desktop/java.awt.color=ALL-UNNAMED',

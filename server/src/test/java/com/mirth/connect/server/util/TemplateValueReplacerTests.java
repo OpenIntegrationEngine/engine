@@ -19,7 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TemplateValueReplacerTest {
+public class TemplateValueReplacerTests {
 
     private TemplateValueReplacer templateReplacer;
 

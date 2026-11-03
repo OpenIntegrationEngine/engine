@@ -116,18 +116,14 @@ final class OieServer implements AutoCloseable {
     }
 
     private void awaitStarted(String channelId, String label) throws Exception {
-        long deadline = System.nanoTime() + HarnessConfig.TIMEOUT.toNanos();
-        DeployedState lastState = null;
-        while (System.nanoTime() < deadline) {
+        Harness.awaitAsserted(() -> {
             var status = client.getChannelStatus(channelId);
-            lastState = status == null ? null : status.getState();
-            if (lastState == DeployedState.STARTED) {
-                return;
+            DeployedState state = status == null ? null : status.getState();
+            if (state != DeployedState.STARTED) {
+                throw new AssertionError("Channel " + label + " (" + channelId + ") has not started; its state is "
+                        + state);
             }
-            Thread.sleep(500);
-        }
-        throw new AssertionError("Channel " + label + " (" + channelId + ") did not start within "
-                + HarnessConfig.TIMEOUT.toSeconds() + "s; last state was " + lastState);
+        });
     }
 
     /** The server's reported version, as the CLI echoes it in its connect banner. */

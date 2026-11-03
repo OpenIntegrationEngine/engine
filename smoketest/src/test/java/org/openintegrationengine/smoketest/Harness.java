@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import org.junit.jupiter.api.Assumptions;
 
@@ -35,6 +36,66 @@ public final class Harness {
 
     private static OieServer server() {
         return SharedServer.get();
+    }
+
+    /** A check for {@link #awaitAsserted(Check)}. */
+    @FunctionalInterface
+    public interface Check {
+        void run() throws Exception;
+    }
+
+    /**
+     * A failure that waiting cannot fix, such as an assertion on messages the server has
+     * finished with. {@link #awaitAsserted} throws it at once instead of retrying.
+     */
+    public static final class FinalAssertionError extends AssertionError {
+        private static final long serialVersionUID = 1L;
+
+        public FinalAssertionError(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
+     * Runs {@code check} every 500 ms until it passes or {@link HarnessConfig#TIMEOUT} passes.
+     * An {@link AssertionError} means the server isn't there yet, so the check runs again. On
+     * timeout, a new error is thrown that adds the timeout to the last one's message and keeps
+     * its cause and stack trace. A {@link FinalAssertionError} or any other exception is thrown
+     * at once.
+     */
+    public static void awaitAsserted(Check check) throws Exception {
+        awaitAssertedValue(() -> {
+            check.run();
+            return null;
+        });
+    }
+
+    /**
+     * Like {@link #awaitAsserted(Check)}, for a check that returns the value it verified. The
+     * value itself is not tested: {@code check} must assert on it, or it passes the first time.
+     *
+     * @return the value from the run of {@code check} that passed
+     */
+    public static <T> T awaitAssertedValue(Callable<T> check) throws Exception {
+        long deadline = System.nanoTime() + HarnessConfig.TIMEOUT.toNanos();
+        while (true) {
+            try {
+                return check.call();
+            } catch (FinalAssertionError e) {
+                throw e;
+            } catch (AssertionError e) {
+                if (System.nanoTime() >= deadline) {
+                    // A check that wraps its failure already has it as the cause, so chain that
+                    // instead of e, whose message would otherwise appear twice.
+                    AssertionError timeout = new AssertionError("Timed out after "
+                            + HarnessConfig.TIMEOUT.toSeconds() + "s: " + e.getMessage(),
+                            e.getCause() != null ? e.getCause() : e);
+                    timeout.setStackTrace(e.getStackTrace());
+                    throw timeout;
+                }
+            }
+            Thread.sleep(500);
+        }
     }
 
     /**
@@ -66,7 +127,7 @@ public final class Harness {
      * Submits {@code <base>/source} (with {@code <base>/source_sourcemap.yml} when
      * {@code hasSourceMap}) into the channel, then retries the named assertion files until
      * they all hold or every message reaches a terminal state. Because messages are written
-     * asynchronously, an early poll can legitimately fail; only a failure that persists once
+     * asynchronously, an early check can legitimately fail; only a failure that persists once
      * the messages are terminal is a real failure.
      *
      * @param assertionFiles a bare file name for a payload that produces one message, or one
@@ -78,7 +139,7 @@ public final class Harness {
         String source = resource(base + "/source");
         Map<String, Object> sourceMap = sourceMap(base, hasSourceMap);
 
-        // Load the fixtures once; the poll loop below may check them many times.
+        // Load the fixtures once; awaitAsserted below may check them many times.
         List<Map<String, String>> assertions = loadAssertions(base, expectedMessageCount, assertionFiles);
 
         List<Long> messageIds;
@@ -94,32 +155,23 @@ public final class Harness {
                     + " message(s), found " + messageIds.size() + " " + messageIds);
         }
 
-        long deadline = System.nanoTime() + HarnessConfig.TIMEOUT.toNanos();
-        AssertionError lastFailure = null;
-        List<Message> lastMessages = List.of();
-        while (System.nanoTime() < deadline) {
+        // Once every message is terminal its content can't change, so a failure then is final.
+        awaitAsserted(() -> {
             List<Message> messages = fetchMessages(channelId, messageIds);
-            lastMessages = messages;
-            if (!messages.contains(null)) {
-                try {
-                    assertAll(messages, assertions);
-                    return;
-                } catch (AssertionError e) {
-                    lastFailure = e;
-                    if (messages.stream().allMatch(Harness::isTerminal)) {
-                        break;
-                    }
-                }
+            if (messages.contains(null)) {
+                throw new AssertionError("waiting for message(s) " + messageIds + " for fixture " + base
+                        + "\n\n" + describe(messages));
             }
-            Thread.sleep(500);
-        }
-
-        if (lastFailure != null) {
-            throw new AssertionError(base + " failed: " + lastFailure.getMessage()
-                    + "\n\n" + describe(lastMessages), lastFailure);
-        }
-        throw new AssertionError("Timed out after " + HarnessConfig.TIMEOUT.toSeconds() + "s waiting for message(s) "
-                + messageIds + " for fixture " + base + "\n\n" + describe(lastMessages));
+            try {
+                assertAll(messages, assertions);
+            } catch (AssertionError e) {
+                String message = base + " failed: " + e.getMessage() + "\n\n" + describe(messages);
+                if (messages.stream().allMatch(Harness::isTerminal)) {
+                    throw new FinalAssertionError(message, e);
+                }
+                throw new AssertionError(message, e);
+            }
+        });
     }
 
     /**

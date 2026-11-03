@@ -175,9 +175,20 @@ public class Mirth {
                 createAlternateKeyBindings();
             }
 
-            if (SystemUtils.IS_OS_MAC) {
-                OSXAdapter.setAboutHandler(Mirth.class, Mirth.class.getDeclaredMethod("aboutMac", (Class[]) null));
-                OSXAdapter.setQuitHandler(Mirth.class, Mirth.class.getDeclaredMethod("quitMac", (Class[]) null));
+            if (Desktop.isDesktopSupported()) {
+                Desktop desktop = Desktop.getDesktop();
+                if (desktop.isSupported(Desktop.Action.APP_ABOUT)) {
+                    desktop.setAboutHandler(e -> aboutMac());
+                }
+                if (desktop.isSupported(Desktop.Action.APP_QUIT_HANDLER)) {
+                    desktop.setQuitHandler((e, response) -> {
+                        if (quitMac()) {
+                            response.performQuit();
+                        } else {
+                            response.cancelQuit();
+                        }
+                    });
+                }
             }
         } catch (Exception e) {
             LogManager.getLogger(Mirth.class).error("Error initializing look and feel", e);

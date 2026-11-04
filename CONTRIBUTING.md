@@ -73,6 +73,16 @@ Implement the necessary changes, ensuring they align with the project’s coding
 Before submitting your changes, please ensure that all tests pass and that your changes work as expected in your local environment.
 
 ### 8. Submit a Pull Request
+Before you push, make sure your commits will pass the two automated checks that run on every pull request. A PR cannot be merged until both pass:
+
+- **Eclipse Contributor Agreement (ECA).** Open Integration Engine is an Eclipse Foundation project, so every commit author must be covered by the ECA. Do this once, ideally before your first commit:
+  1. Create an [Eclipse Foundation account](https://accounts.eclipse.org/) with the email address you commit with, and enter your GitHub username in the account profile.
+  2. Sign the [ECA](https://accounts.eclipse.org/user/eca) from your account page.
+  3. Check that the author email on your commits (`git config user.email`) matches your Eclipse Foundation account. GitHub `noreply` addresses also work when your GitHub username is in your Eclipse profile.
+
+  If the `eclipsefdn/eca` check fails, its **Details** link shows which commit and author it rejected. After fixing your account, use the **Revalidate** button on that page, or push a new commit, to re-run the check.
+- **Developer Certificate of Origin (DCO).** Every commit message needs a `Signed-off-by: Your Name <email>` line; `git commit -s` adds it for you.
+
 Once your changes are ready, push them to your fork and create a **draft pull request (PR)** from your branch to the `main` branch of the project. Draft PRs help indicate that the work is in progress.  
 Mark the PR as **"Ready for review"** only when it is actually complete and ready for feedback. Include a brief description of the changes and reference the related issue.
 

@@ -11,6 +11,7 @@
 
 [versions]
 # Shared by artifacts released together; bump the whole family at once.
+# Renovate updates each ref in one PR (see CONTRIBUTING.md).
 asm = "9.6"
 awssdk = "2.55.12"
 bouncycastle = "1.78.1"

@@ -663,6 +663,3 @@ server-test = [
     "mockito-inline",
     "objenesis",
 ]
-
-[plugins]
-owasp-dependencycheck = { id = "org.owasp.dependencycheck", version = "12.2.2" }

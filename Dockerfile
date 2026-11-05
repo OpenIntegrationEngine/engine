@@ -53,7 +53,7 @@ COPY --from=builder /app/donkey/build/test-results /app/donkey/build/test-result
 COPY --from=builder /app/server/build/test-results /app/server/build/test-results/
 
 # Stage 1d: Smoke Test Harness
-FROM eclipse-temurin:21.0.9_10-jre-noble AS smoketest-harness
+FROM eclipse-temurin:21.0.12_8-jre-noble AS smoketest-harness
 
 COPY --from=builder /app/server/setup/server-lib /opt/engine/server-lib
 COPY --from=builder /app/server/setup/extensions /opt/engine/extensions
@@ -72,7 +72,7 @@ ENTRYPOINT ["/bin/bash", "/harness/run-harness.sh"]
 #
 ##########################################
 
-FROM eclipse-temurin:21.0.9_10-jdk-noble AS jdk-run
+FROM eclipse-temurin:21.0.12_8-jdk-noble AS jdk-run
 
 RUN groupadd engine \
     && usermod -l engine ubuntu \
@@ -104,7 +104,7 @@ CMD ["./oieserver"]
 #
 ##########################################
 
-FROM eclipse-temurin:21.0.9_10-jre-alpine AS jre-run
+FROM eclipse-temurin:21.0.12_8-jre-alpine AS jre-run
 
 # Alpine does not include bash by default, so we install it
 RUN apk add --no-cache bash

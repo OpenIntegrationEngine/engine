@@ -126,7 +126,7 @@ public class JmsClient implements ExceptionListener {
             } else {
                 String className = replacer.replaceValues(connectorProperties.getConnectionFactoryClass(), channelId, channelName);
                 try {
-                    connectionFactory = (ConnectionFactory) Class.forName(className, true, contextFactory.getApplicationClassLoader()).newInstance();
+                    connectionFactory = (ConnectionFactory) Class.forName(className, true, contextFactory.getApplicationClassLoader()).getDeclaredConstructor().newInstance();
                 } catch (Exception e) {
                     throw new ConnectorTaskException("Failed to instantiate ConnectionFactory class: " + className, e);
                 }

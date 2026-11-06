@@ -132,7 +132,7 @@ public class HttpDispatcher extends DestinationConnector {
         String configurationClass = getConfigurationClass();
 
         try {
-            configuration = (HttpConfiguration) Class.forName(configurationClass).newInstance();
+            configuration = (HttpConfiguration) Class.forName(configurationClass).getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             logger.trace("could not find custom configuration class, using default");
             configuration = new DefaultHttpConfiguration();

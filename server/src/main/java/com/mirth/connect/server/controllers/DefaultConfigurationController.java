@@ -1223,7 +1223,7 @@ public class DefaultConfigurationController extends ConfigurationController {
             File keyStoreFile = new File(mirthConfig.getString("keystore.path"));
             char[] keyStorePassword = mirthConfig.getString("keystore.storepass").toCharArray();
             char[] keyPassword = mirthConfig.getString("keystore.keypass").toCharArray();
-            Provider provider = (Provider) Class.forName(encryptionConfig.getSecurityProvider()).newInstance();
+            Provider provider = (Provider) Class.forName(encryptionConfig.getSecurityProvider()).getDeclaredConstructor().newInstance();
 
             KeyStore keyStore = null;
 

@@ -187,7 +187,7 @@ public class DefaultExtensionController extends ExtensionController {
                         boolean accept = true;
                         if (StringUtils.isNotBlank(conditionClass)) {
                             try {
-                                accept = ((PluginClassCondition) Class.forName(conditionClass).newInstance()).accept(pluginClass);
+                                accept = ((PluginClassCondition) Class.forName(conditionClass).getDeclaredConstructor().newInstance()).accept(pluginClass);
                             } catch (Exception e) {
                                 logger.warn("Error instantiating plugin condition class \"" + conditionClass + "\".");
                             }
@@ -217,7 +217,7 @@ public class DefaultExtensionController extends ExtensionController {
                 String pluginName = pluginNameMap.get(clazzName);
 
                 try {
-                    ServerPlugin serverPlugin = (ServerPlugin) Class.forName(clazzName).newInstance();
+                    ServerPlugin serverPlugin = (ServerPlugin) Class.forName(clazzName).getDeclaredConstructor().newInstance();
 
                     if (serverPlugin instanceof ServicePlugin) {
                         ServicePlugin servicePlugin = (ServicePlugin) serverPlugin;
@@ -522,7 +522,7 @@ public class DefaultExtensionController extends ExtensionController {
 
                 if (plugin.getMigratorClass() != null) {
                     try {
-                        Migrator migrator = (Migrator) Class.forName(plugin.getMigratorClass()).newInstance();
+                        Migrator migrator = (Migrator) Class.forName(plugin.getMigratorClass()).getDeclaredConstructor().newInstance();
                         migrator.setDatabaseType(ConfigurationController.getInstance().getDatabaseType());
                         migrator.setDefaultScriptPath("extensions/" + plugin.getPath());
                         appendToUninstallScript(migrator.getUninstallStatements());

@@ -216,7 +216,7 @@ public class LoadedExtensions {
                 if (!disabledExtensions.contains(metaData.getName())) {
 
                     String connectorName = metaData.getName();
-                    ConnectorSettingsPanel connectorSettingsPanel = (ConnectorSettingsPanel) Class.forName(metaData.getClientClassName()).newInstance();
+                    ConnectorSettingsPanel connectorSettingsPanel = (ConnectorSettingsPanel) Class.forName(metaData.getClientClassName()).getDeclaredConstructor().newInstance();
 
                     if (metaData.getType() == ConnectorMetaData.Type.SOURCE) {
                         connectors.put(connectorName, connectorSettingsPanel);

@@ -138,7 +138,11 @@ is_valid_java_version() {
 
     # Extract the major version number. This works for formats like "1.8.0" and "17.0.2".
     local major_version
-    major_version=$(echo "$version_output" | head -n 1 | cut -d '"' -f 2 | cut -d '.' -f 1)
+    # Select the line with the quoted version string rather than the first line, so a
+    # "Picked up JAVA_TOOL_OPTIONS:" banner (printed to stderr when JAVA_TOOL_OPTIONS or
+    # _JAVA_OPTIONS is set) is not mistaken for the version line. See
+    # OpenIntegrationEngine/engine#523.
+    major_version=$(echo "$version_output" | grep -E 'version "' | head -n 1 | cut -d '"' -f 2 | cut -d '.' -f 1)
 
     # Check if the extracted version is a number and meets the minimum requirement
     if [[ "$major_version" =~ ^[0-9]+$ ]] && [[ "$major_version" -ge "$MIN_JAVA_VERSION" ]]; then

@@ -44,6 +44,8 @@ GRADLE_USER_HOME=$(mktemp -d) ./gradlew --write-verification-metadata sha256 bui
 ```
 The cold cache matters: a warm cache skips re-resolving already-cached parent POMs, so they never get recorded, and the build then fails verification only in CI (this bit us once during the migration). The run downloads everything once and takes a few minutes. Only when adding a **new** artifact that ships in the distribution does `gradle/vendored-layout.json` need a one-line placement entry, and the build fails with a message telling you so.
 
+Artifacts that are released together under one version number share a `[versions]` entry (a ref) in `gradle/libs.versions.toml`. [Renovate](https://docs.renovatebot.com/) proposes each ref's update as one PR, on a branch named after the ref, and puts a security fix for any artifact on that ref on the same branch. To keep it that way, `renovate.json` defines no groups and ignores Renovate's built-in `group:monorepos` preset, so the refs alone decide what is updated together. Don't add a `groupName` rule: a security-fix update never joins a named group, so the family would be split across two branches that edit the same line. To have several artifacts updated together, put them on one ref, which is only correct if they share a version. Artifacts on literal versions get one PR each.
+
 ### Changing build logic
 
 The build's correctness is guarded by output comparison, not by unit

@@ -922,9 +922,7 @@ public class DefaultConfigurationController extends ConfigurationController {
 
     @Override
     public synchronized void setConfigurationProperties(Map<String, ConfigurationProperty> map, boolean persist) throws ControllerException {
-        if (persist) {
-            saveConfigurationProperties(map);
-        }
+        validateConfigurationMap(map);
 
         Map<String, String> valueMap = new HashMap<String, String>();
         Map<String, String> commentMap = new HashMap<String, String>();
@@ -934,8 +932,40 @@ public class DefaultConfigurationController extends ConfigurationController {
             commentMap.put(entry.getKey(), entry.getValue().getComment());
         }
 
+        // Persist only after the incoming map has been validated and fully processed, so an
+        // invalid map can never be written to the database and corrupt the configuration map on
+        // the next startup. See OpenIntegrationEngine/engine#520.
+        if (persist) {
+            saveConfigurationProperties(map);
+        }
+
         configurationMap = Collections.unmodifiableMap(valueMap);
         this.commentMap = Collections.unmodifiableMap(commentMap);
+    }
+
+    /**
+     * Validates an incoming configuration map before it is persisted or applied. The configuration
+     * map API body readers deserialize into a raw map, so despite the declared generic types the
+     * map may be null or hold a non-string key or a non-{@link ConfigurationProperty} value;
+     * applying such a map fails partway through and, when persisting, only after the bad map has
+     * already been saved. See OpenIntegrationEngine/engine#520.
+     *
+     * @param map the configuration map to validate
+     * @throws ControllerException if the map is null or contains an invalid key or value
+     */
+    static void validateConfigurationMap(Map<String, ConfigurationProperty> map) throws ControllerException {
+        if (map == null) {
+            throw new ControllerException("Configuration map must not be null.");
+        }
+
+        for (Entry<?, ?> entry : map.entrySet()) {
+            if (!(entry.getKey() instanceof String)) {
+                throw new ControllerException("Configuration map contains a non-string key: " + entry.getKey() + ".");
+            }
+            if (!(entry.getValue() instanceof ConfigurationProperty)) {
+                throw new ControllerException("Configuration map contains an invalid value for key '" + entry.getKey() + "'.");
+            }
+        }
     }
 
     @Override

@@ -45,6 +45,9 @@ import org.xml.sax.SAXParseException;
 import com.mirth.connect.client.core.ControllerException;
 import com.mirth.connect.donkey.testing.StaticOverride;
 import com.mirth.connect.model.DriverInfo;
+import java.util.HashMap;
+import java.util.Map;
+import com.mirth.connect.util.ConfigurationProperty;
 
 public class DefaultConfigurationControllerTest {
 
@@ -412,4 +415,50 @@ public class DefaultConfigurationControllerTest {
     		"	<driver class=\"org.sqlite.JDBC\" name=\"SQLite\" template=\"jdbc:sqlite:dbfile.db\" selectLimit=\"SELECT * FROM ? LIMIT 1\" />\n" + 
     		"</drivers>";
     // @formatter:on
+
+    @Test
+    public void setConfigurationProperties_nullMap_throwsControllerException() throws Exception {
+        DefaultConfigurationController configurationController = spy(new DefaultConfigurationController());
+        try {
+            configurationController.setConfigurationProperties(null, false);
+            fail("Expected ControllerException for a null configuration map");
+        } catch (ControllerException expected) {
+        }
+    }
+
+    @Test
+    public void validateConfigurationMap_nullValue_throwsControllerException() throws Exception {
+        Map<String, ConfigurationProperty> map = new HashMap<String, ConfigurationProperty>();
+        map.put("good", new ConfigurationProperty("value", "comment"));
+        map.put("bad", null);
+        try {
+            DefaultConfigurationController.validateConfigurationMap(map);
+            fail("Expected ControllerException for a null configuration property value");
+        } catch (ControllerException expected) {
+        }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Test
+    public void validateConfigurationMap_nonStringKey_throwsControllerException() throws Exception {
+        Map map = new HashMap();
+        map.put(Integer.valueOf(1), new ConfigurationProperty("value", "comment"));
+        try {
+            DefaultConfigurationController.validateConfigurationMap(map);
+            fail("Expected ControllerException for a non-string key");
+        } catch (ControllerException expected) {
+        }
+    }
+
+    @Test
+    public void setConfigurationProperties_validMap_isApplied() throws Exception {
+        DefaultConfigurationController configurationController = spy(new DefaultConfigurationController());
+        doNothing().when(configurationController).loadDatabaseConfigPropsIfNecessary();
+
+        Map<String, ConfigurationProperty> map = new HashMap<String, ConfigurationProperty>();
+        map.put("alpha", new ConfigurationProperty("1", "first"));
+        configurationController.setConfigurationProperties(map, false);
+
+        assertEquals("1", configurationController.getConfigurationMap().get("alpha"));
+    }
 }

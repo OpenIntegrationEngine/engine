@@ -211,14 +211,18 @@ public class DatabaseUtil {
 
         try {
             DatabaseMetaData metaData = connection.getMetaData();
-            resultSet = metaData.getTables(null, null, tableName.toUpperCase(), new String[] {
+            // Scope the lookup to the connection's own catalog so a login with access to other
+            // databases on the same server does not match their tables. See
+            // OpenIntegrationEngine/engine#489.
+            String catalog = connection.getCatalog();
+            resultSet = metaData.getTables(catalog, null, tableName.toUpperCase(), new String[] {
                     "TABLE" });
 
             if (resultSet.next()) {
                 return true;
             }
 
-            resultSet = metaData.getTables(null, null, tableName.toLowerCase(), new String[] {
+            resultSet = metaData.getTables(catalog, null, tableName.toLowerCase(), new String[] {
                     "TABLE" });
             return resultSet.next();
         } catch (SQLException e) {

@@ -1924,7 +1924,10 @@ public class JdbcDao implements DonkeyDao {
         try {
             DatabaseMetaData dbMetaData = connection.getMetaData();
 
-            try (ResultSet rs = dbMetaData.getTables(null, null, "%", null)) {
+            // Scope to the connection's own catalog so tables in other databases visible to the
+            // same login are not mistaken for this database's tables. See
+            // OpenIntegrationEngine/engine#489.
+            try (ResultSet rs = dbMetaData.getTables(connection.getCatalog(), null, "%", null)) {
                 while (rs.next()) {
                     String tableName = rs.getString("TABLE_NAME").toLowerCase();
                     channelTablesMap.remove(tableName);
@@ -2238,10 +2241,13 @@ public class JdbcDao implements DonkeyDao {
     private boolean tableExists(String tableName) {
         try {
             DatabaseMetaData metaData = connection.getMetaData();
+            // Scope to the connection's own catalog so tables in other databases visible to the
+            // same login are not matched. See OpenIntegrationEngine/engine#489.
+            String catalog = connection.getCatalog();
 
             // Databases disagree on identifier case folding, so try both spellings
             for (String name : new String[] { tableName, tableName.toUpperCase() }) {
-                try (ResultSet resultSet = metaData.getTables(null, null, name, null)) {
+                try (ResultSet resultSet = metaData.getTables(catalog, null, name, null)) {
                     if (resultSet.next()) {
                         return true;
                     }

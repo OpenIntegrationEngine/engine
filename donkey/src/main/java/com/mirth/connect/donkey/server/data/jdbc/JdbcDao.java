@@ -83,6 +83,7 @@ public class JdbcDao implements DonkeyDao {
     private String statsServerId;
     private boolean transactionAlteredChannels = false;
     private char quoteChar = '"';
+    private boolean scopeTablesToCatalog = false;
     private Logger logger = LogManager.getLogger(this.getClass());
 
     protected JdbcDao(Donkey donkey, Connection connection, QuerySource querySource, SerializerProvider serializerProvider, boolean encryptMessageContent, boolean encryptAttachments, boolean encryptCustomMetaData, boolean decryptData, StatisticsUpdater statisticsUpdater, Statistics currentStats, Statistics totalStats, String statsServerId) {
@@ -128,6 +129,20 @@ public class JdbcDao implements DonkeyDao {
 
     public void setQuoteChar(char quoteChar) {
         this.quoteChar = quoteChar;
+    }
+
+    /**
+     * Limits table lookups to the connection's own catalog. MySQL Connector/J treats a null catalog
+     * as every database the login can see, so without this a second database on a shared login
+     * matches the first one's tables. Off by default; enabled by {@link MysqlDaoFactory}. See
+     * OpenIntegrationEngine/engine#489.
+     */
+    public void setScopeTablesToCatalog(boolean scopeTablesToCatalog) {
+        this.scopeTablesToCatalog = scopeTablesToCatalog;
+    }
+
+    private String getTableCatalog() throws SQLException {
+        return scopeTablesToCatalog ? connection.getCatalog() : null;
     }
 
     @Override
@@ -1924,10 +1939,7 @@ public class JdbcDao implements DonkeyDao {
         try {
             DatabaseMetaData dbMetaData = connection.getMetaData();
 
-            // Scope to the connection's own catalog so tables in other databases visible to the
-            // same login are not mistaken for this database's tables. See
-            // OpenIntegrationEngine/engine#489.
-            try (ResultSet rs = dbMetaData.getTables(connection.getCatalog(), null, "%", null)) {
+            try (ResultSet rs = dbMetaData.getTables(getTableCatalog(), null, "%", null)) {
                 while (rs.next()) {
                     String tableName = rs.getString("TABLE_NAME").toLowerCase();
                     channelTablesMap.remove(tableName);
@@ -2241,9 +2253,7 @@ public class JdbcDao implements DonkeyDao {
     private boolean tableExists(String tableName) {
         try {
             DatabaseMetaData metaData = connection.getMetaData();
-            // Scope to the connection's own catalog so tables in other databases visible to the
-            // same login are not matched. See OpenIntegrationEngine/engine#489.
-            String catalog = connection.getCatalog();
+            String catalog = getTableCatalog();
 
             // Databases disagree on identifier case folding, so try both spellings
             for (String name : new String[] { tableName, tableName.toUpperCase() }) {

@@ -211,10 +211,10 @@ public class DatabaseUtil {
 
         try {
             DatabaseMetaData metaData = connection.getMetaData();
-            // Scope the lookup to the connection's own catalog so a login with access to other
-            // databases on the same server does not match their tables. See
+            // MySQL treats a null catalog as every database the login can see, so scope the lookup
+            // to this connection's database there. Other databases keep the unscoped lookup. See
             // OpenIntegrationEngine/engine#489.
-            String catalog = connection.getCatalog();
+            String catalog = isMySql(metaData) ? connection.getCatalog() : null;
             resultSet = metaData.getTables(catalog, null, tableName.toUpperCase(), new String[] {
                     "TABLE" });
 
@@ -230,6 +230,11 @@ public class DatabaseUtil {
         } finally {
             DbUtils.closeQuietly(resultSet);
         }
+    }
+
+    private static boolean isMySql(DatabaseMetaData metaData) throws SQLException {
+        String productName = metaData.getDatabaseProductName();
+        return "MySQL".equalsIgnoreCase(productName) || "MariaDB".equalsIgnoreCase(productName);
     }
 
     /**

@@ -76,6 +76,10 @@ public class Mirth extends Thread {
 
     private Logger logger = LogManager.getLogger(this.getClass());
     private boolean running = false;
+    private volatile boolean startupComplete = false;
+
+    /** Process exit code when the server aborts during startup (see #498, #499). */
+    private static final int EXIT_STARTUP_FAILURE = 1;
     private PropertiesConfiguration mirthProperties = PropertiesConfigurationUtil.create();
     private PropertiesConfiguration versionProperties = PropertiesConfigurationUtil.create();
     private MirthWebServer webServer;
@@ -150,7 +154,10 @@ public class Mirth extends Thread {
             boolean httpsPort = testPort(mirthProperties.getString("https.host"), mirthProperties.getString("https.port"), "https.port");
 
             if (!httpPort || !httpsPort) {
-                return;
+                // Startup failed before anything started. MirthLauncher runs this class as a
+                // thread and never calls main(), so returning would leave the JVM alive with no
+                // listeners; exit so a service manager sees the failure. See #498.
+                System.exit(EXIT_STARTUP_FAILURE);
             }
 
             running = true;
@@ -322,7 +329,10 @@ public class Mirth extends Thread {
                 logger.error("Failed to migrate database schema", e);
                 stopDatabase();
                 running = false;
-                return;
+                // Exit instead of leaving a zombie JVM (see #498). The shutdown hook is already
+                // registered but is guarded by startupComplete, so it will not run the full
+                // shutdown, which would hang reading the now-stopped Derby database. See #499.
+                System.exit(EXIT_STARTUP_FAILURE);
             }
 
             // MIRTH-3535 disable Quartz update check
@@ -399,6 +409,7 @@ public class Mirth extends Thread {
         configurationController.setStatus(ConfigurationController.STATUS_OK);
         eventController.dispatchEvent(new ServerEvent(configurationController.getServerId(), "Server startup complete"));
         printSplashScreen();
+        startupComplete = true;
 
         // schedule usage statistics to be sent at startup and every 24 hours
         if (BrandingConstants.SEND_USAGE_STATISTICS) {
@@ -528,7 +539,11 @@ public class Mirth extends Thread {
     private class ShutdownHook extends Thread {
         public void run() {
             Thread.currentThread().setName("Shutdown Hook Thread");
-            shutdown();
+            // Only run the full shutdown if the server finished starting. After a failed startup
+            // the engine and database are not up, and shutdown() would hang reading Derby. See #499.
+            if (startupComplete) {
+                shutdown();
+            }
 
             for (Thread thread : shutdownHooks) {
                 thread.start();

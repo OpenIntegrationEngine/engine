@@ -310,15 +310,23 @@ public class JavaScriptBuilder {
             builder.append("function doFilter() { phase[0] = 'filter'; return (");
 
             // call each of the above functions in a big boolean expression
+            boolean firstRule = true;
             for (ListIterator<Rule> iter = enabledElements.listIterator(); iter.hasNext();) {
                 Rule rule = iter.next();
                 String operator = "";
 
-                if (Objects.equals(rule.getOperator(), Rule.Operator.AND)) {
-                    operator = " && ";
-                } else if (Objects.equals(rule.getOperator(), Rule.Operator.OR)) {
-                    operator = " || ";
+                // The first enabled rule has nothing to combine with, so its operator is never
+                // emitted. Otherwise a disabled first step leaves the next enabled rule's AND/OR
+                // as a leading operator, producing invalid JavaScript (e.g. "return ( && ...)")
+                // that fails to compile on deploy. See OpenIntegrationEngine/engine#76.
+                if (!firstRule) {
+                    if (Objects.equals(rule.getOperator(), Rule.Operator.AND)) {
+                        operator = " && ";
+                    } else if (Objects.equals(rule.getOperator(), Rule.Operator.OR)) {
+                        operator = " || ";
+                    }
                 }
+                firstRule = false;
 
                 builder.append(operator + "(filterRule" + iter.nextIndex() + "() == true)");
             }

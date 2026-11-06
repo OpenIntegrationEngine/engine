@@ -140,3 +140,25 @@ started yourself logged a generated password on its first boot:
 
 JUnit XML results are written to `ci/test-results/<configuration>/` when using
 `ci/runtests.sh`.
+
+## Coverage
+
+CI merges the unit-test and smoke-test coverage into one JaCoCo report (the
+`Coverage Report` artifact). To produce the same report locally, build with
+coverage, run the smoke tests with the staged agent, then merge:
+
+```sh
+./gradlew build stageCoverage -Pcoverage=true
+JACOCO_AGENT=build/coverage/jacocoagent.jar ci/runtests.sh alpine-temurin21-derby
+ci/coverage-report.sh
+```
+
+Each configuration writes `ci/coverage/<configuration>.exec` when its server stops.
+The merged report lands in `build/coverage/report`, where `./gradlew sonar` reads it:
+
+```sh
+./gradlew sonar -Dsonar.host.url=... -Dsonar.token=...
+```
+
+Override the project key with `-Dsonar.projectKey=...`; SonarCloud also needs
+`-Dsonar.organization=...`.

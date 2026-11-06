@@ -42,7 +42,8 @@ RUN mkdir -p /home/ubuntu/.gradle
 RUN --mount=type=cache,target=/home/ubuntu/.gradle/caches,sharing=locked,uid=1000,gid=1000 \
     --mount=type=cache,target=/home/ubuntu/.gradle/wrapper,sharing=locked,uid=1000,gid=1000 \
     source "$HOME/.sdkman/bin/sdkman-init.sh" \
-    && ./gradlew --no-daemon build :smoketest:installHarnessDist ${GRADLE_BUILD_ARGS}
+    && ./gradlew --no-daemon build :smoketest:installHarnessDist stageCoverage ${GRADLE_BUILD_ARGS} \
+    && mkdir -p build/coverage
 
 # Stage 1c: Present artifacts for export if not running within docker
 FROM scratch AS build-output-export
@@ -51,6 +52,8 @@ COPY --from=builder /app/client/build/test-results /app/client/build/test-result
 COPY --from=builder /app/command/build/test-results /app/command/build/test-results/
 COPY --from=builder /app/donkey/build/test-results /app/donkey/build/test-results/
 COPY --from=builder /app/server/build/test-results /app/server/build/test-results/
+# empty unless built with -Pcoverage=true
+COPY --from=builder /app/build/coverage /app/build/coverage/
 
 # Stage 1d: Smoke Test Harness
 FROM eclipse-temurin:21.0.9_10-jre-noble AS smoketest-harness

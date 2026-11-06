@@ -16,6 +16,7 @@ public class MysqlDaoFactory extends JdbcDaoFactory {
     public JdbcDao getDao(SerializerProvider serializerProvider) {
         JdbcDao dao = super.getDao(serializerProvider);
         dao.setQuoteChar('`');
+        dao.setScopeTablesToCatalog(true);
         return dao;
     }
 }

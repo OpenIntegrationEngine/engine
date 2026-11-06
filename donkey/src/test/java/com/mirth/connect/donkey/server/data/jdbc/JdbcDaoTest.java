@@ -10,10 +10,12 @@
 package com.mirth.connect.donkey.server.data.jdbc;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -475,5 +477,40 @@ public class JdbcDaoTest {
         Map<String, Channel> channels = new HashMap<>();
         channels.put(channelId, channel);
         when(donkey.getDeployedChannels()).thenReturn(channels);
+    }
+
+    /**
+     * Table lookups stay unscoped (null catalog) unless the factory enables catalog scoping, so
+     * only MySQL changes behaviour. See OpenIntegrationEngine/engine#489.
+     */
+    @Test
+    public void testTableLookupUnscopedByDefault() throws SQLException {
+        DatabaseMetaData metaData = mock(DatabaseMetaData.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        when(connection.getMetaData()).thenReturn(metaData);
+        when(connection.getCatalog()).thenReturn("oie_b");
+        when(metaData.getTables(any(), any(), any(), any())).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(true);
+
+        assertFalse(dao.initTableStructure());
+
+        verify(metaData).getTables(isNull(), isNull(), eq("d_channels"), isNull());
+        verify(connection, never()).getCatalog();
+    }
+
+    /** With catalog scoping enabled (MySQL), lookups are limited to the connection's database. */
+    @Test
+    public void testTableLookupScopedToCatalogWhenEnabled() throws SQLException {
+        DatabaseMetaData metaData = mock(DatabaseMetaData.class);
+        ResultSet resultSet = mock(ResultSet.class);
+        when(connection.getMetaData()).thenReturn(metaData);
+        when(connection.getCatalog()).thenReturn("oie_b");
+        when(metaData.getTables(any(), any(), any(), any())).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(true);
+
+        dao.setScopeTablesToCatalog(true);
+        assertFalse(dao.initTableStructure());
+
+        verify(metaData).getTables(eq("oie_b"), isNull(), eq("d_channels"), isNull());
     }
 }

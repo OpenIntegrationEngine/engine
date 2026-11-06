@@ -125,9 +125,11 @@ public class ServerSMTPConnection {
 
         if (StringUtils.equalsIgnoreCase(secure, "TLS")) {
             email.setStartTLSEnabled(true);
+            email.setSSLCheckServerIdentity(true);
         } else if (StringUtils.equalsIgnoreCase(secure, "SSL")) {
             email.setSSLOnConnect(true);
             email.setSslSmtpPort(port);
+            email.setSSLCheckServerIdentity(true);
         }
 
         // These have to be set after the authenticator, so that a new mail session isn't created

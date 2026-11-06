@@ -10,6 +10,8 @@
 package com.mirth.connect.server.builders;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -224,5 +226,28 @@ public class JavaScriptBuilderTest {
         String scriptInnerDisabled = builder.toString();
 
         assertEquals(scriptEmpty, scriptInnerDisabled);
+    }
+
+    @Test
+    public void testFilterDisabledFirstRuleNoLeadingOperator() throws ScriptBuilderException {
+        // A disabled first step followed by an enabled rule whose operator is AND must not emit
+        // the AND as a leading operator in doFilter(); that would be invalid JavaScript and the
+        // channel would fail to deploy. See OpenIntegrationEngine/engine#76.
+        Filter filter = new Filter();
+        Rule disabledFirst = new RuleBuilderRule();
+        disabledFirst.setEnabled(false);
+        Rule enabledWithAnd = new RuleBuilderRule();
+        enabledWithAnd.setOperator(Rule.Operator.AND);
+        Rule enabledWithAnd2 = new RuleBuilderRule();
+        enabledWithAnd2.setOperator(Rule.Operator.AND);
+        filter.setElements(new ArrayList<>(Arrays.asList(disabledFirst, enabledWithAnd, enabledWithAnd2)));
+
+        StringBuilder builder = new StringBuilder();
+        JavaScriptBuilder.appendFilterScript(builder, filter);
+        String script = builder.toString();
+
+        assertFalse("doFilter() must not start with a leading operator: " + script,
+                script.contains("return ( &&") || script.contains("return ( ||"));
+        assertTrue(script.contains("return ((filterRule1() == true)"));
     }
 }

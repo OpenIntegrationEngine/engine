@@ -23,6 +23,9 @@ export HOST_UID="$(id -u)"
 export HOST_GID="$(id -g)"
 mkdir -p "$WORKSPACE/ci/test-results"
 
+# To access the manually restored images (remove if we move to ghcr)
+export BUILDX_BUILDER="${BUILDX_BUILDER:-$(docker context show)}"
+
 compose=(docker compose -f "$1" -f ci/harness.compose.yml -p "oie-ci-${OIE_CONFIGURATION//[^a-z0-9-]/-}-$$")
 
 cleanup() {

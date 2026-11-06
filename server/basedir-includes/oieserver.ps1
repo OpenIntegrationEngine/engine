@@ -12,8 +12,8 @@
     server. It prepares the Java environment and executes the server launcher
     JAR file.
 
-    The script automatically finds a compatible Java runtime (version 17+ by
-    default) by searching for a valid executable in the following priority order:
+    The script automatically finds a compatible Java runtime by searching for 
+    a valid executable in the following priority order:
 
     1. The OIE_JAVA_PATH environment variable.
     2. The -java-cmd directive in the oieserver.vmoptions file or included .vmoptions 
@@ -53,7 +53,7 @@ param(
 
 # Stop on any error and exit non-zero
 $ErrorActionPreference = "Stop"
-$MinJavaVersion = 17
+$MinJavaVersion = 21
 
 # Set OieHome to the script directory using PowerShell's built-in variable
 $OieHome = $PSScriptRoot
@@ -141,7 +141,7 @@ function Test-IsValidJavaVersion([string] $JavaCmd) {
     }
 
     # Execute 'java -version' and capture the output from stderr
-    # Example output: openjdk version "17.0.2" 2022-07-19
+    # Example output: openjdk version "123.4.5" 2022-07-19
     try {
         $versionOutput = & {
             $ErrorActionPreference = 'Continue';
@@ -156,7 +156,7 @@ function Test-IsValidJavaVersion([string] $JavaCmd) {
         return $false
     }
 
-    # Extract the major version number. This works for formats like "1.8.0" and "17.0.2".
+    # Extract the major version number. This works for formats like "1.8.0" and "123.4.5".
     $match = $versionOutput | Select-String -Pattern '"(\d+)\.'
     return ($match -and ($match.Matches[0].Groups[1].Value -as [int]) -ge $MinJavaVersion)
 }

@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -17,6 +18,7 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -1319,7 +1321,7 @@ public class DefaultConfigurationController extends ConfigurationController {
      */
     private void storeKeyStore(KeyStore keyStore, Path keyStoreFile, char[] keyStorePassword) throws Exception {
         // Replace the target of a symlink rather than the link itself
-        Path target = Files.isSymbolicLink(keyStoreFile) ? keyStoreFile.toRealPath() : keyStoreFile;
+        Path target = resolveSymbolicLinks(keyStoreFile);
         Path tempFile = target.resolveSibling(target.getFileName() + ".tmp");
 
         // Remove a temp file left behind by a previous failed write
@@ -1340,6 +1342,26 @@ public class DefaultConfigurationController extends ConfigurationController {
         } finally {
             Files.deleteIfExists(tempFile);
         }
+    }
+
+    /*
+     * Follows a symlink, and any symlinks it leads to, to the file it ends at. Unlike
+     * Path.toRealPath, the file need not exist yet, so that a link created ahead of the keystore
+     * still has its target filled in.
+     */
+    static Path resolveSymbolicLinks(Path path) throws IOException {
+        Path target = path;
+
+        // the same limit Linux puts on following symlinks, so that a cycle can't loop forever
+        for (int i = 0; i < 40 && Files.isSymbolicLink(target); i++) {
+            target = target.resolveSibling(Files.readSymbolicLink(target));
+        }
+
+        if (Files.isSymbolicLink(target)) {
+            throw new FileSystemException(path.toString(), null, "Too many levels of symbolic links");
+        }
+
+        return target;
     }
 
     @Override

@@ -729,11 +729,11 @@ public class DatabaseReader extends ConnectorSettingsPanel {
     }
 
     private DriverInfo getSelectOneDriver() {
-        return new DriverInfo(DatabaseReceiverProperties.DRIVER_DEFAULT, "", "", "");
+        return new DriverInfo(DatabaseReceiverProperties.DRIVER_DEFAULT, "", "");
     }
 
     private DriverInfo getCustomDriver() {
-        return new DriverInfo(DatabaseReceiverProperties.DRIVER_CUSTOM, "", "", "");
+        return new DriverInfo(DatabaseReceiverProperties.DRIVER_CUSTOM, "", "");
     }
 
     private void fixDriversList() {
@@ -932,7 +932,7 @@ public class DatabaseReader extends ConnectorSettingsPanel {
         } else {
             Connector sourceConnector = PlatformUI.MIRTH_FRAME.channelEditPanel.currentChannel.getSourceConnector();
             Set<String> resourceIds = PlatformUI.MIRTH_FRAME.channelEditPanel.resourceIds.get(sourceConnector.getMetaDataId()).keySet();
-            new DatabaseMetadataDialog(this, type, new DatabaseConnectionInfo(properties.getDriver(), properties.getUrl(), properties.getUsername(), properties.getPassword(), "", getSelectedDriver().getSelectLimit(), resourceIds));
+            new DatabaseMetadataDialog(this, type, new DatabaseConnectionInfo(properties.getDriver(), properties.getUrl(), properties.getUsername(), properties.getPassword(), "", resourceIds));
         }
     }
 

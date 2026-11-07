@@ -12,7 +12,6 @@ package com.mirth.connect.client.ui;
 import static com.mirth.connect.client.core.BrandingConstants.CENTRAL_USER_REGISTRATION;
 import static com.mirth.connect.client.core.BrandingConstants.MANDATORY_USER_REGISTRATION;
 
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.event.WindowAdapter;
@@ -188,13 +187,9 @@ public class FirstLoginDialog extends javax.swing.JDialog implements UserDialogI
         contentTextPane.setEditable(false);
         contentTextPane.addHyperlinkListener(new HyperlinkListener() {
             public void hyperlinkUpdate(HyperlinkEvent evt) {
-                if (evt.getEventType() == EventType.ACTIVATED && Desktop.isDesktopSupported()) {
+                if (evt.getEventType() == EventType.ACTIVATED) {
                     try {
-                        if (Desktop.isDesktopSupported()) {
-                            Desktop.getDesktop().browse(evt.getURL().toURI());
-                        } else {
-                            BareBonesBrowserLaunch.openURL(evt.getURL().toString());
-                        }
+                        BareBonesBrowserLaunch.openURL(evt.getURL().toString());
                     } catch (Exception e) {
                         logger.error("Error opening hyperlink " + evt.getURL(), e);
                     }

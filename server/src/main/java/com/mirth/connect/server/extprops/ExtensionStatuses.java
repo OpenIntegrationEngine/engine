@@ -55,6 +55,7 @@ public class ExtensionStatuses implements ExtensionStatusInterface {
             } finally {
                 IOUtils.closeQuietly(is);
             }
+            DropInProperties.load(mirthProperties, new File("./conf/mirth.properties.d"), logger);
         } catch (Exception e) {
             logger.error("Unable to read mirth.properties.", e);
         }

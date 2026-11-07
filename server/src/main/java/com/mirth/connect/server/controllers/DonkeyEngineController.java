@@ -723,23 +723,34 @@ public class DonkeyEngineController implements EngineController {
     }
 
     private Map<String, Channel> getDashboardChannels(Set<String> channelIds) {
+        return getDashboardChannels(donkey.getDeployedChannels(), deployingChannels, undeployingChannels, channelIds);
+    }
+
+    /**
+     * Collects the deployed, deploying and undeploying channels, limited to {@code channelIds}
+     * when it is not empty. The deploying and undeploying channels must honor the same filter, or
+     * a request for one channel returns another channel that is mid-deploy or mid-undeploy. See
+     * OpenIntegrationEngine/engine#456.
+     */
+    static Map<String, Channel> getDashboardChannels(Map<String, Channel> deployedChannels, Set<Channel> deployingChannels, Set<Channel> undeployingChannels, Set<String> channelIds) {
+        boolean filtered = CollectionUtils.isNotEmpty(channelIds);
         Map<String, Channel> channels = null;
 
-        if (CollectionUtils.isNotEmpty(channelIds)) {
+        if (filtered) {
             channels = new HashMap<String, Channel>();
 
-            for (Channel channel : donkey.getDeployedChannels().values()) {
+            for (Channel channel : deployedChannels.values()) {
                 if (channelIds.contains(channel.getChannelId())) {
                     channels.put(channel.getChannelId(), channel);
                 }
             }
         } else {
-            channels = new HashMap<String, Channel>(donkey.getDeployedChannels());
+            channels = new HashMap<String, Channel>(deployedChannels);
         }
 
         synchronized (deployingChannels) {
             for (Channel channel : deployingChannels) {
-                if (!channels.containsKey(channel.getChannelId())) {
+                if ((!filtered || channelIds.contains(channel.getChannelId())) && !channels.containsKey(channel.getChannelId())) {
                     channels.put(channel.getChannelId(), channel);
                 }
             }
@@ -747,7 +758,7 @@ public class DonkeyEngineController implements EngineController {
 
         synchronized (undeployingChannels) {
             for (Channel channel : undeployingChannels) {
-                if (!channels.containsKey(channel.getChannelId())) {
+                if ((!filtered || channelIds.contains(channel.getChannelId())) && !channels.containsKey(channel.getChannelId())) {
                     channels.put(channel.getChannelId(), channel);
                 }
             }

@@ -81,4 +81,20 @@ public class FilePermissionUtilTest {
         expected.put(ADMINISTRATORS_SID, WinNT.FILE_ALL_ACCESS);
         assertEquals(expected, grants);
     }
+
+    @Test
+    public void testWindowsLongPath() throws Exception {
+        assumeTrue("Test only applies on windows", Platform.isWindows());
+
+        // longer than MAX_PATH (260), which the Win32 file APIs reject without the \\?\ prefix
+        Path directory = temporaryFolder.getRoot().toPath();
+        while (directory.toAbsolutePath().toString().length() < 300) {
+            directory = directory.resolve("a".repeat(50));
+        }
+        Path path = directory.resolve("keystore.p12");
+
+        FilePermissionUtil.createOwnerOnlyFile(path);
+
+        assertTrue(Files.exists(path));
+    }
 }

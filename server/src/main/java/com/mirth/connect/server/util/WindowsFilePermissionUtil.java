@@ -77,7 +77,7 @@ class WindowsFilePermissionUtil {
         securityAttributes.lpSecurityDescriptor = securityDescriptor;
         securityAttributes.bInheritHandle = false;
 
-        HANDLE handle = Kernel32.INSTANCE.CreateFile(path.toAbsolutePath().toString(), WinNT.GENERIC_WRITE, 0, securityAttributes, WinNT.CREATE_NEW, WinNT.FILE_ATTRIBUTE_NORMAL, null);
+        HANDLE handle = Kernel32.INSTANCE.CreateFile(toExtendedLengthPath(path), WinNT.GENERIC_WRITE, 0, securityAttributes, WinNT.CREATE_NEW, WinNT.FILE_ATTRIBUTE_NORMAL, null);
 
         if (WinBase.INVALID_HANDLE_VALUE.equals(handle)) {
             // reported the same way as Files.createFile, so that callers need not care which is which
@@ -89,6 +89,24 @@ class WindowsFilePermissionUtil {
         }
 
         Kernel32.INSTANCE.CloseHandle(handle);
+    }
+
+    /*
+     * CreateFile rejects paths longer than MAX_PATH unless they are in the \\?\ extended-length
+     * form, which java.nio adds for its own calls but JNA does not. That form also turns off the
+     * handling of "." and "..", so the path is normalized first.
+     */
+    private static String toExtendedLengthPath(Path path) {
+        String absolutePath = path.toAbsolutePath().normalize().toString();
+
+        if (absolutePath.startsWith("\\\\?\\")) {
+            return absolutePath;
+        } else if (absolutePath.startsWith("\\\\")) {
+            // a UNC path, \\server\share\...
+            return "\\\\?\\UNC\\" + absolutePath.substring(2);
+        } else {
+            return "\\\\?\\" + absolutePath;
+        }
     }
 
     private static IOException lastError(String message) {

@@ -240,7 +240,11 @@ fi
 # download keystore
 if ! [ -z "${KEYSTORE_DOWNLOAD+x}" ]; then
 	echo "Downloading keystore at ${KEYSTORE_DOWNLOAD}"
-	# the keystore is only as private as its file permissions, so never let it be readable by others
+	# the keystore is only as private as its file permissions, so never let it be readable by others.
+	# umask does not apply when curl overwrites an existing file, so restrict that before downloading.
+	if [ -f "$LEGACY_KEYSTORE_FILE" ]; then
+		chmod 600 "$LEGACY_KEYSTORE_FILE" || echo "could not restrict permissions on ${LEGACY_KEYSTORE_FILE}"
+	fi
 	(
 		umask 077
 		if ! [ -z "${ALLOW_INSECURE}" ] && [ "${ALLOW_INSECURE}" == "true" ]; then
@@ -249,10 +253,6 @@ if ! [ -z "${KEYSTORE_DOWNLOAD+x}" ]; then
 			curl -sSLf "${KEYSTORE_DOWNLOAD}" -o "$LEGACY_KEYSTORE_FILE" || echo "problem with keystore download"
 		fi
 	)
-	# umask does not apply when curl overwrites an existing file
-	if [ -f "$LEGACY_KEYSTORE_FILE" ]; then
-		chmod 600 "$LEGACY_KEYSTORE_FILE" || echo "could not restrict permissions on ${LEGACY_KEYSTORE_FILE}"
-	fi
 fi
 
 # if delay is set as an environment variable then wait that long in seconds

@@ -16,12 +16,15 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.math.BigInteger;
 import java.net.URI;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -1330,8 +1333,13 @@ public class DefaultConfigurationController extends ConfigurationController {
         try {
             FilePermissionUtil.createOwnerOnlyFile(tempFile);
 
-            try (OutputStream os = Files.newOutputStream(tempFile)) {
-                keyStore.store(os, keyStorePassword);
+            try (FileChannel channel = FileChannel.open(tempFile, StandardOpenOption.WRITE)) {
+                keyStore.store(Channels.newOutputStream(channel), keyStorePassword);
+                /*
+                 * Make sure the contents are on disk before the move, or a crash soon after could
+                 * leave an empty keystore in place of the old one.
+                 */
+                channel.force(true);
             }
 
             try {
@@ -1339,8 +1347,23 @@ public class DefaultConfigurationController extends ConfigurationController {
             } catch (AtomicMoveNotSupportedException e) {
                 Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
             }
+
+            syncDirectory(target.toAbsolutePath().getParent());
         } finally {
             Files.deleteIfExists(tempFile);
+        }
+    }
+
+    /*
+     * Flushes a directory to disk, so that a file just moved into it is still there after a crash.
+     * Not every platform can open a directory this way (Windows can't), and the move itself has
+     * already succeeded, so a failure is only logged.
+     */
+    private void syncDirectory(Path directory) {
+        try (FileChannel channel = FileChannel.open(directory, StandardOpenOption.READ)) {
+            channel.force(true);
+        } catch (IOException e) {
+            logger.debug("Could not flush directory " + directory + " to disk", e);
         }
     }
 

@@ -12,8 +12,8 @@
 #   server. It prepares the Java environment and executes the server launcher
 #   JAR file.
 #
-#   The script automatically finds a compatible Java runtime (version 17+ by
-#   default) by searching for a valid executable in the following priority order:
+#   The script automatically finds a compatible Java runtime by searching for 
+#   a valid executable in the following priority order:
 #     1. The OIE_JAVA_PATH environment variable.
 #     2. The -java-cmd directive in the oieserver.vmoptions file or included
 #        .vmoptions files. Must specify the path to the 'java' executable.
@@ -42,7 +42,7 @@
 # =============================================================================
 
 APP_ARGS=("$@")
-MIN_JAVA_VERSION=17
+MIN_JAVA_VERSION=21
 
 # Set OIE_HOME to the script directory
 OIE_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -127,7 +127,7 @@ is_valid_java_version() {
     fi
 
     # Execute 'java -version' and capture the output from stderr
-    # Example output: openjdk version "17.0.2" 2022-07-19
+    # Example output: openjdk version "123.0.2" 2022-07-19
     local version_output
     version_output=$("$java_cmd" -version 2>&1)
 
@@ -136,7 +136,7 @@ is_valid_java_version() {
         return 1
     fi
 
-    # Extract the major version number. This works for formats like "1.8.0" and "17.0.2".
+    # Extract the major version number. This works for formats like "1.8.0" and "123.0.2".
     local major_version
     major_version=$(echo "$version_output" | head -n 1 | cut -d '"' -f 2 | cut -d '.' -f 1)
 

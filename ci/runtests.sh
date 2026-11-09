@@ -4,8 +4,8 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-ALPINE_IMAGE="oie-ci-server:local-alpine-temurin21"
-UBUNTU_IMAGE="oie-ci-server:local-ubuntu-temurin21"
+ALPINE_IMAGE="oie-ci-server:local-alpine-temurin25"
+UBUNTU_IMAGE="oie-ci-server:local-ubuntu-temurin25"
 
 if [[ $# -gt 1 ]]; then
     echo "Usage: $0 [configuration]" >&2

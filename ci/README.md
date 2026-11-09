@@ -70,8 +70,8 @@ A fixture case runs in every configuration by default. To limit it, add a
 `configurations` file at the case root with one configuration name per line:
 
 ```text
-alpine-temurin21-postgres
-ubuntu-temurin21-postgres
+alpine-temurin123-postgres
+ubuntu-temurin123-postgres
 ```
 
 ### Parse Batch
@@ -96,7 +96,7 @@ messages/
 
 Add a Compose file at `ci/configurations/<name>.compose.yml`. Configuration names
 normally follow `<os>-<jvm>-<database>`, such as
-`alpine-temurin21-postgres`.
+`alpine-temurin123-postgres`.
 
 The Compose file must:
 
@@ -127,7 +127,7 @@ ci/runtests.sh
 Run one configuration:
 
 ```sh
-ci/runtests.sh alpine-temurin21-derby
+ci/runtests.sh alpine-temurin25-derby
 ```
 
 To iterate against an already-running server, pass that server's admin password.

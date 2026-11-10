@@ -5,6 +5,7 @@
 	<settings>
 		<setting name="cacheEnabled" value="true" />
 		<setting name="jdbcTypeForNull" value="VARCHAR" />
+		<setting name="logPrefix" value="mybatis." />
 	</settings>
 	
 	<typeAliases>

@@ -12,7 +12,7 @@
       <result property='invocationCount' column='INVOCATION_COUNT'/>  
    </resultMap>
    <select id='getDebugUsageStatistics'
-           parameterType='java.lang.String'
+           parameterType='com.mirth.connect.model.DebugUsage'
            resultMap='get-debug-usage-result'>
 		SELECT ID, 
 			SERVER_ID,
@@ -66,7 +66,7 @@
 		WHERE SERVER_ID = #{serverId}
 	</update>
 	
-	<delete id='deleteDebugUsageStatistics' parameterType='java.lang.String'>
+	<delete id='deleteDebugUsageStatistics' parameterType='com.mirth.connect.model.DebugUsage'>
 		DELETE FROM DEBUGGER_USAGE
 		WHERE SERVER_ID = #{serverId}
 	</delete>

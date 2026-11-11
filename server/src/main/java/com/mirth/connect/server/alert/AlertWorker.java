@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -207,12 +208,15 @@ public abstract class AlertWorker extends EventListener implements AlertActionAc
                 }
 
                 // Dispatch a server event to notify that an alert was dispatched
-                ServerEvent serverEvent = new ServerEvent(serverId, "Alert Dispatched");
-                for (Entry<String, Object> entry : context.entrySet()) {
-                    String value = entry.getValue().toString();
-                    serverEvent.addAttribute(entry.getKey(), value);
+                try {
+                    ServerEvent serverEvent = new ServerEvent(serverId, "Alert Dispatched");
+                    for (Entry<String, Object> entry : context.entrySet()) {
+                        serverEvent.addAttribute(entry.getKey(), Objects.toString(entry.getValue(), ""));
+                    }
+                    eventController.dispatchEvent(serverEvent);
+                } catch (Exception e) {
+                    logger.error("Error dispatching the Alert Dispatched event.", e);
                 }
-                eventController.dispatchEvent(serverEvent);
             }
 
             return null;

@@ -67,6 +67,11 @@ public abstract class PollConnector extends SourceConnector {
         if (scheduler != null) {
             try {
                 scheduler.interrupt(job.getKey());
+                // Release the scheduler as stop() does, without waiting for the interrupted job.
+                // StdSchedulerFactory keeps a running scheduler under the channel ID, so the next
+                // deploy would get this one back with the poll job still stored and fail with
+                // ObjectAlreadyExistsException. See OpenIntegrationEngine/engine#571.
+                scheduler.shutdown(false);
             } catch (Exception e) {
                 throw new ConnectorTaskException(e);
             }

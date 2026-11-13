@@ -236,13 +236,20 @@ public class HL7v2ResponseValidatorTest {
         assertEquals("NACK sent from receiver. (Rejected)", validate("<HL7Message><MSA><MSA.1>CR</MSA.1></MSA></HL7Message>").getStatusMessage());
     }
 
-    /*
-     * Characterizes existing behaviour: an unknown ACK code in an ER7 response is QUEUED as invalid
-     * (see testUnknownAckCodeIsInvalid), but in an XML response the status is left as it was.
-     */
     @Test
-    public void testXmlUnknownAckCodeLeavesStatusUnchanged() {
-        assertEquals(Status.SENT, validate("<HL7Message><MSA><MSA.1>XX</MSA.1></MSA></HL7Message>").getStatus());
+    public void testXmlUnknownAckCodeIsInvalid() {
+        Response response = validate("<HL7Message><MSA><MSA.1>XX</MSA.1></MSA></HL7Message>");
+
+        assertEquals(Status.QUEUED, response.getStatus());
+        assertEquals("Invalid HL7 v2.x acknowledgement received.", response.getStatusMessage());
+    }
+
+    @Test
+    public void testXmlMissingMsaIsInvalid() {
+        Response response = validate("<HL7Message><MSH><MSH.9><MSH.9.1>ACK</MSH.9.1></MSH.9></MSH></HL7Message>");
+
+        assertEquals(Status.QUEUED, response.getStatus());
+        assertEquals("Invalid HL7 v2.x acknowledgement received.", response.getStatusMessage());
     }
 
     @Test

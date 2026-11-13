@@ -111,7 +111,8 @@ public class AlertWorkerTest {
 
         runTask(alert.createContext());
 
-        verify(logger).error(eq("Error dispatching the Alert Dispatched event."), same(failure));
+        verify(logger).error(eq("Error dispatching the Alert Dispatched event for alert \"Test Alert\" (" + alert.getModel().getId() + ")."),
+                same(failure));
     }
 
     private void runTask(Map<String, Object> context) throws Exception {

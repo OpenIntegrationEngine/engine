@@ -215,7 +215,7 @@ public abstract class AlertWorker extends EventListener implements AlertActionAc
                     }
                     eventController.dispatchEvent(serverEvent);
                 } catch (Exception e) {
-                    logger.error("Error dispatching the Alert Dispatched event.", e);
+                    logger.error("Error dispatching the Alert Dispatched event for alert \"" + alert.getModel().getName() + "\" (" + alertId + ").", e);
                 }
             }
 

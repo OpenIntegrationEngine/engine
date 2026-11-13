@@ -309,6 +309,15 @@ public class DefaultExtensionController extends ExtensionController {
                         serverPlugins.add(multiFactorAuthenticationPlugin);
                         logger.debug("sucessfully loaded server multi-factor authentication plugin: " + serverPlugin.getPluginPointName());
                     }
+
+                    /*
+                     * A class that implements none of the plugin type interfaces above is never
+                     * added to serverPlugins, so it is never started or stopped. Warn about it
+                     * instead of ignoring it silently.
+                     */
+                    if (!serverPlugins.contains(serverPlugin)) {
+                        logger.warn("Server class \"" + clazzName + "\" of plugin \"" + pluginName + "\" does not implement any supported plugin type interface (such as ServicePlugin or ChannelPlugin), so it will not be started or stopped.");
+                    }
                 } catch (Exception e) {
                     logger.error("Error instantiating plugin: " + pluginName, e);
                 }

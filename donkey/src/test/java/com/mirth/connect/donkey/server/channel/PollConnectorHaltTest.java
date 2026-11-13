@@ -65,6 +65,17 @@ public class PollConnectorHaltTest {
         second.stop();
     }
 
+    /** Halt then Start on the same connector, as the Dashboard does without undeploying. */
+    @Test
+    public void startAfterHalt_onTheSameConnector() throws Exception {
+        PollConnector connector = connector("poll-halt-restart-test");
+        connector.start();
+        connector.halt();
+
+        connector.start();
+        connector.stop();
+    }
+
     /** Stop already released the scheduler; it keeps working. */
     @Test
     public void startAfterStop_onANewConnectorForTheSameChannel() throws Exception {

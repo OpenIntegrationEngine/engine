@@ -156,8 +156,12 @@ function Test-IsValidJavaVersion([string] $JavaCmd) {
         return $false
     }
 
-    # Extract the major version number. This works for formats like "1.8.0" and "17.0.2".
-    $match = $versionOutput | Select-String -Pattern '"(\d+)\.'
+    # Extract the major version number by matching the quoted version string (e.g.
+    # openjdk version "17.0.2"). Matching 'version "' rather than the first quoted number means
+    # a "Picked up JAVA_TOOL_OPTIONS:" banner - printed when JAVA_TOOL_OPTIONS or _JAVA_OPTIONS
+    # is set - is not mistaken for the version. Works for "1.8.0", "17.0.2" and a GA release
+    # such as "21" that has no minor part. See #523.
+    $match = $versionOutput | Select-String -Pattern 'version "(\d+)'
     return ($match -and ($match.Matches[0].Groups[1].Value -as [int]) -ge $MinJavaVersion)
 }
 

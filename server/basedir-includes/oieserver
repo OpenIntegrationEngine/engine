@@ -136,9 +136,13 @@ is_valid_java_version() {
         return 1
     fi
 
-    # Extract the major version number. This works for formats like "1.8.0" and "17.0.2".
-    local major_version
-    major_version=$(echo "$version_output" | head -n 1 | cut -d '"' -f 2 | cut -d '.' -f 1)
+    # Extract the major version number by matching the quoted version string (e.g.
+    # openjdk version "17.0.2"). Matching 'version "' rather than scanning the whole
+    # output means a "Picked up JAVA_TOOL_OPTIONS:" banner - printed to stderr when
+    # JAVA_TOOL_OPTIONS or _JAVA_OPTIONS is set - or any other number in the output is
+    # not mistaken for the version. Works for both "1.8.0" and "17.0.2" formats. See #523.
+    local major_version=""
+    [[ "$version_output" =~ version\ \"([0-9]+) ]] && major_version="${BASH_REMATCH[1]}"
 
     # Check if the extracted version is a number and meets the minimum requirement
     if [[ "$major_version" =~ ^[0-9]+$ ]] && [[ "$major_version" -ge "$MIN_JAVA_VERSION" ]]; then

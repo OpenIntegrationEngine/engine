@@ -22,13 +22,13 @@ public class BrandingConstants {
 
 
     // The URL that is opened when clicking the image in the Top right corner of the main administrator window
-    // The URL that is opened when clicking "Visit + PRODUCT_NAME" button in Administrator
-    public static final String PRODUCT_URL = "https://github.com/openintegrationengine/engine";
+    // The URL that is opened when clicking "Visit homepage" in Administrator
+    public static final String PRODUCT_URL = "https://docs.openintegrationengine.org/engine/";
     public static final String PRODUCT_TOOLTIP = "Open Integration Engine";
 
 
-    // The URL that is opened when clicking "Help" button in Administrator
-    public static String HELP_URL_LOCATION = "https://github.com/OpenIntegrationEngine/engine/discussions";
+    // The URL that is opened when clicking "Help" in Administrator
+    public static String HELP_URL_LOCATION = "https://docs.openintegrationengine.org/engine/";
 
     // The URL that is opened when clicking "System Requirements" button in the error dialog when an unsupported Java version is detected
     public static final String SYSTEM_REQUIREMENTS_URL = "https://docs.openintegrationengine.org/engine/getting_started.html#system-requirements";

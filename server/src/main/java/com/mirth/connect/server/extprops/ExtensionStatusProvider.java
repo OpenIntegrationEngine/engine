@@ -20,7 +20,7 @@ public abstract class ExtensionStatusProvider implements ExtensionStatusInterfac
         this.mirthProperties = mirthProperties;
 
         try {
-            logger = new LoggerWrapper(Thread.currentThread().getContextClassLoader().loadClass("org.apache.log4j.Logger").getMethod("getLogger", Class.class).invoke(null, ExtensionStatuses.class));
+            logger = new LoggerWrapper(Thread.currentThread().getContextClassLoader().loadClass("org.apache.logging.log4j.LogManager").getMethod("getLogger", Class.class).invoke(null, ExtensionStatuses.class));
         } catch (Throwable t) {
             logger = new LoggerWrapper(null);
         }

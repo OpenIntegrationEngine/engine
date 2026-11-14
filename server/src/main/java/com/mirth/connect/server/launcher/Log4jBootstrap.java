@@ -15,7 +15,7 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 /** Utility class for bootstrapping Log4j. */
 final class Log4jBootstrap {
     private static final File LOG4J_LIB_DIR = new File("./server-lib/log4j");
-    private static final String[] JAR_PATTERNS = { "log4j-core-*.jar", "log4j-api-*.jar", "log4j-1.2-api-*.jar" };
+    private static final String[] JAR_PATTERNS = { "log4j-core-*.jar", "log4j-api-*.jar" };
 
     private Log4jBootstrap() {}
 

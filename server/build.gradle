@@ -9,6 +9,8 @@ import java.text.SimpleDateFormat
 dependencies {
     implementation libs.bundles.server.main
     implementation libs.bundles.server.extensions
+    // the engine already ships httpclient and JAXB, so leave out Sardine's copies
+    implementation(libs.sardine) { transitive = false }
     // classified artifact: the catalog entry carries the version, the
     // classifier is selected here
     implementation(variantOf(libs.netty.transport.native.epoll) { classifier('linux-x86_64') })

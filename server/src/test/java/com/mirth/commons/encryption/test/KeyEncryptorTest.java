@@ -362,7 +362,7 @@ public class KeyEncryptorTest {
      * @formatter:on
      */
     private void testEncryptAndDecrypt(EncryptionSettings oldEncryptionSettings, EncryptionSettings encryptionSettings, boolean ignoreSameOutput, Object message) throws Exception {
-        Provider oldProvider = (Provider) Class.forName(oldEncryptionSettings.getSecurityProvider()).newInstance();
+        Provider oldProvider = (Provider) Class.forName(oldEncryptionSettings.getSecurityProvider()).getDeclaredConstructor().newInstance();
         KeyGenerator keyGenerator = KeyGenerator.getInstance(oldEncryptionSettings.getEncryptionBaseAlgorithm(), oldProvider);
         keyGenerator.init(oldEncryptionSettings.getEncryptionKeyLength());
         Key key = keyGenerator.generateKey();
@@ -436,7 +436,7 @@ public class KeyEncryptorTest {
             }
         }
 
-        Provider provider = (Provider) Class.forName(encryptionSettings.getSecurityProvider()).newInstance();
+        Provider provider = (Provider) Class.forName(encryptionSettings.getSecurityProvider()).getDeclaredConstructor().newInstance();
 
         KeyEncryptor encryptor = new KeyEncryptor();
         encryptor.setProvider(provider);
@@ -480,7 +480,7 @@ public class KeyEncryptorTest {
     }
 
     private void testOldEncryption(EncryptionSettings encryptionSettings, Object message, String oldAlgorithm) throws Exception {
-        Provider provider = (Provider) Class.forName(encryptionSettings.getSecurityProvider()).newInstance();
+        Provider provider = (Provider) Class.forName(encryptionSettings.getSecurityProvider()).getDeclaredConstructor().newInstance();
         KeyGenerator keyGenerator = KeyGenerator.getInstance(encryptionSettings.getEncryptionBaseAlgorithm(), provider);
         keyGenerator.init(encryptionSettings.getEncryptionKeyLength());
         Key key = keyGenerator.generateKey();
@@ -528,7 +528,7 @@ public class KeyEncryptorTest {
     }
 
     private void testMalformedInput(EncryptionSettings encryptionSettings, Object message) throws Exception {
-        Provider provider = (Provider) Class.forName(encryptionSettings.getSecurityProvider()).newInstance();
+        Provider provider = (Provider) Class.forName(encryptionSettings.getSecurityProvider()).getDeclaredConstructor().newInstance();
         KeyGenerator keyGenerator = KeyGenerator.getInstance(encryptionSettings.getEncryptionBaseAlgorithm(), provider);
         keyGenerator.init(encryptionSettings.getEncryptionKeyLength());
         Key key = keyGenerator.generateKey();
@@ -707,7 +707,7 @@ public class KeyEncryptorTest {
      * Test EncryptionUtil.decryptAndReencrypt
      */
     private void testDecryptAndReencrypt(EncryptionSettings oldEncryptionSettings, EncryptionSettings encryptionSettings, Object message) throws Exception {
-        Provider oldProvider = (Provider) Class.forName(oldEncryptionSettings.getSecurityProvider()).newInstance();
+        Provider oldProvider = (Provider) Class.forName(oldEncryptionSettings.getSecurityProvider()).getDeclaredConstructor().newInstance();
         KeyGenerator keyGenerator = KeyGenerator.getInstance(oldEncryptionSettings.getEncryptionBaseAlgorithm(), oldProvider);
         keyGenerator.init(oldEncryptionSettings.getEncryptionKeyLength());
         Key key = keyGenerator.generateKey();
@@ -727,7 +727,7 @@ public class KeyEncryptorTest {
             oldEncrypted = oldEncryptor.encrypt((byte[]) message);
         }
 
-        Provider provider = (Provider) Class.forName(encryptionSettings.getSecurityProvider()).newInstance();
+        Provider provider = (Provider) Class.forName(encryptionSettings.getSecurityProvider()).getDeclaredConstructor().newInstance();
 
         KeyEncryptor encryptor = new KeyEncryptor();
         encryptor.setProvider(provider);
@@ -757,7 +757,7 @@ public class KeyEncryptorTest {
      * Encrypt and decrypt multiple messages simultaneously using the same KeyEncryptor instance.
      */
     private void testMultithreaded(EncryptionSettings oldEncryptionSettings, EncryptionSettings encryptionSettings, String... messages) throws Exception {
-        Provider oldProvider = (Provider) Class.forName(oldEncryptionSettings.getSecurityProvider()).newInstance();
+        Provider oldProvider = (Provider) Class.forName(oldEncryptionSettings.getSecurityProvider()).getDeclaredConstructor().newInstance();
         KeyGenerator keyGenerator = KeyGenerator.getInstance(oldEncryptionSettings.getEncryptionBaseAlgorithm(), oldProvider);
         keyGenerator.init(oldEncryptionSettings.getEncryptionKeyLength());
         Key key = keyGenerator.generateKey();
@@ -813,7 +813,7 @@ public class KeyEncryptorTest {
             assertEquals(oldEncryptionSettings.getEncryptionCharset(), encryptedParts.charset);
         }
 
-        Provider provider = (Provider) Class.forName(encryptionSettings.getSecurityProvider()).newInstance();
+        Provider provider = (Provider) Class.forName(encryptionSettings.getSecurityProvider()).getDeclaredConstructor().newInstance();
 
         KeyEncryptor encryptor = new KeyEncryptor();
         encryptor.setProvider(provider);

@@ -142,7 +142,7 @@ public class WebServiceDispatcher extends DestinationConnector {
         String configurationClass = getConfigurationClass();
 
         try {
-            configuration = (WebServiceConfiguration) Class.forName(configurationClass).newInstance();
+            configuration = (WebServiceConfiguration) Class.forName(configurationClass).getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             logger.trace("could not find custom configuration class, using default");
             configuration = new DefaultWebServiceConfiguration();

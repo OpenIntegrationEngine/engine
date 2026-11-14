@@ -178,7 +178,7 @@ public class JmsReceiverTests {
             connectionFactory = lookupConnectionFactoryWithJndi(properties);
         } else {
             String className = properties.getConnectionFactoryClass();
-            connectionFactory = (ConnectionFactory) Class.forName(className).newInstance();
+            connectionFactory = (ConnectionFactory) Class.forName(className).getDeclaredConstructor().newInstance();
         }
 
         BeanUtils.populate(connectionFactory, properties.getConnectionProperties());

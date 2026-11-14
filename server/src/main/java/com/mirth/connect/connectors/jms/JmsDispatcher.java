@@ -281,7 +281,7 @@ public class JmsDispatcher extends DestinationConnector {
                 String className = jmsDispatcherProperties.getConnectionFactoryClass();
 
                 MirthContextFactory contextFactory = contextFactoryController.getContextFactory(getResourceIds());
-                connectionFactory = (ConnectionFactory) Class.forName(className, true, contextFactory.getApplicationClassLoader()).newInstance();
+                connectionFactory = (ConnectionFactory) Class.forName(className, true, contextFactory.getApplicationClassLoader()).getDeclaredConstructor().newInstance();
             }
 
             BeanUtil.setProperties(connectionFactory, connectionProperties);

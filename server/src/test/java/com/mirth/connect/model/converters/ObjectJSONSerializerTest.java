@@ -7,10 +7,15 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
+import javax.json.JsonString;
+import javax.json.JsonValue;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -18,6 +23,9 @@ import org.junit.Test;
 import com.mirth.connect.client.core.Version;
 import com.mirth.connect.model.Channel;
 import com.mirth.connect.model.InvalidChannel;
+import com.mirth.connect.model.codetemplates.CodeTemplate;
+import com.mirth.connect.model.codetemplates.CodeTemplateContextSet;
+import com.mirth.connect.model.codetemplates.CodeTemplateProperties.CodeTemplateType;
 
 public class ObjectJSONSerializerTest {
 
@@ -62,6 +70,56 @@ public class ObjectJSONSerializerTest {
 
         String id = jsonObject.getJsonObject("channel").getString("id");
         assertEquals(channelId, id);
+    }
+
+    /**
+     * Characters that XML 1.0 does not allow (U+FFFE, U+FFFF and C0 controls other than tab, LF
+     * and CR) must not stop JSON serialization, and must come through unchanged. See
+     * OpenIntegrationEngine/engine#566.
+     */
+    @Test
+    public void testSerializeCodeTemplateWithXmlIllegalCharacters() throws IOException {
+        String code = "s.replace(/[￾￿]/g, \"\"); // \u0001 \u001F \u0008";
+        CodeTemplate codeTemplate = new CodeTemplate("illegal characters", CodeTemplateType.FUNCTION, CodeTemplateContextSet.getGlobalContextSet(), code);
+
+        JsonValue json = serializeToJson(codeTemplate);
+
+        assertTrue("the code template's code is in the JSON unchanged", containsString(json, code));
+    }
+
+    /** The placeholder used for those characters must not collide with text already present. */
+    @Test
+    public void testSerializeKeepsPrivateUseCharactersAlongsideXmlIllegalCharacters() throws IOException {
+        String description = "fffe; then ￾ then ";
+        Channel channel = new Channel();
+        channel.setId(GOOD_OLD_CHANNEL_ID);
+        channel.setDescription(description);
+
+        JsonValue json = serializeToJson(channel);
+
+        assertEquals(description, ((JsonObject) json).getJsonObject("channel").getString("description"));
+    }
+
+    private static JsonValue serializeToJson(Object object) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectJSONSerializer.getInstance().serialize(object, baos);
+
+        try (JsonReader jsonReader = Json.createReader(new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()), StandardCharsets.UTF_8))) {
+            return jsonReader.read();
+        }
+    }
+
+    private static boolean containsString(JsonValue value, String expected) {
+        switch (value.getValueType()) {
+            case STRING:
+                return expected.equals(((JsonString) value).getString());
+            case OBJECT:
+                return ((JsonObject) value).values().stream().anyMatch(child -> containsString(child, expected));
+            case ARRAY:
+                return ((JsonArray) value).stream().anyMatch(child -> containsString(child, expected));
+            default:
+                return false;
+        }
     }
 
     private static final String GOOD_OLD_CHANNEL_ID = "e084f86d-7743-4df8-a6eb-91d1cdf2ab0f";

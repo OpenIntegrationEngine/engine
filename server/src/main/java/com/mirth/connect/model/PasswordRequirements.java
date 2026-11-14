@@ -29,6 +29,7 @@ public class PasswordRequirements implements Serializable {
     private int gracePeriod;
     private int reusePeriod;
     private int reuseLimit;
+    private String breachedUrl;
 
     public PasswordRequirements() {
         this.minLength = 0;
@@ -42,6 +43,7 @@ public class PasswordRequirements implements Serializable {
         this.gracePeriod = 0;
         this.reusePeriod = 0;
         this.reuseLimit = 0;
+        this.breachedUrl = "";
     }
 
     public PasswordRequirements(int minLength, int minUpper, int minLower, int minNumeric, int minSpecial, int retryLimit, int lockoutPeriod, int expiration, int gracePeriod, int reusePeriod, int reuseLimit) {
@@ -144,5 +146,13 @@ public class PasswordRequirements implements Serializable {
 
     public void setReuseLimit(int reuseLimit) {
         this.reuseLimit = reuseLimit;
+    }
+
+    public String getBreachedUrl() {
+        return breachedUrl;
+    }
+
+    public void setBreachedUrl(String breachedUrl) {
+        this.breachedUrl = breachedUrl;
     }
 }

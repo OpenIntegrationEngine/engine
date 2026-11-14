@@ -10,7 +10,7 @@
 package com.mirth.connect.client.core.api.providers;
 
 import javax.inject.Singleton;
-import javax.ws.rs.ProcessingException;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 import javax.ws.rs.ext.Provider;
@@ -49,7 +49,7 @@ public class CalendarParamConverterProvider implements ParamConverterProvider {
                         T result = (T) calendar;
                         return result;
                     } catch (DateTimeParseException e) {
-                        throw new ProcessingException(e);
+                        throw new BadRequestException("Invalid date '" + value + "'. Expected format yyyy-MM-dd'T'HH:mm:ss.SSSZ, for example 1985-10-26T09:00:00.000-0700.", e);
                     }
                 }
 

@@ -32,7 +32,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.mirth.connect.connectors.file.FileConnectorException;
 
-public class FileConnectionTests {
+public class FileConnectionTest {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 

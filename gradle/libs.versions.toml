@@ -266,6 +266,7 @@ velocity-tools-generic = { module = "org.apache.velocity.tools:velocity-tools-ge
 xmpbox = { module = "org.apache.pdfbox:xmpbox", version.ref = "pdfbox" }
 xpp3 = { module = "xpp3:xpp3", version = "1.1.4c" }
 xstream = { module = "com.thoughtworks.xstream:xstream", version = "1.4.20" }
+zip4j = { module = "net.lingala.zip4j:zip4j", version = "2.11.6" }
 
 [bundles]
 client-main = [
@@ -336,6 +337,7 @@ client-main = [
     "velocity-tools-generic",
     "xpp3",
     "xstream",
+    "zip4j",
 ]
 command-main = [
     "bcpkix-jdk18on",
@@ -653,6 +655,7 @@ server-main = [
     "velocity-tools-generic",
     "xpp3",
     "xstream",
+    "zip4j",
 ]
 server-test = [
     "byte-buddy",

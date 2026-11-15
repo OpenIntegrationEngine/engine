@@ -93,7 +93,6 @@ def clientCoreJar = tasks.register('clientCoreJar', Jar) {
         include 'org/mozilla/**'
         include 'org/glassfish/jersey/**'
         include 'de/**'
-        include 'net/lingala/zip4j/unzip/**'
     }
     from generateVersionProperties
     from('src/main/resources/com/mirth/connect/util') {

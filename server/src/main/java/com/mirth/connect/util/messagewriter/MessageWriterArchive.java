@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: 2026 Tony Germano
 
 package com.mirth.connect.util.messagewriter;
 
@@ -73,9 +68,10 @@ public class MessageWriterArchive implements MessageWriter {
         fileWriter.close();
 
         if (messagesWritten) {
+            File tempFile = new File(archiveFile.getParent() + IOUtils.DIR_SEPARATOR + "." + archiveFile.getName());
+            boolean archiveCreated = false;
+
             try {
-                File tempFile = new File(archiveFile.getParent() + IOUtils.DIR_SEPARATOR + "." + archiveFile.getName());
-                
                 if (tempFile.exists()) {
                     try {
                         FileUtils.forceDelete(tempFile);   
@@ -84,6 +80,7 @@ public class MessageWriterArchive implements MessageWriter {
                 }
 
                 ArchiveUtils.createArchive(rootFolder, tempFile, archiver, compressor, password, encryptionType);
+                archiveCreated = true;
 
                 if (archiveFile.exists()) {
                     try {
@@ -96,6 +93,11 @@ public class MessageWriterArchive implements MessageWriter {
             } catch (Exception e) {
                 throw new MessageWriterException(e);
             } finally {
+                if (!archiveCreated) {
+                    // Do not leave a partly written archive behind. A finished one stays if only moving it failed.
+                    FileUtils.deleteQuietly(tempFile);
+                }
+
                 FileUtils.deleteQuietly(rootFolder);
             }
         }

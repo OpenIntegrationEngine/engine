@@ -4,6 +4,7 @@
 package org.openintegrationengine.smoketest.admin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -37,6 +38,7 @@ import org.openintegrationengine.smoketest.Harness;
 import org.openintegrationengine.smoketest.SharedServer;
 
 import com.mirth.connect.client.core.Client;
+import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.PaginatedMessageList;
 import com.mirth.connect.donkey.model.message.ContentType;
 import com.mirth.connect.donkey.model.message.Message;
@@ -45,6 +47,7 @@ import com.mirth.connect.model.filters.MessageFilter;
 import com.mirth.connect.util.MessageExporter;
 import com.mirth.connect.util.messagewriter.EncryptionType;
 import com.mirth.connect.util.messagewriter.MessageWriter;
+import com.mirth.connect.util.messagewriter.MessageWriterException;
 import com.mirth.connect.util.messagewriter.MessageWriterFactory;
 import com.mirth.connect.util.messagewriter.MessageWriterOptions;
 
@@ -170,6 +173,24 @@ class MessageExportArchiveTest {
         options.setRootFolder(serverFolder(""));
 
         assertEquals(MESSAGES, admin().exportMessagesServer(channelId, new MessageFilter(), 2, options));
+    }
+
+    /** A password cannot be applied to a TAR, so the export is refused up front, not written unprotected. */
+    @Test
+    @DisplayName("refuses a password for a TAR")
+    void passwordIsRefusedForTar() throws Exception {
+        MessageWriterOptions options = options("refused", ArchiveStreamFactory.TAR, null, PASSWORD, EncryptionType.AES256);
+        options.setBaseFolder(exportDirectory.toString());
+        options.setRootFolder(exportDirectory.resolve("refused").toString());
+
+        assertThrows(MessageWriterException.class, () -> MessageWriterFactory.getInstance().getMessageWriter(options, null));
+        assertFalse(Files.exists(exportDirectory.resolve("refused")), "export directory of a refused export");
+
+        // The server refuses it too, before it writes anything
+        MessageWriterOptions serverOptions = options("refused-on-server", ArchiveStreamFactory.TAR, null, PASSWORD, EncryptionType.AES256);
+        serverOptions.setBaseFolder(null);
+        serverOptions.setRootFolder(serverFolder("-refused"));
+        assertThrows(ClientException.class, () -> admin().exportMessagesServer(channelId, new MessageFilter(), 2, serverOptions));
     }
 
     private static String serverFolder(String suffix) {

@@ -8,7 +8,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -19,10 +18,11 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXNotRecognizedException;
@@ -42,21 +42,23 @@ public class XsltStepTest {
     private static final String TEXT_XSLT = "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
             + "<xsl:output method=\"text\"/><xsl:template match=\"/\"><xsl:value-of select=\".\"/></xsl:template></xsl:stylesheet>";
 
-    private static File secret;
+    @ClassRule
+    public static final TemporaryFolder tempFolder = new TemporaryFolder();
+
+    private static Path secret;
 
     @BeforeClass
     public static void setup() throws Exception {
         JavaScriptTestUtil.setup();
 
-        secret = File.createTempFile("xxe", ".txt");
-        secret.deleteOnExit();
-        FileUtils.write(secret, "canary", UTF_8);
+        secret = tempFolder.newFile("xxe.txt").toPath();
+        Files.writeString(secret, "canary", UTF_8);
     }
 
     /** Dropping the entity and rejecting the message are both fine; leaking the file is not. */
     @Test
     public void externalEntityInSourceIsNotResolved() throws Exception {
-        String xml = "<!DOCTYPE r [ <!ENTITY xxe SYSTEM \"" + secret.toURI() + "\"> ]><r>&xxe;</r>";
+        String xml = "<!DOCTYPE r [ <!ENTITY xxe SYSTEM \"" + secret.toUri() + "\"> ]><r>&xxe;</r>";
         String outcome;
 
         try {
@@ -90,13 +92,12 @@ public class XsltStepTest {
     /** The step restricts the message, not the stylesheet. */
     @Test
     public void stylesheetMayImportFromAFileUri() throws Exception {
-        File imported = File.createTempFile("imported", ".xsl");
-        imported.deleteOnExit();
-        FileUtils.write(imported, "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
+        Path imported = tempFolder.newFile("imported.xsl").toPath();
+        Files.writeString(imported, "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
                 + "<xsl:template match=\"/\">imported</xsl:template></xsl:stylesheet>", UTF_8);
 
         String xslt = "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
-                + "<xsl:import href=\"" + imported.toURI() + "\"/><xsl:output method=\"text\"/></xsl:stylesheet>";
+                + "<xsl:import href=\"" + imported.toUri() + "\"/><xsl:output method=\"text\"/></xsl:stylesheet>";
         assertEquals("imported", transform("<r>hello</r>", xslt));
     }
 
@@ -154,11 +155,10 @@ public class XsltStepTest {
 
     /** Builds a classloader that advertises the factory the way a jar in a library would. */
     private static URLClassLoader resourceLibraryProviding(Class<? extends SAXParserFactory> factory) throws Exception {
-        Path root = Files.createTempDirectory("resource-library");
-        root.toFile().deleteOnExit();
+        Path root = tempFolder.newFolder("resource-library").toPath();
 
         Path services = Files.createDirectories(root.resolve("META-INF").resolve("services"));
-        FileUtils.write(services.resolve(SAXParserFactory.class.getName()).toFile(), factory.getName(), UTF_8);
+        Files.writeString(services.resolve(SAXParserFactory.class.getName()), factory.getName(), UTF_8);
 
         return new URLClassLoader(new URL[] { root.toUri().toURL() }, XsltStepTest.class.getClassLoader());
     }

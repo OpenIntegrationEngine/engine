@@ -11,7 +11,8 @@ package com.mirth.connect.util;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -20,22 +21,20 @@ import com.google.common.base.Strings;
 public class ZipTestUtils {
 
     public static File createTempZipFile(String fileName) throws Exception {
-        File tempFile = File.createTempFile("temp_zip", ".zip"); //write to system defined temp
-        FileOutputStream fos = new FileOutputStream(tempFile);
-        BufferedOutputStream bos = new BufferedOutputStream(fos);
-        ZipOutputStream zos = new ZipOutputStream(bos);
+        return createTempZipFile(null, fileName); // system defined temp
+    }
 
-        if (!Strings.isNullOrEmpty(fileName)) {
-            try {
-                ZipEntry entry = new ZipEntry(fileName);
-                zos.putNextEntry(entry);
+    public static File createTempZipFile(File directory, String fileName) throws Exception {
+        Path tempFile = directory == null ? Files.createTempFile("temp_zip", ".zip") : Files.createTempFile(directory.toPath(), "temp_zip", ".zip");
+
+        try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(tempFile)))) {
+            if (!Strings.isNullOrEmpty(fileName)) {
+                zos.putNextEntry(new ZipEntry(fileName));
                 zos.write("file contents".getBytes());
                 zos.closeEntry();
-            } finally {
-                zos.close();
             }
         }
 
-        return tempFile;
+        return tempFile.toFile();
     }
 }

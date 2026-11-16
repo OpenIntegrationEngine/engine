@@ -1,16 +1,13 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: 2026 Tony Germano
 
 package com.mirth.connect.server.api.servlets;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -25,6 +22,7 @@ import static org.mockito.Mockito.when;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,20 +45,25 @@ import javax.ws.rs.core.UriInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 
 import com.mirth.connect.client.core.Operation;
 import com.mirth.connect.client.core.api.MirthApiException;
+import com.mirth.connect.donkey.model.message.ContentType;
 import com.mirth.connect.donkey.server.channel.ChannelException;
 import com.mirth.connect.donkey.server.channel.DispatchResult;
 import com.mirth.connect.donkey.server.message.batch.BatchMessageException;
 import com.mirth.connect.model.LoginStatus;
 import com.mirth.connect.model.LoginStatus.Status;
 import com.mirth.connect.model.User;
+import com.mirth.connect.util.messagewriter.EncryptionType;
+import com.mirth.connect.util.messagewriter.MessageWriterOptions;
 import com.mirth.connect.server.api.providers.ResponseCodeFilter;
 import com.mirth.connect.server.controllers.AuthorizationController;
 import com.mirth.connect.server.controllers.ControllerFactory;
 import com.mirth.connect.server.controllers.EngineController;
+import com.mirth.connect.server.controllers.MessageController;
 import com.mirth.connect.server.controllers.UserController;
 
 public class MessageServletTest {
@@ -69,6 +72,7 @@ public class MessageServletTest {
 
     static ControllerFactory controllerFactory;
     static EngineController engineController;
+    static MessageController messageController;
     static HttpSession session;
     static HttpServletRequest request;
     static ContainerRequestContext context;
@@ -87,6 +91,9 @@ public class MessageServletTest {
         when(engineController.dispatchRawMessage(eq("channelException"), any(), anyBoolean(), anyBoolean())).thenThrow(new ChannelException(false));
         when(engineController.dispatchRawMessage(eq("batchMessageException"), any(), anyBoolean(), anyBoolean())).thenThrow(new BatchMessageException());
         when(controllerFactory.createEngineController()).thenReturn(engineController);
+
+        messageController = mock(MessageController.class);
+        when(controllerFactory.createMessageController()).thenReturn(messageController);
 
         UserController userController = mock(UserController.class);
         when(userController.authorizeUser(anyString(), anyString(), anyString())).thenReturn(new LoginStatus(Status.SUCCESS, ""));
@@ -122,6 +129,33 @@ public class MessageServletTest {
     public void teardown() {
         setupSessionAndRequest(ADMIN_USER_ID);
         reset(engineController);
+    }
+
+    @Test
+    public void testExportMessagesServerEnablesPasswordWhenGiven() throws Exception {
+        MessageWriterOptions options = exportWithQueryParameters("secret");
+
+        assertTrue(options.isPasswordEnabled());
+        assertEquals("secret", options.getPassword());
+        assertEquals(EncryptionType.AES256, options.getEncryptionType());
+    }
+
+    @Test
+    public void testExportMessagesServerLeavesPasswordDisabledWhenNotGiven() throws Exception {
+        assertFalse(exportWithQueryParameters(null).isPasswordEnabled());
+        assertFalse(exportWithQueryParameters("").isPasswordEnabled());
+    }
+
+    /** Exports through the variant that takes query parameters and returns the options the controller received. */
+    private MessageWriterOptions exportWithQueryParameters(String password) throws Exception {
+        MessageServlet servlet = new MessageServlet(request, context, sc, controllerFactory);
+        reset(messageController);
+
+        servlet.exportMessagesServer("channel1", null, null, null, null, null, null, null, null, null, null, Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), null, Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), null, null, null, null, 2, ContentType.RAW, false, false, false, null, "root", "pattern", "archive", "zip", null, password, EncryptionType.AES256);
+
+        ArgumentCaptor<MessageWriterOptions> options = ArgumentCaptor.forClass(MessageWriterOptions.class);
+        verify(messageController).exportMessages(eq("channel1"), any(), eq(2), options.capture());
+        return options.getValue();
     }
 
     @Test

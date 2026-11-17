@@ -26,6 +26,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.Permissions;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -46,7 +47,7 @@ public interface SmtpConnectorServletInterface extends BaseServletInterface {
             @ExampleObject(name = "connection_test_response_smtp", ref = "../apiexamples/connection_test_response_smtp_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                     @ExampleObject(name = "connection_test_response_smtp", ref = "../apiexamples/connection_test_response_smtp_json") }) })
-    @MirthOperation(name = "sendTestEmail", display = "Send Test Email", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "sendTestEmail", display = "Send Test Email", permission = Permissions.CHANNELS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public ConnectionTestResponse sendTestEmail(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @QueryParam("channelId") String channelId,
             @Param("channelName") @Parameter(description = "The name of the channel.", required = true) @QueryParam("channelName") String channelName,

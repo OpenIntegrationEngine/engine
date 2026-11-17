@@ -32,6 +32,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.Permissions;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -52,7 +53,7 @@ public interface JmsConnectorServletInterface extends BaseServletInterface {
                     @ExampleObject(name = "jms_connector_properties_map", ref = "../apiexamples/jms_connector_properties_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                     @ExampleObject(name = "jms_connector_properties_map", ref = "../apiexamples/jms_connector_properties_map_json") }) })
-    @MirthOperation(name = "getTemplates", display = "Get JMS Templates", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "getTemplates", display = "Get JMS Templates", permission = Permissions.CHANNELS_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public LinkedHashMap<String, JmsConnectorProperties> getTemplates() throws ClientException;
 
     @GET
@@ -63,7 +64,7 @@ public interface JmsConnectorServletInterface extends BaseServletInterface {
                     @ExampleObject(name = "jms_connector_properties", ref = "../apiexamples/jms_connector_properties_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                     @ExampleObject(name = "jms_connector_properties", ref = "../apiexamples/jms_connector_properties_json") }) })
-    @MirthOperation(name = "getTemplate", display = "Get JMS Template", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "getTemplate", display = "Get JMS Template", permission = Permissions.CHANNELS_VIEW, type = ExecuteType.ASYNC, auditable = false)
     public JmsConnectorProperties getTemplate(@Param("templateName") @Parameter(description = "The name of the template.", required = true) @PathParam("templateName") String templateName) throws ClientException;
 
     @PUT
@@ -74,7 +75,7 @@ public interface JmsConnectorServletInterface extends BaseServletInterface {
                     @ExampleObject(name = "jms_template_name_set", ref = "../apiexamples/jms_template_name_set_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                     @ExampleObject(name = "jms_template_name_set", ref = "../apiexamples/jms_template_name_set_json") }) })
-    @MirthOperation(name = "saveTemplate", display = "Save JMS Template", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "saveTemplate", display = "Save JMS Template", permission = Permissions.CHANNELS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public Set<String> saveTemplate(// @formatter:off
             @Param("templateName") @Parameter(description = "The name of the template.", required = true) @PathParam("templateName") String templateName,
             @Param("properties") 
@@ -88,12 +89,12 @@ public interface JmsConnectorServletInterface extends BaseServletInterface {
 
     @DELETE
     @Path("/templates/{templateName}")
-    @Operation(summary="Creates or updates a JMS connector settings template.")
+    @Operation(summary="Deletes a JMS connector settings template.")
     @ApiResponse(content = {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "jms_template_name_set", ref = "../apiexamples/jms_template_name_set_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                     @ExampleObject(name = "jms_template_name_set", ref = "../apiexamples/jms_template_name_set_json") }) })
-    @MirthOperation(name = "saveTemplate", display = "Save JMS Template", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "deleteTemplate", display = "Delete JMS Template", permission = Permissions.CHANNELS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public Set<String> deleteTemplate(@Param("templateName") @Parameter(description = "The name of the template.", required = true) @PathParam("templateName") String templateName) throws ClientException;
 }

@@ -211,14 +211,15 @@ public class DatabaseUtil {
 
         try {
             DatabaseMetaData metaData = connection.getMetaData();
-            resultSet = metaData.getTables(null, null, tableName.toUpperCase(), new String[] {
+            String catalog = lookupCatalog(connection, metaData);
+            resultSet = metaData.getTables(catalog, null, tableName.toUpperCase(), new String[] {
                     "TABLE" });
 
             if (resultSet.next()) {
                 return true;
             }
 
-            resultSet = metaData.getTables(null, null, tableName.toLowerCase(), new String[] {
+            resultSet = metaData.getTables(catalog, null, tableName.toLowerCase(), new String[] {
                     "TABLE" });
             return resultSet.next();
         } catch (SQLException e) {
@@ -226,6 +227,20 @@ public class DatabaseUtil {
         } finally {
             DbUtils.closeQuietly(resultSet);
         }
+    }
+
+    /**
+     * The catalog to pass to metadata lookups. MySQL treats a null catalog as every database the
+     * login can see, so scope lookups to this connection's database there. Other databases keep
+     * the unscoped (null) lookup. See OpenIntegrationEngine/engine#489.
+     */
+    private static String lookupCatalog(Connection connection, DatabaseMetaData metaData) throws SQLException {
+        return isMySql(metaData) ? connection.getCatalog() : null;
+    }
+
+    private static boolean isMySql(DatabaseMetaData metaData) throws SQLException {
+        String productName = metaData.getDatabaseProductName();
+        return "MySQL".equalsIgnoreCase(productName) || "MariaDB".equalsIgnoreCase(productName);
     }
 
     /**
@@ -240,7 +255,8 @@ public class DatabaseUtil {
 
         try {
             DatabaseMetaData metaData = connection.getMetaData();
-            resultSet = metaData.getIndexInfo(null, null, tableName.toUpperCase(), false, false);
+            String catalog = lookupCatalog(connection, metaData);
+            resultSet = metaData.getIndexInfo(catalog, null, tableName.toUpperCase(), false, false);
 
             while (resultSet.next()) {
                 if (indexName.equalsIgnoreCase(resultSet.getString("INDEX_NAME"))) {
@@ -248,7 +264,7 @@ public class DatabaseUtil {
                 }
             }
 
-            resultSet = metaData.getIndexInfo(null, null, tableName.toLowerCase(), false, false);
+            resultSet = metaData.getIndexInfo(catalog, null, tableName.toLowerCase(), false, false);
 
             while (resultSet.next()) {
                 if (indexName.equalsIgnoreCase(resultSet.getString("INDEX_NAME"))) {

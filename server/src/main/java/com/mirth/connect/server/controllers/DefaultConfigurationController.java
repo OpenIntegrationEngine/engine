@@ -1,11 +1,7 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: 2026 Mitch Gaffigan <mitch@gaffigan.net>
+// SPDX-FileCopyrightText: 2026 Tony Germano <tony@germano.name>
 
 package com.mirth.connect.server.controllers;
 
@@ -13,13 +9,22 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.math.BigInteger;
 import java.net.URI;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -121,6 +126,7 @@ import com.mirth.connect.server.ExtensionLoader;
 import com.mirth.connect.server.mybatis.KeyValuePair;
 import com.mirth.connect.server.tools.ClassPathResource;
 import com.mirth.connect.server.util.DatabaseUtil;
+import com.mirth.connect.server.util.FilePermissionUtil;
 import com.mirth.connect.server.util.PasswordRequirementsChecker;
 import com.mirth.connect.server.util.ResourceUtil;
 import com.mirth.connect.server.util.SqlConfig;
@@ -194,8 +200,6 @@ public class DefaultConfigurationController extends ConfigurationController {
     private static final String XSTREAM_DENY_TYPES = "xstream.denytypes";
     private static final String XSTREAM_ALLOW_TYPES = "xstream.allowtypes";
     private static final String XSTREAM_ALLOW_TYPE_HIERARCHIES = "xstream.allowtypehierarchies";
-
-    private static final String DEFAULT_STOREPASS = "81uWxplDtB";
 
     // singleton pattern
     private static ConfigurationController instance = null;
@@ -1244,16 +1248,13 @@ public class DefaultConfigurationController extends ConfigurationController {
 
     @Override
     public void initializeSecuritySettings() {
-        InputStream keyStoreFileIs = null;
-        FileOutputStream fos = null;
-
         try {
             /*
              * Load the encryption settings so that they can be referenced client side.
              */
             encryptionConfig = new EncryptionSettings(ConfigurationConverter.getProperties(mirthConfig));
 
-            File keyStoreFile = new File(mirthConfig.getString("keystore.path"));
+            Path keyStoreFile = Path.of(mirthConfig.getString("keystore.path"));
             char[] keyStorePassword = mirthConfig.getString("keystore.storepass").toCharArray();
             char[] keyPassword = mirthConfig.getString("keystore.keypass").toCharArray();
             Provider provider = (Provider) Class.forName(encryptionConfig.getSecurityProvider()).newInstance();
@@ -1267,56 +1268,123 @@ public class DefaultConfigurationController extends ConfigurationController {
                 keyStore = KeyStore.getInstance(mirthConfig.getString("keystore.type", "JCEKS"));
             }
 
-            if (keyStoreFile.exists()) {
-                keyStoreFileIs = new FileInputStream(keyStoreFile);
-                keyStore.load(keyStoreFileIs, keyStorePassword);
-                logger.debug("found and loaded keystore: " + keyStoreFile.getAbsolutePath());
+            if (Files.exists(keyStoreFile)) {
+                try (InputStream keyStoreFileIs = Files.newInputStream(keyStoreFile)) {
+                    keyStore.load(keyStoreFileIs, keyStorePassword);
+                    logger.debug("found and loaded keystore: " + keyStoreFile.toAbsolutePath().toString());
+                }
             } else {
                 /*
-                 * If a new keystore is being created, and the passwords are the defaults, then
-                 * create new passwords.
+                 * Earlier versions kept the keystore at ${dir.appdata}/keystore.jks. If that file is
+                 * still here, mirth.properties no longer points at it, and creating a new keystore
+                 * would generate a new encryption key, leaving anything already encrypted in the
+                 * database unreadable.
                  */
-                if (Arrays.equals(keyStorePassword, DEFAULT_STOREPASS.toCharArray()) && Arrays.equals(keyPassword, DEFAULT_STOREPASS.toCharArray())) {
-                    String keyStorePasswordStr = generateNewPassword();
-                    mirthConfig.setProperty("keystore.storepass", keyStorePasswordStr);
-                    keyStorePassword = keyStorePasswordStr.toCharArray();
-
-                    String keyPasswordStr = generateNewPassword();
-                    mirthConfig.setProperty("keystore.keypass", keyPasswordStr);
-                    keyPassword = keyPasswordStr.toCharArray();
-
-                    saveMirthConfig();
+                Path legacyKeyStoreFile = Path.of(getApplicationDataDir(), "keystore.jks");
+                if (Files.exists(legacyKeyStoreFile)) {
+                    throw new IllegalStateException("Keystore " + keyStoreFile.toAbsolutePath() + " not found, but an existing keystore was found at " + legacyKeyStoreFile.toAbsolutePath() + ". Not creating a new keystore, because it would replace the encryption key. Set keystore.path, keystore.storepass, keystore.keypass and keystore.type in mirth.properties to match the existing keystore.");
                 }
 
                 keyStore.load(null, keyStorePassword);
                 logger.debug("keystore file not found, created new one");
             }
 
+            // Entries are only ever added below, never replaced, so a change in size means the keystore changed
+            int originalSize = keyStore.size();
+            boolean newEncryptionKey = !keyStore.containsAlias(SECRET_KEY_ALIAS);
+
             configureEncryption(provider, keyStore, keyPassword);
             generateDefaultCertificate(provider, keyStore, keyPassword);
 
-            // write the keystore back to the file
-            fos = new FileOutputStream(keyStoreFile);
-            keyStore.store(fos, keyStorePassword);
+            if (!Files.exists(keyStoreFile) || keyStore.size() != originalSize) {
+                try {
+                    storeKeyStore(keyStore, keyStoreFile, keyStorePassword);
+                } catch (Exception e) {
+                    /*
+                     * Anything encrypted with a key that was never saved could not be decrypted
+                     * after a restart, so don't leave the server, or the clients it sends its
+                     * encryption settings to, with one.
+                     */
+                    if (newEncryptionKey) {
+                        encryptor = null;
+                        encryptionConfig.setSecretKey(null);
+                    }
+                    throw e;
+                }
+            }
         } catch (Exception e) {
             logger.error("Could not initialize security settings.", e);
-        } finally {
-            ResourceUtil.closeResourceQuietly(keyStoreFileIs);
-            ResourceUtil.closeResourceQuietly(fos);
         }
     }
 
-    /**
-     * Creates a random 12-character alphanumeric password.
+    /*
+     * Writes the keystore to a new owner-only temp file in the same directory and then moves it
+     * into place, so that a failure part way through never leaves a truncated or empty keystore
+     * behind, and the keystore is never readable by other users, even briefly.
      */
-    private String generateNewPassword() {
-        String characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        SecureRandom random = new SecureRandom();
-        StringBuilder builder = new StringBuilder();
-        for (int i = 1; i <= 12; i++) {
-            builder.append(characters.charAt(random.nextInt(characters.length())));
+    private void storeKeyStore(KeyStore keyStore, Path keyStoreFile, char[] keyStorePassword) throws Exception {
+        // Replace the target of a symlink rather than the link itself
+        Path target = resolveSymbolicLinks(keyStoreFile);
+        Path tempFile = target.resolveSibling(target.getFileName() + ".tmp");
+
+        // Remove a temp file left behind by a previous failed write
+        Files.deleteIfExists(tempFile);
+
+        try {
+            FilePermissionUtil.createOwnerOnlyFile(tempFile);
+
+            try (FileChannel channel = FileChannel.open(tempFile, StandardOpenOption.WRITE)) {
+                keyStore.store(Channels.newOutputStream(channel), keyStorePassword);
+                /*
+                 * Make sure the contents are on disk before the move, or a crash soon after could
+                 * leave an empty keystore in place of the old one.
+                 */
+                channel.force(true);
+            }
+
+            try {
+                Files.move(tempFile, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            syncDirectory(target.toAbsolutePath().getParent());
+        } finally {
+            Files.deleteIfExists(tempFile);
         }
-        return builder.toString();
+    }
+
+    /*
+     * Flushes a directory to disk, so that a file just moved into it is still there after a crash.
+     * Not every platform can open a directory this way (Windows can't), and the move itself has
+     * already succeeded, so a failure is only logged.
+     */
+    private void syncDirectory(Path directory) {
+        try (FileChannel channel = FileChannel.open(directory, StandardOpenOption.READ)) {
+            channel.force(true);
+        } catch (IOException e) {
+            logger.debug("Could not flush directory " + directory + " to disk", e);
+        }
+    }
+
+    /*
+     * Follows a symlink, and any symlinks it leads to, to the file it ends at. Unlike
+     * Path.toRealPath, the file need not exist yet, so that a link created ahead of the keystore
+     * still has its target filled in.
+     */
+    static Path resolveSymbolicLinks(Path path) throws IOException {
+        Path target = path;
+
+        // the same limit Linux puts on following symlinks, so that a cycle can't loop forever
+        for (int i = 0; i < 40 && Files.isSymbolicLink(target); i++) {
+            target = target.resolveSibling(Files.readSymbolicLink(target));
+        }
+
+        if (Files.isSymbolicLink(target)) {
+            throw new FileSystemException(path.toString(), null, "Too many levels of symbolic links");
+        }
+
+        return target;
     }
 
     @Override

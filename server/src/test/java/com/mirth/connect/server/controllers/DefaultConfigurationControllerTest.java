@@ -13,6 +13,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -27,6 +28,9 @@ import java.io.File;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -45,7 +49,9 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mockito.invocation.Invocation;
 import org.xml.sax.SAXParseException;
 
@@ -58,6 +64,9 @@ import com.mirth.connect.util.ConfigurationProperty;
 public class DefaultConfigurationControllerTest {
 
     private static StaticOverride factoryOverride;
+
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -520,6 +529,51 @@ public class DefaultConfigurationControllerTest {
         tf.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
         tf.newTransformer().transform(source, new StreamResult(writer));
         return writer.toString();
+    }
+
+    @Test
+    public void resolveSymbolicLinks_NotALink() throws Exception {
+        Path file = temporaryFolder.newFile("keystore.pfx").toPath();
+
+        assertEquals(file, DefaultConfigurationController.resolveSymbolicLinks(file));
+    }
+
+    @Test
+    public void resolveSymbolicLinks_TargetDoesNotExist() throws Exception {
+        Path directory = temporaryFolder.getRoot().toPath();
+        Path target = directory.resolve("secret/keystore.pfx");
+        Path link = createSymbolicLink(directory.resolve("keystore.pfx"), target);
+
+        assertEquals(target, DefaultConfigurationController.resolveSymbolicLinks(link));
+    }
+
+    @Test
+    public void resolveSymbolicLinks_RelativeChain() throws Exception {
+        Path directory = temporaryFolder.getRoot().toPath();
+        Files.createDirectories(directory.resolve("secret"));
+        createSymbolicLink(directory.resolve("secret/current.pfx"), Path.of("keystore-1.pfx"));
+        Path link = createSymbolicLink(directory.resolve("keystore.pfx"), Path.of("secret", "current.pfx"));
+
+        assertEquals(directory.resolve("secret/keystore-1.pfx"), DefaultConfigurationController.resolveSymbolicLinks(link));
+    }
+
+    @Test(expected = FileSystemException.class)
+    public void resolveSymbolicLinks_Cycle() throws Exception {
+        Path directory = temporaryFolder.getRoot().toPath();
+        createSymbolicLink(directory.resolve("a.pfx"), directory.resolve("b.pfx"));
+        Path link = createSymbolicLink(directory.resolve("b.pfx"), directory.resolve("a.pfx"));
+
+        DefaultConfigurationController.resolveSymbolicLinks(link);
+    }
+
+    // creating a symlink needs a privilege on Windows, so skip the test where it isn't allowed
+    private static Path createSymbolicLink(Path link, Path target) {
+        try {
+            return Files.createSymbolicLink(link, target);
+        } catch (Exception e) {
+            assumeNoException(e);
+            return null;
+        }
     }
 
     private static final String INITIAL_CONFIGURATION_MAP_XML = """

@@ -30,6 +30,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.Permissions;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -50,7 +51,7 @@ public interface DatabaseConnectorServletInterface extends BaseServletInterface 
                     @ExampleObject(name = "table_set", ref = "../apiexamples/table_set_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                     @ExampleObject(name = "table_set", ref = "../apiexamples/table_set_json") }) })
-    @MirthOperation(name = "getTables", display = "Get Tables", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "getTables", display = "Get Tables", permission = Permissions.CHANNELS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public SortedSet<Table> getTables(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @QueryParam("channelId") String channelId,
             @Param("channelName") @Parameter(description = "The name of the channel.", required = true) @QueryParam("channelName") String channelName,

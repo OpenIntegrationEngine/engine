@@ -28,6 +28,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.mirth.connect.client.core.ClientException;
 import com.mirth.connect.client.core.Operation.ExecuteType;
+import com.mirth.connect.client.core.Permissions;
 import com.mirth.connect.client.core.api.BaseServletInterface;
 import com.mirth.connect.client.core.api.MirthOperation;
 import com.mirth.connect.client.core.api.Param;
@@ -48,7 +49,7 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
             @ExampleObject(name = "cache_wsdl_from_url", ref = "../apiexamples/null_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                     @ExampleObject(name = "cache_wsdl_from_url", ref = "../apiexamples/null_json") }) })
-    @MirthOperation(name = "cacheWsdlFromUrl", display = "Download and cache WSDL", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "cacheWsdlFromUrl", display = "Download and cache WSDL", permission = Permissions.CHANNELS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public Object cacheWsdlFromUrl(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @QueryParam("channelId") String channelId,
             @Param("channelName") @Parameter(description = "The name of the channel.") @QueryParam("channelName") String channelName,
@@ -70,7 +71,7 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
                     @ExampleObject(name = "is_wsdl_cached", ref = "../apiexamples/boolean_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                     @ExampleObject(name = "is_wsdl_cached", ref = "../apiexamples/boolean_json") }) })
-    @MirthOperation(name = "isWsdlCached", display = "Check if WSDL is cached", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "isWsdlCached", display = "Check if WSDL is cached", permission = Permissions.CHANNELS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public boolean isWsdlCached(// @formatter:off
             @Param("channelId") 
             @Parameter(description = "The ID of the channel.", required = true, schema = @Schema(description = "The ID of the channel.")) 
@@ -101,7 +102,7 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
             @ExampleObject(name = "definition_service_map", ref = "../apiexamples/definition_service_map_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                     @ExampleObject(name = "definition_service_map", ref = "../apiexamples/definition_service_map_json") }) })
-    @MirthOperation(name = "getDefinition", display = "Get WSDL Definition", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "getDefinition", display = "Get WSDL Definition", permission = Permissions.CHANNELS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public DefinitionServiceMap getDefinition(// @formatter:off
             @Param("channelId") 
             @Parameter(description = "The ID of the channel.", required = true, schema = @Schema(description = "The ID of the channel.")) 
@@ -131,7 +132,7 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
     @Operation(summary = "Generate SOAP envelope for a given WSDL operation.")
     @ApiResponse(content = { @Content(mediaType = MediaType.TEXT_PLAIN, examples = {
             @ExampleObject(name = "generate_envelope", ref = "../apiexamples/generate_envelope_txt") }) })
-    @MirthOperation(name = "generateEnvelope", display = "Generate WSDL operation envelope", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "generateEnvelope", display = "Generate WSDL operation envelope", permission = Permissions.CHANNELS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public String generateEnvelope(// @formatter:off
             @Param("channelId") 
             @Parameter(description = "The ID of the channel.", required = true, schema = @Schema(description = "The ID of the channel.")) 
@@ -178,7 +179,7 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
     @Operation(summary = "Retrieves the default SOAP Action (URI string) for a given WSDL operation.")
     @ApiResponse(content = { @Content(mediaType = MediaType.TEXT_PLAIN, examples = {
             @ExampleObject(value = "SomeAction") }) })
-    @MirthOperation(name = "getSoapAction", display = "Get SOAP Action for operation", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "getSoapAction", display = "Get SOAP Action for operation", permission = Permissions.CHANNELS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public String getSoapAction(// @formatter:off
             @Param("channelId") 
             @Parameter(description = "The ID of the channel.", required = true, schema = @Schema(description = "The ID of the channel.")) 
@@ -220,7 +221,7 @@ public interface WebServiceConnectorServletInterface extends BaseServletInterfac
             @ExampleObject(name = "connection_test_response_ws", ref = "../apiexamples/connection_test_response_ws_xml") }),
             @Content(mediaType = MediaType.APPLICATION_JSON, examples = {
                     @ExampleObject(name = "connection_test_response_ws", ref = "../apiexamples/connection_test_response_ws_json") }) })
-    @MirthOperation(name = "testConnection", display = "Test Web Service Connection", type = ExecuteType.ASYNC, auditable = false)
+    @MirthOperation(name = "testConnection", display = "Test Web Service Connection", permission = Permissions.CHANNELS_MANAGE, type = ExecuteType.ASYNC, auditable = false)
     public ConnectionTestResponse testConnection(// @formatter:off
             @Param("channelId") @Parameter(description = "The ID of the channel.", required = true) @QueryParam("channelId") String channelId,
             @Param("channelName") @Parameter(description = "The name of the channel.") @QueryParam("channelName") String channelName,

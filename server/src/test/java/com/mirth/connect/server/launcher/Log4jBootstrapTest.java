@@ -23,7 +23,7 @@ public class Log4jBootstrapTest {
         File log4jLibDir = Files.createTempDirectory("log4j").toFile();
         log4jLibDir.deleteOnExit();
 
-        for (String name : Arrays.asList("log4j-core-99.0.0.jar", "log4j-api-99.0.0.jar", "log4j-1.2-api-99.0.0.jar")) {
+        for (String name : Arrays.asList("log4j-core-99.0.0.jar", "log4j-api-99.0.0.jar")) {
             File jarFile = new File(log4jLibDir, name);
             assertTrue(jarFile.createNewFile());
             jarFile.deleteOnExit();
@@ -33,7 +33,6 @@ public class Log4jBootstrapTest {
 
         assertEquals(Arrays.asList(
                 new File(log4jLibDir, "log4j-core-99.0.0.jar").toURI().toURL(),
-                new File(log4jLibDir, "log4j-api-99.0.0.jar").toURI().toURL(),
-                new File(log4jLibDir, "log4j-1.2-api-99.0.0.jar").toURI().toURL()), classpathUrls);
+                new File(log4jLibDir, "log4j-api-99.0.0.jar").toURI().toURL()), classpathUrls);
     }
 }

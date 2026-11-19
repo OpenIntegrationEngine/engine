@@ -1,0 +1,21 @@
+# Copy this file to a name ending in .properties (for example 10-local.properties)
+# to activate it. Files in this directory named *.properties are loaded on top of
+# conf/mirth.properties at startup, in lexical filename order: later files
+# override earlier ones, and any file here overrides mirth.properties itself.
+#
+# Keeping customizations here instead of in mirth.properties means an upgrade
+# can replace mirth.properties without hand-merging your changes back in.
+#
+# Exception: database.password and database-readonly.password are encrypted in
+# place in mirth.properties; a value here stays plaintext. keystore.storepass
+# and keystore.keypass are auto-generated on first boot only when BOTH are
+# still the shipped defaults - overriding just one here leaves the other at
+# its published default. Leave these four in mirth.properties.
+#
+# Files are parsed with java.util.Properties semantics. If a key appears more
+# than once, the last occurrence wins; there are no multi-valued properties. For
+# list properties such as https.client.protocols, use a single comma-separated
+# value.
+
+# http.port = 8081
+# https.port = 8444

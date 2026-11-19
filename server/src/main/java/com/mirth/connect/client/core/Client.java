@@ -685,7 +685,7 @@ public class Client implements UserServletInterface, ConfigurationServletInterfa
         try {
             EncryptionSettings encryptionSettings = getEncryptionSettings();
             encryptor = new KeyEncryptor();
-            encryptor.setProvider((Provider) Class.forName(encryptionSettings.getSecurityProvider()).newInstance());
+            encryptor.setProvider((Provider) Class.forName(encryptionSettings.getSecurityProvider()).getDeclaredConstructor().newInstance());
             SecretKey secretKey = new SecretKeySpec(encryptionSettings.getSecretKey(), encryptionSettings.getEncryptionBaseAlgorithm());
             encryptor.setKey(secretKey);
             encryptor.setAlgorithm(encryptionSettings.getEncryptionAlgorithm());

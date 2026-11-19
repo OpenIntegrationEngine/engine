@@ -72,7 +72,7 @@ public class DefaultMigrationController extends MigrationController {
 
                     if (migratorClassName != null) {
                         try {
-                            Migrator migrator = (Migrator) Class.forName(migratorClassName).newInstance();
+                            Migrator migrator = (Migrator) Class.forName(migratorClassName).getDeclaredConstructor().newInstance();
                             migrator.setDefaultScriptPath("extensions/" + pluginMetaData.getPath());
                             pluginMigrators.add(migrator);
                         } catch (Exception e) {

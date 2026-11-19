@@ -42,7 +42,7 @@ public class ScriptRunner {
         InputStream in = null;
         
         try {
-            Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
+            Class.forName("org.apache.derby.jdbc.EmbeddedDriver").getDeclaredConstructor().newInstance();
             connection = DriverManager.getConnection("jdbc:derby:mirthdb;create=true");
             in = new FileInputStream(new File(scriptFile));
             OutputStream out = new NullOutputStream();

@@ -93,7 +93,7 @@ public class FileReceiver extends PollConnector {
         String configurationClass = configurationController.getProperty(connectorProperties.getProtocol(), "fileConfigurationClass");
 
         try {
-            configuration = (FileConfiguration) Class.forName(configurationClass).newInstance();
+            configuration = (FileConfiguration) Class.forName(configurationClass).getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             logger.trace("could not find custom configuration class, using default");
             configuration = new DefaultFileConfiguration();

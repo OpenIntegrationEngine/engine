@@ -60,7 +60,7 @@ public class DICOMDispatcher extends DestinationConnector {
         String configurationClass = configurationController.getProperty(connectorProperties.getProtocol(), "dicomConfigurationClass");
 
         try {
-            configuration = (DICOMConfiguration) Class.forName(configurationClass).newInstance();
+            configuration = (DICOMConfiguration) Class.forName(configurationClass).getDeclaredConstructor().newInstance();
         } catch (Throwable t) {
             logger.trace("could not find custom configuration class, using default");
             configuration = new DefaultDICOMConfiguration();

@@ -110,7 +110,7 @@ public class MirthLauncher {
             addExtensionsToClasspath(classpathUrls, currentVersion);
             URLClassLoader classLoader = new URLClassLoader(classpathUrls.toArray(new URL[classpathUrls.size()]), Thread.currentThread().getContextClassLoader());
             Class<?> mirthClass = classLoader.loadClass("com.mirth.connect.server.Mirth");
-            Thread mirthThread = (Thread) mirthClass.newInstance();
+            Thread mirthThread = (Thread) mirthClass.getDeclaredConstructor().newInstance();
             mirthThread.setContextClassLoader(classLoader);
             mirthThread.start();
         } catch (Exception e) {

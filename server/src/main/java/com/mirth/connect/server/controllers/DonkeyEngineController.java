@@ -1380,7 +1380,7 @@ public class DonkeyEngineController implements EngineController {
         ExtensionController extensionController = ControllerFactory.getFactory().createExtensionController();
         ConnectorProperties connectorProperties = connectorModel.getProperties();
         ConnectorMetaData connectorMetaData = extensionController.getConnectorMetaData().get(connectorProperties.getName());
-        SourceConnector sourceConnector = (SourceConnector) Class.forName(connectorMetaData.getServerClassName()).newInstance();
+        SourceConnector sourceConnector = (SourceConnector) Class.forName(connectorMetaData.getServerClassName()).getDeclaredConstructor().newInstance();
 
         setCommonConnectorProperties(channel.getChannelId(), sourceConnector, connectorModel, destinationIdMap);
 
@@ -1542,7 +1542,7 @@ public class DonkeyEngineController implements EngineController {
         ConnectorProperties connectorProperties = connectorModel.getProperties();
         ConnectorMetaData connectorMetaData = extensionController.getConnectorMetaData().get(connectorProperties.getName());
         String className = connectorMetaData.getServerClassName();
-        DestinationConnector destinationConnector = (DestinationConnector) Class.forName(className).newInstance();
+        DestinationConnector destinationConnector = (DestinationConnector) Class.forName(className).getDeclaredConstructor().newInstance();
 
         setCommonConnectorProperties(channel.getChannelId(), destinationConnector, connectorModel, destinationIdMap);
         destinationConnector.setChannel(channel);

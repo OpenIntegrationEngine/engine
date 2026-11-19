@@ -55,6 +55,12 @@ public class ChangePasswordDialog extends MirthDialog {
         });
 
         pack();
+
+        // Message can be several lines, grow to fit
+        passwordTextArea.setSize(passwordTextArea.getWidth(), Short.MAX_VALUE);
+        passwordPane.setPreferredSize(new Dimension(passwordPane.getWidth(), passwordTextArea.getPreferredSize().height));
+        pack();
+
         Dimension dlgSize = getPreferredSize();
         Dimension frmSize = parent.getSize();
         Point loc = parent.getLocation();

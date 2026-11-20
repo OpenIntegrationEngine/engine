@@ -1,7 +1,7 @@
 services:
   db:
     platform: linux/amd64
-    image: mcr.microsoft.com/mssql/server:2025-latest
+    image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       ACCEPT_EULA: Y
       MSSQL_PID: Developer
@@ -17,7 +17,7 @@ services:
 
   db-init:
     platform: linux/amd64
-    image: mcr.microsoft.com/mssql/server:2025-latest
+    image: mcr.microsoft.com/mssql/server:2022-latest
     depends_on:
       db:
         condition: service_healthy

@@ -42,20 +42,7 @@ The following are distributed under the terms of the Apache License version 2.0
 	Swagger Core 2.0.10 [incl. CLI] (https://github.com/swagger-api/swagger-core)
 	Swagger UI 2.2.10 (http://swagger.io/swagger-ui/)
 	webdavclient4j 0.92 (http://sourceforge.net/projects/webdavclient4j/)
-	Zip4j 1.3.3 (http://www.lingala.net/zip4j/)
-
-
---------------------------------------------------------------------------------
-
-
-Modified versions of files from Zip4j are distributed under the terms of the
-Apache License version 2.0 (see APACHE-LICENSE-2.0.txt). The following files
-have changed:
-
-	net/lingala/zip4j/unzip/Unzip.java
-	net/lingala/zip4j/unzip/UnzipEngine.java
-	
-	Changes: Modified to protect against the Zip Slip vulnerability.
+	Zip4j 2.11.6 (http://www.lingala.net/zip4j/)
 
 
 --------------------------------------------------------------------------------

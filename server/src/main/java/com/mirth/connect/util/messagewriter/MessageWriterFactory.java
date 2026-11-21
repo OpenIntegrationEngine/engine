@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: 2026 Tony Germano
 
 package com.mirth.connect.util.messagewriter;
 
@@ -19,6 +14,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.mirth.commons.encryption.Encryptor;
+import com.mirth.connect.util.ArchiveUtils;
 import com.mirth.connect.util.FilenameUtils;
 
 public class MessageWriterFactory {
@@ -51,6 +47,11 @@ public class MessageWriterFactory {
 
         if (options.getArchiveFormat() == null) {
             return fileWriter;
+        }
+
+        if (options.isPasswordEnabled() && StringUtils.isNotBlank(options.getPassword()) && !ArchiveUtils.isPasswordSupported(options.getArchiveFormat(), options.getCompressFormat())) {
+            // Fail now, not after every message has been written, and never write an unprotected archive instead
+            throw new MessageWriterException(ArchiveUtils.PASSWORD_UNSUPPORTED_MESSAGE);
         }
 
         if (options.getArchiveFileName() == null) {

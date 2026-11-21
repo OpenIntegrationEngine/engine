@@ -1,31 +1,28 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: 2026 Tony Germano
 
 package com.mirth.connect.util;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipInputStream;
 
-import net.lingala.zip4j.io.ZipOutputStream;
+import net.lingala.zip4j.io.outputstream.ZipOutputStream;
 import net.lingala.zip4j.model.ZipParameters;
-import net.lingala.zip4j.util.Zip4jConstants;
+import net.lingala.zip4j.model.enums.CompressionLevel;
+import net.lingala.zip4j.model.enums.CompressionMethod;
+import net.lingala.zip4j.model.enums.EncryptionMethod;
 
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
@@ -41,9 +38,22 @@ public class ArchiveUtils {
     /**
      * The buffer size to use when copying files into an archive
      */
-    private final static int BUFFER_SIZE = 1048576;
 
     private static Logger logger = LogManager.getLogger(ArchiveUtils.class);
+
+    public static final String PASSWORD_UNSUPPORTED_MESSAGE = "Password protection is only supported for ZIP archives without a compressor";
+
+    /**
+     * Only plain ZIP archives can be password protected. Callers can use this to reject a password
+     * up front, before doing the work of writing the files that would go into the archive.
+     */
+    public static boolean isPasswordSupported(String archiver, String compressor) {
+        return isPlainZip(archiver, compressor);
+    }
+
+    private static boolean isPlainZip(String archiver, String compressor) {
+        return ArchiveStreamFactory.ZIP.equals(archiver) && compressor == null;
+    }
 
     /**
      * Create an archive file from files/subfolders in a given source folder.
@@ -81,18 +91,28 @@ public class ArchiveUtils {
             throw new CompressException("Invalid source folder: " + sourceFolder.getAbsolutePath());
         }
 
+        boolean plainZip = isPlainZip(archiver, compressor);
+
+        if (StringUtils.isNotBlank(password) && !plainZip) {
+            // Only the plain ZIP path can encrypt; refuse rather than silently write an unprotected archive
+            throw new CompressException(PASSWORD_UNSUPPORTED_MESSAGE);
+        }
+
         logger.debug("Creating archive \"" + destinationFile.getAbsolutePath() + "\" from folder \"" + sourceFolder.getAbsolutePath() + "\"");
         OutputStream outputStream = null;
         OutputStream archiveOutputStream = null;
 
         try {
             /*
-             * The commons-compress documentation recommends constructing a ZipArchiveOutputStream
-             * with the archive file when using the ZIP archive format. See
-             * http://commons.apache.org/proper/commons-compress/zip.html
+             * Plain ZIP archives are written with zip4j, the only library here that can encrypt
+             * them. Every other combination, including ZIP with a compressor, goes through
+             * commons-compress, which cannot encrypt (hence the password check above).
              */
-            if (archiver.equals(ArchiveStreamFactory.ZIP) && compressor == null) {
-                archiveOutputStream = new ZipOutputStream(new FileOutputStream(destinationFile));
+            if (plainZip) {
+                char[] zipPassword = StringUtils.isNotBlank(password) ? password.toCharArray() : null;
+                // zip4j does not close the underlying stream when finishing the archive fails, so keep it to close below
+                outputStream = new FileOutputStream(destinationFile);
+                archiveOutputStream = new ZipOutputStream(outputStream, zipPassword);
             } else {
                 // if not using ZIP format, use the archiver/compressor stream factories to initialize the archive output stream
                 outputStream = new BufferedOutputStream(new FileOutputStream(destinationFile));
@@ -105,6 +125,15 @@ public class ArchiveUtils {
             }
 
             createFolderArchive(sourceFolder, archiveOutputStream, sourceFolder.getAbsolutePath() + IOUtils.DIR_SEPARATOR, password, encryptionType);
+
+            /*
+             * Closing the archive writes its trailer (the zip central directory, the tar end of
+             * archive records, a compressor's footer) and flushes it. Do it here so a failure is
+             * reported; the closeQuietly calls below only release the streams after a failure.
+             */
+            OutputStream finished = archiveOutputStream;
+            archiveOutputStream = null;
+            finished.close();
         } catch (Exception e) {
             throw new CompressException(e);
         } finally {
@@ -115,74 +144,53 @@ public class ArchiveUtils {
     }
 
     private static void createFolderArchive(File folder, OutputStream outputStream, String rootFolder, String password, EncryptionType encryptionType) throws CompressException {
-        byte[] buffer = new byte[BUFFER_SIZE];
-        ZipOutputStream zipOutputStream = null;
-
-        try {
-            for (File file : folder.listFiles()) {
-                if (file.isDirectory()) {
-                    createFolderArchive(file, outputStream, rootFolder, password, encryptionType);
-                } else {
-                    try {
-                        // extract/remove the rootFolder from the file's absolute path before adding it to the archive
-                        String entryName = file.getAbsolutePath();
-
-                        if (entryName.substring(0, rootFolder.length()).equals(rootFolder)) {
-                            entryName = entryName.substring(rootFolder.length());
-                        }
-
-                        ArchiveOutputStream archiveOutputStream = null;
-                        InputStream inputStream = new FileInputStream(file);
-                        try {
-                            logger.debug("Adding \"" + entryName + "\" to archive");
-
-                            if (outputStream instanceof ArchiveOutputStream) {
-                                archiveOutputStream = (ArchiveOutputStream) outputStream;
-                                archiveOutputStream.putArchiveEntry(archiveOutputStream.createArchiveEntry(file, entryName));
-                            } else if (outputStream instanceof ZipOutputStream) {
-                                zipOutputStream = (ZipOutputStream) outputStream;
-
-                                ZipParameters parameters = new ZipParameters();
-                                parameters.setSourceExternalStream(true);
-                                parameters.setFileNameInZip(entryName);
-                                parameters.setCompressionMethod(Zip4jConstants.COMP_DEFLATE);
-                                parameters.setCompressionLevel(Zip4jConstants.DEFLATE_LEVEL_NORMAL);
-
-                                if (StringUtils.isNotBlank(password)) {
-                                    parameters.setEncryptFiles(true);
-
-                                    boolean isAes = encryptionType != EncryptionType.STANDARD;
-                                    parameters.setEncryptionMethod(isAes ? Zip4jConstants.ENC_METHOD_AES : Zip4jConstants.ENC_METHOD_STANDARD);
-
-                                    if (isAes) {
-                                        parameters.setAesKeyStrength(encryptionType.getKeyStrength());
-                                    }
-
-                                    parameters.setPassword(password);
-                                }
-
-                                zipOutputStream.putNextEntry(null, parameters);
-                            }
-
-                            IOUtils.copyLarge(inputStream, outputStream, buffer);
-                        } finally {
-                            IOUtils.closeQuietly(inputStream);
-
-                            if (outputStream instanceof ArchiveOutputStream) {
-                                archiveOutputStream.closeArchiveEntry();
-                            } else if (outputStream instanceof ZipOutputStream) {
-                                zipOutputStream.closeEntry();
-                            }
-                        }
-                    } catch (Exception e) {
-                        throw new CompressException(e);
-                    }
-                }
-            }
-        } finally {
-            if (zipOutputStream != null) {
+        for (File file : folder.listFiles()) {
+            if (file.isDirectory()) {
+                createFolderArchive(file, outputStream, rootFolder, password, encryptionType);
+            } else {
                 try {
-                    zipOutputStream.finish();
+                    // extract/remove the rootFolder from the file's absolute path before adding it to the archive
+                    String entryName = file.getAbsolutePath();
+
+                    if (entryName.substring(0, rootFolder.length()).equals(rootFolder)) {
+                        entryName = entryName.substring(rootFolder.length());
+                    }
+
+                    try (InputStream inputStream = Files.newInputStream(file.toPath())) {
+                        logger.debug("Adding \"" + entryName + "\" to archive");
+
+                        /*
+                         * The entry is closed only after a successful copy. Closing it in a
+                         * finally block would replace the original failure with an error from
+                         * closing a half-written (or never opened) entry.
+                         */
+                        if (outputStream instanceof ArchiveOutputStream archiveOutputStream) {
+                            archiveOutputStream.putArchiveEntry(archiveOutputStream.createArchiveEntry(file, entryName));
+                            inputStream.transferTo(outputStream);
+                            archiveOutputStream.closeArchiveEntry();
+                        } else if (outputStream instanceof ZipOutputStream zipOutputStream) {
+                            ZipParameters parameters = new ZipParameters();
+                            // Zip entry names use forward slashes whatever the platform's separator is
+                            parameters.setFileNameInZip(entryName.replace(File.separatorChar, '/'));
+                            parameters.setCompressionMethod(CompressionMethod.DEFLATE);
+                            parameters.setCompressionLevel(CompressionLevel.NORMAL);
+
+                            if (StringUtils.isNotBlank(password)) {
+                                parameters.setEncryptFiles(true);
+
+                                boolean isAes = encryptionType != EncryptionType.STANDARD;
+                                parameters.setEncryptionMethod(isAes ? EncryptionMethod.AES : EncryptionMethod.ZIP_STANDARD);
+
+                                if (isAes) {
+                                    parameters.setAesKeyStrength(encryptionType.getKeyStrength());
+                                }
+                            }
+
+                            zipOutputStream.putNextEntry(parameters);
+                            inputStream.transferTo(outputStream);
+                            zipOutputStream.closeEntry();
+                        }
+                    }
                 } catch (Exception e) {
                     throw new CompressException(e);
                 }

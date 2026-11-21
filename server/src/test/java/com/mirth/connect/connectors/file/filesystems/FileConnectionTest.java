@@ -26,11 +26,16 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.mirth.connect.connectors.file.FileConnectorException;
 
-public class FileConnectionTests {
+public class FileConnectionTest {
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
+
     private FileConnection fc;
     private File someFolder;
 
@@ -86,7 +91,7 @@ public class FileConnectionTests {
     }
 
     @Test
-    public void testReadFile() throws IOException {
+    public void testReadFile() throws IOException, FileConnectorException {
         // The string to write
         String testString = new String("This is just a test string");
         byte[] byteTest = testString.getBytes(Charset.defaultCharset());
@@ -96,17 +101,11 @@ public class FileConnectionTests {
         // write the file
         FileUtils.writeByteArrayToFile(testFile, byteTest);
 
-        InputStream in = null;
-        try {
-            in = fc.readFile(testFile.getName(), someFolder.getAbsolutePath(), null);
-        } catch (FileConnectorException e) {
-            fail("Threw a FileConnectorException");
-        }
-
         // Read the file data
-        byte[] tempRead = new byte[byteTest.length];
-        in.read(tempRead);
-        in.close();
+        byte[] tempRead;
+        try (InputStream in = fc.readFile(testFile.getName(), someFolder.getAbsolutePath(), null)) {
+            tempRead = in.readAllBytes();
+        }
 
         // check to make sure it is the same
         assertArrayEquals(byteTest, tempRead);
@@ -231,24 +230,14 @@ public class FileConnectionTests {
     public void setUp() throws IOException {
         fc = new FileConnection();
 
-        someFolder = new File("TEST_FileConnection");
-
-        // Delete if exists
-        if (someFolder.exists()) {
-            someFolder.setWritable(true, false);
-            // clear it out if there is anything there
-            FileUtils.deleteDirectory(someFolder);
-        }
-
-        if (!someFolder.mkdir()) {
-            throw new IOException("Could not create test folder");
-        }
+        someFolder = tempFolder.newFolder("TEST_FileConnection");
     }
 
     @After
-    public void tearDown() throws IOException {
+    public void tearDown() {
+        // Some tests remove permissions; restore them so the TemporaryFolder rule can delete the folder
+        someFolder.setReadable(true, false);
         someFolder.setWritable(true, false);
-        FileUtils.deleteDirectory(someFolder);
     }
 
 }

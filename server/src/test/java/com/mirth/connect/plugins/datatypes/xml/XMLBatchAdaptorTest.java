@@ -9,10 +9,12 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-import org.apache.commons.io.FileUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.xml.sax.SAXParseException;
 
 import com.mirth.connect.donkey.model.message.BatchRawMessage;
@@ -23,13 +25,15 @@ import com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties.SplitType;
 /** Covered end to end by ci/tests/210-xml-batch-xxe. */
 public class XMLBatchAdaptorTest {
 
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
+
     @Test
     public void externalEntityIsNotResolved() throws Exception {
-        File secret = File.createTempFile("xxe", ".txt");
-        secret.deleteOnExit();
-        FileUtils.write(secret, "canary", UTF_8);
+        Path secret = tempFolder.newFile("xxe.txt").toPath();
+        Files.writeString(secret, "canary", UTF_8);
 
-        XMLBatchAdaptor adaptor = adaptor("<!DOCTYPE Batch [ <!ENTITY xxe SYSTEM \"" + secret.toURI() + "\"> ]><Batch><Message>&xxe;</Message></Batch>");
+        XMLBatchAdaptor adaptor = adaptor("<!DOCTYPE Batch [ <!ENTITY xxe SYSTEM \"" + secret.toUri() + "\"> ]><Batch><Message>&xxe;</Message></Batch>");
 
         try {
             fail("Expected the external entity to be rejected, but got: " + adaptor.getMessage());

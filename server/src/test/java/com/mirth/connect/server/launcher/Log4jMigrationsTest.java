@@ -19,14 +19,18 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.junit.Assume;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class Log4jMigrationsTest {
 
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
+
     @Test
     public void testMigrateLog4jRemovesDirLogs() throws Exception {
-        File file = File.createTempFile("log4j2", ".properties");
-        file.deleteOnExit();
+        File file = tempFolder.newFile("log4j2.properties");
         Files.writeString(file.toPath(), String.join(System.lineSeparator(),
                 "rootLogger = ERROR,stdout,fout",
                 "dir.logs   = logs",
@@ -43,8 +47,7 @@ public class Log4jMigrationsTest {
 
     @Test
     public void testMigrateLog4jDoesNotRewriteCleanFile() throws Exception {
-        File file = File.createTempFile("log4j2-clean", ".properties");
-        file.deleteOnExit();
+        File file = tempFolder.newFile("log4j2-clean.properties");
         String contents = String.join(System.lineSeparator(),
                 "rootLogger = ERROR,stdout,fout",
                 "property.log.dir = logs",
@@ -62,8 +65,7 @@ public class Log4jMigrationsTest {
 
     @Test
     public void testMigrateLog4jFailsGracefullyWithReadOnlyFile() throws Exception {
-        File file = File.createTempFile("log4j2-readonly", ".properties");
-        file.deleteOnExit();
+        File file = tempFolder.newFile("log4j2-readonly.properties");
         String contents = String.join(System.lineSeparator(),
                 "rootLogger = ERROR,stdout,fout",
                 "dir.logs   = logs",
@@ -95,9 +97,7 @@ public class Log4jMigrationsTest {
 
     @Test
     public void testMigrateLog4jIgnoresMissingFile() throws Exception {
-        File parentDir = Files.createTempDirectory("log4j2-missing").toFile();
-        parentDir.deleteOnExit();
-        File file = new File(parentDir, "missing-log4j2.properties");
+        File file = new File(tempFolder.newFolder("log4j2-missing"), "missing-log4j2.properties");
 
         assertFalse(file.exists());
 

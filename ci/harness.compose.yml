@@ -4,8 +4,33 @@ services:
   # Merged into whichever configuration is being run, so every stack seeds the same
   # admin password instead of generating a random one the harness cannot know.
   oie:
+    depends_on:
+      s3:
+        condition: service_healthy
     environment:
       _MP_SERVER_INITIALADMINPASSWORD: ${OIE_ADMIN_PASSWORD}
+      AWS_ENDPOINT_URL_S3: http://s3:9000
+      AWS_ACCESS_KEY_ID: oie-smoke
+      AWS_SECRET_ACCESS_KEY: oie-smoke-secret
+
+  # RustFS stands in for S3. The SDK puts the bucket in the host name, so it answers to
+  # <bucket>.s3 too. The healthcheck creates the bucket; repeating that is harmless.
+  s3:
+    image: rustfs/rustfs:1.0.3@sha256:9ca9559533b537d10482fe923288b676ad08f92a7069d9a17327fbae3cab688b
+    environment:
+      RUSTFS_ACCESS_KEY: oie-smoke
+      RUSTFS_SECRET_KEY: oie-smoke-secret
+      RUSTFS_SERVER_DOMAINS: s3:9000
+    networks:
+      default:
+        aliases:
+          - oie-smoke.s3
+    healthcheck:
+      test: curl -fsS --aws-sigv4 aws:amz:us-east-1:s3 --user oie-smoke:oie-smoke-secret -X PUT http://s3:9000/oie-smoke
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
 
   harness:
     image: oie-ci-harness:local

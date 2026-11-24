@@ -166,9 +166,10 @@ public class FileDispatcher extends DestinationConnector {
 
             ThreadUtils.checkInterruptedStatus();
             fileSystemConnection = fileConnector.getConnection(fileSystemOptions);
-            if (fileSystemConnection instanceof S3Connection && fileDispatcherProperties.getSchemeProperties() instanceof S3SchemeProperties) {
+            if (fileSystemConnection instanceof S3Connection s3Connection
+                && fileDispatcherProperties.getSchemeProperties() instanceof S3SchemeProperties s3Properties) {
                 // A pooled connection keeps the headers it was created with; send this message's
-                ((S3Connection) fileSystemConnection).setCustomHeaders(((S3SchemeProperties) fileDispatcherProperties.getSchemeProperties()).getCustomHeaders());
+                s3Connection.setCustomHeaders(s3Properties.getCustomHeaders());
             }
             if (fileDispatcherProperties.isErrorOnExists() && fileSystemConnection.exists(filename, path)) {
                 throw new IOException("Destination file already exists, will not overwrite.");

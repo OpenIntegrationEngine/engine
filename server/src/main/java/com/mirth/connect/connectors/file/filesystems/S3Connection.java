@@ -157,13 +157,16 @@ public class S3Connection implements FileSystemConnection {
     S3Client client;
     StsClient sts;
     int stsDuration;
-    // Set by the File Writer for each message. schemeProps belongs to the message that created
-    // the pool and is shared by every connection in it, so per-message headers can't go there.
+    // The headers sent with each write. They start as the ones this connection was created with,
+    // the File Writer sets each message's before writing, and passivate() puts the first ones back.
+    // schemeProps belongs to the message that created the pool and is shared by every connection in
+    // it, so per-message headers can't go there.
     Map<String, List<String>> customHeaders;
 
     public S3Connection(FileSystemConnectionOptions fileSystemOptions, int timeout) throws Exception {
         this.fileSystemOptions = fileSystemOptions;
         schemeProps = (S3SchemeProperties) fileSystemOptions.getSchemeProperties();
+        customHeaders = schemeProps.getCustomHeaders();
 
         clientBuilder = S3Client.builder();
         clientBuilder.httpClientBuilder(createClientConfiguration(timeout));
@@ -280,10 +283,9 @@ public class S3Connection implements FileSystemConnection {
 
     Map<String, String> getCustomHeaders() {
         Map<String, String> headers = new HashMap<String, String>();
-        Map<String, List<String>> source = customHeaders != null ? customHeaders : schemeProps.getCustomHeaders();
 
-        if (MapUtils.isNotEmpty(source)) {
-            for (Entry<String, List<String>> entry : source.entrySet()) {
+        if (MapUtils.isNotEmpty(customHeaders)) {
+            for (Entry<String, List<String>> entry : customHeaders.entrySet()) {
                 for (String value : entry.getValue()) {
                     headers.put(entry.getKey(), value);
                 }
@@ -639,7 +641,9 @@ public class S3Connection implements FileSystemConnection {
     public void activate() {}
 
     @Override
-    public void passivate() {}
+    public void passivate() {
+        customHeaders = schemeProps.getCustomHeaders();
+    }
 
     @Override
     public void destroy() {

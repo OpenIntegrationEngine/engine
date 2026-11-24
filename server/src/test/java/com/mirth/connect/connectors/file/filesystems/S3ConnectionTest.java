@@ -306,6 +306,21 @@ public class S3ConnectionTest {
     }
 
     @Test
+    public void testPassivateRestoresCustomHeaders() throws Exception {
+        S3Connection s3Conn = getConnection();
+        s3Conn.schemeProps.getCustomHeaders().put("X-Custom-Header", Collections.singletonList("Created"));
+        Map<String, List<String>> messageHeaders = new HashMap<String, List<String>>();
+        messageHeaders.put("X-Custom-Header", Collections.singletonList("Message"));
+
+        s3Conn.setCustomHeaders(messageHeaders);
+        assertEquals("Message", s3Conn.getCustomHeaders().get("X-Custom-Header"));
+
+        // Returning the connection to the pool puts back the headers it was created with
+        s3Conn.passivate();
+        assertEquals("Created", s3Conn.getCustomHeaders().get("X-Custom-Header"));
+    }
+
+    @Test
     public void testAddMetadataIfNotNull() throws Exception {
         S3Connection s3Conn = getConnection();
 

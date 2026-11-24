@@ -157,8 +157,8 @@ public class S3Connection implements FileSystemConnection {
     S3Client client;
     StsClient sts;
     int stsDuration;
-    // The headers sent with each write. They start as the ones this connection was created with,
-    // the File Writer sets each message's before writing, and passivate() puts the first ones back.
+    // The headers sent with each write: the ones this connection was created with, replaced by
+    // each message's while the File Writer has it, and put back by passivate().
     // schemeProps belongs to the message that created the pool and is shared by every connection in
     // it, so per-message headers can't go there.
     Map<String, List<String>> customHeaders;

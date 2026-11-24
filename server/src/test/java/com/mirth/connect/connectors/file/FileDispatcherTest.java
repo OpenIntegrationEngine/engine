@@ -22,6 +22,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 
 import com.mirth.connect.connectors.file.filesystems.S3Connection;
 import com.mirth.connect.donkey.model.message.ConnectorMessage;
@@ -87,7 +88,7 @@ public class FileDispatcherTest {
     @Test
     public void pooledS3ConnectionSendsEachMessagesHeadersThroughTemporaryFile() throws Exception {
         S3Client client = mockClient();
-        when(client.getObject(any(GetObjectRequest.class), any(ResponseTransformer.class))).thenAnswer(invocation -> {
+        when(client.getObject(any(GetObjectRequest.class), ArgumentMatchers.<ResponseTransformer<GetObjectResponse, Object>>any())).thenAnswer(invocation -> {
             ResponseTransformer<GetObjectResponse, ?> transformer = invocation.getArgument(1);
             return transformer.transform(GetObjectResponse.builder().contentLength(7L).build(), AbortableInputStream.create(new ByteArrayInputStream("message".getBytes())));
         });

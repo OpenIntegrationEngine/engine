@@ -308,8 +308,8 @@ tasks.register('build') {
 
 tasks.register('dist') {
     group = 'build'
-    description = 'Builds everything and creates the distribution extension zips in server/dist.'
-    dependsOn ':server:createExtensionZips'
+    description = 'Builds everything and creates the distribution extension and Swing Administrator zips in server/dist.'
+    dependsOn ':server:createExtensionZips', ':server:swingadminZip'
 }
 
 tasks.register('test') {

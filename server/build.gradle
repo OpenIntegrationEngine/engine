@@ -877,6 +877,16 @@ def extensionZipTasks = zippedExtensions.collect { name ->
     }
 }
 
+// The Swing Administrator is not part of Docker images or installers; admins
+// unzip this into the OIE home to add it.
+tasks.register('swingadminZip', Zip) {
+    description = 'Zips client-lib for admins to unzip into the OIE home to enable the Swing Administrator.'
+    archiveFileName = "swingadmin-${version}.zip"
+    destinationDirectory = file('dist')
+    from('setup') { include 'client-lib/**' }
+    dependsOn createSetup
+}
+
 tasks.register('createExtensionZips') {
     group = 'build'
     description = 'Creates the per-extension distribution zips in server/dist/extensions.'

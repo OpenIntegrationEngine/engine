@@ -83,6 +83,10 @@ public class WebStartServlet extends HttpServlet {
             
             if ((request.getRequestURI().equals(contextPathProp + "/webstart.jnlp") || request.getRequestURI().equals(contextPathProp + "/webstart")) && isWebstartRequestValid(request)) {
                 jnlpDocument = getAdministratorJnlp(request);
+                if (jnlpDocument == null) {
+                    response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                    return;
+                }
                 response.setHeader("Content-Disposition", "attachment; filename = \"webstart.jnlp\"");
             } else {
             	response.setContentType("");
@@ -119,6 +123,11 @@ public class WebStartServlet extends HttpServlet {
     }
     
     protected Document getAdministratorJnlp(HttpServletRequest request) throws Exception {
+        // The Swing Administrator is optional; client-lib is only present when installed
+        if (!new File(getClientLibPath(), "mirth-client.jar").isFile()) {
+            return null;
+        }
+
         InputStream clientJnlpIs = null;
         Document document;
         try {

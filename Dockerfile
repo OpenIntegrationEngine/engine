@@ -83,6 +83,7 @@ RUN groupadd engine \
 WORKDIR /opt/engine
 COPY --chown=engine:engine --from=builder \
     --exclude=cli-lib \
+    --exclude=client-lib \
     --exclude=mirth-cli-launcher.jar \
     --exclude=mccommand \
     --exclude=manager-lib \
@@ -117,6 +118,7 @@ RUN addgroup -S engine \
 WORKDIR /opt/engine
 COPY --chown=engine:engine --from=builder \
     --exclude=cli-lib \
+    --exclude=client-lib \
     --exclude=mirth-cli-launcher.jar \
     --exclude=mccommand \
     --exclude=manager-lib \

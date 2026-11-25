@@ -7,9 +7,11 @@ apply plugin: 'distribution'
 
 apply from: 'generate-smoke-tests.gradle'
 
-// The harness runs with the server's whole staged distribution
+// The harness runs with the server's whole staged distribution, the engine's own jars
+// first (see ci/run-harness.sh)
 def stagedServer = files([
-        project(':server').fileTree('setup/server-lib') { include '**/*.jar' },
+        project(':server').fileTree('setup/server-lib') { include 'mirth-*.jar' },
+        project(':server').fileTree('setup/server-lib') { include '**/*.jar'; exclude 'mirth-*.jar' },
         project(':server').fileTree('setup/extensions') { include '**/*.jar' }]) {
     builtBy ':server:createSetup'
 }
@@ -35,6 +37,9 @@ tasks.named('test') {
     // Only run our tests if a live server URL is provided
     // `./gradlew :smoketest:test -Doie.baseUrl=https://localhost:8443`
     onlyIf { System.getProperty('oie.baseUrl') != null }
+    classpath = stagedServer + sourceSets.test.runtimeClasspath
+    jvmArgs "@${project(':server').file('setup/conf/default_modules.vmoptions')}"
+    systemProperty 'oie.cliHome', project(':server').file('setup').path
     systemProperties System.getProperties().findAll { it.key.toString().startsWith('oie.') }
 }
 

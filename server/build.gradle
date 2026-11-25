@@ -505,10 +505,14 @@ def userApiJavadoc = tasks.register('userApiJavadoc') {
     dependsOn syncDonkeyLibs
     doLast {
         outDir.mkdirs()
+        // The classpath goes in an argfile: on Windows it exceeds the command-line limit.
+        def classpathFile = new File(temporaryDir, 'classpath.args')
+        def classpath = (configurations.compileClasspath + fileTree(dir: 'lib', include: '**/*.jar')).asPath
+        classpathFile.text = "-classpath \"${classpath.replace('\\', '/')}\"\n"
         def cmd = [new File(System.getProperty('java.home'), 'bin/javadoc').absolutePath,
                    '-d', outDir.absolutePath,
                    '-notimestamp',
-                   '-classpath', (configurations.compileClasspath + fileTree(dir: 'lib', include: '**/*.jar')).asPath,
+                   '@' + classpathFile.absolutePath,
                    '-sourcepath', file('src/main/java').absolutePath,
                    '-link', 'https://docs.oracle.com/en/java/javase/17/docs/api/',
                    '-bottom', '\n\t\t\t\tLicensed under the <a href="https://www.mozilla.org/MPL/2.0/">Mozilla Public License 2.0</a>.\n\t\t\t',

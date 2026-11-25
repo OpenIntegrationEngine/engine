@@ -136,8 +136,14 @@ jobs:
       - name: Run smoke tests
         run: |
           Add-Content server\setup\conf\mirth.properties 'server.initialadminpassword = ci-smoke-admin'
-          server\setup\oieserver.ps1 &
+          $server = server\setup\oieserver.ps1 &
           .\gradlew.bat :smoketest:test -x :server:createSetup -PdisableSigning=true "-Doie.baseUrl=https://localhost:8443" "-Doie.password=ci-smoke-admin" "-Doie.configuration=windows-zulu17-derby"
+          $testExit = $LASTEXITCODE
+          Stop-Job $server
+          "::group::Server output"
+          Receive-Job $server 2>&1 | Out-String
+          "::endgroup::"
+          exit $testExit
 
       - name: Upload Test Results
         if: (!cancelled())
@@ -146,6 +152,11 @@ jobs:
           name: Test Results (windows)
           path: |
             **/build/test-results/**/*.xml
+
+      # The daemon holds locks in the Gradle cache, which setup-java then cannot save.
+      - name: Stop Gradle
+        if: always()
+        run: .\gradlew.bat --stop
 
   test-results:
     needs: [build, integration-test, windows]

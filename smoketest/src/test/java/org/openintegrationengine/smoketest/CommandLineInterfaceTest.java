@@ -42,13 +42,14 @@ class CommandLineInterfaceTest {
     void logsInAndReportsServerVersion() throws Exception {
         // Read over the API, so a match proves the CLI reached this server rather than
         // echoing back the address it was given.
-        String version = SharedServer.get().version();
+        OieServer server = SharedServer.get();
+        String version = server.version();
 
         CommandLineClient.Result result = CommandLineClient.runScript("status");
 
         assertEquals(0, result.exitCode(), () -> "the CLI did not exit cleanly: " + result);
-        assertTrue(result.output().contains("Server @ " + HarnessConfig.BASE_URL + " (" + version + ")"),
-                () -> "the CLI did not report a connection to " + HarnessConfig.BASE_URL
+        assertTrue(result.output().contains("Server @ " + server.baseUrl() + " (" + version + ")"),
+                () -> "the CLI did not report a connection to " + server.baseUrl()
                         + " running " + version + ": " + result);
         // A failed logout prints "Error: ..." and then "Disconnected from server." anyway.
         assertFalse(result.output().contains("Error:"),
@@ -63,7 +64,7 @@ class CommandLineInterfaceTest {
         // The client's connection monitor is a non-daemon thread: a CLI that leaves it
         // running never exits, and this fails on the timeout rather than an assertion.
         CommandLineClient.Result result = CommandLineClient.runScriptAgainst(
-                "https://127.0.0.1:1", HarnessConfig.USERNAME, HarnessConfig.PASSWORD, "status");
+                "https://127.0.0.1:1", "admin", "unused", "status");
 
         assertFalse(result.output().contains("Server @ "),
                 () -> "the CLI reported a connection it could not have made: " + result);
@@ -75,11 +76,12 @@ class CommandLineInterfaceTest {
     @Test
     @DisplayName("runs read-only commands against the live server")
     void runsReadOnlyCommands() throws Exception {
+        OieServer server = SharedServer.get();
         CommandLineClient.Result result =
                 CommandLineClient.runScript("status", "channel list", "user list");
 
         assertEquals(0, result.exitCode(), () -> "the CLI did not exit cleanly: " + result);
-        assertTrue(result.output().contains("Server @ " + HarnessConfig.BASE_URL),
+        assertTrue(result.output().contains("Server @ " + server.baseUrl()),
                 () -> "the CLI never reported a connection: " + result);
 
         assertTrue(result.output().contains("Status\t\tName"),
@@ -88,8 +90,8 @@ class CommandLineInterfaceTest {
                 () -> "no channel listing: " + result);
         assertTrue(result.output().contains("User Name"),
                 () -> "no user listing: " + result);
-        assertTrue(result.output().contains(HarnessConfig.USERNAME),
-                () -> "user listing omits " + HarnessConfig.USERNAME + ": " + result);
+        assertTrue(result.output().contains(server.username()),
+                () -> "user listing omits " + server.username() + ": " + result);
 
         // A failed statement prints "Error: ..." or a stack trace, and does not change the exit code.
         assertFalse(result.output().contains("Error:"),

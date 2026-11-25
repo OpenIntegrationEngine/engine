@@ -52,7 +52,7 @@ public class NCPDPSerializerTest {
 	public void test51RequestToXml() throws Exception {
 		String input = read("test-ncpdp-51-request-input.txt");
 		String output = read("test-ncpdp-51-request-output.xml");
-		assertEquals(output, TestUtil.prettyPrintXml(serializer.toXML(input)));
+		assertEquals(TestUtil.normalizeLineEndings(output), TestUtil.normalizeLineEndings(TestUtil.prettyPrintXml(serializer.toXML(input))));
 	}
 
 	@Test
@@ -66,7 +66,7 @@ public class NCPDPSerializerTest {
 	public void test51ResponseToXml() throws Exception {
 		String input = read("test-ncpdp-51-response-input.txt");
 		String output = read("test-ncpdp-51-response-output.xml");
-		assertEquals(output, TestUtil.prettyPrintXml(serializer.toXML(input)));
+		assertEquals(TestUtil.normalizeLineEndings(output), TestUtil.normalizeLineEndings(TestUtil.prettyPrintXml(serializer.toXML(input))));
 	}
 
 	@Test
@@ -80,7 +80,7 @@ public class NCPDPSerializerTest {
 	public void testD0RequestToXml() throws Exception {
 		String input = read("test-ncpdp-d0-request-input.txt");
 		String output = read("test-ncpdp-d0-request-output.xml");
-		assertEquals(output, TestUtil.prettyPrintXml(serializer.toXML(input)));
+		assertEquals(TestUtil.normalizeLineEndings(output), TestUtil.normalizeLineEndings(TestUtil.prettyPrintXml(serializer.toXML(input))));
 	}
 
 	@Test
@@ -94,7 +94,7 @@ public class NCPDPSerializerTest {
 	public void testD0ResponseToXml() throws Exception {
 		String input = read("test-ncpdp-d0-response-input.txt");
 		String output = read("test-ncpdp-d0-response-output.xml");
-		assertEquals(output, TestUtil.prettyPrintXml(serializer.toXML(input)));
+		assertEquals(TestUtil.normalizeLineEndings(output), TestUtil.normalizeLineEndings(TestUtil.prettyPrintXml(serializer.toXML(input))));
 	}
 
 	@Test

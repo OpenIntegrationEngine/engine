@@ -21,6 +21,8 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import com.mirth.connect.model.converters.TestUtil;
+
 /**
  * Serializes every sample in tests/dicom and compares it against the committed XML, which is the
  * serializer's own output and so is already indented. Drop a new .dcm and its .xml into that
@@ -50,6 +52,6 @@ public class DICOMSerializerTest {
         String actual = new DICOMSerializer().toXML(Base64.getEncoder().encodeToString(header));
         String expected = FileUtils.readFileToString(new File(SAMPLES, StringUtils.removeEnd(name, ".dcm") + ".xml"), UTF_8);
 
-        assertEquals(expected, actual);
+        assertEquals(TestUtil.normalizeLineEndings(expected), TestUtil.normalizeLineEndings(actual));
     }
 }

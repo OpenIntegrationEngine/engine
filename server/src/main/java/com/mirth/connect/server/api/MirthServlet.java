@@ -332,13 +332,7 @@ public abstract class MirthServlet {
     }
 
     protected String getRequestIpAddress() {
-        String address = request.getHeader("x-forwarded-for");
-
-        if (address == null) {
-            address = request.getRemoteAddr();
-        }
-
-        return address;
+        return request.getRemoteAddr();
     }
 
     protected List<Channel> redactChannels(List<Channel> channels) {

@@ -63,7 +63,7 @@ The rest are optional assertions against the message the channel produced:
 
 `NN` is the destination connector's metadata ID: `dest01` is the first
 destination, `dest02` the second, and so on. Metadata files are YAML mappings; list
-only the keys that matter to the test. Content assertions are byte-for-byte, except
+only the keys that matter to the test. Content assertions are line-by-line, except
 that `((ANY))` matches variable content such as generated IDs or timestamps.
 
 A fixture case runs in every configuration by default. To limit it, add a
@@ -73,6 +73,9 @@ A fixture case runs in every configuration by default. To limit it, add a
 alpine-temurin21-postgres
 ubuntu-temurin21-postgres
 ```
+
+The `windows` CI job also runs the smoke tests, as `windows-zulu17-derby`, against
+a server outside of a container.
 
 ### Parse Batch
 

@@ -2,7 +2,7 @@
   <id>b7c1f2a4-5d0e-4c36-9a8b-2f6e1d7c4059</id>
   <nextMetaDataId>3</nextMetaDataId>
   <name>S3 File Writer</name>
-  <description></description>
+  <description>03-own-credentials needs both Use Default Credential Provider Chain and the username and password. With the chain off, it passes even without the fix in #512.</description>
   <revision>1</revision>
   <sourceConnector version="4.7.0">
     <metaDataId>0</metaDataId>

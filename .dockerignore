@@ -228,8 +228,6 @@ server/src/main/java/com/mirth/connect/server/builders/VocalEZParser.java
 server/src/main/java/com/mirth/connect/util/GenerateExtensionUpdate.java
 
 server/setup.tar.gz
-**/dependency-check-report.html
-**/dependency-check-report.json
 
 # ---- Docker-specific (not build outputs, so not in .gitignore) ----
 .git

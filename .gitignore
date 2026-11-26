@@ -659,5 +659,3 @@ donkey/donkey-test
 
 # /server/src/org/mozilla/javascript/xmlimpl/
 server/setup.tar.gz
-dependency-check-report.html
-dependency-check-report.json

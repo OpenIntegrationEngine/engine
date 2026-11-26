@@ -41,27 +41,6 @@
  * directories are only guaranteed gone after a clean.
  */
 
-plugins {
-    // vulnerability scanning: ./gradlew dependencyCheckAggregate
-    // (replaces the old standalone dependency-check.xml Ant entry point)
-    alias(libs.plugins.owasp.dependencycheck)
-}
-
-dependencyCheck {
-    // NVD downloads are heavily throttled without a key; get one at
-    // https://nvd.nist.gov/developers/request-an-api-key
-    nvd {
-        apiKey = System.getenv('NVD_API_KEY') ?: ''
-    }
-    // the distribution ships no .NET assemblies, and the analyzer
-    // hard-fails the whole scan on machines without a dotnet runtime
-    analyzers {
-        assemblyEnabled = false
-    }
-    // also scan the jars that remain vendored (no Maven coordinates)
-    scanSet = subprojects.collect { it.file('lib') }.findAll { it.directory }
-}
-
 // Build flags are passed as Gradle project properties: -Pname=true.
 def flag = { String name ->
     providers.gradleProperty(name).getOrNull() == 'true'

@@ -47,7 +47,7 @@ public class CustomAuthenticatorProvider extends AuthenticatorProvider {
         try {
             return (Authenticator) clazz.getConstructor(Map.class).newInstance(properties);
         } catch (Exception e) {
-            return (Authenticator) clazz.newInstance();
+            return (Authenticator) clazz.getDeclaredConstructor().newInstance();
         }
     }
 }

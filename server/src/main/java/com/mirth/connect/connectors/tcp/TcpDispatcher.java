@@ -114,7 +114,7 @@ public class TcpDispatcher extends DestinationConnector {
         String configurationClass = getConfigurationClass();
 
         try {
-            configuration = (TcpConfiguration) Class.forName(configurationClass).newInstance();
+            configuration = (TcpConfiguration) Class.forName(configurationClass).getDeclaredConstructor().newInstance();
         } catch (Throwable t) {
             logger.trace("could not find custom configuration class, using default");
             configuration = new DefaultTcpConfiguration();

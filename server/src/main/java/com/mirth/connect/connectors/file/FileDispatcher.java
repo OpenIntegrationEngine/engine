@@ -19,6 +19,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.mirth.connect.connectors.file.filesystems.FileSystemConnection;
+import com.mirth.connect.connectors.file.filesystems.S3Connection;
 import com.mirth.connect.donkey.model.channel.ConnectorProperties;
 import com.mirth.connect.donkey.model.event.ConnectionStatusEventType;
 import com.mirth.connect.donkey.model.event.ErrorEventType;
@@ -165,6 +166,11 @@ public class FileDispatcher extends DestinationConnector {
 
             ThreadUtils.checkInterruptedStatus();
             fileSystemConnection = fileConnector.getConnection(fileSystemOptions);
+            if (fileSystemConnection instanceof S3Connection s3Connection
+                && fileDispatcherProperties.getSchemeProperties() instanceof S3SchemeProperties s3Properties) {
+                // A pooled connection keeps the headers it was created with; send this message's
+                s3Connection.setCustomHeaders(s3Properties.getCustomHeaders());
+            }
             if (fileDispatcherProperties.isErrorOnExists() && fileSystemConnection.exists(filename, path)) {
                 throw new IOException("Destination file already exists, will not overwrite.");
             } else if (fileDispatcherProperties.isTemporary()) {

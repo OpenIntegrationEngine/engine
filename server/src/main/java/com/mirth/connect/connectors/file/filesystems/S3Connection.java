@@ -157,10 +157,16 @@ public class S3Connection implements FileSystemConnection {
     S3Client client;
     StsClient sts;
     int stsDuration;
+    // The headers sent with each write: the ones this connection was created with, replaced by
+    // each message's while the File Writer has it, and put back by passivate().
+    // schemeProps belongs to the message that created the pool and is shared by every connection in
+    // it, so per-message headers can't go there.
+    Map<String, List<String>> customHeaders;
 
     public S3Connection(FileSystemConnectionOptions fileSystemOptions, int timeout) throws Exception {
         this.fileSystemOptions = fileSystemOptions;
         schemeProps = (S3SchemeProperties) fileSystemOptions.getSchemeProperties();
+        customHeaders = schemeProps.getCustomHeaders();
 
         clientBuilder = S3Client.builder();
         clientBuilder.httpClientBuilder(createClientConfiguration(timeout));
@@ -271,11 +277,15 @@ public class S3Connection implements FileSystemConnection {
         return ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).delimiter(DELIMITER);
     }
 
+    public void setCustomHeaders(Map<String, List<String>> customHeaders) {
+        this.customHeaders = customHeaders;
+    }
+
     Map<String, String> getCustomHeaders() {
         Map<String, String> headers = new HashMap<String, String>();
 
-        if (MapUtils.isNotEmpty(schemeProps.getCustomHeaders())) {
-            for (Entry<String, List<String>> entry : schemeProps.getCustomHeaders().entrySet()) {
+        if (MapUtils.isNotEmpty(customHeaders)) {
+            for (Entry<String, List<String>> entry : customHeaders.entrySet()) {
                 for (String value : entry.getValue()) {
                     headers.put(entry.getKey(), value);
                 }
@@ -631,7 +641,9 @@ public class S3Connection implements FileSystemConnection {
     public void activate() {}
 
     @Override
-    public void passivate() {}
+    public void passivate() {
+        customHeaders = schemeProps.getCustomHeaders();
+    }
 
     @Override
     public void destroy() {

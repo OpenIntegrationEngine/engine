@@ -122,7 +122,9 @@ public class FileSystemConnectionFactory implements PooledObjectFactory<FileSyst
 
             poolKey.append("s3://");
 
-            if (!s3SchemeProperties.isUseDefaultCredentialProviderChain()) {
+            // S3Connection.createCredentialsProvider signs with the username and password whenever
+            // they are set, even with the default provider chain on, so they belong in the key then too
+            if (!s3SchemeProperties.isUseDefaultCredentialProviderChain() || StringUtils.isNotBlank(username) || StringUtils.isNotBlank(password)) {
                 poolKey.append(username);
                 poolKey.append(':');
                 poolKey.append(password);

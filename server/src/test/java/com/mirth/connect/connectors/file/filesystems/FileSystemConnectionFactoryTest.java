@@ -10,6 +10,7 @@ import org.junit.Test;
 import com.mirth.connect.connectors.file.FTPSchemeProperties;
 import com.mirth.connect.connectors.file.FileScheme;
 import com.mirth.connect.connectors.file.FileSystemConnectionOptions;
+import com.mirth.connect.connectors.file.S3SchemeProperties;
 
 public class FileSystemConnectionFactoryTest {
 
@@ -47,6 +48,37 @@ public class FileSystemConnectionFactoryTest {
 		
 		String expected = "ftp://" + "username" + ":" + "password" + "@" + "host" + ":" + 9000 + ":" + commands.get(0) + ":" + commands.get(1);
 		assertEquals(expected, factory.getPoolKey());
+	}
+	
+	@Test
+	public void testS3GetPoolKeyWithoutDefaultChain() {
+		FileSystemConnectionFactory factory = s3Factory(false, "username", "password");
+		
+		assertEquals("s3://username:password@us-west-2", factory.getPoolKey());
+	}
+	
+	@Test
+	public void testS3GetPoolKeyDefaultChainWithCredentials() {
+		// The connection signs with credentials that are set even when the default chain is on, so
+		// messages with different credentials must not share a pool
+		FileSystemConnectionFactory factory = s3Factory(true, "username", "password");
+		
+		assertEquals("s3://username:password@us-west-2", factory.getPoolKey());
+	}
+	
+	@Test
+	public void testS3GetPoolKeyDefaultChainWithoutCredentials() {
+		assertEquals("s3://@us-west-2", s3Factory(true, "", "").getPoolKey());
+		assertEquals("s3://@us-west-2", s3Factory(true, null, null).getPoolKey());
+	}
+	
+	private static FileSystemConnectionFactory s3Factory(boolean useDefaultCredentialProviderChain, String username, String password) {
+		S3SchemeProperties s3SchemeProps = new S3SchemeProperties();
+		s3SchemeProps.setUseDefaultCredentialProviderChain(useDefaultCredentialProviderChain);
+		s3SchemeProps.setUseTemporaryCredentials(false);
+		s3SchemeProps.setRegion("us-west-2");
+		FileSystemConnectionOptions options = new FileSystemConnectionOptions(false, username, password, s3SchemeProps);
+		return new FileSystemConnectionFactory(FileScheme.S3, options, "bucket", -1, false, false, 0);
 	}
 	
 	

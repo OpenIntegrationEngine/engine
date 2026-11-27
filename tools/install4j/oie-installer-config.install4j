@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="13.1.1" transformSequenceNumber="13">
-  <application name="Open Integration Engine" applicationId="4145-9206-7630-8076" mediaDir="${compiler:installer:mediaRoot}/server/build" shortName="oie" publisher="Open Integration Engine Project" publisherWeb="https://openintegrationengine.org" version="4.7.0" backupOnSave="true" autoSave="true" macVolumeId="88477e584eb462ba" javaMinVersion="17" javaMaxVersion="999">
+  <application name="Open Integration Engine" applicationId="4145-9206-7630-8076" mediaDir="${compiler:installer:mediaRoot}/server/build" shortName="oie" publisher="Open Integration Engine Project" publisherWeb="https://openintegrationengine.org" version="4.7.0" backupOnSave="true" autoSave="true" macVolumeId="88477e584eb462ba" javaMinVersion="21" javaMaxVersion="999">
     <variables>
       <variable name="installer:mediaRoot" value="../.." />
     </variables>
-    <jreBundles jdkProviderId="Adoptium" release="21/jdk-21.0.12.1+1">
+    <jreBundles jdkProviderId="Adoptium" release="25/jdk-25.0.5+8">
       <modules>
         <defaultModules set="all" />
       </modules>

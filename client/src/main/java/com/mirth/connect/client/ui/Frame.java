@@ -164,8 +164,6 @@ import com.mirth.connect.util.DirectedAcyclicGraphNode;
 import com.mirth.connect.util.JavaScriptSharedUtil;
 import com.mirth.connect.util.MigrationUtil;
 
-import javafx.application.Platform;
-
 /**
  * The main content frame for the Mirth Client Application. Extends JXFrame and sets up all content.
  */
@@ -256,8 +254,6 @@ public class Frame extends JXFrame {
     private static final int REFRESH_BLOCK_SIZE = 100;
 
     public Frame() {
-        Platform.setImplicitExit(false);
-
         // Load RSyntaxTextArea language support
         LanguageSupportFactory.get().addLanguageSupport(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT, MirthJavaScriptLanguageSupport.class.getName());
 

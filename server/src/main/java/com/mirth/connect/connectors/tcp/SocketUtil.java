@@ -66,8 +66,13 @@ public class SocketUtil {
         Socket socket = configuration.createSocket();
 
         if (StringUtils.isNotEmpty(localAddr)) {
-            InetAddress localAddress = InetAddress.getByName(TcpUtil.getFixedHost(localAddr));
-            socket.bind(new InetSocketAddress(localAddress, localPort));
+            try {
+                InetAddress localAddress = InetAddress.getByName(TcpUtil.getFixedHost(localAddr));
+                socket.bind(new InetSocketAddress(localAddress, localPort));
+            } catch (Exception e) {
+                socket.close();
+                throw e;
+            }
         }
 
         return socket;

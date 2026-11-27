@@ -32,17 +32,13 @@ public class ExtensionUtil {
     public String getURLContents(String address) {
         StringBuilder builder = new StringBuilder();
 
-        try {
-            URL url = new URL(address);
-            BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(new URL(address).openStream()))) {
             String str = null;
 
             while ((str = in.readLine()) != null) {
                 builder.append(str);
                 builder.append("\r\n");
             }
-
-            in.close();
         } catch (Exception e) {
             // could not load page contents
         }

@@ -38,11 +38,11 @@ The following are distributed under the terms of the Apache License version 2.0
 	Not-Going-To-Be-Commons-SSL 0.3.18
 	OGNL 3.4.4, included within the MyBatis 3.5.19 library
 	Quartz Scheduler 2.3.2
+	Sardine 5.10 (https://github.com/lookfirst/sardine)
 	SQLite JDBC Driver 3.43.2.1 (https://github.com/xerial/sqlite-jdbc)
 	StAXON 1.3 [incl. CLI] (https://github.com/beckchr/staxon)
 	Swagger Core 2.0.10 [incl. CLI] (https://github.com/swagger-api/swagger-core)
 	Swagger UI 2.2.10 (http://swagger.io/swagger-ui/)
-	webdavclient4j 0.92 (http://sourceforge.net/projects/webdavclient4j/)
 	Zip4j 2.11.6 (http://www.lingala.net/zip4j/)
 
 

@@ -359,16 +359,8 @@ public class WebStartServlet extends HttpServlet {
     }
     
     protected PropertiesConfiguration getMirthProperties() throws FileNotFoundException, ConfigurationException {
-        PropertiesConfiguration mirthProperties = PropertiesConfigurationUtil.create();
-        
-        InputStream mirthPropsIs = null;
-        try {
-            mirthPropsIs = ResourceUtil.getResourceStream(getClass(), "mirth.properties"); 
-            mirthProperties = PropertiesConfigurationUtil.create(mirthPropsIs);
-        } finally {
-            ResourceUtil.closeResourceQuietly(mirthPropsIs);
-        }
-        return mirthProperties;
+        // Read the shared, drop-in-merged copy rather than reloading the file on every request.
+        return configurationController.getPropertiesConfiguration();
     }
     
     private String getContextPathProp(PropertiesConfiguration mirthProperties) {

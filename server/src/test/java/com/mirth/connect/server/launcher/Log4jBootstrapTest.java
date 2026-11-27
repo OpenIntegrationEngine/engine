@@ -28,7 +28,7 @@ public class Log4jBootstrapTest {
         Path log4jLibDir = tempFolder.newFolder("log4j").toPath();
 
         List<URL> expected = new ArrayList<>();
-        for (String name : Arrays.asList("log4j-core-99.0.0.jar", "log4j-api-99.0.0.jar", "log4j-1.2-api-99.0.0.jar")) {
+        for (String name : Arrays.asList("log4j-core-99.0.0.jar", "log4j-api-99.0.0.jar")) {
             expected.add(Files.createFile(log4jLibDir.resolve(name)).toUri().toURL());
         }
 

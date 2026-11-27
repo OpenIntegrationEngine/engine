@@ -1,15 +1,16 @@
 services:
   db:
-    image: mariadb:11.8
+    # Real MySQL (not MariaDB) so this catches newer reserved words, e.g. LIBRARY in 9.2.
+    image: mysql:9.7
     environment:
-      MARIADB_ROOT_PASSWORD: root_password
-      MARIADB_DATABASE: mirthdb
-      MARIADB_USER: mirthdb
-      MARIADB_PASSWORD: mirthdb
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: mirthdb
+      MYSQL_USER: mirthdb
+      MYSQL_PASSWORD: mirthdb
     healthcheck:
       test:
         - CMD-SHELL
-        - mariadb-admin ping -h 127.0.0.1 -umirthdb -pmirthdb
+        - mysqladmin ping -h 127.0.0.1 -umirthdb -pmirthdb
       interval: 3s
       timeout: 5s
       retries: 20

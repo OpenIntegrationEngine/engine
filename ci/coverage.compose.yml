@@ -1,0 +1,12 @@
+# Overlay that records JaCoCo coverage of the server under test. Added by
+# ci/run-configuration.sh when JACOCO_AGENT points at a jacocoagent.jar.
+services:
+  oie:
+    environment:
+      # configure-from-env splits VMOPTIONS on commas, so the agent gets a
+      # single option and records every class; ci/coverage-report.sh only
+      # reports our own. The data file is written when the JVM exits.
+      VMOPTIONS: -javaagent:/jacoco/jacocoagent.jar=destfile=/coverage/${OIE_CONFIGURATION}.exec
+    volumes:
+      - ${JACOCO_AGENT}:/jacoco/jacocoagent.jar:ro
+      - ${WORKSPACE}/ci/coverage:/coverage

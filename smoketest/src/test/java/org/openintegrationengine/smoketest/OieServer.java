@@ -18,6 +18,7 @@ import com.mirth.connect.model.Channel;
 import com.mirth.connect.model.LoginStatus;
 import com.mirth.connect.model.converters.ObjectXMLSerializer;
 import com.mirth.connect.model.filters.MessageFilter;
+import com.mirth.connect.server.controllers.ConfigurationController;
 import com.mirth.connect.util.MirthSSLUtil;
 
 /**
@@ -46,6 +47,7 @@ public final class OieServer implements AutoCloseable {
         Client client = newClient();
 
         try {
+            awaitHealthy(client);
             LoginStatus status = client.login(HarnessConfig.USERNAME, HarnessConfig.PASSWORD);
             if (status == null || !status.isSuccess()) {
                 throw new IllegalStateException("Login as " + HarnessConfig.USERNAME + " failed: "
@@ -61,6 +63,39 @@ public final class OieServer implements AutoCloseable {
         }
 
         return new OieServer(client);
+    }
+
+    /**
+     * Waits for the server's unauthenticated status endpoint to report it has started, so the
+     * harness can be launched alongside the server.
+     */
+    private static void awaitHealthy(Client client) throws Exception {
+        Harness.awaitAsserted(() -> {
+            int status;
+            try {
+                status = client.getStatus();
+            } catch (ClientException e) {
+                throw new AssertionError("Could not reach " + HarnessConfig.BASE_URL, e);
+            }
+            if (status != ConfigurationController.STATUS_OK) {
+                throw new AssertionError("Server at " + HarnessConfig.BASE_URL + " has status " + status);
+            }
+        });
+    }
+
+    /** The base URL of the server this is connected to. */
+    public String baseUrl() {
+        return HarnessConfig.BASE_URL;
+    }
+
+    /** The user this is logged in as. */
+    public String username() {
+        return HarnessConfig.USERNAME;
+    }
+
+    /** The password of {@link #username()}, for a client that needs its own session. */
+    public String password() {
+        return HarnessConfig.PASSWORD;
     }
 
     /**

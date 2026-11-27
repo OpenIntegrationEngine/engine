@@ -195,11 +195,19 @@ final class MessageAssertions {
         if (actual == null) {
             throw new AssertionError("Expected " + label + " content but the server stored none");
         }
-        if (!toPattern(expected).matcher(actual).matches()) {
+        if (!toPattern(normalizeLineEndings(expected)).matcher(normalizeLineEndings(actual)).matches()) {
             throw new AssertionError("Content mismatch for " + label
                     + "\n  expected: " + describe(expected)
                     + "\n    actual: " + describe(actual));
         }
+    }
+
+    /**
+     * The server's XML serializers break lines with the platform's separator, so CRLF matches
+     * LF. A lone CR stays significant: it separates HL7 segments.
+     */
+    private static String normalizeLineEndings(String content) {
+        return content.replace("\r\n", "\n");
     }
 
     /** Quotes the fixture text, leaving {@value #ANY_WILDCARD} as a lazy match-anything. */

@@ -31,8 +31,8 @@ final class CommandLineClient {
 
     /** Runs the CLI against the server under test, feeding it {@code statements} as a script. */
     static Result runScript(String... statements) throws Exception {
-        return runScriptAgainst(HarnessConfig.BASE_URL, HarnessConfig.USERNAME, HarnessConfig.PASSWORD,
-                statements);
+        OieServer server = SharedServer.get();
+        return runScriptAgainst(server.baseUrl(), server.username(), server.password(), statements);
     }
 
     /** As {@link #runScript}, against an address and credentials of the caller's choosing. */

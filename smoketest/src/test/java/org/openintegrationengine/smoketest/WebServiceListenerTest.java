@@ -58,7 +58,7 @@ class WebServiceListenerTest {
     @Test
     @DisplayName("accepts a SOAP request")
     void acceptsSoapRequest() throws Exception {
-        URI endpoint = new URI("http", null, URI.create(HarnessConfig.BASE_URL).getHost(), PORT,
+        URI endpoint = new URI("http", null, URI.create(SharedServer.get().baseUrl()).getHost(), PORT,
                 "/services/" + SERVICE, null, null);
 
         HttpRequest request = HttpRequest.newBuilder(endpoint)

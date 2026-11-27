@@ -106,8 +106,60 @@ jobs:
           path: |
             ci/test-results/**/*.xml
 
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      # Fixtures are compared byte-for-byte; keep the repository's line endings
+      # instead of the runner's default core.autocrlf=true.
+      - run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Same JDK as .sdkmanrc; the client needs JavaFX.
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: zulu
+          java-version: '17.0.17'
+          java-package: jdk+fx
+          cache: gradle
+
+      - name: Build and run unit tests
+        run: .\gradlew.bat build -PdisableSigning=true
+
+      # The server runs from server\setup, so don't let Gradle re-stage it.
+      - name: Run smoke tests
+        run: |
+          Add-Content server\setup\conf\mirth.properties 'server.initialadminpassword = ci-smoke-admin'
+          $server = server\setup\oieserver.ps1 &
+          .\gradlew.bat :smoketest:test -x :server:createSetup -PdisableSigning=true "-Doie.baseUrl=https://localhost:8443" "-Doie.password=ci-smoke-admin" "-Doie.configuration=windows-zulu17-derby"
+          $testExit = $LASTEXITCODE
+          Stop-Job $server
+          "::group::Server output"
+          Receive-Job $server 2>&1 | Out-String
+          "::endgroup::"
+          exit $testExit
+
+      - name: Upload Test Results
+        if: (!cancelled())
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Test Results (windows)
+          path: |
+            **/build/test-results/**/*.xml
+
+      # The daemon holds locks in the Gradle cache, which setup-java then cannot save.
+      - name: Stop Gradle
+        if: always()
+        run: .\gradlew.bat --stop
+
   test-results:
-    needs: [build, integration-test]
+    needs: [build, integration-test, windows]
     if: (!cancelled())
     runs-on: ubuntu-latest
 

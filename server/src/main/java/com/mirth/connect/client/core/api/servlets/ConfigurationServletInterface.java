@@ -203,7 +203,7 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
     @Path("/property")
     @Produces(MediaType.TEXT_PLAIN)
     @Operation(summary = "Returns a property from the configuration table.")
-    @MirthOperation(name = "getProperty", display = "Get property", auditable = false)
+    @MirthOperation(name = "getProperty", display = "Get property", permission = Permissions.SERVER_SETTINGS_VIEW, auditable = false)
     public String getProperty(
             @Param("group") @Parameter(description = "The property group.", required = true, schema = @Schema(type = "string")) @QueryParam("group") String group,
             @Param("name") @Parameter(description = "The name of the property.", required = true, schema = @Schema(type = "string")) @QueryParam("name") String name
@@ -242,7 +242,7 @@ public interface ConfigurationServletInterface extends BaseServletInterface {
     @PUT
     @Path("/updateSettings")
     @Operation(summary = "Updates the update settings.")
-    @MirthOperation(name = "setUpdateSettings", display = "Set update settings", auditable = false)
+    @MirthOperation(name = "setUpdateSettings", display = "Set update settings", permission = Permissions.SERVER_SETTINGS_EDIT, auditable = false)
     public void setUpdateSettings(@Param("settings") @RequestBody(description = "The UpdateSettings object containing all of the settings to update.", required = true, content = {
             @Content(mediaType = MediaType.APPLICATION_XML, examples = {
                     @ExampleObject(name = "updateSetings", ref = "../apiexamples/update_settings_xml") }),

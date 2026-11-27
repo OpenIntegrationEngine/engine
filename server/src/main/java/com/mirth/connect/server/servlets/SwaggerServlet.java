@@ -70,12 +70,14 @@ public class SwaggerServlet extends HttpServlet {
 				.openAPI(oas)
 				.resourceClasses(resourceClasses.stream().map(Class::getName).collect(Collectors.toSet()));
 
+		// Only register the configuration here. OpenApiResource builds its own child context from it
+		// and reads the spec on the first request; it never uses a read done here. Reading here would
+		// only warm up classes for that first request, at the cost of slower server startup.
 		try {
 			new ServletOpenApiContextBuilder()
 				.servletConfig(config)
 				.openApiConfiguration(oasConfig)
-				.buildContext(true)
-				.read();			
+				.buildContext(true);
 		} catch (OpenApiConfigurationException e) {
 			logger.error("Failed to initialize Swagger servlet", e);
 			throw new ServletException(e.getMessage(), e);

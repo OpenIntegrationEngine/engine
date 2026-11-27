@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: 2025-2026 Open Integration Engine Contributors
 
 package com.mirth.connect.client.ui.alert;
 
@@ -106,6 +101,7 @@ public class DefaultAlertEditPanel extends AlertEditPanel {
         variables.add("alertName");
         variables.add("serverId");
         variables.add("serverName");
+        variables.add("environmentName");
         variables.add("globalMapVariable");
         variables.add("date");
 

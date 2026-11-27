@@ -23,6 +23,7 @@ import com.mirth.connect.model.datatype.SerializationProperties;
 import com.mirth.connect.model.datatype.SerializerProperties;
 import com.mirth.connect.model.transmission.TransmissionModeProperties;
 import com.mirth.connect.model.transmission.framemode.FrameModeProperties;
+import com.mirth.connect.model.util.MessageVocabulary;
 import com.mirth.connect.plugins.DataTypeServerPlugin;
 import com.mirth.connect.util.TcpUtil;
 
@@ -69,6 +70,11 @@ public class HL7v2DataTypeServerPlugin extends DataTypeServerPlugin {
     @Override
     protected DataTypeDelegate getDataTypeDelegate() {
         return dataTypeDelegate;
+    }
+
+    @Override
+    public MessageVocabulary getVocabulary(String version, String type) {
+        return new HL7v2Vocabulary(version, type);
     }
 
 }

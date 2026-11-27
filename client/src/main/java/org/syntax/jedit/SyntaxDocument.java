@@ -17,6 +17,8 @@ import javax.swing.undo.UndoableEdit;
 
 import org.syntax.jedit.tokenmarker.TokenMarker;
 
+import com.mirth.connect.client.ui.components.MirthPlainDocument;
+
 /**
  * A document implementation that can be tokenized by the syntax highlighting
  * system.

@@ -63,6 +63,14 @@ public abstract class Migrator {
         this.databaseType = databaseType;
     }
 
+    /**
+     * Returns the given column name quoted if the current database requires it. Currently only
+     * MySQL does, because newer versions (9.2+) reserve words such as LIBRARY.
+     */
+    protected String quoteColumn(String column) {
+        return "mysql".equals(databaseType) ? "`" + column + "`" : column;
+    }
+
     public String getDefaultScriptPath() {
         return defaultScriptPath;
     }

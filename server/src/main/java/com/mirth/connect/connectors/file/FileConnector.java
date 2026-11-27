@@ -1,11 +1,6 @@
-/*
- * Copyright (c) Mirth Corporation. All rights reserved.
- * 
- * http://www.mirthcorp.com
- * 
- * The software in this package is published under the terms of the MPL license a copy of which has
- * been included with this distribution in the LICENSE.txt file.
- */
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: Mirth Corporation
+// SPDX-FileCopyrightText: 2026 Tony Germano
 
 package com.mirth.connect.connectors.file;
 
@@ -13,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -48,6 +44,7 @@ public class FileConnector {
     private boolean validateConnection;
     private int maxTotalConnections = GenericObjectPoolConfig.DEFAULT_MAX_TOTAL;
     private boolean keepConnectionOpen = false;
+    private boolean closeConnectionsAfterUse = false;
     private String maxIdleTime;
 
     public FileConnector(String channelId, ConnectorProperties connectorProperties, Connector connector) {
@@ -69,6 +66,7 @@ public class FileConnector {
             this.validateConnection = fileDispatcherProperties.isValidateConnection();
             this.keepConnectionOpen = fileDispatcherProperties.isKeepConnectionOpen();
             this.maxIdleTime = fileDispatcherProperties.getMaxIdleTime();
+            this.closeConnectionsAfterUse = !keepConnectionOpen;
         }
 
         if (connector instanceof DestinationConnector) {
@@ -242,11 +240,23 @@ public class FileConnector {
      */
     protected void destroyConnection(FileSystemConnection connection, FileSystemConnectionOptions fileSystemOptions) throws Exception {
         if (connection != null) {
-            ObjectPool<FileSystemConnection> pool = getConnectionPool(fileSystemOptions);
-            pool.invalidateObject(connection);
-
-            synchronized (connections) {
-                connections.remove(connection);
+            try {
+                ObjectPool<FileSystemConnection> pool = getConnectionPool(fileSystemOptions);
+                if (closeConnectionsAfterUse) {
+                    /*
+                     * The pool keeps no idle connections in this mode, so returnObject destroys the
+                     * connection and creates a replacement only for a thread waiting to borrow.
+                     * invalidateObject would create none here, since addObject respects maxIdle, and
+                     * a waiting thread could block forever.
+                     */
+                    pool.returnObject(connection);
+                } else {
+                    pool.invalidateObject(connection);
+                }
+            } finally {
+                synchronized (connections) {
+                    connections.remove(connection);
+                }
             }
         }
     }
@@ -267,28 +277,34 @@ public class FileConnector {
         ObjectPool<FileSystemConnection> pool = pools.get(key);
 
         if (pool == null) {
-            GenericObjectPoolConfig config = new GenericObjectPoolConfig();
+            GenericObjectPoolConfig<FileSystemConnection> config = new GenericObjectPoolConfig<FileSystemConnection>();
             config.setMaxTotal(maxTotalConnections);
             config.setMinIdle(0); // The makes the evictor thread run, if active, no matter how few objects are in the pool
-            config.setTimeBetweenEvictionRunsMillis(1000); // How often the evictor thread checks for objects to evict
+            config.setTimeBetweenEvictionRuns(Duration.ofSeconds(1)); // How often the evictor thread checks for objects to evict
 
             if (keepConnectionOpen) {
                 int connectionMaxIdleTime = NumberUtils.toInt(maxIdleTime);
 
                 if (connectionMaxIdleTime == 0) {
-                    // Disable the eviction thread. https://commons.apache.org/proper/commons-pool/apidocs/org/apache/commons/pool2/impl/BaseGenericObjectPool.html#setTimeBetweenEvictionRunsMillis-long-
-                    config.setTimeBetweenEvictionRunsMillis(0);
+                    // Disable the eviction thread. A non-positive interval means no evictor runs.
+                    config.setTimeBetweenEvictionRuns(Duration.ZERO);
                 } else {
-                    config.setMinEvictableIdleTimeMillis(connectionMaxIdleTime);
+                    config.setMinEvictableIdleDuration(Duration.ofMillis(connectionMaxIdleTime));
                 }
             } else {
                 // Always evict objects on the next check by the evictor thread
-                config.setMinEvictableIdleTimeMillis(1);
+                config.setMinEvictableIdleDuration(Duration.ofMillis(1));
+            }
+
+            if (closeConnectionsAfterUse) {
+                // Never keep idle connections, so that destroyConnection can return them to be destroyed
+                config.setMaxIdle(0);
             }
 
             if (isValidateConnection()) {
                 config.setTestOnBorrow(true);
-                config.setTestOnReturn(true);
+                // Returned connections are always destroyed when they are not kept open
+                config.setTestOnReturn(!closeConnectionsAfterUse);
             }
             pool = new GenericObjectPool<FileSystemConnection>(fileSystemConnectionFactory, config);
 

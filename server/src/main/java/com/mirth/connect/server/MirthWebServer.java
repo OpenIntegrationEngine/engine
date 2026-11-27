@@ -815,7 +815,6 @@ public class MirthWebServer extends Server {
                 response.setStatus(HttpStatus.SC_OK);
 
                 if (baseRequest.getMethod().equalsIgnoreCase(HttpMethod.GET.asString())) {
-                    FileInputStream fis = null;
                     try {
                         response.setContentType(contentType);
                         response.addHeader("Content-Disposition", "attachment; filename=" + file.getName());
@@ -831,15 +830,15 @@ public class MirthWebServer extends Server {
                             }
                         }
 
-                        fis = new FileInputStream(file);
-                        IOUtils.copy(fis, responseOutputStream);
+                        try (FileInputStream fis = new FileInputStream(file)) {
+                            IOUtils.copy(fis, responseOutputStream);
+                        }
 
                         // If we gzipped, we need to finish the stream now
                         if (responseOutputStream instanceof GZIPOutputStream) {
                             ((GZIPOutputStream) responseOutputStream).finish();
                         }
                     } catch (Throwable t) {
-                        IOUtils.closeQuietly(fis);
                         response.reset();
                         response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
                     }

@@ -20,6 +20,7 @@
           <entry location="conf" />
           <entry location="oieserver" />
           <entry location="oieserver.ps1" />
+          <entry location="client-lib" />
         </exclude>
       </dirEntry>
       <dirEntry mountPoint="24" file="${compiler:installer:mediaRoot}/server/setup" overwriteMode="never" uninstallMode="never" overrideOverwriteMode="true" overrideUninstallMode="true">

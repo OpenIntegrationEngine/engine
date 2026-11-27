@@ -106,14 +106,27 @@ SPDX-License-Identifier: MPL-2.0
         <p>
             The backend service is running.
         </p>
-        <p>
-            Please point your preferred Administrator Launcher to:<br>
-            <span id="jnlp-text" class="jnlp-path-container"></span>
+        <div id="launcher-info">
+            <p>
+                Please point your preferred Administrator Launcher to:<br>
+                <span id="jnlp-text" class="jnlp-path-container"></span>
+            </p>
+            <p>
+                Don't have an Administrator Launcher yet? Learn about
+                <a href="https://docs.openintegrationengine.org/launchers/" target="_blank" rel="noopener noreferrer">available launcher options</a>.
+            </p>
+        </div>
+        <p id="webadmin-link" hidden>
+            <a href="/oie-webadmin/" class="api-link">Open the Web Administrator</a>
         </p>
-        <p>
-            Don't have an Administrator Launcher yet? Learn about 
-            <a href="https://docs.openintegrationengine.org/launchers/" target="_blank" rel="noopener noreferrer">available launcher options</a>.
-        </p>
+        <div id="install-info" hidden>
+            <p>
+                No administrator is installed on this server. To manage it, install the
+                <a href="https://openintegrationengine.org/web-administrator/" target="_blank" rel="noopener noreferrer">Web Administrator</a>
+                or the
+                <a href="https://docs.openintegrationengine.org/launchers/" target="_blank" rel="noopener noreferrer">Swing Administrator</a>.
+            </p>
+        </div>
         <p>
             You can also explore the Client API at the link below.
         </p>
@@ -126,8 +139,24 @@ SPDX-License-Identifier: MPL-2.0
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const jnlpElement = document.getElementById('jnlp-text');
-            jnlpElement.textContent = `${window.location.origin}/webstart.jnlp`;
+            const jnlpUrl = `${window.location.origin}/webstart.jnlp`;
+            document.getElementById('jnlp-text').textContent = jnlpUrl;
+
+            // Both administrators are optional: show the ones installed, or how to install one
+            function isInstalled(url, ifUnknown) {
+                return fetch(url, { method: 'HEAD' })
+                    .then(function(response) { return response.ok; })
+                    .catch(function() { return ifUnknown; });
+            }
+            Promise.all([
+                isInstalled(jnlpUrl, true), // unknown: keep the launcher text shown by default
+                isInstalled(`${window.location.origin}/oie-webadmin/`, false)
+            ]).then(function(installed) {
+                const swing = installed[0], web = installed[1];
+                document.getElementById('launcher-info').hidden = !swing;
+                document.getElementById('webadmin-link').hidden = !web;
+                document.getElementById('install-info').hidden = swing || web;
+            });
         });
     </script>
 

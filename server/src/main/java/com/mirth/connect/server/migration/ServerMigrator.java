@@ -96,7 +96,8 @@ public class ServerMigrator extends Migrator {
     public void migrateSerializedData() {
         migrateSerializedData("SELECT ID, CHANNEL FROM CHANNEL", "UPDATE CHANNEL SET CHANNEL = ? WHERE ID = ?", Channel.class);
         migrateSerializedData("SELECT ID, ALERT FROM ALERT", "UPDATE ALERT SET ALERT = ? WHERE ID = ?", AlertModel.class);
-        migrateSerializedData("SELECT ID, LIBRARY FROM CODE_TEMPLATE_LIBRARY", "UPDATE CODE_TEMPLATE_LIBRARY SET LIBRARY = ? WHERE ID = ?", CodeTemplateLibrary.class);
+        String library = quoteColumn("LIBRARY");
+        migrateSerializedData("SELECT ID, " + library + " FROM CODE_TEMPLATE_LIBRARY", "UPDATE CODE_TEMPLATE_LIBRARY SET " + library + " = ? WHERE ID = ?", CodeTemplateLibrary.class);
         migrateSerializedData("SELECT ID, CODE_TEMPLATE FROM CODE_TEMPLATE", "UPDATE CODE_TEMPLATE SET CODE_TEMPLATE = ? WHERE ID = ?", CodeTemplate.class);
     }
 

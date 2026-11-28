@@ -125,7 +125,7 @@ public class Migrate3_3_0 extends Migrator implements ConfigurationMigrator {
                 String libraryXml = libraryElement.toXml();
 
                 try {
-                    updateStatement = connection.prepareStatement("INSERT INTO CODE_TEMPLATE_LIBRARY (ID, NAME, REVISION, LIBRARY) VALUES (?, ?, ?, ?)");
+                    updateStatement = connection.prepareStatement("INSERT INTO CODE_TEMPLATE_LIBRARY (ID, NAME, REVISION, " + quoteColumn("LIBRARY") + ") VALUES (?, ?, ?, ?)");
                     updateStatement.setString(1, libraryId);
                     updateStatement.setString(2, name);
                     updateStatement.setInt(3, revision);

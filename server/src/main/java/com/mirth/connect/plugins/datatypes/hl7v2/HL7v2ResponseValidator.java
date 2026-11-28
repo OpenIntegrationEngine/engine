@@ -82,6 +82,8 @@ public class HL7v2ResponseValidator implements ResponseValidator {
                         } else {
                             response.setStatus(Status.SENT);
                         }
+                    } else {
+                        handleInvalidACK(response);
                     }
                 } else {
                     // ER7 response received
@@ -175,9 +177,7 @@ public class HL7v2ResponseValidator implements ResponseValidator {
                     }
 
                     if (!valid) {
-                        response.setStatus(Status.QUEUED);
-                        response.setStatusMessage("Invalid HL7 v2.x acknowledgement received.");
-                        response.setError(response.getStatusMessage());
+                        handleInvalidACK(response);
                     }
                 }
             } catch (Exception e) {
@@ -298,6 +298,12 @@ public class HL7v2ResponseValidator implements ResponseValidator {
         nackMessage.append("\n\n");
         nackMessage.append(response.getMessage());
         response.setError(nackMessage.toString());
+    }
+
+    private void handleInvalidACK(Response response) {
+        response.setStatus(Status.QUEUED);
+        response.setStatusMessage("Invalid HL7 v2.x acknowledgement received.");
+        response.setError(response.getStatusMessage());
     }
 
     private void handleInvalidControlId(Response response, String originalControlID, String msa2) {

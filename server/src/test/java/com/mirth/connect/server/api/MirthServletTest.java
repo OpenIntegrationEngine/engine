@@ -155,4 +155,14 @@ public class MirthServletTest extends ServletTestBase {
         when(servlet.request.getRemoteAddr()).thenReturn("[10.0.0.1]");
         assertFalse(servlet.isRequestLocal());
     }
+
+    @Test
+    public void getRequestIpAddressIgnoresForwardedForHeader() throws Exception {
+        MirthServlet servlet = new MirthServlet(request, sc, controllerFactory) {
+        };
+
+        when(servlet.request.getRemoteAddr()).thenReturn("203.0.113.9");
+        when(servlet.request.getHeader("x-forwarded-for")).thenReturn("10.0.0.5");
+        assertEquals("203.0.113.9", servlet.getRequestIpAddress());
+    }
 }
